@@ -13354,3 +13354,265 @@ iframe::-webkit-scrollbar-corner {
   border-radius: 50%; object-fit: cover;
   box-shadow: 0 0 0 2px rgba(245, 166, 35, 0.35), 0 0 12px rgba(245, 166, 35, 0.22);
 }
+
+
+/* ============================================================
+   STEA CODE — PREMIUM INLINE PROFILE HUB
+   ============================================================ */
+
+/* Outer actions container */
+.sc-topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* ---------- COMMUNITY BUTTON collapse on expand ---------- */
+.sc-topbar-actions .sc-topbar-community {
+  transition: padding 0.5s cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+.sc-topbar-actions .sc-topbar-community-label {
+  transition: opacity 0.35s ease,
+              max-width 0.5s cubic-bezier(0.34, 1.4, 0.64, 1);
+  max-width: 220px;
+  overflow: hidden;
+  display: inline-block;
+  white-space: nowrap;
+}
+.sc-topbar-actions.is-expanded .sc-topbar-community {
+  padding-left: 9px;
+  padding-right: 9px;
+}
+.sc-topbar-actions.is-expanded .sc-topbar-community-label {
+  opacity: 0;
+  max-width: 0;
+}
+
+/* ---------- HUB WRAPPER ---------- */
+.sc-account-hub {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+  height: 42px;
+  padding: 4px;
+  border-radius: 999px;
+  transition: background 0.5s ease,
+              padding 0.5s cubic-bezier(0.34, 1.4, 0.64, 1),
+              box-shadow 0.5s ease;
+}
+.sc-account-hub.is-open {
+  background: linear-gradient(90deg,
+    rgba(245, 166, 35, 0.06) 0%,
+    rgba(122, 105, 249, 0.05) 40%,
+    rgba(242, 99, 120, 0.05) 75%,
+    rgba(245, 131, 63, 0.05) 100%);
+  padding-right: 12px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 0 24px rgba(245, 166, 35, 0.08);
+}
+
+/* Animated gradient glow behind the row when open */
+.sc-account-hub .sc-hub-glow {
+  position: absolute;
+  inset: -2px;
+  border-radius: 999px;
+  pointer-events: none;
+  opacity: 0;
+  z-index: -1;
+  background: linear-gradient(90deg,
+    rgba(245, 166, 35, 0.0)   0%,
+    rgba(245, 166, 35, 0.16) 20%,
+    rgba(122, 105, 249, 0.14) 50%,
+    rgba(242, 99, 120, 0.14) 75%,
+    rgba(245, 131, 63, 0.10) 100%);
+  filter: blur(14px);
+  transition: opacity 0.6s ease;
+}
+.sc-account-hub.is-open .sc-hub-glow { opacity: 1; }
+
+/* ---------- AVATAR BUTTON (34px, matches community button) ---------- */
+.sc-account-avatar-btn {
+  position: relative;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  flex-shrink: 0;
+  background: transparent;
+  display: grid;
+  place-items: center;
+  overflow: visible;
+  transition: transform 0.65s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Avatar initial — the gold circle */
+.sc-account-avatar-btn .sc-avatar-initial {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #f7b733 0%, #f5a623 45%, #d97d15 100%);
+  color: #0a0a0f;
+  font-weight: 800;
+  font-size: 13px;
+  letter-spacing: 0.3px;
+  line-height: 1;
+  box-shadow:
+    0 0 0 2px rgba(245, 166, 35, 0.55),
+    0 0 0 4px rgba(245, 166, 35, 0.10),
+    0 0 16px rgba(245, 166, 35, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  transition: box-shadow 0.35s ease;
+}
+.sc-account-avatar-btn:hover .sc-avatar-initial,
+.sc-account-hub.is-open .sc-account-avatar-btn .sc-avatar-initial {
+  box-shadow:
+    0 0 0 2px rgba(245, 166, 35, 0.85),
+    0 0 0 5px rgba(245, 166, 35, 0.15),
+    0 0 24px rgba(245, 166, 35, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+
+/* Avatar photo (Google profile pic) */
+.sc-account-avatar-btn .sc-avatar-img {
+  display: block;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow:
+    0 0 0 2px rgba(245, 166, 35, 0.55),
+    0 0 0 4px rgba(245, 166, 35, 0.10),
+    0 0 16px rgba(245, 166, 35, 0.35);
+}
+
+/* Halo ring behind avatar */
+.sc-account-avatar-btn::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(245, 166, 35, 0.5) 0%, transparent 70%);
+  opacity: 0;
+  z-index: -1;
+  transition: opacity 0.5s ease;
+  pointer-events: none;
+}
+.sc-account-avatar-btn:hover::after,
+.sc-account-hub.is-open .sc-account-avatar-btn::after {
+  opacity: 1;
+}
+
+/* Rotation animations */
+.sc-account-avatar-btn.spin-left  { animation: sc-spin-left  0.65s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+.sc-account-avatar-btn.spin-right { animation: sc-spin-right 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+@keyframes sc-spin-left  {
+  0%   { transform: rotate(0deg)    scale(1);    }
+  50%  { transform: rotate(-180deg) scale(0.88); }
+  100% { transform: rotate(-180deg) scale(1);    }
+}
+@keyframes sc-spin-right {
+  0%   { transform: rotate(-180deg) scale(1);    }
+  50%  { transform: rotate(-360deg) scale(0.88); }
+  100% { transform: rotate(-360deg) scale(1);    }
+}
+
+/* ---------- SLIDE-OUT ITEMS ---------- */
+.sc-hub-item {
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  max-width: 0;
+  opacity: 0;
+  white-space: nowrap;
+  transform: translateX(-8px);
+  transition: max-width 0.55s cubic-bezier(0.34, 1.56, 0.64, 1),
+              opacity   0.4s ease,
+              transform 0.55s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.sc-account-hub.is-open .sc-hub-item {
+  max-width: 400px;
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* Stagger open/close */
+.sc-account-hub.is-open .sc-hub-email   { transition-delay: 0.05s; }
+.sc-account-hub.is-open .sc-hub-badge   { transition-delay: 0.13s; }
+.sc-account-hub.is-open .sc-hub-signout { transition-delay: 0.22s; }
+.sc-account-hub:not(.is-open) .sc-hub-email   { transition-delay: 0.20s; }
+.sc-account-hub:not(.is-open) .sc-hub-badge   { transition-delay: 0.12s; }
+.sc-account-hub:not(.is-open) .sc-hub-signout { transition-delay: 0.04s; }
+
+/* Email */
+.sc-hub-email {
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.92);
+  padding: 0 6px;
+  letter-spacing: 0.15px;
+  text-shadow: 0 0 12px rgba(255, 255, 255, 0.08);
+}
+
+/* MEMBER badge */
+.sc-hub-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(245, 166, 35, 0.55);
+  color: #f5b340;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.9px;
+  background: linear-gradient(135deg,
+    rgba(245, 166, 35, 0.15) 0%,
+    rgba(245, 166, 35, 0.06) 100%);
+  box-shadow:
+    0 0 0 1px rgba(245, 166, 35, 0.08),
+    0 0 12px rgba(245, 166, 35, 0.20);
+}
+
+/* Sign out button */
+.sc-hub-signout {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 10px;
+  background: linear-gradient(135deg,
+    rgba(245, 90, 90, 0.14) 0%,
+    rgba(245, 90, 90, 0.08) 100%);
+  border: 1px solid rgba(245, 90, 90, 0.45);
+  color: #f28282;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow:
+    0 0 0 1px rgba(245, 90, 90, 0.06),
+    0 0 14px rgba(245, 90, 90, 0.18);
+  transition: max-width 0.55s cubic-bezier(0.34, 1.56, 0.64, 1),
+              opacity   0.4s ease,
+              transform 0.55s cubic-bezier(0.34, 1.56, 0.64, 1),
+              background 0.25s ease,
+              border-color 0.25s ease,
+              box-shadow 0.25s ease;
+}
+.sc-hub-signout:hover {
+  background: linear-gradient(135deg,
+    rgba(245, 90, 90, 0.24) 0%,
+    rgba(245, 90, 90, 0.14) 100%);
+  border-color: rgba(245, 90, 90, 0.7);
+  color: #ff9b9b;
+  box-shadow:
+    0 0 0 1px rgba(245, 90, 90, 0.12),
+    0 0 22px rgba(245, 90, 90, 0.35);
+}
+.sc-hub-signout svg { width: 13px; height: 13px; flex-shrink: 0; }
