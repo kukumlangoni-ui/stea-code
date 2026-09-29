@@ -149,3 +149,31 @@ app/
 
 # Firebase cache files
 .firebase/hosting.*.cache
+
+# macOS temp files
+.!*!.DS_Store
+*.!*.DS_Store
+
+# Old scripts and tests
+scripts/debug-*
+scripts/test-*
+scripts/check-*
+scripts/scan_*
+scripts/inspect-*
+scripts/measure-*
+scripts/offline-test*
+scripts/profile-*
+scripts/query_*
+scripts/quick_*
+scripts/reproduce-*
+scripts/script.js
+scripts/verify-*
+
+tests/archive/
+tests/necta-*
+tests/api-fetch-test.js
+tests/site-e2e-test.mjs
+
+# Unused root files
+testRules.js
+metadata.json
