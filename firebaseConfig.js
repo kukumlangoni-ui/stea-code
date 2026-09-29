@@ -11,4 +11,7 @@ export const firebaseConfig = {
 };
 
 export const ADMIN_EMAIL = "stea.africa@gmail.com";
-export const ADMIN_EMAILS = ["stea.africa@gmail.com"];
+export const ADMIN_EMAILS = [
+  "stea.africa@gmail.com",
+  "kukumlangoni@gmail.com",
+];

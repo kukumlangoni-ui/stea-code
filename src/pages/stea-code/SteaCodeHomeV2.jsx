@@ -488,7 +488,8 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
 
   const effectiveUser = user !== undefined ? user : localAuthUser;
   const signedInEmail = (effectiveUser?.email || "").trim();
-  const isAdmin = signedInEmail.toLowerCase() === "stea.africa@gmail.com";
+  const ADMIN_EMAILS = ["stea.africa@gmail.com", "kukumlangoni@gmail.com"];
+  const isAdmin = ADMIN_EMAILS.map((e) => e.toLowerCase()).includes(signedInEmail.toLowerCase());
   const [pageToast, setPageToast] = useState(null);
   const pageToastTimerRef = useRef(null);
   const accountMenuRef = useRef(null);

@@ -399,7 +399,7 @@ export default function SteaCodeAdminApp(props) {
   }
 
   const isOwner =
-    String(effectiveUser?.email || "").trim().toLowerCase() === "stea.africa@gmail.com";
+    ["stea.africa@gmail.com", "kukumlangoni@gmail.com"].includes(String(effectiveUser?.email || "").trim().toLowerCase());
   const roleEffective = isOwner ? "super_admin" : (isLocal && (!effectiveUser?.role || effectiveUser?.role === "user") ? "super_admin" : effectiveUser?.role || null);
   const isSuperAdmin = roleEffective === "super_admin" || isOwner || isLocal;
   const canCodeView = isSuperAdmin || effectiveUser?.role === "admin" || hasAdminV2Permission(effectiveUser, "code.view") || isLocal;
