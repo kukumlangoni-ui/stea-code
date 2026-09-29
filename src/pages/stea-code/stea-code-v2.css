@@ -13337,3 +13337,20 @@ iframe::-webkit-scrollbar-corner {
   object-fit: cover !important;
   box-shadow: 0 0 0 2px rgba(245, 166, 35, 0.35), 0 0 12px rgba(245, 166, 35, 0.22) !important;
 }
+
+
+.sc-account-avatar-btn { width: 34px; height: 34px; border-radius: 50%; overflow: visible; padding: 0; background: transparent; border: none; cursor: pointer; display: grid; place-items: center; }
+.sc-account-avatar-btn .sc-avatar-initial {
+  display: grid; place-items: center;
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #f5a623, #d97d15);
+  color: #000; font-weight: 800; font-size: 13px;
+  box-shadow: 0 0 0 2px rgba(245, 166, 35, 0.35), 0 0 12px rgba(245, 166, 35, 0.22);
+  line-height: 1;
+}
+.sc-account-avatar-btn .sc-avatar-img {
+  display: block; width: 34px; height: 34px;
+  border-radius: 50%; object-fit: cover;
+  box-shadow: 0 0 0 2px rgba(245, 166, 35, 0.35), 0 0 12px rgba(245, 166, 35, 0.22);
+}
