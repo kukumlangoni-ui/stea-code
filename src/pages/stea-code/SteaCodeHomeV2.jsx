@@ -1142,16 +1142,17 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
           </a>
 
           {effectiveUser ? (
-            <div className="sc-topbar-account" ref={accountMenuRef}>
-              <button
-                type="button"
-                className="sc-topbar-avatar"
-                onClick={() => setAccountMenuOpen(v => !v)}
-                aria-label="Account menu"
-                aria-expanded={accountMenuOpen}
-              >
-                <SteaCodeUserAvatar user={effectiveUser} email={signedInEmail} size={36} />
-              </button>
+            <>
+              <div className="sc-topbar-account" ref={accountMenuRef}>
+                <button
+                  type="button"
+                  className="sc-topbar-avatar"
+                  onClick={() => setAccountMenuOpen(v => !v)}
+                  aria-label="Account menu"
+                  aria-expanded={accountMenuOpen}
+                >
+                  <SteaCodeUserAvatar user={effectiveUser} email={signedInEmail} size={36} />
+                </button>
 
               {accountMenuOpen && (
                   <div
@@ -1175,41 +1176,26 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
 
                     <div className="sc-account-menu-divider" />
 
-                    {/* Sign out — separated, coral/red */}
-                    <div
-                      role="button"
-                      tabIndex={0}
-                      className="sc-account-menu-item is-danger"
-                      onPointerDown={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        handleSignOut(e);
-                      }}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        handleSignOut(e);
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                          handleSignOut(e);
-                        }
-                      }}
-                      style={{ cursor: 'pointer', userSelect: 'none' }}
-                    >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-                           stroke="currentColor" strokeWidth="2" strokeLinecap="round"
-                           strokeLinejoin="round" aria-hidden="true">
-                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                        <polyline points="16 17 21 12 16 7" />
-                        <line x1="21" y1="12" x2="9" y2="12" />
-                      </svg>
-                      <span>Sign out</span>
-                    </div>
                   </div>
               )}
-            </div>
+              </div>
+              <button
+                type="button"
+                className="sc-topbar-signout"
+                onClick={handleSignOut}
+                aria-label="Sign out"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" strokeWidth="2" strokeLinecap="round"
+                     strokeLinejoin="round" aria-hidden="true"
+                     style={{ marginRight: 6 }}>
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                  <polyline points="16 17 21 12 16 7" />
+                  <line x1="21" y1="12" x2="9" y2="12" />
+                </svg>
+                Sign out
+              </button>
+            </>
           ) : (
             <button
               type="button"
