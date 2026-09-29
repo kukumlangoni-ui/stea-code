@@ -13286,3 +13286,54 @@ iframe::-webkit-scrollbar-corner {
   align-items: center;
   gap: 10px;
 }
+
+/* Force avatar circle — override everything */
+.sc-account-avatar-btn { width: 34px !important; height: 34px !important; border-radius: 50% !important; overflow: visible !important; padding: 0 !important; background: transparent !important; border: none !important; cursor: pointer !important; display: grid !important; place-items: center !important; }
+.sc-account-avatar-btn .sc-avatar-initial {
+  display: grid !important;
+  place-items: center !important;
+  width: 34px !important;
+  height: 34px !important;
+  border-radius: 50% !important;
+  background: linear-gradient(135deg, #f5a623, #d97d15) !important;
+  color: #000 !important;
+  font-weight: 800 !important;
+  font-size: 13px !important;
+  letter-spacing: 0.3px !important;
+  box-shadow: 0 0 0 2px rgba(245, 166, 35, 0.35), 0 0 12px rgba(245, 166, 35, 0.22) !important;
+  line-height: 1 !important;
+}
+.sc-account-avatar-btn .sc-avatar-img {
+  display: block !important;
+  width: 34px !important;
+  height: 34px !important;
+  border-radius: 50% !important;
+  object-fit: cover !important;
+  box-shadow: 0 0 0 2px rgba(245, 166, 35, 0.35), 0 0 12px rgba(245, 166, 35, 0.22) !important;
+}
+
+
+/* Force avatar circle — override everything */
+.sc-account-avatar-btn { width: 34px !important; height: 34px !important; border-radius: 50% !important; overflow: visible !important; padding: 0 !important; background: transparent !important; border: none !important; cursor: pointer !important; display: grid !important; place-items: center !important; }
+.sc-account-avatar-btn .sc-avatar-initial {
+  display: grid !important;
+  place-items: center !important;
+  width: 34px !important;
+  height: 34px !important;
+  border-radius: 50% !important;
+  background: linear-gradient(135deg, #f5a623, #d97d15) !important;
+  color: #000 !important;
+  font-weight: 800 !important;
+  font-size: 13px !important;
+  letter-spacing: 0.3px !important;
+  box-shadow: 0 0 0 2px rgba(245, 166, 35, 0.35), 0 0 12px rgba(245, 166, 35, 0.22) !important;
+  line-height: 1 !important;
+}
+.sc-account-avatar-btn .sc-avatar-img {
+  display: block !important;
+  width: 34px !important;
+  height: 34px !important;
+  border-radius: 50% !important;
+  object-fit: cover !important;
+  box-shadow: 0 0 0 2px rgba(245, 166, 35, 0.35), 0 0 12px rgba(245, 166, 35, 0.22) !important;
+}
