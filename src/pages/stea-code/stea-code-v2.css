@@ -13237,3 +13237,52 @@ iframe::-webkit-scrollbar-corner {
 }
 .sc-hub-signout:hover { background: rgba(245,90,90,0.18); border-color: rgba(245,90,90,0.55); }
 .sc-hub-signout svg { width: 13px; height: 13px; flex-shrink: 0; }
+
+/* ============================================================
+   NEW INLINE HUB — avatar inner (photo + initial fallback)
+   Applies to the .sc-account-avatar-btn wrapper
+   ============================================================ */
+
+.sc-account-avatar-btn .sc-avatar-img,
+.sc-account-avatar-btn .sc-avatar-initial {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  display: block;
+  object-fit: cover;
+}
+
+.sc-account-avatar-btn .sc-avatar-initial {
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, #f5a623, #d97d15);
+  color: #000;
+  font-weight: 800;
+  font-size: 13px;
+  letter-spacing: 0.3px;
+  box-shadow: 0 0 0 2px rgba(245, 166, 35, 0.35),
+              0 0 12px rgba(245, 166, 35, 0.22);
+}
+
+.sc-account-avatar-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  overflow: visible;
+}
+
+/* When photo loads, ensure it stays circular and clipped */
+.sc-account-avatar-btn .sc-avatar-img {
+  box-shadow: 0 0 0 2px rgba(245, 166, 35, 0.35),
+              0 0 12px rgba(245, 166, 35, 0.22);
+}
+
+/* ============================================================
+   Header alignment — ensure community + hub + sign-in sit inline
+   ============================================================ */
+
+.sc-topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
