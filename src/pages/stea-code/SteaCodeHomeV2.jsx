@@ -1536,7 +1536,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
 
               {/* Category filter pills */}
               <div className="sc-homepage-pill-row" role="tablist" aria-label="Product categories">
-                {["All", "Buttons", "Cards", "Forms", "Text Effects", "Backgrounds", "Loaders", "Navigation", "Portfolio"].map((cat) => (
+                {["All", "Buttons", "Cards", "Forms", "Text Effects", "Backgrounds", "Loaders", "Navigation", "Portfolio", "Toggle Switches"].map((cat) => (
                   <button
                     key={cat}
                     type="button"
