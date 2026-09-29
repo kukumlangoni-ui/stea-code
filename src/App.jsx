@@ -5,8 +5,8 @@
  * Backend: Cloudflare Worker (stea-api) + D1 + R2
  * Auth: Firebase (amplified-cache-487223-d3)
  */
-import React, { Suspense, lazy, Component, useLocation } from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
+import React, { Suspense, lazy, Component } from "react";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { SitesLanguageProvider } from "./i18n/index.js";
 import { PWAProvider } from "./contexts/PWAContext.jsx";
 import { SettingsProvider } from "./contexts/SettingsContext.jsx";
