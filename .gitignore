@@ -180,3 +180,12 @@ capacitor.config.ts
 capacitor.config.ts
 capacitor.config.ts
 .gitignore.bak
+
+# Firebase service account keys — NEVER commit
+*-key.json
+serviceAccount*.json
+
+# Firebase env files (contain API keys)
+.env.sites
+.env.code
+.env.local
