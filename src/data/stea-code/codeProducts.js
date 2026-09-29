@@ -12,6 +12,7 @@ export const CODE_PRODUCT_CATEGORIES = [
   "Page Transitions",
   "Portfolio",
   "Components",
+  "Toggle Switches",
 ];
 
 export const CODE_PRODUCT_TECH = [

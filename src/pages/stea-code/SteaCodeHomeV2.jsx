@@ -135,7 +135,8 @@ const CATEGORY_LABELS = {
   Commerce: { en: "Commerce", zhCN: "电商" },
   "Page Transitions": { en: "Page Transitions", zhCN: "页面转场" },
   Components: { en: "Components", zhCN: "组件" },
-  Portfolio: { en: "Portfolio", zhCN: "作品集" } };
+  Portfolio: { en: "Portfolio", zhCN: "作品集" },
+  "Toggle Switches": { en: "Toggle Switches", zhCN: "切换开关" } };
 
 const BROWSE_CATEGORIES = [
   "Animations",
