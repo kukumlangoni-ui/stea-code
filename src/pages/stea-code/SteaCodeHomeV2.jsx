@@ -576,10 +576,13 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
   useEffect(() => {
     if (!accountMenuOpen) return;
     const onClick = (e) => {
-      if (accountMenuRef.current &&
-          !accountMenuRef.current.contains(e.target)) {
-        setAccountMenuOpen(false);
-      }
+      if (!accountMenuRef.current) return;
+      const target = e.target;
+      // Never close on clicks inside the menu — let item handlers run.
+      if (accountMenuRef.current.contains(target)) return;
+      // Also never close when the click originated on a menu item (e.g. sign out)
+      if (target && target.closest && target.closest('.sc-account-menu-item')) return;
+      setAccountMenuOpen(false);
     };
     const onEsc = (e) => { if (e.key === 'Escape') setAccountMenuOpen(false); };
     document.addEventListener('mousedown', onClick);
@@ -608,24 +611,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
     }
   };
 
-  // Direct native event listener fallback to ensure sign out always fires even if React synthetic events are blocked
-  useEffect(() => {
-    if (!accountMenuOpen) return undefined;
-    const btn = document.querySelector('.sc-account-menu-item.is-danger');
-    if (!btn) return undefined;
-    const nativeHandler = (e) => {
-      console.log('[signout native] fired', e.type);
-      e.preventDefault();
-      e.stopPropagation();
-      handleSignOut(e);
-    };
-    btn.addEventListener('pointerdown', nativeHandler);
-    btn.addEventListener('click', nativeHandler);
-    return () => {
-      btn.removeEventListener('pointerdown', nativeHandler);
-      btn.removeEventListener('click', nativeHandler);
-    };
-  }, [accountMenuOpen]);
+
 
   const requestAuthForCheckout = (productId) => {
     openMemberGate(makePremiumCheckoutAction(productId));
