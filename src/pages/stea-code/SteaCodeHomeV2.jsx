@@ -585,10 +585,10 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
       setAccountMenuOpen(false);
     };
     const onEsc = (e) => { if (e.key === 'Escape') setAccountMenuOpen(false); };
-    document.addEventListener('mousedown', onClick);
+    document.addEventListener('click', onClick);
     document.addEventListener('keydown', onEsc);
     return () => {
-      document.removeEventListener('mousedown', onClick);
+      document.removeEventListener('click', onClick);
       document.removeEventListener('keydown', onEsc);
     };
   }, [accountMenuOpen]);
@@ -1157,12 +1157,6 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
                   <div
                     className="sc-topbar-account-menu"
                     role="menu"
-                    onPointerDownCapture={(e) => e.stopPropagation()}
-                    onMouseDownCapture={(e) => e.stopPropagation()}
-                    onTouchStartCapture={(e) => e.stopPropagation()}
-                    onPointerDown={(e) => e.stopPropagation()}
-                    onMouseDown={(e) => e.stopPropagation()}
-                    onTouchStart={(e) => e.stopPropagation()}
                   >
                     {/* Header — avatar + email + badge */}
                     <div className="sc-account-menu-header">
