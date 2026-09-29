@@ -177,3 +177,5 @@ tests/site-e2e-test.mjs
 # Unused root files
 testRules.js
 metadata.json
+capacitor.config.ts
+capacitor.config.ts
