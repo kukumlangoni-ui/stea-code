@@ -1,0 +1,8 @@
+{
+  "name": "STEA Academy",
+  "description": "A premium learning management system for STEA Academy, featuring attendance tracking, assignments, and real-time quizzes.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

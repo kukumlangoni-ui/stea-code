@@ -1,0 +1,33 @@
+{
+  "generatedAt": "2026-09-24T14:53:57.133Z",
+  "collections": {
+    "stea_code_products": {
+      "count": 0,
+      "errors": [
+        {
+          "error": "curl failed for https://firestore.googleapis.com/v1/projects/swahilitecheliteacademy/databases/(default)/documents/stea_code_products?pageSize=300: Command failed: curl -sS --max-time 120 -H Content-Type: application/json -H Authorization: Bearer ya29.c.c0AZ4bNpa8mTCJ-3JY48KW9vKaDo99q2htyUQ7J5AALTtHUjDEbfbSucSqCVqJ5y45UEy53ksbP0Vi2ffwloReRtInj-HcJKEFhCzPvheFR3ItQpqXsepR3LldIXJXTStouRN3v4XqAgLP1WKDKSmkI_zTq2c4FNd9nvk9VhqhsiywWHyC-Ifyyzhx59FE6BgKHwjEeif7vttEzOMmJWZfywT1JOosOPp_owdhurB6xocJMNeUuncqZNt2gptTLedxxmeYJeEFlOceCCY79MKnlXg3wRa7Y_RRYvPh0yq4WAKXf5RaungflH1HXbCXIrXkxo6aLNb0GHYbMq2qMwKLpck_TyTPS_sU8YfghIipIWfqFDNwhrqD4SgN384AXV8bWwa9pOgz9Sw3i2ln26Mqejk5hdp6FaZuF9jo9ojo34V4q01VMexQ3__gmW_mkXwue_bZsig375yOc7ulc-5FBdUb9IZnbhYUxahlemI9IhVgwhnwQOc8dj0cR3JJj6i3Y9_ewIkOloBp0n4-wcXvUoUubb2Jk3BM9Y10kIYfnMFks9b6sJ_qrUzMu3Sjno04bnItrUbi04zZe5daOzy6trWwgRb4b_Yna6iMWVcysVRS_ui8i-neQdxStquaW_O_1WksgQ1dkXvU5q8OU8WRoir50VOj2xUnxQfsWU92rfor7O3i66hxFsteF94Zj94cmzj6I_uVw1phnjags0fla3u6V7Q5Sd1cW8ctfajcSt-Ys2RUoSvJMuIijpaf_WjJMqB-44OFMb6f_zyjWmIp6VuOl6p9RMIZizvq3USSYumXw3WtgvQpQa3fJe8J_eJ0B2vdOQd23onyfw_Mb9v15aha-OvY5s7sQoQuROa7ucakWhr2kYW1qB3wxkzgBRW2FwyF8OyzJb5llVaUkW4Bw0zYFZ7_1gk7Q0v3fVzqBc4ewz3t-eZJMQUXMwXro7QJnVey_X3ZB9jSJgh6Ia5uJJ2SxS88k8riwelXgz1O6zFq430x5oSIvnS https://firestore.googleapis.com/v1/projects/swahilitecheliteacademy/databases/(default)/documents/stea_code_products?pageSize=300\ncurl: (28) Failed to connect to firestore.googleapis.com port 443 after 75215 ms: Couldn't connect to server\n\ncurl: (28) Failed to connect to firestore.googleapis.com port 443 after 75215 ms: Couldn't connect to server\n"
+        }
+      ]
+    },
+    "stea_code_product_previews": {
+      "count": 9,
+      "errors": []
+    },
+    "stea_code_product_sources": {
+      "count": 12,
+      "errors": []
+    },
+    "stea_code_entitlements": {
+      "count": 4,
+      "errors": []
+    },
+    "stea_code_orders": {
+      "count": 34,
+      "errors": []
+    },
+    "stea_code_webhook_events": {
+      "count": 0,
+      "errors": []
+    }
+  }
+}

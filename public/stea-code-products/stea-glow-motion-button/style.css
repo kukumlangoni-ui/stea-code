@@ -1,0 +1,76 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(circle at 50% 20%, rgba(255, 162, 0, 0.12), transparent 38%),
+    #070707;
+  font-family: Inter, Arial, sans-serif;
+}
+
+.demo {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-height: 100vh;
+}
+
+.stea-glow-btn {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(255, 177, 35, 0.45);
+  border-radius: 16px;
+  padding: 16px 30px;
+  background: linear-gradient(180deg, #17130c, #0e0d0a);
+  color: #ffd37a;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  box-shadow:
+    0 0 0 1px rgba(255, 166, 0, 0.05),
+    0 12px 45px rgba(255, 145, 0, 0.16);
+  transition:
+    transform 260ms cubic-bezier(.2,.8,.2,1),
+    border-color 260ms ease,
+    box-shadow 260ms ease;
+}
+
+.stea-glow-btn::before {
+  content: "";
+  position: absolute;
+  inset: -120%;
+  background:
+    linear-gradient(
+      115deg,
+      transparent 35%,
+      rgba(255,255,255,0.9) 49%,
+      transparent 63%
+    );
+  transform: translateX(-55%) rotate(8deg);
+  transition: transform 650ms cubic-bezier(.2,.8,.2,1);
+  opacity: 0.75;
+}
+
+.stea-glow-btn span {
+  position: relative;
+  z-index: 1;
+}
+
+.stea-glow-btn.is-hovered {
+  transform: translateY(-4px) scale(1.025);
+  border-color: rgba(255, 187, 60, 0.95);
+  box-shadow:
+    0 0 0 1px rgba(255, 175, 40, 0.22),
+    0 20px 65px rgba(255, 145, 0, 0.34),
+    0 0 35px rgba(255, 160, 0, 0.18);
+}
+
+.stea-glow-btn.is-hovered::before {
+  transform: translateX(55%) rotate(8deg);
+}

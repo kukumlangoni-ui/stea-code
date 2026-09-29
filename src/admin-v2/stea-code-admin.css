@@ -1,0 +1,858 @@
+/*
+ * STEA Code Admin — dedicated dark theme.
+ * The SteaCodeAdminApp + SteaCodeCommercePanel use sca-admin-* and
+ * sc-admin-* class namespaces that are NOT covered by admin-v2.css
+ * (which only styles the general admin-v2-* shell). This file fills
+ * that gap so the Code Studio doesn't render unstyled.
+ */
+
+/* ---- tokens ---- */
+:root {
+  --sc-ink: #e8eaed;
+  --sc-ink-strong: #ffffff;
+  --sc-muted: #8b8f9b;
+  --sc-faint: #5a5e6b;
+  --sc-bg: #0a0b12;
+  --sc-surface: #13151f;
+  --sc-surface-2: #1a1d28;
+  --sc-border: #232634;
+  --sc-border-light: #2a2e3d;
+  --sc-gold: #f5a623;
+  --sc-gold-soft: #fff6df;
+  --sc-gold-dim: #c4861a;
+  --sc-success: #34d399;
+  --sc-error: #ef4444;
+  --sc-radius: 10px;
+  --sc-radius-sm: 6px;
+  --sc-font: "Instrument Sans", system-ui, -apple-system, sans-serif;
+}
+
+/* ---- shell ---- */
+.sca-admin-shell {
+  min-height: 100vh;
+  background: var(--sc-bg);
+  color: var(--sc-ink);
+  font-family: var(--sc-font);
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---- topbar ---- */
+.sca-admin-topbar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 28px;
+  height: 60px;
+  background: var(--sc-surface);
+  border-bottom: 1px solid var(--sc-border);
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  flex-shrink: 0;
+}
+.sca-admin-topbar-left { display: flex; align-items: center; gap: 12px; flex: 0 0 auto; }
+.sca-admin-topbar-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+
+.sca-admin-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--sc-ink-strong); }
+.sca-admin-brand-mark {
+  width: 32px; height: 32px; border-radius: 8px;
+  background: linear-gradient(135deg, #f5a623, #c4861a);
+  display: grid; place-items: center;
+  font-weight: 900; font-size: 14px; color: #0a0b12;
+}
+.sca-admin-brand-text { display: flex; flex-direction: column; line-height: 1.1; }
+.sca-admin-brand-title { font-weight: 900; font-size: 14px; letter-spacing: 0.03em; color: var(--sc-ink-strong); }
+.sca-admin-brand-sub { font-size: 10px; color: var(--sc-muted); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+
+.sca-admin-link {
+  color: var(--sc-gold); font-size: 12px; font-weight: 800;
+  text-decoration: none; display: inline-flex; align-items: center; gap: 5px;
+  padding: 6px 12px; border-radius: var(--sc-radius-sm);
+  border: 1px solid var(--sc-border-light); background: var(--sc-surface-2);
+  transition: border-color .15s ease, background .15s ease;
+}
+.sca-admin-link:hover { border-color: var(--sc-gold-dim); background: rgba(245,166,35,.08); }
+
+.sca-admin-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 10px; font-weight: 900; letter-spacing: 0.06em;
+  padding: 4px 8px; border-radius: 4px;
+  background: rgba(245,166,35,.15); color: var(--sc-gold);
+  border: 1px solid rgba(245,166,35,.25);
+}
+.sca-admin-badge.preview { background: rgba(99,102,241,.15); color: #818cf8; border-color: rgba(99,102,241,.25); }
+
+/* ---- account ---- */
+.sca-admin-account { display: flex; align-items: center; gap: 8px; }
+.sca-admin-avatar { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--sc-border-light); }
+.sca-admin-account-text { display: flex; flex-direction: column; line-height: 1.2; }
+.sca-admin-account-text strong { font-size: 12px; font-weight: 800; color: var(--sc-ink-strong); }
+.sca-admin-account-text span { font-size: 11px; color: var(--sc-muted); }
+
+.sca-admin-btn {
+  height: 34px; border: 1px solid var(--sc-border-light); background: var(--sc-surface-2);
+  color: var(--sc-ink); border-radius: var(--sc-radius-sm); padding: 0 12px;
+  font-size: 12px; font-weight: 800; cursor: pointer; display: inline-flex;
+  align-items: center; gap: 6px; transition: background .15s ease, border-color .15s ease;
+}
+.sca-admin-btn:hover { background: var(--sc-surface); border-color: var(--sc-gold-dim); }
+.sca-admin-btn.icon { width: 34px; padding: 0; justify-content: center; }
+.sca-admin-btn.ghost { border-color: transparent; background: transparent; }
+
+/* ---- page ---- */
+.sca-admin-page { flex: 1; min-width: 0; }
+
+.sca-admin-hero { padding: 32px 28px 20px; }
+.sca-admin-hero-compact { padding: 24px 28px 16px; }
+.sca-admin-hero-copy { max-width: 760px; }
+.sca-admin-hero-eyebrow { font-size: 10px; letter-spacing: 0.12em; color: var(--sc-gold); font-weight: 900; margin-bottom: 8px; text-transform: uppercase; }
+.sca-admin-hero-title { font-size: 28px; font-weight: 900; margin: 0; color: var(--sc-ink-strong); letter-spacing: -0.01em; }
+.sca-admin-hero-title-compact { font-size: 24px; }
+.sca-admin-hero-sub { margin: 8px 0 0; color: var(--sc-muted); font-size: 14px; line-height: 1.55; }
+
+/* ---- nav ---- */
+.sca-admin-nav { display: flex; gap: 4px; padding: 0 28px; border-bottom: 1px solid var(--sc-border); overflow-x: auto; }
+.sca-admin-nav-item {
+  white-space: nowrap; border: 0; background: transparent;
+  color: var(--sc-muted); border-bottom: 2px solid transparent;
+  padding: 12px 16px; font-size: 13px; font-weight: 800; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 7px; transition: color .15s ease;
+}
+.sca-admin-nav-item:hover { color: var(--sc-ink); }
+.sca-admin-nav-item.is-active { color: var(--sc-gold); border-bottom-color: var(--sc-gold); }
+
+/* ---- content ---- */
+.sca-admin-content { padding: 24px 28px; max-width: 1600px; margin: 0 auto; width: 100%; }
+
+/* ---- health ---- */
+.sca-admin-health { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 18px; font-size: 12px; color: var(--sc-muted); }
+.sca-admin-health > span { display: inline-flex; align-items: center; gap: 5px; }
+
+/* ---- banners ---- */
+.sca-admin-banner { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-radius: var(--sc-radius); margin-bottom: 16px; font-size: 13px; }
+.sca-admin-banner--stable { background: rgba(52,211,153,.1); border: 1px solid rgba(52,211,153,.25); color: var(--sc-success); }
+.sca-admin-banner--error { background: rgba(239,68,68,.1); border: 1px solid rgba(239,68,68,.25); color: var(--sc-error); }
+.sca-admin-banner-left { flex: 1; min-width: 0; }
+.sca-admin-banner-actions { display: flex; gap: 8px; flex-shrink: 0; }
+.sca-admin-preview-banner { background: rgba(245,166,35,.1); border-bottom: 1px solid rgba(245,166,35,.2); color: var(--sc-gold); padding: 10px 28px; font-size: 12px; font-weight: 800; }
+
+/* ---- access screen ---- */
+.sca-admin-access-screen { max-width: 480px; margin: 80px auto; padding: 32px; text-align: center; }
+.sca-admin-access-card { background: var(--sc-surface); border: 1px solid var(--sc-border); border-radius: 16px; padding: 36px; }
+.sca-admin-access-eyebrow { font-size: 10px; letter-spacing: 0.12em; color: var(--sc-gold); font-weight: 900; margin-bottom: 10px; }
+.sca-admin-access-title { font-size: 22px; font-weight: 900; margin: 0 0 10px; color: var(--sc-ink-strong); }
+.sca-admin-access-text { color: var(--sc-muted); font-size: 14px; line-height: 1.6; margin: 0 0 24px; }
+.sca-admin-access-stats { display: flex; gap: 16px; justify-content: center; margin-bottom: 24px; }
+.sca-admin-access-stat { text-align: center; }
+.sca-admin-access-stat > div { font-size: 11px; color: var(--sc-muted); font-weight: 700; }
+.sca-admin-access-stat strong { display: block; font-size: 14px; color: var(--sc-ink-strong); margin-top: 4px; }
+.sca-admin-access-hint { font-size: 12px; color: var(--sc-faint); margin-top: 16px; }
+.sca-admin-access-actions { display: flex; gap: 10px; justify-content: center; }
+
+/* ---- commerce panel ---- */
+.sc-admin-commerce { width: 100%; }
+.sc-admin-commerce-hero { display: flex; align-items: flex-start; gap: 16px; margin-bottom: 20px; flex-wrap: wrap; }
+.sc-admin-commerce-hero-compact { margin-bottom: 16px; }
+.sc-admin-commerce-hero-text { flex: 1; min-width: 200px; }
+.sc-admin-commerce-hero-text h2 { font-size: 22px; font-weight: 900; margin: 0; color: var(--sc-ink-strong); }
+.sc-admin-commerce-hero-text p { margin: 4px 0 0; color: var(--sc-muted); font-size: 13px; }
+.sc-admin-commerce-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.sc-admin-commerce-actions button, .sc-admin-commerce-actions a {
+  height: 36px; border: 1px solid var(--sc-border-light); background: var(--sc-surface-2);
+  color: var(--sc-ink); border-radius: var(--sc-radius-sm); padding: 0 14px;
+  font-size: 12px; font-weight: 800; cursor: pointer; text-decoration: none;
+  display: inline-flex; align-items: center; gap: 6px; transition: all .15s ease;
+}
+.sc-admin-commerce-actions button:hover, .sc-admin-commerce-actions a:hover { border-color: var(--sc-gold-dim); background: var(--sc-surface); }
+.sc-admin-commerce-actions button:first-child { background: var(--sc-gold); color: #0a0b12; border-color: var(--sc-gold); font-weight: 900; }
+.sc-admin-commerce-actions button:first-child:hover { background: #ffb940; }
+
+/* ---- commerce tabs ---- */
+.sc-admin-commerce-tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--sc-border); margin-bottom: 16px; overflow-x: auto; }
+.sc-admin-commerce-tabs button {
+  white-space: nowrap; border: 0; background: transparent; color: var(--sc-muted);
+  border-bottom: 2px solid transparent; padding: 10px 14px; font-size: 12px;
+  font-weight: 800; cursor: pointer; transition: color .15s ease;
+}
+.sc-admin-commerce-tabs button:hover { color: var(--sc-ink); }
+.sc-admin-commerce-tabs button.is-active { color: var(--sc-gold); border-bottom-color: var(--sc-gold); }
+
+/* ---- loading & error ---- */
+.sc-admin-loading, .sc-admin-loading-card {
+  display: flex; align-items: center; gap: 10px; justify-content: center;
+  padding: 60px 20px; color: var(--sc-muted); font-size: 14px;
+  background: var(--sc-surface); border: 1px solid var(--sc-border); border-radius: var(--sc-radius);
+}
+.sc-admin-error {
+  background: rgba(239,68,68,.08); border: 1px solid rgba(239,68,68,.2);
+  color: var(--sc-error); border-radius: var(--sc-radius); padding: 12px 16px;
+  font-size: 13px; margin-bottom: 16px;
+}
+
+/* ---- metric grid ---- */
+.sc-admin-metric-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; margin-bottom: 20px; }
+.sc-admin-metric { background: var(--sc-surface); border: 1px solid var(--sc-border); border-radius: var(--sc-radius); padding: 14px 16px; }
+.sc-admin-metric > span { font-size: 11px; color: var(--sc-muted); font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; }
+.sc-admin-metric strong { display: block; font-size: 24px; font-weight: 900; color: var(--sc-ink-strong); margin-top: 6px; }
+.sc-admin-metric-icon { display: inline-flex; align-items: center; gap: 6px; }
+
+/* ---- table ---- */
+.sc-admin-commerce .admin-v2-table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; background: var(--sc-surface); border: 1px solid var(--sc-border); border-radius: var(--sc-radius); overflow: hidden; }
+.sc-admin-commerce .admin-v2-table th { background: var(--sc-surface-2); color: var(--sc-muted); font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; padding: 12px 16px; border-bottom: 1px solid var(--sc-border); font-weight: 800; }
+.sc-admin-commerce .admin-v2-table td { padding: 12px 16px; border-bottom: 1px solid var(--sc-border); color: var(--sc-ink); vertical-align: top; }
+.sc-admin-commerce .admin-v2-table tr:last-child td { border-bottom: 0; }
+.sc-admin-commerce .admin-v2-table tr:hover td { background: rgba(245,166,35,.04); }
+
+/* ---- product name ---- */
+.sc-admin-product-name { font-weight: 800; color: var(--sc-ink-strong); font-size: 13px; }
+.sc-admin-product-name + small { display: block; font-size: 11px; color: var(--sc-faint); margin-top: 2px; }
+
+/* ---- status badges ---- */
+.sc-admin-status { display: inline-flex; align-items: center; padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.04em; }
+.sc-admin-status.published { background: rgba(52,211,153,.12); color: var(--sc-success); }
+.sc-admin-status.draft { background: rgba(245,166,35,.12); color: var(--sc-gold); }
+.sc-admin-status.archived { background: rgba(139,143,155,.12); color: var(--sc-muted); }
+
+/* ---- price ---- */
+.sc-admin-price { font-weight: 800; color: var(--sc-ink-strong); font-size: 12px; }
+.sc-admin-free { color: var(--sc-success); font-weight: 800; font-size: 12px; }
+
+/* ---- search & filter ---- */
+.sc-admin-search { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+.sc-admin-search input {
+  flex: 1; min-width: 200px; height: 36px; border: 1px solid var(--sc-border-light);
+  background: var(--sc-surface); color: var(--sc-ink); border-radius: var(--sc-radius-sm);
+  padding: 0 12px; font-size: 13px; font-family: var(--sc-font); outline-color: var(--sc-gold-dim);
+}
+.sc-admin-filter-row { display: flex; gap: 4px; flex-wrap: wrap; }
+.sc-admin-filter-row button {
+  white-space: nowrap; border: 1px solid var(--sc-border-light); background: transparent;
+  color: var(--sc-muted); border-radius: var(--sc-radius-sm); padding: 6px 10px;
+  font-size: 11px; font-weight: 800; cursor: pointer; transition: all .15s ease;
+}
+.sc-admin-filter-row button.is-active { background: rgba(245,166,35,.12); border-color: var(--sc-gold-dim); color: var(--sc-gold); }
+
+/* ---- row actions ---- */
+.sc-admin-row-actions { display: flex; gap: 4px; }
+.sc-admin-icon-btn {
+  width: 28px; height: 28px; border: 1px solid var(--sc-border-light);
+  background: var(--sc-surface-2); color: var(--sc-muted); border-radius: 5px;
+  display: grid; place-items: center; cursor: pointer; transition: all .15s ease;
+}
+.sc-admin-icon-btn:hover { color: var(--sc-gold); border-color: var(--sc-gold-dim); }
+.sc-admin-icon-btn.danger:hover { color: var(--sc-error); border-color: rgba(239,68,68,.4); }
+
+/* ---- product toolbar ---- */
+.sc-admin-product-toolbar { display: flex; gap: 10px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
+
+/* ---- panel ---- */
+.sc-admin-panel { background: var(--sc-surface); border: 1px solid var(--sc-border); border-radius: var(--sc-radius); margin-bottom: 16px; overflow: hidden; }
+.sc-admin-panel-head { padding: 14px 16px; border-bottom: 1px solid var(--sc-border); font-weight: 900; font-size: 14px; display: flex; align-items: center; gap: 10px; color: var(--sc-ink-strong); }
+.sc-admin-eyebrow { font-size: 10px; letter-spacing: 0.1em; color: var(--sc-gold); font-weight: 900; text-transform: uppercase; }
+
+/* ---- form fields ---- */
+.sc-admin-field { display: grid; gap: 6px; margin-bottom: 16px; }
+.sc-admin-field > label { font-size: 12px; font-weight: 800; color: var(--sc-muted); }
+.sc-admin-field input, .sc-admin-field select, .sc-admin-field textarea {
+  height: 38px; border: 1px solid var(--sc-border-light); background: var(--sc-surface-2);
+  color: var(--sc-ink); border-radius: var(--sc-radius-sm); padding: 0 12px;
+  font-size: 13px; font-family: var(--sc-font); outline-color: var(--sc-gold-dim);
+}
+.sc-admin-field textarea { height: auto; min-height: 80px; padding: 10px 12px; resize: vertical; }
+.sc-admin-code-field { display: grid; gap: 6px; margin-bottom: 16px; }
+.sc-admin-code-field textarea {
+  border: 1px solid var(--sc-border-light); background: #0d0e16;
+  color: #c8d3e5; border-radius: var(--sc-radius-sm); padding: 12px;
+  font-size: 13px; font-family: "SF Mono", "Fira Code", monospace; min-height: 120px; resize: vertical;
+  outline-color: var(--sc-gold-dim);
+}
+
+/* ---- modal ---- */
+.sc-admin-modal-layer { position: fixed; inset: 0; z-index: 200; display: flex; align-items: center; justify-content: center; padding: 20px; }
+.sc-admin-modal-backdrop { position: absolute; inset: 0; background: rgba(5,7,15,.7); backdrop-filter: blur(2px); }
+.sc-admin-modal { position: relative; background: var(--sc-surface); border: 1px solid var(--sc-border); border-radius: 16px; width: min(640px, 100%); max-height: 85vh; overflow: auto; box-shadow: 0 20px 60px rgba(0,0,0,.5); }
+.sc-admin-modal-head { padding: 20px 24px 0; display: flex; align-items: flex-start; gap: 12px; }
+.sc-admin-modal-head h2 { font-size: 20px; font-weight: 900; margin: 0; color: var(--sc-ink-strong); }
+.sc-admin-modal-body { padding: 16px 24px; }
+.sc-admin-modal-actions { padding: 0 24px 20px; display: flex; gap: 8px; justify-content: flex-end; }
+.sc-admin-modal-actions button {
+  height: 38px; border: 1px solid var(--sc-border-light); background: var(--sc-surface-2);
+  color: var(--sc-ink); border-radius: var(--sc-radius-sm); padding: 0 16px;
+  font-size: 13px; font-weight: 800; cursor: pointer; transition: all .15s ease;
+}
+.sc-admin-modal-actions button:first-child { background: var(--sc-gold); color: #0a0b12; border-color: var(--sc-gold); }
+.sc-admin-modal-actions button:first-child:hover { background: #ffb940; }
+.sc-admin-modal-actions button:last-child:hover { border-color: var(--sc-error); color: var(--sc-error); }
+
+/* ---- danger btn ---- */
+.sc-admin-danger-btn { background: rgba(239,68,68,.1) !important; color: var(--sc-error) !important; border-color: rgba(239,68,68,.3) !important; }
+.sc-admin-danger-btn:hover { background: rgba(239,68,68,.2) !important; }
+
+/* ---- delete confirm ---- */
+.sc-admin-delete-confirm { padding: 16px; text-align: center; }
+.sc-admin-delete-confirm h3 { font-size: 16px; font-weight: 900; margin: 0 0 8px; color: var(--sc-ink-strong); }
+.sc-admin-delete-confirm p { color: var(--sc-muted); font-size: 13px; margin: 0 0 16px; }
+
+/* ---- empty states ---- */
+.sc-admin-empty-mini { padding: 40px; text-align: center; color: var(--sc-muted); font-size: 13px; }
+.sc-admin-empty-row { text-align: center; color: var(--sc-faint); font-size: 12px; padding: 8px 0; }
+
+/* ---- source editor ---- */
+.sc-admin-source-workspace { display: grid; grid-template-columns: 200px 1fr; gap: 0; border: 1px solid var(--sc-border); border-radius: var(--sc-radius); overflow: hidden; }
+.sc-admin-source-tree { background: var(--sc-surface); border-right: 1px solid var(--sc-border); min-height: 300px; }
+.sc-admin-source-tree-head { padding: 10px 14px; font-size: 11px; font-weight: 900; color: var(--sc-muted); text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 1px solid var(--sc-border); }
+.sc-admin-source-file { padding: 8px 14px; font-size: 12px; color: var(--sc-ink); cursor: pointer; border-bottom: 1px solid var(--sc-border); transition: background .15s ease; }
+.sc-admin-source-file:hover { background: var(--sc-surface-2); }
+.sc-admin-source-file.is-active { background: rgba(245,166,35,.08); color: var(--sc-gold); border-left: 3px solid var(--sc-gold); }
+.sc-admin-source-editor { padding: 0; }
+.sc-admin-source-editor textarea { width: 100%; min-height: 300px; border: 0; background: #0d0e16; color: #c8d3e5; padding: 14px; font-size: 13px; font-family: "SF Mono", "Fira Code", monospace; resize: vertical; outline: none; }
+.sc-admin-source-meta { padding: 8px 14px; border-top: 1px solid var(--sc-border); font-size: 11px; color: var(--sc-muted); display: flex; gap: 10px; }
+.sc-admin-source-empty { padding: 40px; text-align: center; color: var(--sc-muted); font-size: 13px; }
+.sc-admin-source-bottom { padding: 12px 14px; border-top: 1px solid var(--sc-border); display: flex; gap: 8px; justify-content: flex-end; }
+
+/* ---- shared button overrides inside dark shell ---- */
+/* admin-v2-btn-primary/secondary are defined in admin-v2.css with a LIGHT
+ * theme. The STEA Code admin shell is dark, so re-scope them here. */
+.sca-admin-shell .admin-v2-btn-primary,
+.sc-admin-commerce .admin-v2-btn-primary,
+.sc-admin-modal .admin-v2-btn-primary {
+  background: var(--sc-gold);
+  color: #0a0b12;
+  border: 1px solid var(--sc-gold);
+  border-radius: var(--sc-radius-sm);
+  padding: 0 14px;
+  height: 36px;
+  font-size: 12px;
+  font-weight: 900;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background .15s ease;
+}
+.sca-admin-shell .admin-v2-btn-primary:hover:not(:disabled),
+.sc-admin-commerce .admin-v2-btn-primary:hover:not(:disabled),
+.sc-admin-modal .admin-v2-btn-primary:hover:not(:disabled) { background: #ffb940; }
+.sca-admin-shell .admin-v2-btn-primary:disabled,
+.sc-admin-commerce .admin-v2-btn-primary:disabled,
+.sc-admin-modal .admin-v2-btn-primary:disabled { opacity: .5; cursor: not-allowed; }
+
+.sca-admin-shell .admin-v2-btn-secondary,
+.sc-admin-commerce .admin-v2-btn-secondary,
+.sc-admin-modal .admin-v2-btn-secondary {
+  background: var(--sc-surface-2);
+  color: var(--sc-ink);
+  border: 1px solid var(--sc-border-light);
+  border-radius: var(--sc-radius-sm);
+  padding: 0 14px;
+  height: 36px;
+  font-size: 12px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: border-color .15s ease, background .15s ease;
+}
+.sca-admin-shell .admin-v2-btn-secondary:hover:not(:disabled),
+.sc-admin-commerce .admin-v2-btn-secondary:hover:not(:disabled),
+.sc-admin-modal .admin-v2-btn-secondary:hover:not(:disabled) {
+  border-color: var(--sc-gold-dim);
+  background: var(--sc-surface);
+}
+.sca-admin-shell .admin-v2-btn-secondary:disabled,
+.sc-admin-commerce .admin-v2-btn-secondary:disabled,
+.sc-admin-modal .admin-v2-btn-secondary:disabled { opacity: .5; cursor: not-allowed; }
+
+/* admin-v2-error used in SteaCodePage when rendered in the dark shell */
+.sca-admin-shell .admin-v2-error {
+  background: rgba(239,68,68,.08);
+  border: 1px solid rgba(239,68,68,.25);
+  color: var(--sc-error);
+  border-radius: var(--sc-radius);
+  padding: 12px 16px;
+  font-size: 13px;
+  margin: 0 0 16px;
+}
+
+/* admin-v2-tabs / admin-v2-tab used by SteaCodePage internal tabs */
+.sca-admin-shell .admin-v2-tabs { display: flex; gap: 4px; overflow-x: auto; padding: 0; border-bottom: 1px solid var(--sc-border); }
+.sca-admin-shell .admin-v2-tab,
+.sca-admin-shell .admin-v2-tabs button {
+  white-space: nowrap;
+  border: 0;
+  background: transparent;
+  color: var(--sc-muted);
+  border-bottom: 2px solid transparent;
+  padding: 12px 16px;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.sca-admin-shell .admin-v2-tab.is-active,
+.sca-admin-shell .admin-v2-tabs button.is-active {
+  color: var(--sc-gold);
+  border-bottom-color: var(--sc-gold);
+}
+
+/* ---- sc-spin (shared loader animation) ---- */
+.sc-spin { animation: scSpin 0.8s linear infinite; }
+@keyframes scSpin { to { transform: rotate(360deg); } }
+
+/* ---- sc-admin-status state variants ----
+ * JSX renders sc-admin-status is-${normalized} for order/entitlement
+ * statuses (paid, active, refunded, pending, draft, published, archived)
+ * plus is-yes/is-no/is-ready/is-missing for product flags. */
+.sc-admin-status.is-published { background: rgba(52,211,153,.12); color: var(--sc-success); }
+.sc-admin-status.is-draft { background: rgba(245,166,35,.12); color: var(--sc-gold); }
+.sc-admin-status.is-archived { background: rgba(139,143,155,.12); color: var(--sc-muted); }
+.sc-admin-status.is-paid { background: rgba(52,211,153,.12); color: var(--sc-success); }
+.sc-admin-status.is-active { background: rgba(52,211,153,.12); color: var(--sc-success); }
+.sc-admin-status.is-refunded { background: rgba(239,68,68,.12); color: var(--sc-error); }
+.sc-admin-status.is-pending { background: rgba(245,166,35,.12); color: var(--sc-gold); }
+.sc-admin-status.is-yes { background: rgba(52,211,153,.12); color: var(--sc-success); }
+.sc-admin-status.is-no { background: rgba(139,143,155,.12); color: var(--sc-muted); }
+.sc-admin-status.is-ready { background: rgba(52,211,153,.12); color: var(--sc-success); }
+.sc-admin-status.is-missing { background: rgba(239,68,68,.12); color: var(--sc-error); }
+
+/* ---- sc-admin-row-actions base button + extra button states ----
+ * ProductTable renders plain <button> children (no sc-admin-icon-btn class),
+ * so style them here to match the icon-btn look. */
+.sc-admin-row-actions button {
+  width: 28px; height: 28px; border: 1px solid var(--sc-border-light);
+  background: var(--sc-surface-2); color: var(--sc-muted); border-radius: 5px;
+  display: grid; place-items: center; cursor: pointer; transition: all .15s ease;
+  padding: 0;
+}
+.sc-admin-row-actions button:hover { color: var(--sc-gold); border-color: var(--sc-gold-dim); }
+.sc-admin-row-actions button.is-homepage-active { color: var(--sc-gold); border-color: var(--sc-gold-dim); background: rgba(245,166,35,.1); }
+.sc-admin-row-actions button.is-danger:hover { color: var(--sc-error); border-color: rgba(239,68,68,.4); }
+
+/* ===========================================================
+   PRODUCT STUDIO (sc-studio-*) — the wide IDE-style editor
+   =========================================================== */
+
+/* ---- studio shell ---- */
+.sc-studio-page { width: 100%; min-height: 100vh; background: var(--sc-bg); color: var(--sc-ink); font-family: var(--sc-font); display: flex; flex-direction: column; }
+.sc-studio-layer { position: fixed; inset: 0; z-index: 150; display: flex; align-items: stretch; justify-content: stretch; }
+.sc-studio-backdrop { position: absolute; inset: 0; background: rgba(5,7,15,.7); backdrop-filter: blur(2px); border: 0; cursor: pointer; }
+
+/* ---- studio container ---- */
+.sc-studio { position: relative; background: var(--sc-bg); color: var(--sc-ink); width: 100%; display: flex; flex-direction: column; overflow: hidden; }
+.sc-studio-fullpage { width: 100%; height: 100vh; }
+
+/* ---- studio header ---- */
+.sc-studio-head { display: flex; align-items: center; gap: 14px; padding: 14px 24px; background: var(--sc-surface); border-bottom: 1px solid var(--sc-border); position: sticky; top: 0; z-index: 10; flex-shrink: 0; }
+.sc-studio-head.is-fullpage { position: sticky; top: 0; }
+.sc-studio-head-left { display: flex; align-items: center; gap: 14px; flex: 1; min-width: 0; }
+.sc-studio-back { background: transparent; border: 1px solid var(--sc-border-light); color: var(--sc-muted); border-radius: var(--sc-radius-sm); padding: 6px 12px; font-size: 12px; font-weight: 800; cursor: pointer; transition: all .15s ease; white-space: nowrap; }
+.sc-studio-back:hover { color: var(--sc-gold); border-color: var(--sc-gold-dim); }
+.sc-studio-brand { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.sc-studio-brand h2 { font-size: 18px; font-weight: 900; margin: 0; color: var(--sc-ink-strong); letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sc-studio-eyebrow { font-size: 10px; letter-spacing: 0.12em; color: var(--sc-gold); font-weight: 900; text-transform: uppercase; }
+.sc-studio-status-pill { display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 999px; font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.06em; white-space: nowrap; }
+.sc-studio-status-pill.is-draft { background: rgba(245,166,35,.12); color: var(--sc-gold); }
+.sc-studio-status-pill.is-published { background: rgba(52,211,153,.12); color: var(--sc-success); }
+.sc-studio-status-pill.is-archived { background: rgba(139,143,155,.12); color: var(--sc-muted); }
+.sc-studio-head-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.sc-studio-close { width: 34px; height: 34px; border: 1px solid var(--sc-border-light); background: var(--sc-surface-2); color: var(--sc-muted); border-radius: var(--sc-radius-sm); display: grid; place-items: center; cursor: pointer; transition: all .15s ease; }
+.sc-studio-close:hover { color: var(--sc-error); border-color: rgba(239,68,68,.4); }
+
+/* ---- studio tabs ---- */
+.sc-studio-tabs { display: flex; gap: 2px; padding: 0 24px; background: var(--sc-surface); border-bottom: 1px solid var(--sc-border); overflow-x: auto; flex-shrink: 0; }
+.sc-studio-tab { white-space: nowrap; border: 0; background: transparent; color: var(--sc-muted); border-bottom: 2px solid transparent; padding: 12px 16px; font-size: 12px; font-weight: 900; letter-spacing: 0.04em; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: color .15s ease; }
+.sc-studio-tab:hover { color: var(--sc-ink); }
+.sc-studio-tab.is-active { color: var(--sc-gold); border-bottom-color: var(--sc-gold); }
+.sc-studio-tab-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--sc-faint); flex-shrink: 0; }
+.sc-studio-tab-dot[data-state="done"] { background: var(--sc-success); }
+.sc-studio-tab-dot[data-state="todo"] { background: var(--sc-faint); }
+
+/* ---- studio body ---- */
+.sc-studio-body { flex: 1; overflow: auto; background: var(--sc-bg); }
+.sc-studio-body.is-preview-tab { overflow-x: hidden; overflow-y: auto; }
+.sc-studio-pad { padding: 24px; max-width: 1400px; margin: 0 auto; width: 100%; }
+.sc-studio-error { background: rgba(239,68,68,.08); border: 1px solid rgba(239,68,68,.25); color: var(--sc-error); border-radius: var(--sc-radius); padding: 12px 16px; font-size: 13px; margin-bottom: 16px; }
+.sc-studio-notice { background: rgba(52,211,153,.08); border: 1px solid rgba(52,211,153,.25); color: var(--sc-success); border-radius: var(--sc-radius); padding: 12px 16px; font-size: 13px; margin-bottom: 16px; }
+
+/* ---- studio section ---- */
+.sc-studio-section { background: var(--sc-surface); border: 1px solid var(--sc-border); border-radius: var(--sc-radius); margin-bottom: 16px; overflow: hidden; }
+.sc-studio-section-head { padding: 16px 20px; border-bottom: 1px solid var(--sc-border); }
+.sc-studio-section-head strong { font-size: 12px; font-weight: 900; letter-spacing: 0.06em; color: var(--sc-ink-strong); text-transform: uppercase; display: block; }
+.sc-studio-section-head span { font-size: 12px; color: var(--sc-muted); display: block; margin-top: 3px; line-height: 1.5; }
+.sc-studio-section-body { padding: 20px; display: grid; gap: 16px; }
+
+/* ---- studio form fields ---- */
+.sc-studio-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.sc-studio-grid.cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.sc-studio-field { display: grid; gap: 6px; margin: 0; }
+.sc-studio-field-label { font-size: 11px; font-weight: 800; color: var(--sc-muted); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; letter-spacing: 0.02em; }
+.sc-studio-field-label .req { color: var(--sc-error); font-weight: 900; }
+.sc-studio-field-label .hint { color: var(--sc-faint); font-weight: 600; font-size: 10px; text-transform: none; letter-spacing: 0; }
+.sc-studio-input { height: 38px; border: 1px solid var(--sc-border-light); background: var(--sc-surface-2); color: var(--sc-ink); border-radius: var(--sc-radius-sm); padding: 0 12px; font-size: 13px; font-family: var(--sc-font); outline-color: var(--sc-gold-dim); width: 100%; }
+.sc-studio-input:disabled { opacity: .55; cursor: not-allowed; }
+.sc-studio-textarea { border: 1px solid var(--sc-border-light); background: var(--sc-surface-2); color: var(--sc-ink); border-radius: var(--sc-radius-sm); padding: 10px 12px; font-size: 13px; font-family: var(--sc-font); min-height: 80px; resize: vertical; outline-color: var(--sc-gold-dim); width: 100%; line-height: 1.5; }
+.sc-studio-select { height: 38px; border: 1px solid var(--sc-border-light); background: var(--sc-surface-2); color: var(--sc-ink); border-radius: var(--sc-radius-sm); padding: 0 10px; font-size: 13px; font-family: var(--sc-font); outline-color: var(--sc-gold-dim); cursor: pointer; width: 100%; }
+
+/* ---- studio toggle ---- */
+.sc-studio-toggle { display: inline-flex; align-items: flex-start; gap: 8px; font-size: 12px; font-weight: 800; color: var(--sc-ink); cursor: pointer; line-height: 1.4; }
+.sc-studio-toggle input { margin-top: 2px; accent-color: var(--sc-gold); width: 15px; height: 15px; cursor: pointer; flex-shrink: 0; }
+.sc-studio-toggle span { display: flex; flex-direction: column; gap: 2px; }
+.sc-studio-toggle strong { font-size: 12px; font-weight: 800; color: var(--sc-ink-strong); }
+
+/* ---- studio info box / config row / divider ---- */
+.sc-studio-info-box { background: var(--sc-surface-2); border: 1px solid var(--sc-border); border-radius: var(--sc-radius-sm); padding: 12px 14px; font-size: 12px; color: var(--sc-muted); line-height: 1.6; }
+.sc-studio-info-box strong { color: var(--sc-ink-strong); }
+.sc-studio-info-box code { background: rgba(245,166,35,.1); color: var(--sc-gold); padding: 1px 5px; border-radius: 3px; font-size: 11px; font-family: "SF Mono", "Fira Code", monospace; }
+.sc-studio-config-row { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+.sc-studio-divider { height: 1px; background: var(--sc-border); margin: 4px 0; }
+
+/* ---- studio collapsible ---- */
+.sc-studio-collapsible { background: var(--sc-surface); border: 1px solid var(--sc-border); border-radius: var(--sc-radius); overflow: hidden; margin-bottom: 16px; }
+.sc-studio-collapsible-trigger { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 20px; background: var(--sc-surface); border: 0; border-bottom: 1px solid var(--sc-border); color: var(--sc-ink-strong); font-size: 13px; font-weight: 800; cursor: pointer; text-align: left; }
+.sc-studio-collapsible-trigger:hover { background: var(--sc-surface-2); }
+.sc-studio-collapsible-body { padding: 20px; display: grid; gap: 14px; }
+
+/* ---- studio buttons ---- */
+.sc-studio-btn { height: 36px; border: 1px solid var(--sc-border-light); background: var(--sc-surface-2); color: var(--sc-ink); border-radius: var(--sc-radius-sm); padding: 0 14px; font-size: 12px; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all .15s ease; white-space: nowrap; }
+.sc-studio-btn:hover:not(:disabled) { border-color: var(--sc-gold-dim); background: var(--sc-surface); color: var(--sc-ink-strong); }
+.sc-studio-btn:disabled { opacity: .5; cursor: not-allowed; }
+.sc-studio-btn-primary { background: var(--sc-gold); color: #0a0b12; border-color: var(--sc-gold); font-weight: 900; }
+.sc-studio-btn-primary:hover:not(:disabled) { background: #ffb940; border-color: #ffb940; color: #0a0b12; }
+.sc-studio-btn-ghost { background: transparent; border-color: var(--sc-border); color: var(--sc-muted); }
+.sc-studio-btn-ghost:hover:not(:disabled) { color: var(--sc-ink); border-color: var(--sc-border-light); }
+.sc-studio-btn-active { background: rgba(245,166,35,.15); color: var(--sc-gold); border-color: var(--sc-gold-dim); }
+.sc-studio-btn-active:hover:not(:disabled) { background: rgba(245,166,35,.2); color: var(--sc-gold); }
+.sc-studio-btn-danger { background: rgba(239,68,68,.1); color: var(--sc-error); border-color: rgba(239,68,68,.3); }
+.sc-studio-btn-danger:hover:not(:disabled) { background: rgba(239,68,68,.2); }
+
+/* ---- studio save state ---- */
+.sc-studio-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.sc-studio-save-state { font-size: 11px; font-weight: 800; display: inline-flex; align-items: center; gap: 5px; padding: 4px 8px; border-radius: var(--sc-radius-sm); }
+.sc-studio-save-state.is-saving { background: rgba(99,102,241,.12); color: #818cf8; }
+.sc-studio-save-state.is-failed { background: rgba(239,68,68,.12); color: var(--sc-error); }
+.sc-studio-save-state.is-dirty { background: rgba(245,166,35,.12); color: var(--sc-gold); }
+.sc-studio-save-state.is-saved { background: rgba(52,211,153,.12); color: var(--sc-success); }
+
+/* ---- studio publish actions row ---- */
+.sc-studio-publish-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; padding-top: 4px; }
+
+/* ---- studio preview config ---- */
+.sc-studio-preview-config { display: grid; gap: 16px; }
+.sc-studio-preview-loading { display: flex; align-items: center; gap: 8px; color: var(--sc-muted); font-size: 12px; padding: 12px 14px; background: var(--sc-surface); border: 1px solid var(--sc-border); border-radius: var(--sc-radius-sm); }
+
+/* ---- preview stage shell ---- */
+.sc-studio-preview-shell { display: flex; flex-direction: column; background: var(--sc-surface); border: 1px solid var(--sc-border); border-radius: var(--sc-radius); overflow: hidden; }
+.sc-studio-preview-toolbar { display: flex; align-items: center; gap: 12px; padding: 8px 12px; background: var(--sc-surface-2); border-bottom: 1px solid var(--sc-border); flex-wrap: wrap; }
+.sc-studio-preview-meta { display: flex; align-items: center; gap: 10px; }
+.sc-studio-preview-title { font-size: 10px; font-weight: 900; letter-spacing: 0.08em; color: var(--sc-ink-strong); text-transform: uppercase; }
+.sc-studio-preview-running { font-size: 10px; font-weight: 900; padding: 2px 7px; border-radius: 4px; letter-spacing: 0.05em; }
+.sc-studio-preview-running.is-running { background: rgba(52,211,153,.15); color: var(--sc-success); }
+.sc-studio-preview-running.is-starting { background: rgba(245,166,35,.15); color: var(--sc-gold); }
+.sc-studio-preview-running.is-disabled { background: rgba(139,143,155,.15); color: var(--sc-muted); }
+.sc-studio-preview-dim { font-size: 11px; color: var(--sc-muted); font-weight: 700; }
+.sc-studio-preview-actions { display: flex; align-items: center; gap: 6px; margin-left: auto; flex-wrap: wrap; }
+.sc-studio-chip-group { display: inline-flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.sc-studio-chip { display: inline-flex; align-items: center; gap: 5px; padding: 5px 10px; border: 1px solid var(--sc-border-light); background: var(--sc-surface); color: var(--sc-muted); border-radius: var(--sc-radius-sm); font-size: 11px; font-weight: 800; cursor: pointer; transition: all .15s ease; }
+.sc-studio-chip:hover { border-color: var(--sc-gold-dim); color: var(--sc-ink); }
+.sc-studio-chip.is-active { background: rgba(245,166,35,.12); border-color: var(--sc-gold-dim); color: var(--sc-gold); }
+.sc-studio-icon-btn { display: inline-flex; align-items: center; gap: 5px; padding: 5px 9px; border: 1px solid var(--sc-border-light); background: var(--sc-surface); color: var(--sc-muted); border-radius: var(--sc-radius-sm); font-size: 11px; font-weight: 800; cursor: pointer; transition: all .15s ease; }
+.sc-studio-icon-btn:hover { border-color: var(--sc-gold-dim); color: var(--sc-ink); }
+.sc-studio-icon-btn.is-active { background: rgba(245,166,35,.12); border-color: var(--sc-gold-dim); color: var(--sc-gold); }
+.sc-studio-zoom { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: var(--sc-muted); font-weight: 700; }
+.sc-studio-preview-scroll { flex: 1; overflow: hidden; background: #06070d; min-height: 320px; padding: 0; }
+.sc-studio-preview-stage { position: relative; width: 100%; height: 100%; min-height: 320px; background: #fff; }
+.sc-studio-preview-stage iframe { border: 0; display: block; width: 100%; height: 100%; }
+.sc-studio-preview-stage.is-passive { pointer-events: none; }
+.sc-studio-preview-disabled { padding: 48px 24px; text-align: center; color: var(--sc-faint); font-size: 13px; background: var(--sc-surface); }
+
+/* ---- fullscreen preview ---- */
+.sc-studio-fullscreen { position: fixed; inset: 0; z-index: 300; background: var(--sc-bg); display: flex; flex-direction: column; }
+.sc-studio-fullscreen-toolbar { display: flex; align-items: center; gap: 10px; padding: 10px 16px; background: var(--sc-surface); border-bottom: 1px solid var(--sc-border); flex-wrap: wrap; }
+.sc-studio-fullscreen-body { flex: 1; overflow: hidden; background: #06070d; padding: 0; }
+
+/* ---- mode toolbar (always-visible Code/Split/Preview controls) ---- */
+.sc-studio-mode-toolbar { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: var(--sc-surface-2); border: 1px solid var(--sc-border); border-radius: var(--sc-radius-sm); flex-wrap: wrap; }
+.sc-studio-mode-toolbar-label { font-size: 10px; font-weight: 900; letter-spacing: 0.1em; color: var(--sc-gold); text-transform: uppercase; }
+.sc-studio-mode-toolbar-controls { display: inline-flex; align-items: center; gap: 4px; margin-left: auto; flex-wrap: wrap; }
+.sc-studio-mode-toolbar-sep { width: 1px; height: 22px; background: var(--sc-border-light); margin: 0 4px; }
+
+/* ---- edit preview (split code + stage) ---- */
+.sc-studio-edit-preview { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.sc-studio-editor { display: flex; flex-direction: column; background: var(--sc-surface); border: 1px solid var(--sc-border); border-radius: var(--sc-radius-sm); overflow: hidden; min-width: 0; }
+.sc-studio-editor-tabs { display: flex; align-items: center; gap: 2px; padding: 6px 8px; background: var(--sc-surface-2); border-bottom: 1px solid var(--sc-border); }
+.sc-studio-editor-tab { white-space: nowrap; border: 0; background: transparent; color: var(--sc-muted); padding: 5px 10px; font-size: 11px; font-weight: 800; cursor: pointer; border-radius: 4px; letter-spacing: 0.03em; }
+.sc-studio-editor-tab:hover { color: var(--sc-ink); }
+.sc-studio-editor-tab.is-active { background: rgba(245,166,35,.12); color: var(--sc-gold); }
+.sc-studio-editor-textarea { flex: 1; width: 100%; min-height: 260px; border: 0; background: #0d0e16; color: #c8d3e5; padding: 14px; font-size: 13px; font-family: "SF Mono", "Fira Code", "Cascadia Code", monospace; resize: vertical; outline: none; line-height: 1.55; tab-size: 2; }
+.sc-studio-base-url { padding: 10px 14px; border-bottom: 1px solid var(--sc-border); background: var(--sc-surface); }
+
+/* ---- dimension inputs ---- */
+.sc-studio-dimension-inputs { display: inline-flex; align-items: center; gap: 8px; }
+.sc-studio-dimension-inputs .sc-studio-input { width: 80px; text-align: center; }
+.sc-studio-dimension-sep { color: var(--sc-faint); font-weight: 800; }
+
+/* ---- source files panel (inside studio SOURCE tab) ---- */
+.sc-studio-source { display: grid; grid-template-columns: 220px 1fr; gap: 0; border: 1px solid var(--sc-border); border-radius: var(--sc-radius); overflow: hidden; }
+.sc-studio-source-tree { background: var(--sc-surface); border-right: 1px solid var(--sc-border); min-height: 320px; display: flex; flex-direction: column; }
+.sc-studio-source-tree-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 14px; font-size: 11px; font-weight: 900; color: var(--sc-muted); text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 1px solid var(--sc-border); background: var(--sc-surface-2); }
+.sc-studio-source-list { flex: 1; overflow: auto; }
+.sc-studio-file-btn { width: 100%; display: flex; align-items: center; gap: 8px; padding: 8px 14px; font-size: 12px; color: var(--sc-ink); background: transparent; border: 0; border-bottom: 1px solid var(--sc-border); cursor: pointer; text-align: left; transition: background .15s ease; }
+.sc-studio-file-btn:hover { background: var(--sc-surface-2); }
+.sc-studio-file-btn.is-active { background: rgba(245,166,35,.08); color: var(--sc-gold); border-left: 3px solid var(--sc-gold); }
+.sc-studio-source-editor { display: flex; flex-direction: column; min-width: 0; }
+.sc-studio-source-meta { display: flex; gap: 12px; padding: 10px 14px; border-bottom: 1px solid var(--sc-border); background: var(--sc-surface-2); flex-wrap: wrap; }
+.sc-studio-source-meta .sc-studio-field { flex: 1; min-width: 160px; margin: 0; }
+.sc-studio-source-bottom { padding: 10px 14px; border-top: 1px solid var(--sc-border); display: flex; gap: 8px; justify-content: flex-end; background: var(--sc-surface-2); }
+.sc-studio-source-empty { padding: 48px 24px; text-align: center; display: grid; gap: 8px; justify-items: center; color: var(--sc-muted); background: var(--sc-surface); }
+.sc-studio-source-empty strong { font-size: 14px; color: var(--sc-ink-strong); }
+.sc-studio-source-empty span { font-size: 12px; color: var(--sc-faint); max-width: 360px; line-height: 1.5; }
+.sc-studio-source-locked { padding: 36px 24px; text-align: center; display: grid; gap: 10px; justify-items: center; color: var(--sc-muted); background: var(--sc-surface); border: 1px solid var(--sc-border); border-radius: var(--sc-radius); }
+.sc-studio-source-locked strong { font-size: 15px; color: var(--sc-ink-strong); }
+.sc-studio-source-locked span { font-size: 12px; color: var(--sc-faint); max-width: 400px; line-height: 1.5; }
+
+/* ---- publish checklist ---- */
+.sc-studio-checklist { display: grid; gap: 8px; }
+.sc-checklist-item { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid var(--sc-border); border-radius: var(--sc-radius-sm); background: var(--sc-surface-2); }
+.sc-checklist-item.is-ready { border-color: rgba(52,211,153,.3); background: rgba(52,211,153,.04); }
+.sc-checklist-item.is-missing { border-color: rgba(239,68,68,.25); background: rgba(239,68,68,.04); }
+.sc-checklist-left { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
+.sc-checklist-icon { display: grid; place-items: center; flex-shrink: 0; }
+.sc-checklist-icon svg { display: block; }
+.sc-checklist-item.is-ready .sc-checklist-icon { color: var(--sc-success); }
+.sc-checklist-item.is-missing .sc-checklist-icon { color: var(--sc-error); }
+.sc-checklist-label { font-size: 12px; font-weight: 800; color: var(--sc-ink-strong); display: block; }
+.sc-checklist-desc { font-size: 11px; color: var(--sc-muted); display: block; margin-top: 2px; line-height: 1.4; }
+.sc-checklist-btn { white-space: nowrap; border: 1px solid var(--sc-border-light); background: var(--sc-surface); color: var(--sc-gold); border-radius: var(--sc-radius-sm); padding: 5px 10px; font-size: 11px; font-weight: 800; cursor: pointer; transition: all .15s ease; }
+.sc-checklist-btn:hover { border-color: var(--sc-gold-dim); background: rgba(245,166,35,.08); }
+
+/* ---- publish summary ---- */
+.sc-studio-summary { display: grid; gap: 0; }
+.sc-studio-summary-row { display: grid; grid-template-columns: 160px 1fr; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--sc-border); margin: 0; }
+.sc-studio-summary-row:last-child { border-bottom: 0; }
+.sc-studio-summary-row dt { font-size: 11px; font-weight: 800; color: var(--sc-muted); text-transform: uppercase; letter-spacing: 0.04em; align-self: center; }
+.sc-studio-summary-row dd { margin: 0; font-size: 13px; color: var(--sc-ink); font-weight: 700; align-self: center; }
+.sc-studio-check { display: inline-flex; align-items: center; gap: 5px; color: var(--sc-success); font-weight: 800; font-size: 12px; }
+
+/* ===========================================================
+   PRODUCT STUDIO ROUTE (SteaCodeProductStudioPage wrapper)
+   =========================================================== */
+.sc-studio-route-loading { display: flex; align-items: center; gap: 10px; justify-content: center; padding: 80px 20px; color: var(--sc-muted); font-size: 14px; }
+.sc-studio-route-error { display: grid; gap: 12px; justify-items: center; padding: 60px 24px; text-align: center; color: var(--sc-ink); max-width: 520px; margin: 40px auto; background: var(--sc-surface); border: 1px solid var(--sc-border); border-radius: var(--sc-radius); }
+.sc-studio-route-error strong { font-size: 16px; color: var(--sc-ink-strong); }
+.sc-studio-route-error-msg { font-size: 13px; color: var(--sc-muted); line-height: 1.5; max-width: 420px; }
+.sc-studio-route-error-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-top: 8px; }
+
+/* ===========================================================
+   STEA CODE ADMIN — responsive
+   =========================================================== */
+@media (max-width: 768px) {
+  .sca-admin-topbar { padding: 0 16px; }
+  .sca-admin-content { padding: 16px; }
+  .sca-admin-hero { padding: 20px 16px 12px; }
+  .sca-admin-nav { padding: 0 16px; }
+  .sc-admin-source-workspace { grid-template-columns: 1fr; }
+  .sc-admin-source-tree { border-right: 0; border-bottom: 1px solid var(--sc-border); min-height: auto; }
+  .sc-admin-metric-grid { grid-template-columns: repeat(2, 1fr); }
+
+  /* Product Studio responsive */
+  .sc-studio-head { padding: 12px 16px; flex-wrap: wrap; }
+  .sc-studio-tabs { padding: 0 12px; }
+  .sc-studio-pad { padding: 16px; }
+  .sc-studio-grid { grid-template-columns: 1fr; }
+  .sc-studio-grid.cols-3 { grid-template-columns: 1fr; }
+  .sc-studio-edit-preview { grid-template-columns: 1fr; }
+  .sc-studio-source { grid-template-columns: 1fr; }
+  .sc-studio-source-tree { border-right: 0; border-bottom: 1px solid var(--sc-border); min-height: auto; }
+  .sc-studio-summary-row { grid-template-columns: 1fr; gap: 4px; }
+  .sc-studio-config-row { gap: 12px; }
+  .sc-studio-preview-toolbar { gap: 8px; }
+  .sc-studio-preview-actions { width: 100%; }
+  .sc-checklist-item { flex-wrap: wrap; }
+  .sc-studio-actions { width: 100%; }
+}
+
+@media (max-width: 480px) {
+  .sc-studio-head-left { gap: 8px; }
+  .sc-studio-back { padding: 6px 8px; font-size: 11px; }
+  .sc-studio-brand h2 { font-size: 15px; }
+  .sc-studio-tab { padding: 10px 12px; font-size: 11px; }
+}
+
+/* =========================================================
+   CARD PREVIEW + ZOOM CONTROL (admin Live Preview tab)
+   ========================================================= */
+
+/* Outer frames: dark backdrop, subtle border, rounded corners. */
+.sc-admin-card-preview,
+.sc-admin-modal-preview {
+  position: relative;
+  width: 100%;
+  margin: 0 auto;
+  background: #0a0a0f !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  border-radius: 18px !important;
+  box-shadow: none !important;
+  overflow: hidden;
+}
+
+.sc-admin-card-preview {
+  /* Constrain to match the homepage card width (~420px at 1440px viewport
+     with 3-column grid + 22px gap). This ensures the scale factor computed
+     by the preview component is identical between admin and homepage,
+     producing true WYSIWYG output. */
+  width: 420px;
+  max-width: 100%;
+  aspect-ratio: 16 / 11;
+}
+
+.sc-admin-modal-preview {
+  /* Match the actual detail modal width on desktop. The modal renders
+     at ~880px content width with padding. */
+  width: 880px;
+  max-width: 100%;
+  aspect-ratio: 16 / 10;
+}
+
+/* Force every wrapper inside to be transparent — no grey boxes.
+   Nukes backgrounds, gradients, borders, shadows on ALL child elements
+   except the iframe itself (which gets its own rule below). */
+.sc-admin-card-preview *:not(iframe),
+.sc-admin-modal-preview *:not(iframe) {
+  background: transparent !important;
+  background-image: none !important;
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+  border-radius: 0 !important;
+}
+
+/* The iframe must be transparent too. */
+.sc-admin-card-preview iframe,
+.sc-admin-modal-preview iframe {
+  background: transparent !important;
+  background-color: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  outline: none !important;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.sc-admin-zoom-control {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+}
+
+.sc-admin-zoom-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(245, 247, 251, 0.7);
+}
+
+.sc-admin-zoom-presets {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.sc-admin-zoom-preset {
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(245, 247, 251, 0.7);
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.sc-admin-zoom-preset:hover {
+  border-color: rgba(245, 166, 35, 0.4);
+  color: rgba(245, 247, 251, 0.9);
+}
+
+.sc-admin-zoom-preset.is-active {
+  color: #0a0b12;
+  background: #f5a623;
+  border-color: #f5a623;
+  font-weight: 800;
+  box-shadow: 0 4px 16px -6px rgba(245, 166, 35, 0.5);
+}
+
+.sc-admin-zoom-slider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  max-width: 320px;
+}
+
+.sc-admin-zoom-slider input[type="range"] {
+  flex: 1;
+  accent-color: #f5a623;
+  height: 4px;
+}
+
+.sc-admin-zoom-value {
+  font-size: 12px;
+  font-weight: 700;
+  color: #f5a623;
+  min-width: 36px;
+  text-align: right;
+}
+
+/* Draggable content wrapper */
+.sc-drag-content {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  pointer-events: auto;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.sc-drag-content:active {
+  cursor: grabbing !important;
+}
+
+.sc-drag-content iframe {
+  pointer-events: none !important;
+}
+
+.sc-drag-content .sc-live-preview,
+.sc-drag-content .sc-live-preview-scale-wrap,
+.sc-drag-content .sc-live-preview-static,
+.sc-drag-content .sc-product-preview,
+.sc-drag-content .sc-product-preview-art {
+  pointer-events: none !important;
+}
+
+/* Reset position button */
+.sc-admin-reset-btn {
+  padding: 5px 14px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(245, 247, 251, 0.6);
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.sc-admin-reset-btn:hover {
+  border-color: rgba(245, 166, 35, 0.4);
+  color: rgba(245, 247, 251, 0.9);
+}

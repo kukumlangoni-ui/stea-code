@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <script>
+      (function () {
+        var host = window.location.hostname;
+        var isAlpha = host === "alpha.stea.africa" || host.endsWith(".alpha.stea.africa");
+        if (!isAlpha) return;
+
+        window.__STEA_ALPHA_TENANT__ = true;
+
+        document.addEventListener("DOMContentLoaded", function () {
+          var alphaTitle = "Alpha Schools — Your Education Is Our Priority";
+          var alphaDescription = "Official Alpha Schools website for admissions, academics, student life, news and the Alpha School Portal in Dar es Salaam, Tanzania.";
+          var alphaImage = "https://alpha.stea.africa/alpha/hero/alpha-classroom-lockup.png";
+          document.title = alphaTitle;
+          var updates = {
+            'meta[name="description"]': alphaDescription,
+            'meta[property="og:title"]': alphaTitle,
+            'meta[property="og:description"]': alphaDescription,
+            'meta[property="og:image"]': alphaImage,
+            'meta[property="og:site_name"]': "Alpha Schools",
+            'meta[property="og:url"]': "https://alpha.stea.africa/",
+            'meta[name="twitter:title"]': alphaTitle,
+            'meta[name="twitter:description"]': alphaDescription,
+            'meta[name="twitter:image"]': alphaImage,
+            'meta[name="application-name"]': "Alpha Schools",
+            'meta[name="apple-mobile-web-app-title"]': "Alpha Schools"
+          };
+          Object.keys(updates).forEach(function (selector) {
+            var element = document.querySelector(selector);
+            if (element) element.setAttribute("content", updates[selector]);
+          });
+          var canonical = document.querySelector('link[rel="canonical"]');
+          if (canonical) canonical.setAttribute("href", "https://alpha.stea.africa/");
+          var icon = document.querySelector('link[rel="icon"]');
+          if (icon) { icon.setAttribute("href", "/alpha/favicon-32x32.png?v=alpha-logo-20260713-1"); icon.setAttribute("type", "image/png"); }
+          var appleIcon = document.querySelector('link[rel="apple-touch-icon"]');
+          if (appleIcon) appleIcon.setAttribute("href", "/alpha/apple-touch-icon.png?v=alpha-logo-20260713-1");
+          var manifest = document.querySelector('link[rel="manifest"]');
+          if (manifest) manifest.setAttribute("href", "/alpha.webmanifest?v=alpha-logo-20260713-1");
+          var theme = document.querySelector('meta[name="theme-color"]');
+          if (theme) theme.setAttribute("content", "#0B4EA2");
+          var tile = document.querySelector('meta[name="msapplication-TileImage"]');
+          if (tile) tile.setAttribute("content", "/alpha/icons/alpha-icon-192.png");
+        });
+
+        // Alpha now serves its public school website at / and the private portal at /portal.
+      })();
+    </script>
+
+    <!-- Hostname-aware Synchronous Favicon, Manifest & Metadata Injection -->
+    <script>
+      (function () {
+        var host = window.location.hostname;
+        var isCode = host === 'code.stea.africa' || host.endsWith('.code.stea.africa') || host.includes('stea-code') || host === 'localhost';
+        var iconPath = isCode ? '/stea-code-favicon-32.png?v=stea-real-logo-2026' : '/stea-www-globe.png?v=stea-globe-2026';
+        var iconType = 'image/png';
+        var applePath = isCode ? '/stea-code-apple-touch-icon.png?v=stea-real-logo-2026' : '/stea-www-globe-512.png?v=stea-globe-2026';
+        var manifestPath = isCode ? '/code.webmanifest?v=stea-real-logo-2026' : '/site.webmanifest?v=stea-globe-2026';
+
+        if (isCode) {
+          document.title = "STEA Code — Developer Marketplace";
+        }
+
+        document.write(
+          '<link rel="icon" type="' + iconType + '" href="' + iconPath + '">' +
+          '<link rel="alternate icon" type="' + iconType + '" href="' + iconPath + '">' +
+          '<link rel="apple-touch-icon" href="' + applePath + '">' +
+          '<link rel="manifest" href="' + manifestPath + '">'
+        );
+
+        if (isCode) {
+          var setMeta = function (selector, attr, value) {
+            var el = document.querySelector(selector);
+            if (el) el.setAttribute(attr, value);
+          };
+          setMeta('meta[name="application-name"]', 'content', 'STEA Code');
+          setMeta('meta[name="apple-mobile-web-app-title"]', 'content', 'STEA Code');
+          setMeta('meta[name="description"]', 'content', 'STEA Code — a marketplace for buying and selling code components.');
+          setMeta('meta[property="og:title"]', 'content', 'STEA Code');
+          setMeta('meta[property="og:site_name"]', 'content', 'STEA Code');
+          setMeta('meta[property="og:description"]', 'content', 'STEA Code — a marketplace for buying and selling code components.');
+          setMeta('meta[name="twitter:title"]', 'content', 'STEA Code');
+          setMeta('meta[name="twitter:description"]', 'content', 'STEA Code — a marketplace for buying and selling code components.');
+          setMeta('meta[name="msapplication-TileImage"]', 'content', '/stea-code-favicon-512.png?v=stea-real-logo-2026');
+        }
+      })();
+    </script>
+
+    <!-- PWA -->
+    <meta name="msapplication-TileImage" content="/stea-www-globe-512.png?v=stea-globe-2026" />
+
+    <!-- Theme / Status Bar -->
+    <meta name="theme-color" content="#05060a" />
+    <meta name="msapplication-TileColor" content="#05060a" />
+    <meta name="msapplication-config" content="none" />
+
+    <!-- iOS PWA: full-screen standalone mode -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="STEA" />
+    <meta name="mobile-web-app-capable" content="yes" />
+
+    <!-- Android/General -->
+    <meta name="application-name" content="STEA" />
+    <meta name="format-detection" content="telephone=no" />
+    <meta name="HandheldFriendly" content="True" />
+
+    <!-- Canonical -->
+    <link rel="canonical" href="https://stea.africa/">
+
+    <!-- SEO -->
+    <title>STEA Africa — Education, AI Tools, Websites & Digital Services for Africa</title>
+    <meta name="description" content="STEA Africa is a digital ecosystem for education, AI tools, curated websites, creators, jobs, and digital services across Africa." />
+    <meta name="keywords" content="STEA Africa, African education platform, AI tools Africa, online learning Africa, Tanzania technology, digital services Africa, STEA Websites, STEA Classroom" />
+    <meta name="author" content="STEA Africa" />
+    <meta name="robots" content="index,follow,max-image-preview:large" />
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="STEA Africa — Education, AI Tools, Websites & Digital Services for Africa" />
+    <meta property="og:description" content="STEA Africa is a digital ecosystem for education, AI tools, curated websites, creators, jobs, and digital services across Africa." />
+    <meta property="og:image" content="https://stea.africa/seo/stea-og.jpg" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="STEA Africa" />
+    <meta property="og:url" content="https://stea.africa/" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="STEA Africa — Education, AI Tools, Websites & Digital Services for Africa" />
+    <meta name="twitter:description" content="STEA Africa is a digital ecosystem for education, AI tools, curated websites, creators, jobs, and digital services across Africa." />
+    <meta name="twitter:image" content="https://stea.africa/seo/stea-og.jpg" />
+    <script type="application/ld+json" id="seo-json-ld-static">[{"@context":"https://schema.org","@type":"Organization","name":"STEA Africa","url":"https://stea.africa","logo":"https://stea.africa/stea-brand/stea-s-logo-transparent-512.png"},{"@context":"https://schema.org","@type":"WebSite","name":"STEA Africa","url":"https://stea.africa"}]</script>
+    <meta name="twitter:site" content="@steaafrica" />
+
+    <!-- App shell & boot loader styles -->
+    <style>
+      html, body, #root {
+        background: #05060a;
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        min-height: 100%;
+      }
+      #root { min-height: 100vh; }
+
+      #stea-boot-loader {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: rgba(255, 255, 255, 0.04);
+        z-index: 2147483647;
+        pointer-events: none;
+        overflow: hidden;
+      }
+      #stea-boot-loader .stea-boot-loader-bar {
+        position: absolute;
+        top: 0;
+        left: 0;
+        height: 100%;
+        width: 40%;
+        background: linear-gradient(90deg, transparent 0%, #f5b544 20%, #f5b544 80%, transparent 100%);
+        animation: stea-boot-loader-slide 1.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+      }
+      @keyframes stea-boot-loader-slide {
+        0%   { transform: translateX(-100%); }
+        100% { transform: translateX(300%); }
+      }
+      #stea-boot-loader.is-hidden {
+        opacity: 0;
+        transition: opacity 200ms ease-out;
+      }
+    </style>
+
+    <script>
+      window.__removeSplash = function() {};
+    </script>
+
+    <!-- Preload & Inline @font-face for Bricolage Grotesque (Hero) -->
+    <link rel="preload" href="/fonts/bricolage-grotesque-900.woff2" as="font" type="font/woff2" crossorigin>
+    <style>
+      @font-face {
+        font-family: 'Bricolage Grotesque';
+        font-style: normal;
+        font-weight: 900;
+        font-display: optional;
+        src: url('/fonts/bricolage-grotesque-900.woff2') format('woff2');
+      }
+    </style>
+  </head>
+  <body>
+    <div id="stea-boot-loader" aria-hidden="true">
+      <div class="stea-boot-loader-bar"></div>
+    </div>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

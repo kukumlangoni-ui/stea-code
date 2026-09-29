@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://stea.africa/</loc><changefreq>daily</changefreq><priority>1.0</priority></url>
+  <url><loc>https://stea.africa/exams/results</loc><changefreq>daily</changefreq><priority>0.95</priority></url>
+  <url><loc>https://stea.africa/necta/csee/2024</loc><changefreq>weekly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://stea.africa/necta/acsee/2024</loc><changefreq>weekly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://stea.africa/results/top-schools</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://stea.africa/results/statistics</loc><changefreq>weekly</changefreq><priority>0.75</priority></url>
+  <url><loc>https://stea.africa/results/region/dar-es-salaam</loc><changefreq>weekly</changefreq><priority>0.75</priority></url>
+  <url><loc>https://stea.africa/tech/tips-resources</loc><changefreq>daily</changefreq><priority>0.85</priority></url>
+  <url><loc>https://stea.africa/courses</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://stea.africa/digital-tools</loc><changefreq>weekly</changefreq><priority>0.75</priority></url>
+  <url><loc>https://stea.africa/duka</loc><changefreq>daily</changefreq><priority>0.85</priority></url>
+  <url><loc>https://stea.africa/advertise</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+</urlset>

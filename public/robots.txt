@@ -1,0 +1,12 @@
+User-agent: *
+Allow: /
+
+Disallow: /admin
+Disallow: /admin/*
+Disallow: /after-dark
+Disallow: /profile
+Disallow: /dashboard
+
+Sitemap: https://stea.africa/sitemap.xml
+Sitemap: https://sites.stea.africa/sitemap.xml
+Sitemap: https://code.stea.africa/sitemap.xml

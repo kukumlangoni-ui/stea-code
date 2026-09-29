@@ -1,0 +1,16 @@
+{
+  "name": "stea-api",
+  "version": "1.0.0",
+  "description": "STEA Code backend API on Cloudflare Workers",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20240903.0",
+    "typescript": "^5.5.0",
+    "wrangler": "^4.138.0"
+  }
+}

@@ -1,0 +1,4 @@
+functions/**
+functions.bak/**
+node_modules/**
+.git/**

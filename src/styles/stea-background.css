@@ -1,0 +1,529 @@
+/**
+ * STEA Premium Global Background System
+ * 
+ * System A: Header / Hero Atmosphere + Glass Border & Light Sweep
+ * System B: Whole App Subtle Atmosphere Canvas
+ *
+ * Performance-first pure CSS implementation.
+ * Zero raster images. Zero WebGL/canvas dependencies.
+ * Full light/dark mode and prefers-reduced-motion support.
+ */
+
+/* ==========================================================================
+   STEA Background Color System Tokens
+   ========================================================================== */
+
+:root,
+.stea-home-light,
+.light,
+html.light,
+body.light,
+html.stea-home-light,
+body.stea-home-light {
+  /* System B — Global App Background Tokens (Light) */
+  --stea-app-bg: #F6F8FC;
+  --stea-app-bg-deep: #EEF2F8;
+  --stea-app-atm-top: rgba(99, 102, 241, 0.045);
+  --stea-app-atm-side: rgba(139, 92, 246, 0.035);
+  --stea-app-atm-gold: rgba(212, 160, 23, 0.03);
+  --stea-app-vignette: rgba(226, 232, 240, 0.35);
+
+  /* System A — Header & Hero Atmospheric Tokens (Light) */
+  --stea-hero-bg: linear-gradient(175deg, rgba(255, 255, 255, 0.96) 0%, rgba(248, 250, 253, 0.98) 100%);
+  --stea-hero-atm-primary: radial-gradient(circle at 50% 0%, rgba(124, 58, 237, 0.08) 0%, transparent 65%);
+  --stea-hero-atm-secondary: radial-gradient(ellipse at 85% 15%, rgba(99, 102, 241, 0.06) 0%, transparent 55%);
+  --stea-hero-atm-brand: radial-gradient(circle at 15% 85%, rgba(212, 160, 23, 0.05) 0%, transparent 50%);
+  --stea-hero-border-base: rgba(15, 23, 42, 0.08);
+  --stea-hero-border-hi: rgba(124, 58, 237, 0.20);
+  --stea-hero-inner-hi: inset 0 1px 0 rgba(255, 255, 255, 0.9), inset 0 -1px 0 rgba(15, 23, 42, 0.03);
+  --stea-hero-shadow: 0 16px 40px -12px rgba(15, 23, 42, 0.06), 0 2px 8px rgba(15, 23, 42, 0.03);
+  --stea-hero-sweep-grad: linear-gradient(90deg, transparent 0%, rgba(124, 58, 237, 0.16) 50%, transparent 100%);
+  --stea-hero-vignette: radial-gradient(ellipse at 50% 30%, transparent 55%, rgba(241, 245, 249, 0.45) 100%);
+
+  /* Header Bar Atmosphere (Light) */
+  --stea-header-glass-bg: rgba(255, 255, 255, 0.88);
+  --stea-header-border: rgba(15, 23, 42, 0.07);
+  --stea-header-border-hi: rgba(124, 58, 237, 0.16);
+  --stea-header-sweep: linear-gradient(90deg, transparent 0%, rgba(124, 58, 237, 0.18) 50%, transparent 100%);
+}
+
+.stea-home-dark,
+.dark,
+html.dark,
+body.dark,
+html.stea-home-dark,
+body.stea-home-dark {
+  /* System B — Global App Background Tokens (Dark) */
+  --stea-app-bg: #07080e;
+  --stea-app-bg-deep: #040508;
+  --stea-app-atm-top: rgba(79, 70, 229, 0.12);
+  --stea-app-atm-side: rgba(139, 92, 246, 0.09);
+  --stea-app-atm-gold: rgba(245, 166, 35, 0.04);
+  --stea-app-vignette: rgba(4, 5, 8, 0.70);
+
+  /* System A — Header & Hero Atmospheric Tokens (Dark) */
+  --stea-hero-bg: linear-gradient(165deg, rgba(17, 15, 33, 0.94) 0%, rgba(11, 9, 21, 0.97) 100%);
+  --stea-hero-atm-primary: radial-gradient(ellipse at 50% -10%, rgba(139, 92, 246, 0.26) 0%, transparent 60%);
+  --stea-hero-atm-secondary: radial-gradient(ellipse at 88% 12%, rgba(99, 102, 241, 0.20) 0%, transparent 50%);
+  --stea-hero-atm-brand: radial-gradient(ellipse at 12% 80%, rgba(245, 166, 35, 0.08) 0%, transparent 50%);
+  --stea-hero-border-base: rgba(255, 255, 255, 0.08);
+  --stea-hero-border-hi: rgba(168, 85, 247, 0.32);
+  --stea-hero-inner-hi: inset 0 1px 0 rgba(255, 255, 255, 0.12), inset 0 0 24px rgba(124, 58, 237, 0.04);
+  --stea-hero-shadow: 0 24px 64px -12px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.03);
+  --stea-hero-sweep-grad: linear-gradient(90deg, transparent 0%, rgba(168, 85, 247, 0.35) 45%, rgba(255, 215, 137, 0.35) 55%, transparent 100%);
+  --stea-hero-vignette: radial-gradient(ellipse at 50% 30%, transparent 40%, rgba(7, 8, 14, 0.65) 100%);
+
+  /* Header Bar Atmosphere (Dark) */
+  --stea-header-glass-bg: rgba(11, 9, 22, 0.82);
+  --stea-header-border: rgba(255, 255, 255, 0.08);
+  --stea-header-border-hi: rgba(168, 85, 247, 0.24);
+  --stea-header-sweep: linear-gradient(90deg, transparent 0%, rgba(168, 85, 247, 0.32) 50%, transparent 100%);
+}
+
+/* ==========================================================================
+   SYSTEM B: Whole STEA App Global Background
+   ========================================================================== */
+
+.stea-app-background {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  background-color: var(--stea-app-bg);
+  transition: background-color 0.3s ease;
+}
+
+/* Base digital canvas depth */
+.stea-app-base {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 0%, var(--stea-app-bg) 0%, var(--stea-app-bg-deep) 100%);
+}
+
+/* Top blurred atmospheric dome */
+.stea-app-atmosphere-top {
+  position: absolute;
+  top: -20vh;
+  left: 15vw;
+  width: 70vw;
+  height: 65vh;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, var(--stea-app-atm-top) 0%, transparent 70%);
+  filter: blur(60px);
+  will-change: transform, opacity;
+  animation: steaAtmosphereDriftTop 32s ease-in-out infinite alternate;
+}
+
+/* Side ambient light */
+.stea-app-atmosphere-side {
+  position: absolute;
+  top: 30vh;
+  right: -10vw;
+  width: 50vw;
+  height: 60vh;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, var(--stea-app-atm-side) 0%, transparent 68%);
+  filter: blur(70px);
+  will-change: transform, opacity;
+  animation: steaAtmosphereDriftSide 38s ease-in-out infinite alternate;
+}
+
+/* Faint lower-left brand aura */
+.stea-app-atmosphere-brand {
+  position: absolute;
+  bottom: 5vh;
+  left: -5vw;
+  width: 45vw;
+  height: 45vh;
+  border-radius: 50%;
+  background: radial-gradient(circle at center, var(--stea-app-atm-gold) 0%, transparent 65%);
+  filter: blur(65px);
+  will-change: opacity;
+  animation: steaAtmospherePulse 28s ease-in-out infinite alternate;
+}
+
+/* Outer digital vignette */
+.stea-app-vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 50%, transparent 45%, var(--stea-app-vignette) 100%);
+  pointer-events: none;
+}
+
+/* ==========================================================================
+   SYSTEM A: Header / Hero Atmospheric Container & Effects
+   ========================================================================== */
+
+/* Outer wrapping atmosphere behind header + hero */
+.stea-header-hero-atmosphere-zone {
+  position: relative;
+  width: 100%;
+}
+
+/* Header bar integration */
+.sites-header-v2 {
+  position: sticky;
+  top: 0;
+  flex-shrink: 0;
+  z-index: 990;
+  background: var(--stea-header-glass-bg);
+  backdrop-filter: saturate(170%) blur(16px);
+  -webkit-backdrop-filter: saturate(170%) blur(16px);
+  border-bottom: 1px solid var(--stea-header-border);
+  transition: border-color 0.25s ease, background 0.25s ease;
+  overflow: hidden;
+}
+
+/* Header subtle bottom light sweep */
+.sites-header-v2::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: -100%;
+  width: 60%;
+  height: 1px;
+  background: var(--stea-header-sweep);
+  pointer-events: none;
+  opacity: 0.85;
+  animation: steaHeaderSweep 20s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+/* Hero container styling */
+.sites-home-hero-v2 {
+  padding: 8px 0 6px;
+  position: relative;
+  flex-shrink: 0;
+}
+
+/* Atmospheric hero card */
+.sites-hero-atm-card {
+  --hero-radius: 26px;
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  margin: 0 auto;
+  padding: clamp(16px, 2.2vw, 28px) clamp(18px, 3.2vw, 40px) clamp(14px, 1.8vw, 20px);
+  border-radius: var(--hero-radius);
+  background: var(--stea-hero-bg);
+  border: 1px solid var(--stea-hero-border-base);
+  box-shadow: var(--stea-hero-inner-hi), var(--stea-hero-shadow);
+  overflow: visible;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
+}
+
+/* Multi-layer atmospheric clipping mask inside Hero */
+.sites-hero-atm-clip {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--hero-radius);
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Hero atmospheric layers */
+.sites-hero-layer-base {
+  position: absolute;
+  inset: 0;
+  background: var(--stea-hero-atm-primary);
+  opacity: 0.85;
+}
+
+.sites-hero-layer-secondary {
+  position: absolute;
+  inset: 0;
+  background: var(--stea-hero-atm-secondary);
+  opacity: 0.75;
+}
+
+.sites-hero-layer-brand {
+  position: absolute;
+  inset: 0;
+  background: var(--stea-hero-atm-brand);
+  opacity: 0.65;
+}
+
+/* Animated floating orbs (calm, slow drift) */
+.sites-hero-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(52px);
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+.sites-hero-orb-1 {
+  width: 340px;
+  height: 340px;
+  top: -120px;
+  right: -50px;
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.42), transparent 70%);
+  animation: steaHeroOrbFloat1 24s ease-in-out infinite alternate;
+}
+
+.sites-hero-orb-2 {
+  width: 290px;
+  height: 290px;
+  bottom: -90px;
+  left: -40px;
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.36), transparent 70%);
+  animation: steaHeroOrbFloat2 30s ease-in-out infinite alternate;
+}
+
+.sites-hero-orb-3 {
+  width: 220px;
+  height: 220px;
+  top: 25%;
+  left: 48%;
+  background: radial-gradient(circle, rgba(245, 166, 35, 0.16), transparent 70%);
+  animation: steaHeroOrbFloat3 34s ease-in-out infinite alternate;
+}
+
+/* Vignette to ensure center content & typography dominate */
+.sites-hero-card-vignette {
+  position: absolute;
+  inset: 0;
+  background: var(--stea-hero-vignette);
+  pointer-events: none;
+}
+
+/* Subtle Hero Border Perimeter Glow & Light Sweep */
+.sites-hero-border-glow-wrap {
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 2;
+  overflow: hidden;
+  padding: 1px;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+}
+
+.sites-hero-border-glow-wrap::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(135deg, var(--stea-hero-border-hi) 0%, transparent 35%, var(--stea-hero-border-hi) 100%);
+  opacity: 0.65;
+  transition: opacity 0.3s ease;
+}
+
+/* Elegant slow light sweep across hero border */
+.sites-hero-border-glow-wrap::after {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -150%;
+  width: 80%;
+  height: 200%;
+  background: var(--stea-hero-sweep-grad);
+  opacity: 0.75;
+  transform: rotate(25deg);
+  animation: steaHeroBorderSweep 18s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+/* ==========================================================================
+   Keyframe Animations (GPU transform/opacity only, no blur-filter animating)
+   ========================================================================== */
+
+@keyframes steaAtmosphereDriftTop {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 0.85;
+  }
+  50% {
+    transform: translate3d(-3vw, 2vh, 0) scale(1.08);
+    opacity: 1;
+  }
+  100% {
+    transform: translate3d(2vw, -1vh, 0) scale(0.96);
+    opacity: 0.8;
+  }
+}
+
+@keyframes steaAtmosphereDriftSide {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: translate3d(-2vw, -3vh, 0) scale(1.06);
+    opacity: 0.95;
+  }
+  100% {
+    transform: translate3d(1vw, 2vh, 0) scale(0.98);
+    opacity: 0.75;
+  }
+}
+
+@keyframes steaAtmospherePulse {
+  0% {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(1.06);
+  }
+  100% {
+    opacity: 0.55;
+    transform: scale(0.98);
+  }
+}
+
+@keyframes steaHeaderSweep {
+  0% {
+    left: -100%;
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.9;
+  }
+  85% {
+    opacity: 0.9;
+  }
+  100% {
+    left: 200%;
+    opacity: 0;
+  }
+}
+
+@keyframes steaHeroBorderSweep {
+  0% {
+    transform: translateX(0) rotate(25deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.75;
+  }
+  70% {
+    transform: translateX(450%) rotate(25deg);
+    opacity: 0.75;
+  }
+  85%, 100% {
+    transform: translateX(500%) rotate(25deg);
+    opacity: 0;
+  }
+}
+
+@keyframes steaHeroOrbFloat1 {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 0.45;
+  }
+  50% {
+    transform: translate3d(-24px, 18px, 0) scale(1.08);
+    opacity: 0.65;
+  }
+  100% {
+    transform: translate3d(16px, -12px, 0) scale(0.95);
+    opacity: 0.4;
+  }
+}
+
+@keyframes steaHeroOrbFloat2 {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 0.4;
+  }
+  50% {
+    transform: translate3d(20px, -16px, 0) scale(1.1);
+    opacity: 0.6;
+  }
+  100% {
+    transform: translate3d(-14px, 12px, 0) scale(0.92);
+    opacity: 0.35;
+  }
+}
+
+@keyframes steaHeroOrbFloat3 {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 0.25;
+  }
+  50% {
+    transform: translate3d(-15px, 12px, 0) scale(1.06);
+    opacity: 0.45;
+  }
+  100% {
+    transform: translate3d(12px, -10px, 0) scale(0.96);
+    opacity: 0.22;
+  }
+}
+
+/* ==========================================================================
+   Mobile Design Adaptations
+   ========================================================================== */
+
+@media (max-width: 768px) {
+  .stea-app-atmosphere-top {
+    width: 90vw;
+    height: 45vh;
+    top: -15vh;
+    left: 5vw;
+    filter: blur(40px);
+  }
+
+  .stea-app-atmosphere-side {
+    display: none; /* Reduce GPU overhead on mobile */
+  }
+
+  .stea-app-atmosphere-brand {
+    width: 60vw;
+    height: 35vh;
+    filter: blur(45px);
+  }
+
+  .sites-hero-atm-card {
+    --hero-radius: 20px;
+    padding: 16px 14px 14px;
+  }
+
+  .sites-hero-orb-1 {
+    width: 200px;
+    height: 200px;
+    filter: blur(36px);
+  }
+
+  .sites-hero-orb-2 {
+    width: 180px;
+    height: 180px;
+    filter: blur(34px);
+  }
+
+  .sites-hero-orb-3 {
+    display: none; /* Keep mobile clean and high performance */
+  }
+
+  .sites-hero-border-glow-wrap::after {
+    display: none; /* Disable sweep on mobile for battery & CPU economy */
+  }
+}
+
+/* ==========================================================================
+   Accessibility: Reduced Motion
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .stea-app-atmosphere-top,
+  .stea-app-atmosphere-side,
+  .stea-app-atmosphere-brand,
+  .sites-header-v2::after,
+  .sites-hero-border-glow-wrap::after,
+  .sites-hero-orb-1,
+  .sites-hero-orb-2,
+  .sites-hero-orb-3 {
+    animation: none !important;
+    transform: none !important;
+    transition: none !important;
+  }
+}

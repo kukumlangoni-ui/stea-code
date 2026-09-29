@@ -1,0 +1,102 @@
+.admin-loading-container {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  background-color: #FFFFFF;
+  color: #111827;
+  padding: 24px;
+}
+
+.admin-loading-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  animation: adminLoadingFadeIn 0.8s ease-out;
+}
+
+.admin-loading-logo-wrapper {
+  position: relative;
+  width: 96px;
+  height: 96px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+
+.admin-loading-logo {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+  z-index: 2;
+  animation: adminLoadingPulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.admin-loading-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  border-top-color: #D4AF37;
+  border-right-color: rgba(212, 175, 55, 0.3);
+  border-bottom-color: transparent;
+  border-left-color: rgba(212, 175, 55, 0.1);
+  animation: adminLoadingSpin 1.5s linear infinite;
+  z-index: 1;
+}
+
+.admin-loading-title {
+  font-size: 20px;
+  font-weight: 800;
+  margin: 0 0 8px 0;
+  color: #111827;
+  letter-spacing: -0.01em;
+}
+
+.admin-loading-subtext {
+  font-size: 14px;
+  color: #6B7280;
+  margin: 0 0 24px 0;
+  font-weight: 500;
+}
+
+.admin-loading-dots {
+  display: flex;
+  gap: 6px;
+}
+
+.admin-loading-dots span {
+  width: 6px;
+  height: 6px;
+  background-color: #D4AF37;
+  border-radius: 50%;
+  animation: adminLoadingBounce 1.4s infinite ease-in-out both;
+}
+
+.admin-loading-dots span:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.admin-loading-dots span:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+@keyframes adminLoadingFadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes adminLoadingPulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(0.95); opacity: 0.8; }
+}
+
+@keyframes adminLoadingSpin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes adminLoadingBounce {
+  0%, 80%, 100% { transform: scale(0); }
+  40% { transform: scale(1); }
+}

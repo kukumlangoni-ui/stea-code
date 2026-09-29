@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>You are offline — STEA</title>
+  <meta name="theme-color" content="#05060a">
+  <link rel="icon" href="/icons/icon-192x192.png?v=stea-app-icon-2026">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png?v=stea-app-icon-2026">
+  <style>
+    :root {
+      --gold: #D4AF37;
+      --gold-soft: #F5D76E;
+      --gold-dark: #B8860B;
+      --text: #f5f5f7;
+      --text-muted: rgba(245, 245, 247, 0.62);
+      --bg: #05060a;
+      --bg-elevated: rgba(255, 255, 255, 0.04);
+      --border: rgba(245, 166, 35, 0.22);
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(ellipse at top, rgba(212, 175, 55, 0.08) 0%, transparent 55%),
+        linear-gradient(180deg, #05060a 0%, #080b14 100%);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 24px;
+      text-align: center;
+    }
+
+    .container {
+      max-width: 440px;
+      width: 100%;
+      padding: 36px 28px;
+      border-radius: 24px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      box-shadow: 0 28px 90px rgba(0, 0, 0, 0.58);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+
+    .logo-container {
+      width: 86px;
+      height: 86px;
+      border-radius: 20px;
+      margin: 0 auto 24px;
+      overflow: hidden;
+      border: 1px solid rgba(245, 215, 110, 0.4);
+      box-shadow: 0 4px 24px rgba(212, 175, 55, 0.18);
+      background: #05060a;
+    }
+
+    .logo-container img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+
+    .title {
+      font-size: 22px;
+      font-weight: 800;
+      margin: 0 0 10px;
+      color: var(--text);
+      letter-spacing: -0.02em;
+    }
+
+    .desc {
+      font-size: 14.5px;
+      color: var(--text-muted);
+      line-height: 1.55;
+      margin: 0 0 28px;
+    }
+
+    .btn {
+      background: linear-gradient(135deg, var(--gold-soft), var(--gold), var(--gold-dark));
+      color: #111;
+      border: 0;
+      border-radius: 12px;
+      width: 100%;
+      padding: 13px 24px;
+      font-size: 14.5px;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 6px 18px rgba(212, 175, 55, 0.24);
+      transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+      outline: none;
+    }
+
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 8px 22px rgba(212, 175, 55, 0.32); }
+    .btn:active { transform: translateY(1px); }
+    .btn[disabled] { opacity: 0.65; cursor: default; }
+
+    .hint {
+      margin-top: 18px;
+      font-size: 12.5px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 32px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: rgba(15, 23, 42, 0.92);
+      color: #fff;
+      padding: 12px 22px;
+      border-radius: 14px;
+      font-size: 13.5px;
+      font-weight: 700;
+      border: 1px solid var(--border);
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.4);
+      z-index: 10000;
+      opacity: 0;
+      pointer-events: none;
+      transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease;
+      max-width: 90vw;
+      white-space: nowrap;
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    @media (max-width: 480px) {
+      .container { padding: 28px 22px; border-radius: 20px; }
+      .title { font-size: 20px; }
+      .desc { font-size: 14px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="container" role="main">
+    <div class="logo-container">
+      <img src="/icons/icon-192x192.png?v=stea-app-icon-2026" alt="STEA" width="86" height="86">
+    </div>
+
+    <h1 class="title">You're offline</h1>
+
+    <p class="desc">
+      STEA can't reach the network right now. If you've opened STEA online
+      before, the full app should be available offline — try refreshing.
+    </p>
+
+    <button class="btn" type="button" onclick="retryConnection()">Try again</button>
+
+    <p class="hint">
+      This page is a last-resort fallback. The full STEA experience returns
+      automatically when your connection is back.
+    </p>
+  </main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const toast = document.getElementById('toast');
+    const btn = document.querySelector('.btn');
+    let checking = false;
+
+    function showToast(msg) {
+      toast.textContent = msg;
+      toast.classList.add('show');
+      clearTimeout(showToast._t);
+      showToast._t = setTimeout(() => toast.classList.remove('show'), 2200);
+    }
+
+    function retryConnection() {
+      if (checking) return;
+      checking = true;
+      const originalText = btn.textContent;
+      btn.textContent = 'Checking…';
+      btn.disabled = true;
+
+      const done = (ok) => {
+        if (ok) {
+          showToast('Connection restored — reloading…');
+          setTimeout(() => window.location.reload(), 800);
+        } else {
+          showToast('Still offline. Please check your connection.');
+          btn.textContent = originalText;
+          btn.disabled = false;
+          checking = false;
+        }
+      };
+
+      // Single lightweight reachability probe — no looping.
+      fetch('/favicon.ico?v=stea-app-icon-2026', { method: 'HEAD', cache: 'no-store' })
+        .then(() => done(true))
+        .catch(() => done(false));
+    }
+
+    // Auto-reload once when connectivity returns. No polling interval.
+    function onBackOnline() {
+      showToast('Back online — reloading…');
+      setTimeout(() => window.location.reload(), 800);
+    }
+    window.addEventListener('online', onBackOnline);
+  </script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+name = "stea-api"
+main = "src/index.ts"
+compatibility_date = "2024-09-01"
+
+# Route the /api/* calls on code.stea.africa to this Worker
+routes = [
+  { pattern = "code.stea.africa/api/*", zone_name = "stea.africa" }
+]
+
+# Cloudflare R2 bucket for STEA Code assets (packages, preview videos, posters)
+[[r2_buckets]]
+binding = "STEA_BUCKET"
+bucket_name = "steacode"
+
+# Cloudflare D1 database for STEA Code data
+[[d1_databases]]
+binding = "DB"
+database_name = "stea-code-db"
+database_id = "6184de42-de1b-4ede-9ca3-19bfb16a121c"

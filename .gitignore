@@ -1,0 +1,151 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build output
+dist/
+build/
+.vite/
+
+# Environment
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Cache and runtime
+.npm-cache/
+.npm/
+.cache/
+.temp/
+tmp/
+tmp_*.mjs
+tmp_*.js
+.firebase/
+.local-fs/
+.wrangler/
+**/.wrangler/
+
+# Backups and copies
+*.bak
+*.backup-*
+*.before-*
+*.bak-*
+*.save
+*.working-*
+
+# One-off scripts
+patch_*
+fix_*
+rewrite_*
+
+# Ad-hoc test files at root
+/tmp_*.mjs
+/tmp_*.js
+/test_*.js
+/test_*.mjs
+/checkData*.js
+/adminCheck.cjs
+/capture_errors.cjs
+/cleanApp*.cjs
+/debug_*.js
+/verify_live.*
+/count_websites.cjs
+/temp.js
+/last_input.json
+/steacode-scan.sh
+/gen-sub-manager.js
+/generate_icons.js
+/copy_icons.js
+/update_icons.js
+
+# Audit artifacts
+FINAL_REPORT.md
+FIRESTORE_MODELS.md
+AGENTS.md
+security_spec.md
+stea-architecture-audit.txt
+stea-audit-truth-table.md
+app-store-metadata.md
+old_notes_page.txt
+stea-code-context.md
+stea-code-audit-report.md
+stea-code-preview-audit-report.md
+docs/junkinfo.txt
+docs/product_matches.txt
+
+# Release snapshots
+.stea-release/
+.stea-backup-audit/
+
+# Trae artifacts
+.trae/
+.trae-html-share-packages/
+
+# Screenshots and outputs
+scratch_*.png
+scratch_*.jpg
+outputs/
+scratch/
+tmp_shots/
+*.pptx
+*.ndjson
+
+# Archives
+*.zip
+*.tar
+*.tar.gz
+*.rar
+*.7z
+*.mp4
+*.mov
+*.avi
+*.psd
+*.sketch
+*.fig
+
+# Unreferenced assets
+public/codestea.png
+public/stea-app-icon.png
+public/stea-app-icon-final.png
+public/stea-maskable-master.png
+public/stea-s-original.png
+public/brand/main_premium.jpg
+public/android-chrome-*.png
+
+# Unused mocks and config
+mocks/
+config/
+
+# Workflows that deploy to wrong services
+.github/
+
+# Dead source files
+src/pages/ClassroomApp.jsx
+src/pages/AlphaClassroomSaaS.jsx
+src/pages/AlphaClassroomApp.jsx
+
+# App folder (unused)
+app/
+
+# Firebase cache files
+.firebase/hosting.*.cache

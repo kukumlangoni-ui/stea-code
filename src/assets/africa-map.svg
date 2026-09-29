@@ -1,0 +1,37 @@
+<svg viewBox="0 0 500 550" xmlns="http://www.w3.org/2000/svg">
+  <!-- Accurate simplified Africa Outline -->
+  <path
+    d="M 175 62
+       C 185 52, 210 40, 240 38
+       C 285 35, 335 48, 360 80
+       C 375 99, 382 120, 395 135
+       C 405 145, 428 152, 442 165
+       C 460 182, 475 210, 458 238
+       C 445 258, 415 268, 395 285
+       C 375 302, 368 335, 360 360
+       C 350 395, 325 435, 305 465
+       C 285 495, 270 515, 252 522
+       C 238 528, 222 510, 215 485
+       C 205 450, 185 415, 172 385
+       C 160 355, 142 330, 125 315
+       C 105 298, 88 285, 78 262
+       C 68 238, 75 212, 85 190
+       C 95 168, 102 142, 115 125
+       C 128 108, 145 92, 160 78
+       C 165 72, 170 66, 175 62 Z"
+    fill="rgba(255,255,255,0.03)"
+    stroke="rgba(255,255,255,0.07)"
+    strokeWidth="1.5"
+  />
+
+  <!-- Subtle grid connection lines on the continent -->
+  <path d="M 175 62 L 305 465" stroke="rgba(255,255,255,0.02)" strokeWidth="0.8" />
+  <path d="M 240 38 L 215 485" stroke="rgba(255,255,255,0.02)" strokeWidth="0.8" />
+  <path d="M 78 262 L 395 285" stroke="rgba(255,255,255,0.02)" strokeWidth="0.8" />
+  <path d="M 125 315 L 360 80" stroke="rgba(255,255,255,0.02)" strokeWidth="0.8" />
+
+  <!-- Glowing Tanzania location marker -->
+  <circle cx="340" cy="305" r="14" fill="rgba(246,168,0,0.12)" />
+  <circle cx="340" cy="305" r="7" fill="rgba(246,168,0,0.35)" />
+  <circle cx="340" cy="305" r="3" fill="#ffbf3c" />
+</svg>

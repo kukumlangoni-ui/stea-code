@@ -1,0 +1,38 @@
+{
+  "name": "Alpha Schools Portal",
+  "short_name": "Alpha Schools",
+  "description": "The official Alpha Schools learning portal for students, teachers and administrators.",
+  "id": "/portal",
+  "start_url": "/portal",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#0B4EA2",
+  "background_color": "#062A58",
+  "icons": [
+    {
+      "src": "/alpha/icons/alpha-icon-64.png",
+      "sizes": "64x64",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/alpha/icons/alpha-icon-128.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/alpha/icons/alpha-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/alpha/icons/alpha-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
