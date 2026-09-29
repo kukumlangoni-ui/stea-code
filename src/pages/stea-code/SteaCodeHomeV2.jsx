@@ -298,18 +298,20 @@ const STEA_MARKETPLACE_FILLERS = STEA_MARKETPLACE_FILLER_TEMPLATES.map(
 function SteaCodeUserAvatar({ user, email, size = 36 }) {
   const initial = String(email || "U").charAt(0).toUpperCase() || "U";
   const photoURL = user?.photoURL;
+  const [imgError, setImgError] = useState(false);
 
-  if (photoURL) {
+  if (photoURL && !imgError) {
     return (
       <img
         src={photoURL}
         alt=""
         width={size}
         height={size}
-        className="sc-avatar-img"
+        className="sc-avatar-img sc-account-avatar-img"
         referrerPolicy="no-referrer"
         loading="lazy"
         decoding="async"
+        onError={() => setImgError(true)}
       />
     );
   }
@@ -465,6 +467,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
   const [memberGateOpen, setMemberGateOpen] = useState(false);
   const [memberGateAction, setMemberGateAction] = useState(null);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+  const [avatarSpin, setAvatarSpin] = useState("idle"); // 'idle' | 'left' | 'right'
   const [localAuthUser, setLocalAuthUser] = useState(() => user || getFirebaseAuth()?.currentUser || null);
 
   useEffect(() => {
@@ -572,24 +575,42 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
     setAccountMenuOpen(false);
   };
 
-  // Close account menu on outside click or Esc
-  useEffect(() => {
-    if (!accountMenuOpen) return;
-    const onClick = (e) => {
-      if (!accountMenuRef.current) return;
-      const target = e.target;
-      // Never close on clicks inside the menu — let item handlers run.
-      if (accountMenuRef.current.contains(target)) return;
-      // Also never close when the click originated on a menu item (e.g. sign out)
-      if (target && target.closest && target.closest('.sc-account-menu-item')) return;
+  const handleAvatarClick = () => {
+    if (avatarSpin !== "idle") return; // ignore mid-animation clicks
+
+    const willOpen = !accountMenuOpen;
+
+    if (willOpen) {
+      setAvatarSpin("left");
+      setTimeout(() => {
+        setAvatarSpin("right");
+        setAccountMenuOpen(true);
+        setTimeout(() => setAvatarSpin("idle"), 660);
+      }, 660);
+    } else {
       setAccountMenuOpen(false);
+      setAvatarSpin("left");
+      setTimeout(() => {
+        setAvatarSpin("right");
+        setTimeout(() => setAvatarSpin("idle"), 660);
+      }, 660);
+    }
+  };
+
+  // Close the profile when clicking outside the hub
+  useEffect(() => {
+    if (!accountMenuOpen) return undefined;
+    const onClick = (e) => {
+      if (accountMenuRef.current && !accountMenuRef.current.contains(e.target)) {
+        setAccountMenuOpen(false);
+      }
     };
-    const onEsc = (e) => { if (e.key === 'Escape') setAccountMenuOpen(false); };
-    document.addEventListener('click', onClick);
-    document.addEventListener('keydown', onEsc);
+    const onEsc = (e) => { if (e.key === "Escape") setAccountMenuOpen(false); };
+    document.addEventListener("click", onClick);
+    document.addEventListener("keydown", onEsc);
     return () => {
-      document.removeEventListener('click', onClick);
-      document.removeEventListener('keydown', onEsc);
+      document.removeEventListener("click", onClick);
+      document.removeEventListener("keydown", onEsc);
     };
   }, [accountMenuOpen]);
 
@@ -1125,7 +1146,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
           })}
         </nav>
 
-        <div className="sc-topbar-actions">
+        <div className={`sc-topbar-actions ${accountMenuOpen ? "is-expanded" : ""}`}>
           <a
             href="https://t.me/steacode"
             target="_blank"
@@ -1142,62 +1163,38 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
           </a>
 
           {effectiveUser ? (
-            <>
-              <div className="sc-topbar-account" ref={accountMenuRef}>
-                <button
-                  type="button"
-                  className="sc-topbar-avatar"
-                  onClick={() => setAccountMenuOpen(v => !v)}
-                  aria-label="Account menu"
-                  aria-expanded={accountMenuOpen}
-                >
-                  <SteaCodeUserAvatar user={effectiveUser} email={signedInEmail} size={36} />
-                </button>
+            <div className={`sc-account-hub ${accountMenuOpen ? "is-open" : ""}`} ref={accountMenuRef}>
+              <span className="sc-hub-glow" aria-hidden="true" />
 
-              {accountMenuOpen && (
-                  <div
-                    className="sc-topbar-account-menu"
-                    role="menu"
-                  >
-                    {/* Header — avatar + email + badge */}
-                    <div className="sc-account-menu-header">
-                      <div className="sc-account-menu-avatar">
-                        <SteaCodeUserAvatar user={effectiveUser} email={signedInEmail} size={40} />
-                      </div>
-                      <div className="sc-account-menu-user">
-                        <div className="sc-account-menu-email">
-                          {signedInEmail || "Signed in"}
-                        </div>
-                        <span className="sc-account-menu-badge">
-                          {isAdmin ? "ADMIN" : "MEMBER"}
-                        </span>
-                      </div>
-                    </div>
+              <button
+                type="button"
+                className={`sc-account-avatar-btn ${avatarSpin === "left" ? "spin-left" : avatarSpin === "right" ? "spin-right" : ""}`}
+                onClick={handleAvatarClick}
+                aria-label="Toggle profile"
+                aria-expanded={accountMenuOpen}
+              >
+                <SteaCodeUserAvatar user={effectiveUser} email={signedInEmail} size={34} />
+              </button>
 
-                    <div className="sc-account-menu-divider" />
+              <span className="sc-hub-item sc-hub-email">{signedInEmail}</span>
 
-                  </div>
-              )}
-              </div>
-              {accountMenuOpen && (
-                <button
-                  type="button"
-                  className="sc-topbar-signout"
-                  onClick={handleSignOut}
-                  aria-label="Sign out"
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                       stroke="currentColor" strokeWidth="2" strokeLinecap="round"
-                       strokeLinejoin="round" aria-hidden="true"
-                       style={{ marginRight: 6 }}>
-                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                    <polyline points="16 17 21 12 16 7" />
-                    <line x1="21" y1="12" x2="9" y2="12" />
-                  </svg>
-                  Sign out
-                </button>
-              )}
-            </>
+              <span className="sc-hub-item sc-hub-badge">{isAdmin ? "ADMIN" : "MEMBER"}</span>
+
+              <button
+                type="button"
+                className="sc-hub-item sc-hub-signout"
+                onClick={handleSignOut}
+                aria-label="Sign out"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                     strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                  <polyline points="16 17 21 12 16 7" />
+                  <line x1="21" y1="12" x2="9" y2="12" />
+                </svg>
+                Sign out
+              </button>
+            </div>
           ) : (
             <button
               type="button"

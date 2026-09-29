@@ -13148,3 +13148,92 @@ iframe::-webkit-scrollbar-corner {
 .sc-topbar-signout:active {
   transform: translateY(1px);
 }
+
+/* ============================================================
+   STEA CODE — Inline expandable profile (no dropdown)
+   ============================================================ */
+
+.sc-topbar-actions { display: flex; align-items: center; gap: 10px; }
+
+.sc-topbar-community { transition: padding 0.5s cubic-bezier(0.34, 1.4, 0.64, 1); }
+.sc-topbar-community-label {
+  transition: opacity 0.3s ease, max-width 0.5s cubic-bezier(0.34, 1.4, 0.64, 1);
+  max-width: 200px; overflow: hidden; display: inline-block; white-space: nowrap;
+}
+.sc-topbar-actions.is-expanded .sc-topbar-community { padding-left: 9px; padding-right: 9px; }
+.sc-topbar-actions.is-expanded .sc-topbar-community-label { opacity: 0; max-width: 0; }
+
+.sc-account-hub {
+  display: flex; align-items: center; gap: 8px;
+  position: relative; height: 42px; padding: 4px; border-radius: 14px;
+  transition: background 0.5s ease, padding 0.5s cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+.sc-account-hub.is-open { background: rgba(255,255,255,0.03); padding-right: 10px; }
+
+.sc-account-hub .sc-hub-glow {
+  position: absolute; inset: 0; border-radius: 14px; pointer-events: none;
+  opacity: 0; z-index: -1;
+  background: linear-gradient(90deg,
+    rgba(122,105,249,0) 0%,
+    rgba(122,105,249,0.14) 30%,
+    rgba(242,99,120,0.16) 65%,
+    rgba(245,131,63,0.09) 100%);
+  transition: opacity 0.6s ease;
+}
+.sc-account-hub.is-open .sc-hub-glow { opacity: 1; }
+
+.sc-account-avatar-btn {
+  position: relative; width: 34px; height: 34px;
+  border-radius: 50%; border: none; padding: 0;
+  cursor: pointer; flex-shrink: 0; background: transparent;
+  display: grid; place-items: center;
+  transition: transform 0.65s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.sc-account-avatar-btn::after {
+  content: ''; position: absolute; inset: -5px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(245,166,35,0.45), transparent 70%);
+  opacity: 0; z-index: -1; transition: opacity 0.5s ease; pointer-events: none;
+}
+.sc-account-avatar-btn:hover::after,
+.sc-account-hub.is-open .sc-account-avatar-btn::after { opacity: 1; }
+
+.sc-account-avatar-btn.spin-left  { animation: sc-spin-left  0.65s cubic-bezier(0.34,1.56,0.64,1) forwards; }
+.sc-account-avatar-btn.spin-right { animation: sc-spin-right 0.65s cubic-bezier(0.34,1.56,0.64,1) forwards; }
+@keyframes sc-spin-left  { 0%{transform:rotate(0)} 50%{transform:rotate(-180deg) scale(.88)} 100%{transform:rotate(-180deg)} }
+@keyframes sc-spin-right { 0%{transform:rotate(-180deg)} 50%{transform:rotate(-360deg) scale(.88)} 100%{transform:rotate(-360deg)} }
+
+.sc-hub-item {
+  display: flex; align-items: center; overflow: hidden;
+  max-width: 0; opacity: 0; white-space: nowrap; transform: translateX(-6px);
+  transition: max-width 0.55s cubic-bezier(0.34,1.56,0.64,1),
+              opacity   0.4s ease,
+              transform 0.55s cubic-bezier(0.34,1.56,0.64,1);
+}
+.sc-account-hub.is-open .sc-hub-item { max-width: 400px; opacity: 1; transform: translateX(0); }
+.sc-account-hub.is-open .sc-hub-email   { transition-delay: 0.05s; }
+.sc-account-hub.is-open .sc-hub-badge   { transition-delay: 0.13s; }
+.sc-account-hub.is-open .sc-hub-signout { transition-delay: 0.22s; }
+.sc-account-hub:not(.is-open) .sc-hub-email   { transition-delay: 0.20s; }
+.sc-account-hub:not(.is-open) .sc-hub-badge   { transition-delay: 0.12s; }
+.sc-account-hub:not(.is-open) .sc-hub-signout { transition-delay: 0.04s; }
+
+.sc-hub-email { font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.92); padding: 0 4px; }
+.sc-hub-badge {
+  display: inline-flex; align-items: center; height: 22px; padding: 0 10px;
+  border-radius: 999px; border: 1px solid rgba(245,166,35,0.5);
+  color: #f5a623; font-size: 10px; font-weight: 800; letter-spacing: 0.8px;
+  background: rgba(245,166,35,0.08);
+}
+.sc-hub-signout {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 30px; padding: 0 12px; border-radius: 10px;
+  background: rgba(245,90,90,0.1);
+  border: 1px solid rgba(245,90,90,0.35);
+  color: #f26a6a; font-size: 12px; font-weight: 600; cursor: pointer;
+  transition: max-width 0.55s cubic-bezier(0.34,1.56,0.64,1),
+              opacity   0.4s ease,
+              transform 0.55s cubic-bezier(0.34,1.56,0.64,1),
+              background 0.2s ease, border-color 0.2s ease;
+}
+.sc-hub-signout:hover { background: rgba(245,90,90,0.18); border-color: rgba(245,90,90,0.55); }
+.sc-hub-signout svg { width: 13px; height: 13px; flex-shrink: 0; }
