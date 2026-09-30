@@ -1830,7 +1830,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
               fontWeight="700"
               fontSize="180"
               fill="currentColor"
-              letterSpacing="-4"
+              letterSpacing="8"
             >
               STEA CODE
             </text>
