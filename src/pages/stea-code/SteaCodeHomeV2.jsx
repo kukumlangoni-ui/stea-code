@@ -1460,7 +1460,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
             ) : homepageProducts.length > 0 ? (
               <div className={`sc-product-grid ${isGridSwitching ? "is-switching" : ""}`}>
                 {homepageProducts.map((product, index) => (
-                  <Reveal key={getProductIdentity(product)} delay={index * 45}>
+                  <Reveal key={getProductIdentity(product)} delay={Math.min(index, 6) * 25}>
                     <PreviewErrorBoundary>
                       <CodeProductCard
                         product={product}
@@ -1676,7 +1676,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
               ) : homepageProducts.length > 0 ? (
                 <div className={`sc-product-grid ${isGridSwitching ? "is-switching" : ""}`}>
                   {homepageProducts.map((product, index) => (
-                    <Reveal key={getProductIdentity(product)} delay={index * 45}>
+                    <Reveal key={getProductIdentity(product)} delay={Math.min(index, 6) * 25}>
                       <PreviewErrorBoundary>
                         <CodeProductCard
                           product={product}
