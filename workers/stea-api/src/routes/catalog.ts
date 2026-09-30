@@ -14,6 +14,8 @@ const PRODUCTS_COLLECTION = "stea_code_products";
 const CATALOG_STRIP_FIELDS = [
   "protectedFiles",
   "sourceFiles",
+  "sourceCode",           // huge — fetched per-product on modal open
+  "publicFiles",          // huge — fetched per-product on modal open
   "tags",
   "languages",
   "fileNames",
