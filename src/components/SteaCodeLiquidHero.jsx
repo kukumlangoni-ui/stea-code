@@ -21,6 +21,12 @@ export default function SteaCodeLiquidHero({ theme = "dark" }) {
       "(prefers-reduced-motion: reduce)"
     );
 
+    // Mobile/tablet detection — freeze the canvas on smaller screens
+    // to eliminate sub-pixel jitter and save battery
+    const mobileQuery = window.matchMedia("(max-width: 1024px)");
+    const isFrozen = () =>
+      mobileQuery.matches || reduceMotionQuery.matches;
+
     const state = {
       width: 1,
       height: 1,
@@ -449,8 +455,10 @@ export default function SteaCodeLiquidHero({ theme = "dark" }) {
 
       drawVignette();
 
-      state.raf =
-        requestAnimationFrame(render);
+      // Self-terminate the loop when frozen — no continuous redraw
+      if (!isFrozen()) {
+        state.raf = requestAnimationFrame(render);
+      }
     }
 
     function onReduceMotionChange(event) {
@@ -487,8 +495,13 @@ export default function SteaCodeLiquidHero({ theme = "dark" }) {
       onReduceMotionChange
     );
 
-    state.raf =
-      requestAnimationFrame(render);
+    // Kick off — full loop on desktop, single frame on mobile/tablet
+    if (isFrozen()) {
+      // Draw one static frame at rest, then stop
+      render(performance.now());
+    } else {
+      state.raf = requestAnimationFrame(render);
+    }
 
     return () => {
       cancelAnimationFrame(state.raf);
