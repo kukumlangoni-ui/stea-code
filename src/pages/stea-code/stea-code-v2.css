@@ -15031,3 +15031,12 @@ header,
     -webkit-backdrop-filter: none !important;
   }
 }
+
+
+/* ============================================================
+   HIDE redundant corner fullscreen button in modal
+   ============================================================ */
+.sc-product-modal-panel .sc-live-preview-controls,
+.sc-product-modal-panel .sc-live-preview-ctrl {
+  display: none !important;
+}
