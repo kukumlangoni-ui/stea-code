@@ -15145,3 +15145,27 @@ header,
     transition: none;
   }
 }
+
+/* ============================================================
+   COMMAND PALETTE — entrance animation
+   ============================================================ */
+@keyframes sc-v2pal-bg-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes sc-v2pal-panel-in {
+  from { opacity: 0; transform: translateY(-8px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.sc-v2pal-bg {
+  animation: sc-v2pal-bg-in 0.2s ease both;
+}
+.sc-v2pal-panel {
+  animation: sc-v2pal-panel-in 0.25s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .sc-v2pal-bg,
+  .sc-v2pal-panel {
+    animation: none;
+  }
+}
