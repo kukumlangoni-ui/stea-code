@@ -14758,3 +14758,145 @@ header,
   border-color: rgba(88, 101, 242, 0.4) !important;
   color: #5865F2 !important;
 }
+
+
+/* ============================================================
+   GO UNLIMITED TOAST — force top-right, unclipped
+   ============================================================ */
+
+.sc-go-unlimited-toast {
+  position: fixed !important;
+  top: 80px !important;
+  right: 24px !important;
+  left: auto !important;
+  bottom: auto !important;
+  z-index: 2147483000 !important;   /* near-maximum — no ancestor can beat it */
+  max-width: calc(100vw - 48px) !important;
+  white-space: normal !important;
+  overflow: visible !important;
+  clip: auto !important;
+  text-overflow: clip !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  padding: 12px 18px !important;
+  font-size: 13px !important;
+  line-height: 1.4 !important;
+  word-break: break-word !important;
+}
+
+/* If the parent uses transform (breaks position:fixed), move it out via a wrapper — this is a fallback */
+@media (max-width: 640px) {
+  .sc-go-unlimited-toast {
+    top: auto !important;
+    bottom: 24px !important;
+    right: 16px !important;
+    left: 16px !important;
+    justify-content: center !important;
+    text-align: center !important;
+  }
+}
+
+
+/* ============================================================
+   GO UNLIMITED — wrapper + anchored small toast under button
+   ============================================================ */
+
+.sc-go-unlimited-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* Toast — small tooltip directly below the button */
+.sc-go-unlimited-toast {
+  position: absolute !important;
+  top: calc(100% + 10px) !important;
+  right: 0 !important;
+  left: auto !important;
+  bottom: auto !important;
+  z-index: 9999 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 8px 12px !important;
+  border-radius: 10px !important;
+  background: rgba(20, 20, 26, 0.96) !important;
+  border: 1px solid rgba(237, 227, 208, 0.25) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  color: #ede3d0 !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  white-space: nowrap !important;
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(255, 255, 255, 0.02) !important;
+  animation: sc-go-unlimited-toast-in 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both !important;
+  pointer-events: none !important;
+}
+
+/* Small caret pointing up to the button */
+.sc-go-unlimited-toast::before {
+  content: "";
+  position: absolute;
+  top: -5px;
+  right: 20px;
+  width: 10px;
+  height: 10px;
+  background: rgba(20, 20, 26, 0.96);
+  border-left: 1px solid rgba(237, 227, 208, 0.25);
+  border-top: 1px solid rgba(237, 227, 208, 0.25);
+  transform: rotate(45deg);
+  border-top-left-radius: 2px;
+}
+
+.sc-go-unlimited-toast-text {
+  display: inline-block;
+  white-space: nowrap;
+}
+
+.sc-go-unlimited-toast-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #f5a623;
+  box-shadow: 0 0 8px rgba(245, 166, 35, 0.9);
+  animation: sc-go-unlimited-dot 1.6s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+@keyframes sc-go-unlimited-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+@keyframes sc-go-unlimited-dot {
+  0%, 100% { opacity: 0.6; transform: scale(0.85); }
+  50%      { opacity: 1;   transform: scale(1.15); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sc-go-unlimited-toast,
+  .sc-go-unlimited-toast-dot {
+    animation: none !important;
+  }
+}
+
+/* Mobile — center the toast under the button */
+@media (max-width: 640px) {
+  .sc-go-unlimited-toast {
+    right: auto !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+  }
+  .sc-go-unlimited-toast::before {
+    right: 50% !important;
+    transform: translateX(50%) rotate(45deg) !important;
+  }
+}

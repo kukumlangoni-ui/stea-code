@@ -1225,15 +1225,23 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
             </button>
           )}
 
-          <button
-            type="button"
-            className={`sc-go-unlimited-btn ${goUnlimitedPulse ? "is-pulsing" : ""}`}
-            onClick={handleGoUnlimited}
-            aria-label="Go Unlimited — subscription plans coming soon"
-          >
-            <span className="sc-go-unlimited-shine" aria-hidden="true" />
-            <span className="sc-go-unlimited-label">Go Unlimited</span>
-          </button>
+          <div className="sc-go-unlimited-wrap">
+            <button
+              type="button"
+              className={`sc-go-unlimited-btn ${goUnlimitedPulse ? "is-pulsing" : ""}`}
+              onClick={handleGoUnlimited}
+              aria-label="Go Unlimited — subscription plans coming soon"
+            >
+              <span className="sc-go-unlimited-shine" aria-hidden="true" />
+              <span className="sc-go-unlimited-label">Go Unlimited</span>
+            </button>
+            {goUnlimitedToast && (
+              <div className="sc-go-unlimited-toast" role="status">
+                <span className="sc-go-unlimited-toast-dot" aria-hidden="true" />
+                <span className="sc-go-unlimited-toast-text">Plans launching soon</span>
+              </div>
+            )}
+          </div>
 
           <button
             type="button"
@@ -1252,12 +1260,6 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
         </div>
       </header>
 
-      {goUnlimitedToast && (
-        <div className="sc-go-unlimited-toast" role="status">
-          <span className="sc-go-unlimited-toast-dot" aria-hidden="true" />
-          Plans launching soon — stay tuned
-        </div>
-      )}
 
       {menuOpen ? (
         <MobileMenu
