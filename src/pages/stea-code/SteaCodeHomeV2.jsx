@@ -1274,6 +1274,15 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
               setViewMode(item.mode || "explore");
             }
           }}
+          user={effectiveUser}
+          isAdmin={isAdmin}
+          onSignOut={handleSignOut}
+          onGoUnlimited={handleGoUnlimited}
+          category={category}
+          setCategory={setCategory}
+          setPricing={setPricing}
+          setFramework={setFramework}
+          mobileMenuCategories={CODE_PRODUCT_CATEGORIES.filter((c) => c !== "All")}
         />
       ) : null}
 
