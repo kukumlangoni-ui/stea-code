@@ -14700,3 +14700,61 @@ header,
 .sc-market-drawer-panel::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.2);
 }
+
+/* ============================================================
+   HIDE HAMBURGER — tablet + desktop only
+   Mobile drawer code stays hidden but reusable.
+   ============================================================ */
+.sc-topbar-icon-btn.sc-mobile-only {
+  display: none !important;
+}
+
+/* If inline nav overflows below 1024px, hide it entirely
+   (accept no visible nav <1024px until mobile pass later) */
+@media (max-width: 1024px) {
+  .sc-topbar-nav {
+    display: none !important;
+  }
+}
+
+/* ============================================================
+   UI POLISH — production readiness
+   ============================================================ */
+
+/* Category pills — consistent 36px height, tight spacing */
+.sc-homepage-pill {
+  height: 36px !important;
+  padding: 0 16px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  border-radius: 999px !important;
+}
+
+/* Hero — ensure cream #ede3d0 is applied to "Code faster." accent */
+.sc-market-hero h1 strong {
+  background: linear-gradient(180deg, #ffffff 0%, #ede3d0 100%) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  filter: drop-shadow(0 0 40px rgba(237, 227, 208, 0.2)) !important;
+  animation: none !important;
+  background-size: auto !important;
+}
+
+/* Product cards — consistent height */
+.sc-code-card {
+  height: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+.sc-code-card__preview {
+  flex-shrink: 0 !important;
+}
+
+/* Footer Discord hover color */
+.sc-footer-social a[href*="discord.gg"]:hover,
+.sc-footer-social a[href*="discord.com"]:hover {
+  background: rgba(88, 101, 242, 0.12) !important;
+  border-color: rgba(88, 101, 242, 0.4) !important;
+  color: #5865F2 !important;
+}

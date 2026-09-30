@@ -65,6 +65,45 @@ export default {
 
     try {
       // ============ Public routes ============
+
+      // POST /api/log-error — receive frontend error logs
+      if (apiPath === "/log-error" && method === "POST") {
+        try {
+          const body: any = await request.json();
+          const logEntry = {
+            id: crypto.randomUUID(),
+            level: body.level || "error",
+            message: String(body.message || body.data?.[0] || body.reason || "").slice(0, 2000),
+            stack: String(body.stack || body.error || body.reason || "").slice(0, 4000),
+            url: String(body.url || body.filename || "").slice(0, 500),
+            userAgent: String(request.headers.get("user-agent") || "").slice(0, 300),
+            createdAt: new Date().toISOString(),
+          };
+          // Store in D1 for later inspection — best effort, never break
+          try {
+            await env.DB.prepare(
+              `INSERT INTO error_logs (id, level, message, stack, url, user_agent, created_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?)`
+            ).bind(
+              logEntry.id, logEntry.level, logEntry.message, logEntry.stack,
+              logEntry.url, logEntry.userAgent, logEntry.createdAt
+            ).run();
+          } catch (dbErr) {
+            // Table may not exist yet — just log to worker console
+            console.warn("[log-error] DB insert failed (table may not exist):", dbErr);
+          }
+          return new Response(JSON.stringify({ ok: true }), {
+            status: 200,
+            headers: { "Content-Type": "application/json", ...corsHeaders(request.headers.get("origin")) },
+          });
+        } catch (e) {
+          return new Response(JSON.stringify({ ok: false }), {
+            status: 500,
+            headers: { "Content-Type": "application/json", ...corsHeaders(request.headers.get("origin")) },
+          });
+        }
+      }
+
       if (apiPath === "/stea-code/catalog" && method === "GET") {
         return handleCatalog(request, env);
       }

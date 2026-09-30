@@ -176,11 +176,18 @@ export async function handleGetFavorites(req: Request, env: WorkerEnv): Promise<
       return jsonResponse({ error: "Authentication required", code: "AUTH_REQUIRED" }, 401, req);
     }
 
-    const result = await env.DB.prepare(
-      "SELECT productId, createdAt FROM favorites WHERE userId = ? ORDER BY createdAt DESC"
-    )
-      .bind(userId)
-      .all();
+    let result;
+    try {
+      result = await env.DB.prepare(
+        "SELECT productId, createdAt FROM favorites WHERE userId = ? ORDER BY createdAt DESC"
+      )
+        .bind(userId)
+        .all();
+    } catch (dbErr) {
+      // Table may not exist yet — return empty list gracefully
+      console.warn("[engagement] getFavorites skipped (table may not exist):", dbErr);
+      return jsonResponse({ favorites: [] }, 200, req);
+    }
 
     const favorites = (result.results as Array<Record<string, any>>).map((row) => ({
       productId: row.productId,

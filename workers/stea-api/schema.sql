@@ -224,3 +224,18 @@ CREATE INDEX IF NOT EXISTS idx_user_downloads_product ON user_downloads(productI
 --   ALTER TABLE products ADD COLUMN views     INTEGER DEFAULT 0;
 --   ALTER TABLE products ADD COLUMN copies    INTEGER DEFAULT 0;
 --   ALTER TABLE products ADD COLUMN downloads INTEGER DEFAULT 0;
+
+-- ============ Table 9: error_logs ============
+-- Frontend error logs sent via POST /api/log-error.
+-- Useful for monitoring production issues without Sentry.
+CREATE TABLE IF NOT EXISTS error_logs (
+  id          TEXT PRIMARY KEY,
+  level       TEXT DEFAULT 'error',
+  message     TEXT,
+  stack       TEXT,
+  url         TEXT,
+  user_agent  TEXT,
+  created_at  TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_error_logs_created ON error_logs(created_at DESC);
