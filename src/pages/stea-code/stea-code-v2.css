@@ -15063,3 +15063,35 @@ header,
     transition: none;
   }
 }
+
+/* ============================================================
+   HERO ENTRANCE — staggered load animation
+   ============================================================ */
+@keyframes sc-hero-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.sc-market-hero h1.sc-hero-title {
+  animation: sc-hero-in 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.sc-market-hero > p {
+  animation: sc-hero-in 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both;
+}
+.sc-market-hero .sc-market-search {
+  animation: sc-hero-in 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.2s both;
+}
+.sc-market-hero .sc-market-ctas {
+  animation: sc-hero-in 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.3s both;
+}
+.sc-market-hero .sc-hero-tech-pills {
+  animation: sc-hero-in 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.4s both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .sc-market-hero h1.sc-hero-title,
+  .sc-market-hero > p,
+  .sc-market-hero .sc-market-search,
+  .sc-market-hero .sc-market-ctas,
+  .sc-market-hero .sc-hero-tech-pills {
+    animation: none;
+  }
+}
