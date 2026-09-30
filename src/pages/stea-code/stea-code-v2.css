@@ -13616,3 +13616,94 @@ iframe::-webkit-scrollbar-corner {
     0 0 22px rgba(245, 90, 90, 0.35);
 }
 .sc-hub-signout svg { width: 13px; height: 13px; flex-shrink: 0; }
+
+
+/* ============================================================
+   FINAL OVERRIDE — right-align, gold-only glow, premium motion
+   ============================================================ */
+
+/* 1) Pin the whole action group to the right corner */
+.sc-topbar-actions {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  margin-left: auto !important;
+  flex-shrink: 0 !important;
+}
+
+/* 2) Replace the rainbow glow with a warm gold wash */
+.sc-account-hub .sc-hub-glow {
+  background:
+    radial-gradient(120% 140% at 12% 50%,
+      rgba(245, 166, 35, 0.22) 0%,
+      rgba(245, 166, 35, 0.10) 35%,
+      rgba(245, 166, 35, 0.00) 70%) !important;
+  filter: blur(14px);
+  border-radius: 999px;
+}
+
+/* 3) Softer hub background when open, matching brand */
+.sc-account-hub.is-open {
+  background: linear-gradient(90deg,
+    rgba(245, 166, 35, 0.05) 0%,
+    rgba(255, 255, 255, 0.02) 100%) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 0 20px rgba(245, 166, 35, 0.08) !important;
+}
+
+/* 4) Email text — neutral white, no colour bleed */
+.sc-hub-email {
+  color: rgba(255, 255, 255, 0.94) !important;
+  font-weight: 500 !important;
+}
+
+/* 5) ADMIN badge — refined gold pill */
+.sc-hub-badge {
+  color: #f5b340 !important;
+  border: 1px solid rgba(245, 166, 35, 0.5) !important;
+  background: linear-gradient(135deg,
+    rgba(245, 166, 35, 0.14) 0%,
+    rgba(245, 166, 35, 0.06) 100%) !important;
+  box-shadow: 0 0 10px rgba(245, 166, 35, 0.15);
+}
+
+/* 6) Sign out — coral but tied into the gold family */
+.sc-hub-signout {
+  color: #f28a6f !important;
+  border: 1px solid rgba(242, 138, 111, 0.4) !important;
+  background: linear-gradient(135deg,
+    rgba(242, 138, 111, 0.14) 0%,
+    rgba(242, 138, 111, 0.06) 100%) !important;
+}
+.sc-hub-signout:hover {
+  color: #ff9f85 !important;
+  border-color: rgba(242, 138, 111, 0.7) !important;
+  box-shadow: 0 0 18px rgba(242, 138, 111, 0.28);
+}
+
+/* 7) Community button — match the hub's height when collapsed */
+.sc-topbar-community {
+  height: 42px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+}
+
+/* 8) When expanded, tint the Telegram icon gold instead of blue */
+.sc-topbar-actions.is-expanded .sc-topbar-community-icon {
+  color: #f5b340 !important;
+  transition: color 0.4s ease;
+}
+
+/* 9) Smoother slide-in for hub items — first pixel of motion */
+.sc-account-hub.is-open .sc-hub-item {
+  transform: translateX(0) !important;
+  opacity: 1 !important;
+}
+.sc-hub-item {
+  transform: translateX(-10px) !important;
+  transition:
+    max-width 0.55s cubic-bezier(0.34, 1.4, 0.64, 1),
+    opacity   0.35s ease,
+    transform 0.55s cubic-bezier(0.34, 1.4, 0.64, 1) !important;
+}
