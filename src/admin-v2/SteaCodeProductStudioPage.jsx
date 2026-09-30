@@ -136,6 +136,14 @@ export default function SteaCodeProductStudioPage({
     [navigate, baseRoute]
   );
 
+  const handlePublished = useCallback(
+    () => {
+      const base = baseRoute.replace(/\/$/, "");
+      navigate(`${base}/products/new`);
+    },
+    [navigate, baseRoute]
+  );
+
   if (loading) {
     return (
       <div className="sc-studio-route-loading">
@@ -202,6 +210,7 @@ export default function SteaCodeProductStudioPage({
         onClose={handleBack}
         onSaved={handleSaved}
         onCreated={handleCreated}
+        onPublished={handlePublished}
         isSuperAdmin={isSuperAdmin}
         devPreview={devPreview}
         initialTab={initialTab}

@@ -5,6 +5,7 @@ import {
   Box,
   CreditCard,
   Database,
+  DollarSign,
   ExternalLink,
   FolderKanban,
   Globe,
@@ -19,6 +20,7 @@ import {
   ShieldX,
   Sparkles,
   User,
+  Users,
   X,
 } from "lucide-react";
 import { getFirebaseAuth, signOut } from "../firebase.js";
@@ -34,6 +36,7 @@ import SteaCodeProductStudioPage from "./SteaCodeProductStudioPage.jsx";
 import SteaCodeLogo from "../components/stea-code/SteaCodeLogo.jsx";
 import "./admin-v2.css";
 import "./stea-code-admin.css";
+import "./admin-premium.css";
 
 /* DEV-only auth/permission logger (no tokens/secrets).
    Strictly import.meta.env.DEV so production build dead-code eliminates the entire block. */
@@ -55,13 +58,12 @@ const DEV_ADMIN_LOG = import.meta.env.DEV
  *
  * Do NOT copy CRUD logic. Do NOT show unrelated STEA ecosystem admin modules.
  */
-const // Spec T + Y: Primary Product Studio navigation (focused around products).
-// directory / hosting / inspiration / legacy removed from primary UI.
-// Their render branches + direct URLs remain for compatibility.
-CODE_ADMIN_NAV = [
+const CODE_ADMIN_NAV = [
   { id: "products", label: "Products", icon: Package, path: "/admin/products" },
   { id: "categories", label: "Categories", icon: ListTree, path: "/admin/categories" },
   { id: "orders", label: "Orders", icon: CreditCard, path: "/admin/orders" },
+  { id: "payments", label: "Payments", icon: DollarSign, path: "/admin/payments" },
+  { id: "users", label: "Users", icon: Users, path: "/admin/users" },
   { id: "entitlements", label: "Entitlements", icon: KeyRound, path: "/admin/entitlements" },
 ];
 
@@ -71,12 +73,14 @@ CODE_ADMIN_NAV = [
  */
 const CODE_ADMIN_TITLES = {
   products: "Products — STEA Code Admin",
+  categories: "Categories — STEA Code Admin",
+  orders: "Orders — STEA Code Admin",
+  payments: "Payments — STEA Code Admin",
+  users: "Users — STEA Code Admin",
+  entitlements: "Entitlements — STEA Code Admin",
   directory: "Developer Resources — STEA Code Admin",
   hosting: "Hosting — STEA Code Admin",
   inspiration: "Website Inspiration — STEA Code Admin",
-  categories: "Categories — STEA Code Admin",
-  orders: "Orders — STEA Code Admin",
-  entitlements: "Entitlements — STEA Code Admin",
   legacy: "More / Legacy — STEA Code Admin",
 };
 
@@ -327,18 +331,22 @@ export default function SteaCodeAdminApp(props) {
       case "":
       case "products":
         return "products";
+      case "categories":
+        return "categories";
+      case "orders":
+        return "orders";
+      case "payments":
+        return "payments";
+      case "users":
+        return "users";
+      case "entitlements":
+        return "entitlements";
       case "resources":
         return "directory";
       case "hosting":
         return "hosting";
       case "inspiration":
         return "inspiration";
-      case "categories":
-        return "categories";
-      case "orders":
-        return "orders";
-      case "entitlements":
-        return "entitlements";
       case "legacy":
         return "legacy";
       default:
@@ -439,12 +447,14 @@ export default function SteaCodeAdminApp(props) {
   const selectSection = (id) => {
     const segmentMap = {
       products: "products",
+      categories: "categories",
+      orders: "orders",
+      payments: "payments",
+      users: "users",
+      entitlements: "entitlements",
       directory: "resources",
       hosting: "hosting",
       inspiration: "inspiration",
-      categories: "categories",
-      orders: "orders",
-      entitlements: "entitlements",
       legacy: "legacy",
     };
     const segment = segmentMap[id] || "products";
@@ -513,7 +523,7 @@ export default function SteaCodeAdminApp(props) {
                 Product Studio
               </h1>
               <p className="sca-admin-hero-sub">
-                Manage products, categories, orders and source access entitlements.
+                Manage products, categories, orders, payments, users and source access entitlements.
               </p>
             </div>
           </div>
@@ -538,20 +548,6 @@ export default function SteaCodeAdminApp(props) {
         {import.meta.env.DEV && <LocalFirestoreBadge />}
 
         <div className="sca-admin-content">
-          {/*
-            Routes are kept simple and intentionally collapse to a single SteaCodePage
-            because SteaCodePage already owns the complete tabbed data-management UX.
-            The clean URL segments (/admin/products, /admin/resources ...) provide
-            stable navigation and bookmarkable deep-links while preserving one
-            canonical implementation (Products/Resources/Hosting/Inspiration/Categories
-            /Orders/Entitlements/Legacy are internal tabs inside SteaCodePage).
-
-            baseRoute is passed as <Routes basename> so /code-admin/products also works
-            on the localhost dedicated preview entry.
-
-            hideInternalTabs + dedicatedAdmin ensure SteaCodePage does NOT render
-            a duplicate tab strip — the dedicated shell owns the navigation.
-          */}
           <Routes basename={baseRoute.replace(/\/$/, "")}>
             <Route index element={<Navigate to="products" replace />} />
 
@@ -579,12 +575,14 @@ export default function SteaCodeAdminApp(props) {
 
             {[
               "products",
+              "categories",
+              "orders",
+              "payments",
+              "users",
+              "entitlements",
               "resources",
               "hosting",
               "inspiration",
-              "categories",
-              "orders",
-              "entitlements",
               "legacy",
             ].map((segment) => {
               const tabId = segment === "resources" ? "directory" : segment;

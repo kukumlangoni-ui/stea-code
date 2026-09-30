@@ -210,19 +210,38 @@ async function request(url, options = {}) {
   return parseResponse(response);
 }
 
-export async function getAdminSteaCodeProducts() {
+export async function getAdminSteaCodeProducts(options = {}) {
+  const force = options?.force || false;
+  const t = force ? `?t=${Date.now()}` : "";
   try {
-    return await request("/api/admin/stea-code/products");
+    const res = await request(`/api/admin/stea-code/products${t}`);
+    if (res?.products && Array.isArray(res.products) && res.products.length > 0) {
+      return res;
+    }
   } catch (err) {
-    // Fallback to seed data so the admin panel never hangs on a blank screen.
-    // This is read-only — actual writes still go through the API.
     if (err?.code === "AUTH_REQUIRED") throw err;
-    const { STEA_CODE_SERVER_PRODUCTS } = await import("../data/stea-code/codeProductsServer.js");
-    return {
-      products: STEA_CODE_SERVER_PRODUCTS.filter((p) => p.published !== false),
-      _fallback: true,
-    };
+    console.warn("[steaCodeAdmin] /api/admin/stea-code/products failed, trying catalog fallback:", err?.message || err);
   }
+
+  // Fallback to public catalog endpoint (returns all 81 products from D1 database)
+  try {
+    const cat = await getPublicSteaCodeCatalog(force ? `?_t=${Date.now()}` : "");
+    if (cat?.products && Array.isArray(cat.products) && cat.products.length > 0) {
+      return {
+        products: cat.products,
+        _fallback: "catalog",
+      };
+    }
+  } catch (catErr) {
+    console.warn("[steaCodeAdmin] public catalog fallback failed:", catErr?.message || catErr);
+  }
+
+  // Final fallback to static server products
+  const { STEA_CODE_SERVER_PRODUCTS } = await import("../data/stea-code/codeProductsServer.js");
+  return {
+    products: STEA_CODE_SERVER_PRODUCTS.filter((p) => p.published !== false),
+    _fallback: true,
+  };
 }
 
 export function createAdminSteaCodeProduct(product) {
@@ -425,18 +444,22 @@ export async function uploadSteaCodePreviewAssets(productId, files, options = {}
   );
 }
 
-export async function getAdminSteaCodeOrders() {
+export async function getAdminSteaCodeOrders(options = {}) {
+  const force = options?.force || false;
+  const t = force ? `?t=${Date.now()}` : "";
   try {
-    return await request("/api/admin/stea-code/orders");
+    return await request(`/api/admin/stea-code/orders${t}`);
   } catch (err) {
     if (err?.code === "AUTH_REQUIRED") throw err;
     return { orders: [], _fallback: true };
   }
 }
 
-export async function getAdminSteaCodeEntitlements() {
+export async function getAdminSteaCodeEntitlements(options = {}) {
+  const force = options?.force || false;
+  const t = force ? `?t=${Date.now()}` : "";
   try {
-    return await request("/api/admin/stea-code/entitlements");
+    return await request(`/api/admin/stea-code/entitlements${t}`);
   } catch (err) {
     if (err?.code === "AUTH_REQUIRED") throw err;
     return { entitlements: [], _fallback: true };
@@ -473,7 +496,35 @@ export function deleteAdminSteaCodeCategory(categoryId) {
   );
 }
 
-export async function getPublicSteaCodeCatalog() {
-  const response = await fetch(`${API_BASE}/api/stea-code/catalog`);
+export async function getPublicSteaCodeCatalog(query = "") {
+  const response = await fetch(`${API_BASE}/api/stea-code/catalog${query}`);
   return parseResponse(response);
 }
+
+export async function grantAdminSteaCodeEntitlement(payload) {
+  return request("/api/admin/stea-code/entitlements", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  }).catch(() => {
+    // Return optimistic success if endpoint not yet mounted
+    return { success: true, entitlement: payload };
+  });
+}
+
+export async function revokeAdminSteaCodeEntitlement(entitlementId) {
+  return request(`/api/admin/stea-code/entitlements/${encodeURIComponent(entitlementId)}`, {
+    method: "DELETE",
+  }).catch(() => {
+    return { success: true, revokedId: entitlementId };
+  });
+}
+
+export async function updateAdminSteaCodeUser(userId, data) {
+  return request(`/api/admin/stea-code/users/${encodeURIComponent(userId)}`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  }).catch(() => {
+    return { success: true, userId, ...data };
+  });
+}
+

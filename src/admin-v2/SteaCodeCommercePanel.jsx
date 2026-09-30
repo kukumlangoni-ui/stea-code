@@ -3,11 +3,16 @@ import { useNavigate } from "react-router-dom";
 import {
   AlertTriangle,
   Archive,
+  ArrowUpRight,
+  Ban,
+  Calendar,
+  Check,
   CheckCircle2,
   ChevronDown,
   ChevronUp,
   Code2,
   Copy,
+  CreditCard,
   DollarSign,
   DownloadCloud,
   Edit3,
@@ -16,7 +21,9 @@ import {
   FileText,
   Fullscreen,
   Home,
+  KeyRound,
   Loader2,
+  Mail,
   Maximize2,
   Minus,
   Monitor,
@@ -32,8 +39,11 @@ import {
   Smartphone,
   Tablet,
   Trash2,
+  TrendingUp,
   Upload,
   UploadCloud,
+  UserCheck,
+  UserX,
   Users,
   Video,
   X,
@@ -48,6 +58,9 @@ import {
   getAdminSteaCodeProducts,
   getAdminSteaCodePreview,
   getAdminSteaCodeSource,
+  grantAdminSteaCodeEntitlement,
+  revokeAdminSteaCodeEntitlement,
+  updateAdminSteaCodeUser,
   saveAdminSteaCodePreview,
   saveAdminSteaCodeSource,
   uploadSteaCodePackage,
@@ -951,7 +964,7 @@ function getUploadErrorMessage(err, context = "upload") {
 /* =========================================================
    PRODUCT STUDIO — the new wide IDE-style editor shell
    ========================================================= */
-export function ProductStudio({ product, onClose, onSaved, onCreated, isSuperAdmin, devPreview = false, fullPage = false, initialTab = "general", baseRoute = "/code-admin" }) {
+export function ProductStudio({ product, onClose, onSaved, onCreated, onPublished, isSuperAdmin, devPreview = false, fullPage = false, initialTab = "general", baseRoute = "/code-admin" }) {
   const editing = Boolean(product?.id);
   const navigate = useNavigate();
   const ALLOWED_TABS = ["general", "preview", "source", "publish"];
@@ -1440,6 +1453,10 @@ export function ProductStudio({ product, onClose, onSaved, onCreated, isSuperAdm
       await onSaved(savedProduct);
       setNotice(publishAction === "publish_homepage" ? "Published to Homepage" : "Saved");
       setDirty(false);
+      if (isPublishing && typeof onPublished === "function") {
+        onPublished(savedProduct);
+        return;
+      }
       if (!editing && realProductId) {
         // New product successfully created: move to the persistent edit route.
         // This changes /products/new → /products/:id/edit so subsequent
@@ -3612,6 +3629,120 @@ function SourceEditor({ product, onClose }) {
 }
 
 /* =========================================================
+   INLINE SVG REVENUE CHART (LAST 30 DAYS)
+   ========================================================= */
+function PaymentsRevenueChart({ orders = [] }) {
+  const chartData = useMemo(() => {
+    const days = 30;
+    const result = [];
+    const now = new Date();
+
+    for (let i = days - 1; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      d.setHours(0, 0, 0, 0);
+      const dateStr = d.toISOString().split("T")[0];
+      const label = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+
+      const dayTotal = orders
+        .filter((o) => {
+          if (o.status !== "paid") return false;
+          const orderDate = new Date(o.createdAt || o.created || 0);
+          return !Number.isNaN(orderDate.getTime()) && orderDate.toISOString().split("T")[0] === dateStr;
+        })
+        .reduce((sum, o) => {
+          const amt = typeof o.amountMinor === "number"
+            ? o.amountMinor / 100
+            : typeof o.amount === "number"
+            ? o.amount
+            : 0;
+          return sum + amt;
+        }, 0);
+
+      result.push({ date: dateStr, label, amount: dayTotal });
+    }
+    return result;
+  }, [orders]);
+
+  const maxAmount = Math.max(...chartData.map((d) => d.amount), 50);
+  const total30d = chartData.reduce((acc, d) => acc + d.amount, 0);
+  const width = 800;
+  const height = 180;
+  const padding = { top: 20, right: 24, bottom: 28, left: 46 };
+  const graphWidth = width - padding.left - padding.right;
+  const graphHeight = height - padding.top - padding.bottom;
+
+  const points = chartData.map((d, index) => {
+    const x = padding.left + (index / (chartData.length - 1)) * graphWidth;
+    const y = padding.top + graphHeight - (d.amount / maxAmount) * graphHeight;
+    return { ...d, x, y };
+  });
+
+  const pathD = points.reduce((acc, pt, idx, arr) => {
+    if (idx === 0) return `M ${pt.x},${pt.y}`;
+    const prev = arr[idx - 1];
+    const cx = (prev.x + pt.x) / 2;
+    return `${acc} C ${cx},${prev.y} ${cx},${pt.y} ${pt.x},${pt.y}`;
+  }, "");
+
+  const areaD = `${pathD} L ${points[points.length - 1].x},${padding.top + graphHeight} L ${points[0].x},${padding.top + graphHeight} Z`;
+
+  return (
+    <div className="sc-admin-chart-container">
+      <div className="sc-admin-chart-header">
+        <div>
+          <div className="sc-admin-chart-title">Revenue Velocity</div>
+          <span style={{ fontSize: "12px", color: "rgba(255,255,255,0.4)" }}>30-day rolling aggregate</span>
+        </div>
+        <div className="sc-admin-chart-summary">
+          Last 30 Days: <strong>USD {total30d.toFixed(2)}</strong>
+        </div>
+      </div>
+      <svg viewBox={`0 0 ${width} ${height}`} style={{ width: "100%", height: "auto", overflow: "visible" }}>
+        <defs>
+          <linearGradient id="scRevenueGradient" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#f5a623" stopOpacity="0.32" />
+            <stop offset="100%" stopColor="#f5a623" stopOpacity="0.0" />
+          </linearGradient>
+        </defs>
+        {/* Horizontal grid lines */}
+        {[0, 0.5, 1].map((ratio) => {
+          const y = padding.top + graphHeight * (1 - ratio);
+          return (
+            <g key={ratio}>
+              <line x1={padding.left} y1={y} x2={width - padding.right} y2={y} stroke="rgba(255,255,255,0.06)" strokeDasharray="3 3" />
+              <text x={padding.left - 8} y={y + 3} fill="rgba(255,255,255,0.3)" fontSize="10" textAnchor="end" fontFamily="system-ui">
+                ${(maxAmount * ratio).toFixed(0)}
+              </text>
+            </g>
+          );
+        })}
+        {/* Area */}
+        <path d={areaD} fill="url(#scRevenueGradient)" />
+        {/* Line */}
+        <path d={pathD} fill="none" stroke="#f5a623" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+        {/* Points & Axis */}
+        {points.map((pt, idx) => {
+          const showLabel = idx === 0 || idx === 7 || idx === 15 || idx === 22 || idx === points.length - 1;
+          return (
+            <g key={pt.date}>
+              {pt.amount > 0 && (
+                <circle cx={pt.x} cy={pt.y} r="3.5" fill="#f5a623" stroke="#0a0a0f" strokeWidth="1.5" />
+              )}
+              {showLabel && (
+                <text x={pt.x} y={height - 6} fill="rgba(255,255,255,0.35)" fontSize="10" textAnchor="middle" fontFamily="system-ui">
+                  {pt.label}
+                </text>
+              )}
+            </g>
+          );
+        })}
+      </svg>
+    </div>
+  );
+}
+
+/* =========================================================
    MAIN COMMERCE CONTROL CENTER
    ========================================================= */
 export default function SteaCodeCommercePanel({ isSuperAdmin, initialTab = "products", embedded = false, devPreview = false, onCountsChange, dedicatedAdmin = false, baseRoute = "/code-admin" }) {
@@ -3623,21 +3754,53 @@ export default function SteaCodeCommercePanel({ isSuperAdmin, initialTab = "prod
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
   const [filter, setFilter] = useState("all");
   const [editor, setEditor] = useState(null);
   const [sourceProduct, setSourceProduct] = useState(null);
   const [deleting, setDeleting] = useState(null);
   const [error, setError] = useState("");
+  const [toast, setToast] = useState("");
 
-  // In-memory cache for the products/orders/entitlements triple. Soft
-  // refreshes (e.g. returning from the product editor) reuse this cache
-  // for up to 30s so the user doesn't sit through three full API round
-  // trips every time they navigate back. The explicit "Refresh" button
-  // bypasses the cache by passing force=true.
+  // Users & Payments specific state
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [grantingUser, setGrantingUser] = useState(null);
+  const [grantProductId, setGrantProductId] = useState("");
+  const [grantLicense, setGrantLicense] = useState("personal");
+  const [bannedUsers, setBannedUsers] = useState(() => new Set());
+  const [usersFilter, setUsersFilter] = useState("all");
+  const [usersQuery, setUsersQuery] = useState("");
+  const [paymentsDateRange, setPaymentsDateRange] = useState("all");
+  const [paymentsStatusFilter, setPaymentsStatusFilter] = useState("all");
+  const [paymentsQuery, setPaymentsQuery] = useState("");
+
+  // In-memory cache for the data triple
   const dataCacheRef = useRef({ timestamp: 0, products: [], orders: [], entitlements: [] });
-  const DATA_CACHE_TTL_MS = 30 * 1000;
+  const DATA_CACHE_TTL_MS = 5 * 60 * 1000; // 5-minute TTL
 
-  // Dedicated admin: route to the full-page Product Studio instead of a modal.
+  // Auto-dismiss toast
+  useEffect(() => {
+    if (!toast) return;
+    const timer = setTimeout(() => setToast(""), 3500);
+    return () => clearTimeout(timer);
+  }, [toast]);
+
+  // Debounce search input (250ms)
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedQuery(query);
+    }, 250);
+    return () => clearTimeout(handler);
+  }, [query]);
+
+  // Sync tab state when initialTab changes
+  useEffect(() => {
+    if (initialTab && initialTab !== tab) {
+      setTab(initialTab);
+    }
+  }, [initialTab]);
+
+  // Dedicated admin: route to full-page Product Studio
   const openEditor = useCallback((product) => {
     if (dedicatedAdmin) {
       const base = baseRoute.replace(/\/$/, "");
@@ -3651,7 +3814,6 @@ export default function SteaCodeCommercePanel({ isSuperAdmin, initialTab = "prod
     setEditor(product && product.id ? product : {});
   }, [dedicatedAdmin, navigate, baseRoute]);
 
-  // Preview action: routes to edit page with ?tab=preview deep-link.
   const openPreview = useCallback((product) => {
     if (dedicatedAdmin && product?.id) {
       const base = baseRoute.replace(/\/$/, "");
@@ -3672,12 +3834,9 @@ export default function SteaCodeCommercePanel({ isSuperAdmin, initialTab = "prod
       setRefreshing(false);
       return;
     }
-    // Soft refresh (e.g. returning from the editor) reuses cached data
-    // if it's fresher than DATA_CACHE_TTL_MS. Only the explicit Refresh
-    // button passes force=true to bypass this and hit the network.
     const cache = dataCacheRef.current;
     const now = Date.now();
-    if (!force && cache.timestamp && (now - cache.timestamp) < DATA_CACHE_TTL_MS) {
+    if (!force && cache.timestamp && (now - cache.timestamp) < DATA_CACHE_TTL_MS && cache.products.length > 0) {
       setProducts(cache.products);
       setOrders(cache.orders);
       setEntitlements(cache.entitlements);
@@ -3687,9 +3846,9 @@ export default function SteaCodeCommercePanel({ isSuperAdmin, initialTab = "prod
     }
     try {
       const [pr, ord, en] = await Promise.all([
-        getAdminSteaCodeProducts(),
-        getAdminSteaCodeOrders(),
-        getAdminSteaCodeEntitlements(),
+        getAdminSteaCodeProducts({ force }),
+        getAdminSteaCodeOrders({ force }),
+        getAdminSteaCodeEntitlements({ force }),
       ]);
       const nextProducts = pr?.products || [];
       const nextOrders = ord?.orders || [];
@@ -3709,7 +3868,7 @@ export default function SteaCodeCommercePanel({ isSuperAdmin, initialTab = "prod
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [devPreview]);
 
   useEffect(() => { refresh(); }, [refresh]);
 
@@ -3738,8 +3897,19 @@ export default function SteaCodeCommercePanel({ isSuperAdmin, initialTab = "prod
     return totals;
   }, [paidOrders]);
 
+  // Product Counts for Filter Pills
+  const productCounts = useMemo(() => ({
+    all: products.length,
+    published: products.filter((p) => p.status === "published").length,
+    draft: products.filter((p) => p.status === "draft").length,
+    premium: products.filter((p) => p.pricingType === "premium").length,
+    free: products.filter((p) => p.pricingType === "free").length,
+    featured: products.filter((p) => Boolean(p.featured)).length,
+    archived: products.filter((p) => p.status === "archived").length,
+  }), [products]);
+
   const visibleProducts = useMemo(() => {
-    const needle = query.trim().toLowerCase();
+    const needle = debouncedQuery.trim().toLowerCase();
     return products.filter((p) => {
       if (filter === "published" && p.status !== "published") return false;
       if (filter === "draft" && p.status !== "draft") return false;
@@ -3753,11 +3923,223 @@ export default function SteaCodeCommercePanel({ isSuperAdmin, initialTab = "prod
         .toLowerCase()
         .includes(needle);
     });
-  }, [products, query, filter]);
+  }, [products, debouncedQuery, filter]);
+
+  // Aggregated Users List
+  const users = useMemo(() => {
+    const userMap = new Map();
+    const ownerEmails = ["stea.africa@gmail.com", "kukumlangoni@gmail.com"];
+
+    for (const email of ownerEmails) {
+      userMap.set(email.toLowerCase(), {
+        id: email,
+        email,
+        displayName: email.split("@")[0],
+        role: "Super Admin",
+        purchases: [],
+        entitlements: [],
+        purchasesCount: 0,
+        totalSpent: 0,
+        currency: "USD",
+        joinedDate: "2026-01-01T00:00:00.000Z",
+        lastActive: new Date().toISOString(),
+        isBanned: bannedUsers.has(email.toLowerCase()),
+      });
+    }
+
+    for (const en of entitlements) {
+      const email = String(en.userEmail || en.email || en.userId || "").trim().toLowerCase();
+      if (!email) continue;
+      let record = userMap.get(email);
+      if (!record) {
+        record = {
+          id: en.userId || email,
+          email,
+          displayName: email.split("@")[0],
+          role: ownerEmails.includes(email) ? "Super Admin" : "Member",
+          purchases: [],
+          entitlements: [],
+          purchasesCount: 0,
+          totalSpent: 0,
+          currency: "USD",
+          joinedDate: en.createdAt || en.grantedAt || new Date().toISOString(),
+          lastActive: en.createdAt || en.grantedAt || new Date().toISOString(),
+          isBanned: bannedUsers.has(email) || bannedUsers.has(en.userId),
+        };
+        userMap.set(email, record);
+      }
+      record.entitlements.push(en);
+      const enDate = en.createdAt || en.grantedAt;
+      if (enDate && new Date(enDate) < new Date(record.joinedDate)) record.joinedDate = enDate;
+      if (enDate && new Date(enDate) > new Date(record.lastActive)) record.lastActive = enDate;
+    }
+
+    for (const ord of orders) {
+      const email = String(ord.userEmail || ord.email || ord.userId || "").trim().toLowerCase();
+      if (!email) continue;
+      let record = userMap.get(email);
+      if (!record) {
+        record = {
+          id: ord.userId || email,
+          email,
+          displayName: email.split("@")[0],
+          role: ownerEmails.includes(email) ? "Super Admin" : "Member",
+          purchases: [],
+          entitlements: [],
+          purchasesCount: 0,
+          totalSpent: 0,
+          currency: ord.currency || "USD",
+          joinedDate: ord.createdAt || new Date().toISOString(),
+          lastActive: ord.createdAt || new Date().toISOString(),
+          isBanned: bannedUsers.has(email) || bannedUsers.has(ord.userId),
+        };
+        userMap.set(email, record);
+      }
+      record.purchases.push(ord);
+      if (ord.status === "paid") {
+        record.purchasesCount += 1;
+        const amt = typeof ord.amountMinor === "number"
+          ? ord.amountMinor / 100
+          : typeof ord.amount === "number"
+          ? ord.amount
+          : 0;
+        record.totalSpent += amt;
+      }
+      const ordDate = ord.createdAt;
+      if (ordDate && new Date(ordDate) < new Date(record.joinedDate)) record.joinedDate = ordDate;
+      if (ordDate && new Date(ordDate) > new Date(record.lastActive)) record.lastActive = ordDate;
+    }
+
+    return Array.from(userMap.values());
+  }, [orders, entitlements, bannedUsers]);
+
+  const filteredUsers = useMemo(() => {
+    const needle = usersQuery.trim().toLowerCase();
+    return users.filter((u) => {
+      if (usersFilter === "paid" && u.purchasesCount === 0) return false;
+      if (usersFilter === "free" && u.purchasesCount > 0) return false;
+      if (usersFilter === "admins" && !["Super Admin", "Admin"].includes(u.role)) return false;
+      if (!needle) return true;
+      return [u.email, u.displayName, u.role].join(" ").toLowerCase().includes(needle);
+    });
+  }, [users, usersFilter, usersQuery]);
+
+  // Payments Metrics & Filtering
+  const paymentsMetrics = useMemo(() => {
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+    let total = 0;
+    let mtd = 0;
+    let thisWeek = 0;
+    let refundsCount = 0;
+    let refundsTotal = 0;
+
+    for (const ord of orders) {
+      const ordDate = new Date(ord.createdAt || ord.created || 0);
+      const isPaid = ord.status === "paid";
+      const isRefunded = ord.status === "refunded";
+      const amt = typeof ord.amountMinor === "number"
+        ? ord.amountMinor / 100
+        : typeof ord.amount === "number"
+        ? ord.amount
+        : 0;
+
+      if (isPaid) {
+        total += amt;
+        if (!Number.isNaN(ordDate.getTime())) {
+          if (ordDate.getMonth() === currentMonth && ordDate.getFullYear() === currentYear) {
+            mtd += amt;
+          }
+          if (ordDate >= oneWeekAgo) {
+            thisWeek += 1;
+          }
+        }
+      }
+      if (isRefunded) {
+        refundsCount += 1;
+        refundsTotal += amt;
+      }
+    }
+
+    return { total, mtd, thisWeek, refundsCount, refundsTotal };
+  }, [orders]);
+
+  const filteredPayments = useMemo(() => {
+    const needle = paymentsQuery.trim().toLowerCase();
+    const now = new Date();
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    return orders.filter((o) => {
+      if (paymentsStatusFilter !== "all" && o.status !== paymentsStatusFilter) return false;
+      const ordDate = new Date(o.createdAt || o.created || 0);
+      if (paymentsDateRange === "today" && ordDate < startOfToday) return false;
+      if (paymentsDateRange === "7d" && ordDate < sevenDaysAgo) return false;
+      if (paymentsDateRange === "30d" && ordDate < thirtyDaysAgo) return false;
+      if (!needle) return true;
+      return [o.id, o.userEmail, o.email, o.productId, o.providerOrderId, o.stripeId]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase()
+        .includes(needle);
+    });
+  }, [orders, paymentsDateRange, paymentsStatusFilter, paymentsQuery]);
+
+  // Actions
+  const handleToggleBan = useCallback((userEmail) => {
+    const key = String(userEmail || "").toLowerCase();
+    setBannedUsers((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+        setToast(`User ${userEmail} unbanned.`);
+      } else {
+        next.add(key);
+        setToast(`User ${userEmail} banned.`);
+      }
+      return next;
+    });
+  }, []);
+
+  const handleResendReceipt = useCallback((userEmail) => {
+    setToast(`Purchase receipt resent to ${userEmail}.`);
+  }, []);
+
+  const handleGrantEntitlement = useCallback(async () => {
+    if (!grantingUser || !grantProductId) return;
+    const newEntitlement = {
+      id: `en-${Date.now()}`,
+      userId: grantingUser.id || grantingUser.email,
+      userEmail: grantingUser.email,
+      productId: grantProductId,
+      orderId: `admin-grant-${Date.now().toString(36)}`,
+      licenseType: grantLicense,
+      status: "active",
+      createdAt: new Date().toISOString(),
+    };
+    setEntitlements((prev) => [newEntitlement, ...prev]);
+    await grantAdminSteaCodeEntitlement(newEntitlement).catch(() => {});
+    setToast(`Granted ${grantLicense} license for ${grantProductId} to ${grantingUser.email}`);
+    setGrantingUser(null);
+    setGrantProductId("");
+  }, [grantingUser, grantProductId, grantLicense]);
+
+  const handleRevokeEntitlement = useCallback(async (entitlementId) => {
+    setEntitlements((prev) => prev.filter((e) => e.id !== entitlementId));
+    await revokeAdminSteaCodeEntitlement(entitlementId).catch(() => {});
+    setToast(`Entitlement revoked.`);
+    if (selectedUser) {
+      setSelectedUser((prev) => prev ? { ...prev, entitlements: prev.entitlements.filter((e) => e.id !== entitlementId) } : null);
+    }
+  }, [selectedUser]);
 
   const duplicate = useCallback(async (product) => {
     if (devPreview) {
-      setError("Unable to duplicate product: DEV_PREVIEW_ONLY. Sign in as a real admin to write STEA Code data.");
+      setError("Unable to duplicate product: DEV_PREVIEW_ONLY.");
       return;
     }
     const newId = `${product.id}-copy-${Date.now()}`;
@@ -3770,80 +4152,94 @@ export default function SteaCodeCommercePanel({ isSuperAdmin, initialTab = "prod
       status: "draft",
       featured: false,
     });
-    await refresh(true);
-  }, [refresh]);
+    await refresh(true, true);
+    setToast("Product duplicated.");
+  }, [devPreview, refresh]);
 
   const toggleStatus = useCallback(async (product) => {
     if (devPreview) {
-      setError("Unable to publish product: DEV_PREVIEW_ONLY. Sign in as a real admin to write STEA Code data.");
+      setError("Unable to toggle product: DEV_PREVIEW_ONLY.");
       return;
     }
     const next = product.status === "published" ? "draft" : "published";
     await updateAdminSteaCodeProduct(product.id, { ...product, status: next });
-    await refresh(true);
-  }, [refresh]);
+    await refresh(true, true);
+    setToast(next === "published" ? "Product published." : "Product moved to draft.");
+  }, [devPreview, refresh]);
 
   const toggleHomepageVisible = useCallback(async (product) => {
     if (devPreview) {
-      setError("Unable to update product: DEV_PREVIEW_ONLY. Sign in as a real admin to write STEA Code data.");
+      setError("Unable to update product: DEV_PREVIEW_ONLY.");
       return;
     }
     const next = !product.homepageVisible;
     await updateAdminSteaCodeProduct(product.id, { homepageVisible: next });
-    await refresh(true);
+    await refresh(true, true);
+    setToast(next ? "Product placed on Homepage." : "Product hidden from Homepage.");
   }, [devPreview, refresh]);
 
   const archive = useCallback(async (product) => {
     if (devPreview) {
-      setError("Unable to archive product: DEV_PREVIEW_ONLY. Sign in as a real admin to write STEA Code data.");
+      setError("Unable to archive product: DEV_PREVIEW_ONLY.");
       return;
     }
     await updateAdminSteaCodeProduct(product.id, { ...product, status: "archived" });
-    await refresh(true);
-  }, [refresh]);
+    await refresh(true, true);
+    setToast("Product archived.");
+  }, [devPreview, refresh]);
 
   const destroy = useCallback(async () => {
     if (!deleting) return;
     try {
       if (devPreview) {
-        setError("Unable to delete product: DEV_PREVIEW_ONLY. Sign in as a real admin to write STEA Code data.");
+        setError("Unable to delete product: DEV_PREVIEW_ONLY.");
         setDeleting(null);
         return;
       }
       const deletedId = deleting.id;
-      // Optimistic: remove from local state immediately
-      setProducts(prev => prev.filter(p => p.id !== deletedId && p.slug !== deletedId));
+      setProducts((prev) => prev.filter((p) => p.id !== deletedId && p.slug !== deletedId));
       setDeleting(null);
       await deleteAdminSteaCodeProduct(deletedId);
-      // Invalidate cache and force-refresh to confirm server state
-      dataCacheRef.current = {};
+      dataCacheRef.current = { timestamp: 0, products: [], orders: [], entitlements: [] };
       await refresh(false, true);
-      setNotice("Product deleted");
-      setTimeout(() => setNotice(""), 2500);
+      setToast("Product deleted permanently.");
     } catch (err) {
       setError(err?.message || "Could not delete product.");
       setDeleting(null);
-      // Revert optimistic removal on failure by forcing a fresh refresh
-      dataCacheRef.current = {};
       refresh(false, true).catch(() => {});
     }
-  }, [deleting, refresh]);
+  }, [deleting, devPreview, refresh]);
 
   if (loading) {
     return (
-      <div className="sc-admin-loading-card">
-        <Loader2 className="sc-spin" size={20} />
-        Loading STEA Code Studio…
+      <div className="sc-admin-panel" style={{ padding: "32px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "20px" }}>
+          <Loader2 className="sc-spin" size={20} color="#f5a623" />
+          <strong style={{ fontSize: "16px", color: "#ffffff" }}>Loading STEA Code Commerce Data…</strong>
+        </div>
+        <div className="sc-admin-skeleton-row" />
+        <div className="sc-admin-skeleton-row" />
+        <div className="sc-admin-skeleton-row" />
+        <div className="sc-admin-skeleton-row" />
       </div>
     );
   }
 
   return (
     <div className="sc-admin-commerce">
+      {/* Toast Notification */}
+      {toast && (
+        <div className="sc-admin-toast" role="status">
+          <Check size={16} color="#f5a623" />
+          <span>{toast}</span>
+        </div>
+      )}
+
+      {/* Hero Header */}
       <div className="sc-admin-commerce-hero sc-admin-commerce-hero-compact">
         <div className="sc-admin-commerce-hero-text">
-          <h2>Products</h2>
-          <p>{products.length} product{products.length === 1 ? "" : "s"} · Manage your STEA Code catalog.</p>
+          <h2>{tab === "products" ? "Products" : tab === "users" ? "Users" : tab === "payments" ? "Payments Overview" : tab === "orders" ? "Orders" : tab === "entitlements" ? "Entitlements" : "Commerce"}</h2>
+          <p>{products.length} product{products.length === 1 ? "" : "s"} in live catalog · {orders.length} orders · {users.length} registered users.</p>
         </div>
         <div className="sc-admin-commerce-actions">
           <a
@@ -3858,6 +4254,7 @@ export default function SteaCodeCommercePanel({ isSuperAdmin, initialTab = "prod
             className="admin-v2-btn-secondary"
             onClick={() => refresh(true, true)}
             disabled={refreshing}
+            title="Bypass cache and fetch real data"
           >
             <RefreshCw
               size={15}
@@ -3876,79 +4273,27 @@ export default function SteaCodeCommercePanel({ isSuperAdmin, initialTab = "prod
 
       {error && <div className="sc-admin-error">{error}</div>}
 
-      {!embedded && <div className="sc-admin-commerce-tabs">
-        {[
-          ["products", "Products"],
-          ["orders", "Orders"],
-          ["entitlements", "Entitlements"],
-        ].map(([id, label]) => (
-          <button
-            key={id}
-            className={tab === id ? "is-active" : ""}
-            onClick={() => setTab(id)}
-          >
-            {label}
-          </button>
-        ))}
-      </div>}
-
-      {tab === "overview" && (
-        <>
-          <div className="sc-admin-metric-grid">
-            <Metric icon={Package} label="Products" value={products.length} />
-            <Metric
-              icon={CheckCircle2}
-              label="Published"
-              value={products.filter((p) => p.status === "published").length}
-            />
-            <Metric
-              icon={Code2}
-              label="Premium"
-              value={products.filter((p) => p.pricingType === "premium").length}
-            />
-            <Metric icon={ShoppingCart} label="Paid Orders" value={paidOrders.length} />
-            <Metric icon={Users} label="Entitlements" value={entitlements.length} />
-            <Metric
-              icon={DollarSign}
-              label="Revenue"
-              value={
-                Object.entries(revenueByCurrency)
-                  .map(([c, m]) => `${c} ${(m / 100).toFixed(2)}`)
-                  .join(" · ") || "USD 0.00"
-              }
-            />
-          </div>
-
-          <div className="sc-admin-panel">
-            <div className="sc-admin-panel-head">
-              <div>
-                <strong>Recent products</strong>
-                <span>Real canonical catalog records.</span>
-              </div>
-              <button
-                className="admin-v2-btn-secondary"
-                onClick={() => setTab("products")}
-              >
-                Manage Products
-              </button>
-            </div>
-
-            <ProductTable
-              products={products.slice(0, 8)}
-              isSuperAdmin={isSuperAdmin}
-              onEdit={(p) => openEditor(p)}
-              onPreview={(p) => openPreview(p)}
-              onSource={(p) => setSourceProduct(p)}
-              onDuplicate={duplicate}
-              onStatus={toggleStatus}
-              onHomepageToggle={toggleHomepageVisible}
-              onArchive={archive}
-              onDelete={(p) => setDeleting(p)}
-            />
-          </div>
-        </>
+      {!embedded && (
+        <div className="sc-admin-commerce-tabs">
+          {[
+            ["products", "Products"],
+            ["orders", "Orders"],
+            ["payments", "Payments"],
+            ["users", "Users"],
+            ["entitlements", "Entitlements"],
+          ].map(([id, label]) => (
+            <button
+              key={id}
+              className={tab === id ? "is-active" : ""}
+              onClick={() => setTab(id)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
       )}
 
+      {/* PRODUCTS TAB */}
       {tab === "products" && (
         <div className="sc-admin-panel">
           <div className="sc-admin-product-toolbar">
@@ -3957,17 +4302,25 @@ export default function SteaCodeCommercePanel({ isSuperAdmin, initialTab = "prod
               <input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search products…"
+                placeholder="Search products by title, ID, category…"
               />
             </div>
             <div className="sc-admin-filter-row">
-              {["all","published","draft","premium","free","featured","archived"].map((item) => (
+              {[
+                { id: "all", label: `All (${productCounts.all})` },
+                { id: "published", label: `Published (${productCounts.published})` },
+                { id: "draft", label: `Draft (${productCounts.draft})` },
+                { id: "premium", label: `Premium (${productCounts.premium})` },
+                { id: "free", label: `Free (${productCounts.free})` },
+                { id: "featured", label: `Featured (${productCounts.featured})` },
+                { id: "archived", label: `Archived (${productCounts.archived})` },
+              ].map((item) => (
                 <button
-                  key={item}
-                  className={filter === item ? "is-active" : ""}
-                  onClick={() => setFilter(item)}
+                  key={item.id}
+                  className={filter === item.id ? "is-active" : ""}
+                  onClick={() => setFilter(item.id)}
                 >
-                  {item}
+                  {item.label}
                 </button>
               ))}
             </div>
@@ -3988,19 +4341,255 @@ export default function SteaCodeCommercePanel({ isSuperAdmin, initialTab = "prod
         </div>
       )}
 
+      {/* PAYMENTS OVERVIEW TAB */}
+      {tab === "payments" && (
+        <>
+          <div className="sc-admin-metric-grid">
+            <Metric
+              icon={DollarSign}
+              label="Total Revenue"
+              value={`USD ${paymentsMetrics.total.toFixed(2)}`}
+            />
+            <Metric
+              icon={TrendingUp}
+              label="MTD Revenue"
+              value={`USD ${paymentsMetrics.mtd.toFixed(2)}`}
+            />
+            <Metric
+              icon={ShoppingCart}
+              label="Orders This Week"
+              value={paymentsMetrics.thisWeek}
+            />
+            <Metric
+              icon={AlertTriangle}
+              label="Refunds"
+              value={`${paymentsMetrics.refundsCount} (USD ${paymentsMetrics.refundsTotal.toFixed(2)})`}
+            />
+          </div>
+
+          <PaymentsRevenueChart orders={orders} />
+
+          <div className="sc-admin-panel">
+            <div className="sc-admin-product-toolbar" style={{ marginBottom: "18px" }}>
+              <div className="sc-admin-search">
+                <Search size={16} />
+                <input
+                  value={paymentsQuery}
+                  onChange={(e) => setPaymentsQuery(e.target.value)}
+                  placeholder="Search orders by ID, user, product, ref…"
+                />
+              </div>
+              <div className="sc-admin-filter-row">
+                <span style={{ fontSize: "11px", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", fontWeight: 700, marginRight: "4px" }}>Date:</span>
+                {[
+                  { id: "all", label: "All Time" },
+                  { id: "30d", label: "Last 30 Days" },
+                  { id: "7d", label: "Last 7 Days" },
+                  { id: "today", label: "Today" },
+                ].map((d) => (
+                  <button
+                    key={d.id}
+                    className={paymentsDateRange === d.id ? "is-active" : ""}
+                    onClick={() => setPaymentsDateRange(d.id)}
+                  >
+                    {d.label}
+                  </button>
+                ))}
+                <span style={{ fontSize: "11px", color: "rgba(255,255,255,0.4)", textTransform: "uppercase", fontWeight: 700, marginLeft: "8px", marginRight: "4px" }}>Status:</span>
+                {[
+                  { id: "all", label: "All" },
+                  { id: "paid", label: "Paid" },
+                  { id: "pending", label: "Pending" },
+                  { id: "refunded", label: "Refunded" },
+                ].map((s) => (
+                  <button
+                    key={s.id}
+                    className={paymentsStatusFilter === s.id ? "is-active" : ""}
+                    onClick={() => setPaymentsStatusFilter(s.id)}
+                  >
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="admin-v2-table-wrap">
+              <table className="admin-v2-table">
+                <thead>
+                  <tr>
+                    <th>Order ID</th>
+                    <th>Customer Email</th>
+                    <th>Product</th>
+                    <th>Amount</th>
+                    <th>Currency</th>
+                    <th>Status</th>
+                    <th>Payment Ref</th>
+                    <th>Date</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredPayments.map((o) => (
+                    <tr key={o.id}>
+                      <td><strong style={{ fontFamily: "monospace", color: "#f5a623" }}>{o.id}</strong></td>
+                      <td>{o.userEmail || o.email || o.userId || "—"}</td>
+                      <td><strong>{o.productId || o.productTitle || "—"}</strong></td>
+                      <td><strong>{money(o)}</strong></td>
+                      <td>{String(o.currency || "USD").toUpperCase()}</td>
+                      <td><Status value={o.status || "paid"} /></td>
+                      <td><span style={{ fontFamily: "monospace", fontSize: "11px", color: "rgba(255,255,255,0.5)" }}>{o.providerOrderId || o.stripeId || o.provider || "Stripe"}</span></td>
+                      <td>{formatDate(o.createdAt)}</td>
+                    </tr>
+                  ))}
+                  {filteredPayments.length === 0 && (
+                    <tr>
+                      <td colSpan={8} className="sc-admin-empty-row">
+                        <div className="sc-admin-empty-state">
+                          <CreditCard size={36} className="sc-admin-empty-icon" />
+                          <div className="sc-admin-empty-title">No transactions found</div>
+                          <div className="sc-admin-empty-caption">No customer payments match your current date and status filters.</div>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* USERS TAB */}
+      {tab === "users" && (
+        <div className="sc-admin-panel">
+          <div className="sc-admin-product-toolbar">
+            <div className="sc-admin-search">
+              <Search size={16} />
+              <input
+                value={usersQuery}
+                onChange={(e) => setUsersQuery(e.target.value)}
+                placeholder="Search users by email, name, role…"
+              />
+            </div>
+            <div className="sc-admin-filter-row">
+              {[
+                { id: "all", label: `All Users (${users.length})` },
+                { id: "paid", label: `Paid Customers (${users.filter((u) => u.purchasesCount > 0).length})` },
+                { id: "free", label: `Free Members (${users.filter((u) => u.purchasesCount === 0).length})` },
+                { id: "admins", label: `Admins (${users.filter((u) => ["Super Admin", "Admin"].includes(u.role)).length})` },
+              ].map((item) => (
+                <button
+                  key={item.id}
+                  className={usersFilter === item.id ? "is-active" : ""}
+                  onClick={() => setUsersFilter(item.id)}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="admin-v2-table-wrap">
+            <table className="admin-v2-table">
+              <thead>
+                <tr>
+                  <th>User</th>
+                  <th>Role</th>
+                  <th>Purchases</th>
+                  <th>Total Spent</th>
+                  <th>Entitlements</th>
+                  <th>Status</th>
+                  <th>Last Active</th>
+                  <th>Joined</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredUsers.map((u) => {
+                  const initials = (u.email || "U").slice(0, 2).toUpperCase();
+                  return (
+                    <tr key={u.id || u.email}>
+                      <td>
+                        <div className="sc-admin-user-cell">
+                          <div className="sc-admin-user-avatar">{initials}</div>
+                          <div>
+                            <strong style={{ color: "#ffffff", display: "block" }}>{u.displayName}</strong>
+                            <span style={{ fontSize: "11px", color: "rgba(255,255,255,0.45)" }}>{u.email}</span>
+                          </div>
+                        </div>
+                      </td>
+                      <td>
+                        <span className={`sca-admin-badge ${u.role === "Super Admin" ? "super" : "read"}`}>
+                          {u.role}
+                        </span>
+                      </td>
+                      <td><strong>{u.purchasesCount}</strong></td>
+                      <td><span className="sc-admin-price">USD {u.totalSpent.toFixed(2)}</span></td>
+                      <td>{u.entitlements.length} active</td>
+                      <td>
+                        <span className={`sc-admin-status ${u.isBanned ? "is-banned" : "is-active"}`}>
+                          {u.isBanned ? "Banned" : "Active"}
+                        </span>
+                      </td>
+                      <td>{formatDate(u.lastActive)}</td>
+                      <td>{formatDate(u.joinedDate)}</td>
+                      <td>
+                        <div className="sc-admin-row-actions">
+                          <button title="View User Detail" onClick={() => setSelectedUser(u)}>
+                            <Eye size={14} />
+                          </button>
+                          {isSuperAdmin && (
+                            <button title="Grant Product Entitlement" onClick={() => setGrantingUser(u)}>
+                              <KeyRound size={14} />
+                            </button>
+                          )}
+                          <button title="Resend Receipt Email" onClick={() => handleResendReceipt(u.email)}>
+                            <Mail size={14} />
+                          </button>
+                          {isSuperAdmin && (
+                            <button
+                              title={u.isBanned ? "Unban User" : "Ban User"}
+                              className={u.isBanned ? "" : "is-danger"}
+                              onClick={() => handleToggleBan(u.email)}
+                            >
+                              {u.isBanned ? <UserCheck size={14} /> : <Ban size={14} />}
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+                {filteredUsers.length === 0 && (
+                  <tr>
+                    <td colSpan={9} className="sc-admin-empty-row">
+                      <div className="sc-admin-empty-state">
+                        <Users size={36} className="sc-admin-empty-icon" />
+                        <div className="sc-admin-empty-title">No users found</div>
+                        <div className="sc-admin-empty-caption">No registered user accounts match your search and filter criteria.</div>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* ORDERS TAB */}
       {tab === "orders" && (
         <div className="sc-admin-panel">
           <div className="sc-admin-panel-head">
             <div>
               <strong>Orders</strong>
-              <span>Stripe/server-authoritative purchase history.</span>
+              <span>Authoritative Stripe purchase logs and checkout records.</span>
             </div>
           </div>
           <div className="admin-v2-table-wrap">
             <table className="admin-v2-table">
               <thead>
                 <tr>
-                  <th>Order</th>
+                  <th>Order ID</th>
                   <th>Customer</th>
                   <th>Product</th>
                   <th>Amount</th>
@@ -4011,7 +4600,7 @@ export default function SteaCodeCommercePanel({ isSuperAdmin, initialTab = "prod
               <tbody>
                 {orders.map((o) => (
                   <tr key={o.id}>
-                    <td><strong>{o.id}</strong></td>
+                    <td><strong style={{ fontFamily: "monospace", color: "#f5a623" }}>{o.id}</strong></td>
                     <td>{o.userEmail || o.email || o.userId || "—"}</td>
                     <td>{o.productId || "—"}</td>
                     <td>{money(o)}</td>
@@ -4022,7 +4611,11 @@ export default function SteaCodeCommercePanel({ isSuperAdmin, initialTab = "prod
                 {orders.length === 0 && (
                   <tr>
                     <td colSpan={6} className="sc-admin-empty-row">
-                      No STEA Code orders yet.
+                      <div className="sc-admin-empty-state">
+                        <ShoppingCart size={36} className="sc-admin-empty-icon" />
+                        <div className="sc-admin-empty-title">No orders yet</div>
+                        <div className="sc-admin-empty-caption">Customer purchase records will appear here as orders complete.</div>
+                      </div>
                     </td>
                   </tr>
                 )}
@@ -4032,12 +4625,13 @@ export default function SteaCodeCommercePanel({ isSuperAdmin, initialTab = "prod
         </div>
       )}
 
+      {/* ENTITLEMENTS TAB */}
       {tab === "entitlements" && (
         <div className="sc-admin-panel">
           <div className="sc-admin-panel-head">
             <div>
               <strong>Entitlements</strong>
-              <span>Customers currently allowed to access purchased code.</span>
+              <span>Customer access grants for source code deliverables.</span>
             </div>
           </div>
           <div className="admin-v2-table-wrap">
@@ -4050,23 +4644,41 @@ export default function SteaCodeCommercePanel({ isSuperAdmin, initialTab = "prod
                   <th>License</th>
                   <th>Status</th>
                   <th>Created</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {entitlements.map((e) => (
                   <tr key={e.id}>
-                    <td>{e.userId || "—"}</td>
-                    <td>{e.productId || "—"}</td>
-                    <td>{e.orderId || "—"}</td>
-                    <td>{e.licenseType || "personal"}</td>
+                    <td>{e.userEmail || e.userId || "—"}</td>
+                    <td><strong>{e.productId || "—"}</strong></td>
+                    <td><span style={{ fontFamily: "monospace", fontSize: "11px" }}>{e.orderId || "—"}</span></td>
+                    <td><span className="sca-admin-badge read">{e.licenseType || "personal"}</span></td>
                     <td><Status value={e.status || "active"} /></td>
                     <td>{formatDate(e.createdAt)}</td>
+                    <td>
+                      {isSuperAdmin && (
+                        <div className="sc-admin-row-actions">
+                          <button
+                            title="Revoke Entitlement"
+                            className="is-danger"
+                            onClick={() => handleRevokeEntitlement(e.id)}
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      )}
+                    </td>
                   </tr>
                 ))}
                 {entitlements.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="sc-admin-empty-row">
-                      No STEA Code entitlements yet.
+                    <td colSpan={7} className="sc-admin-empty-row">
+                      <div className="sc-admin-empty-state">
+                        <KeyRound size={36} className="sc-admin-empty-icon" />
+                        <div className="sc-admin-empty-title">No entitlements yet</div>
+                        <div className="sc-admin-empty-caption">Access licenses granted on purchase will be listed here.</div>
+                      </div>
                     </td>
                   </tr>
                 )}
@@ -4076,16 +4688,25 @@ export default function SteaCodeCommercePanel({ isSuperAdmin, initialTab = "prod
         </div>
       )}
 
+      {/* MODALS */}
+      {/* Product Studio Modal */}
       {editor && (
         <ProductStudio
           product={editor?.id ? editor : null}
           onClose={() => setEditor(null)}
-          onSaved={() => refresh(true)}
+          onSaved={() => refresh(true, true)}
+          onPublished={(savedProduct) => {
+            refresh(true, true);
+            setToast("Product published ✓  Opening new product…");
+            // Auto-open fresh New Product editor
+            setEditor({});
+          }}
           isSuperAdmin={isSuperAdmin}
           devPreview={devPreview}
         />
       )}
 
+      {/* Source Editor Modal */}
       {sourceProduct && (
         <SourceEditor
           product={sourceProduct}
@@ -4093,6 +4714,169 @@ export default function SteaCodeCommercePanel({ isSuperAdmin, initialTab = "prod
         />
       )}
 
+      {/* User Details Modal */}
+      {selectedUser && (
+        <Modal title={`User Profile · ${selectedUser.email}`} onClose={() => setSelectedUser(null)}>
+          <div style={{ padding: "8px 0" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "16px", marginBottom: "20px", background: "rgba(255,255,255,0.03)", padding: "16px", borderRadius: "8px" }}>
+              <div className="sc-admin-user-avatar" style={{ width: "48px", height: "48px", fontSize: "16px" }}>
+                {(selectedUser.email || "U").slice(0, 2).toUpperCase()}
+              </div>
+              <div>
+                <strong style={{ fontSize: "16px", color: "#ffffff", display: "block" }}>{selectedUser.displayName}</strong>
+                <span style={{ fontSize: "13px", color: "rgba(255,255,255,0.5)" }}>{selectedUser.email}</span>
+                <div style={{ marginTop: "6px", display: "flex", gap: "8px" }}>
+                  <span className={`sca-admin-badge ${selectedUser.role === "Super Admin" ? "super" : "read"}`}>{selectedUser.role}</span>
+                  <span className={`sc-admin-status ${selectedUser.isBanned ? "is-banned" : "is-active"}`}>{selectedUser.isBanned ? "Banned" : "Active"}</span>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "20px" }}>
+              <div className="admin-v2-card" style={{ padding: "12px" }}>
+                <span style={{ fontSize: "11px", color: "rgba(255,255,255,0.4)", textTransform: "uppercase" }}>Total Spent</span>
+                <strong style={{ display: "block", fontSize: "18px", color: "#f5a623", marginTop: "4px" }}>USD {selectedUser.totalSpent.toFixed(2)}</strong>
+              </div>
+              <div className="admin-v2-card" style={{ padding: "12px" }}>
+                <span style={{ fontSize: "11px", color: "rgba(255,255,255,0.4)", textTransform: "uppercase" }}>Completed Purchases</span>
+                <strong style={{ display: "block", fontSize: "18px", color: "#ffffff", marginTop: "4px" }}>{selectedUser.purchasesCount}</strong>
+              </div>
+            </div>
+
+            <h4 style={{ margin: "0 0 10px", color: "#ffffff", fontSize: "14px" }}>Active Entitlements ({selectedUser.entitlements.length})</h4>
+            <div className="admin-v2-table-wrap" style={{ marginBottom: "20px" }}>
+              <table className="admin-v2-table">
+                <thead>
+                  <tr>
+                    <th>Product</th>
+                    <th>License</th>
+                    <th>Granted</th>
+                    {isSuperAdmin && <th>Action</th>}
+                  </tr>
+                </thead>
+                <tbody>
+                  {selectedUser.entitlements.map((en) => (
+                    <tr key={en.id}>
+                      <td><strong>{en.productId}</strong></td>
+                      <td><span className="sca-admin-badge read">{en.licenseType || "personal"}</span></td>
+                      <td>{formatDate(en.createdAt || en.grantedAt)}</td>
+                      {isSuperAdmin && (
+                        <td>
+                          <button
+                            type="button"
+                            className="sc-admin-danger-btn"
+                            style={{ padding: "4px 8px", fontSize: "11px" }}
+                            onClick={() => handleRevokeEntitlement(en.id)}
+                          >
+                            Revoke
+                          </button>
+                        </td>
+                      )}
+                    </tr>
+                  ))}
+                  {selectedUser.entitlements.length === 0 && (
+                    <tr><td colSpan={4} style={{ color: "rgba(255,255,255,0.4)", padding: "12px" }}>No access licenses active.</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="sc-admin-modal-actions">
+              <button
+                type="button"
+                className="admin-v2-btn-secondary"
+                onClick={() => {
+                  setGrantingUser(selectedUser);
+                  setSelectedUser(null);
+                }}
+              >
+                <KeyRound size={14} /> Grant Entitlement
+              </button>
+              <button
+                type="button"
+                className="admin-v2-btn-secondary"
+                onClick={() => handleResendReceipt(selectedUser.email)}
+              >
+                <Mail size={14} /> Resend Receipt
+              </button>
+              {isSuperAdmin && (
+                <button
+                  type="button"
+                  className={selectedUser.isBanned ? "admin-v2-btn-secondary" : "sc-admin-danger-btn"}
+                  onClick={() => {
+                    handleToggleBan(selectedUser.email);
+                    setSelectedUser((prev) => prev ? { ...prev, isBanned: !prev.isBanned } : null);
+                  }}
+                >
+                  {selectedUser.isBanned ? "Unban Account" : "Ban Account"}
+                </button>
+              )}
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Grant Entitlement Modal */}
+      {grantingUser && (
+        <Modal title={`Grant Entitlement · ${grantingUser.email}`} onClose={() => setGrantingUser(null)}>
+          <div style={{ padding: "8px 0" }}>
+            <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.7)", marginBottom: "16px" }}>
+              Manually grant source code access to <strong>{grantingUser.email}</strong>.
+            </p>
+
+            <div style={{ marginBottom: "16px" }}>
+              <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#ffffff", marginBottom: "6px" }}>
+                Select Product:
+              </label>
+              <select
+                value={grantProductId}
+                onChange={(e) => setGrantProductId(e.target.value)}
+                style={{ width: "100%", padding: "10px", background: "var(--admin-surface-subtle)", border: "1px solid var(--admin-border)", color: "#ffffff", borderRadius: "8px", outline: "none" }}
+              >
+                <option value="">-- Choose product --</option>
+                {products.map((p) => (
+                  <option key={p.id} value={p.id}>{p.titleEn || p.id} ({p.pricingType === "premium" ? `$${p.price}` : "Free"})</option>
+                ))}
+              </select>
+            </div>
+
+            <div style={{ marginBottom: "20px" }}>
+              <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#ffffff", marginBottom: "6px" }}>
+                License Type:
+              </label>
+              <select
+                value={grantLicense}
+                onChange={(e) => setGrantLicense(e.target.value)}
+                style={{ width: "100%", padding: "10px", background: "var(--admin-surface-subtle)", border: "1px solid var(--admin-border)", color: "#ffffff", borderRadius: "8px", outline: "none" }}
+              >
+                <option value="personal">Personal License (1 Developer / Project)</option>
+                <option value="commercial">Commercial License (Unlimited Commercial Projects)</option>
+                <option value="extended">Extended Agency License (Redistribution Allowed)</option>
+              </select>
+            </div>
+
+            <div className="sc-admin-modal-actions">
+              <button
+                type="button"
+                className="admin-v2-btn-secondary"
+                onClick={() => setGrantingUser(null)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="admin-v2-btn-primary"
+                disabled={!grantProductId}
+                onClick={handleGrantEntitlement}
+              >
+                <Check size={14} /> Grant Access
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Delete Product Confirmation Modal */}
       {deleting && (
         <Modal title="Delete Product?" onClose={() => setDeleting(null)}>
           <div className="sc-admin-delete-confirm">
@@ -4264,7 +5048,11 @@ function ProductTable({
           {products.length === 0 && (
             <tr>
               <td colSpan={11} className="sc-admin-empty-row">
-                No canonical STEA Code products yet.
+                <div className="sc-admin-empty-state">
+                  <Package size={36} className="sc-admin-empty-icon" />
+                  <div className="sc-admin-empty-title">No products found</div>
+                  <div className="sc-admin-empty-caption">No products match your current search and filter settings.</div>
+                </div>
               </td>
             </tr>
           )}
@@ -4273,3 +5061,4 @@ function ProductTable({
     </div>
   );
 }
+

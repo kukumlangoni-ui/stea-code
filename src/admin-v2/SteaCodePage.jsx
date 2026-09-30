@@ -42,12 +42,14 @@ const DEFAULT_CATEGORIES = [
 
 const TABS = [
   ["products", "Products"],
+  ["categories", "Categories"],
+  ["orders", "Orders"],
+  ["payments", "Payments"],
+  ["users", "Users"],
+  ["entitlements", "Entitlements"],
   ["directory", "Developer Resources"],
   ["hosting", "Hosting"],
   ["inspiration", "Website Inspiration"],
-  ["categories", "Categories"],
-  ["orders", "Orders"],
-  ["entitlements", "Entitlements"],
   ["legacy", "More / Legacy"],
 ];
 
@@ -704,12 +706,12 @@ export default function SteaCodePage({ isSuperAdmin, devPreview = false, initial
         </div>
       )}
 
-      {["products", "orders", "entitlements"].includes(activeTab) && (
+      {["products", "orders", "entitlements", "users", "payments"].includes(activeTab) && (
         <SteaCodeCommercePanel key={activeTab} isSuperAdmin={isSuperAdmin} initialTab={activeTab} embedded devPreview={devPreview} onCountsChange={setCommerceCounts} dedicatedAdmin={dedicatedAdmin} baseRoute={baseRoute} />
       )}
 
-      {!["products", "orders", "entitlements"].includes(activeTab) && loading && <div className="admin-v2-card" style={{ padding: 20, color: "#6B7280" }}>Loading STEA Code resources...</div>}
-      {!["products", "orders", "entitlements"].includes(activeTab) && Object.keys(loadErrors).length > 0 && (
+      {!["products", "orders", "entitlements", "users", "payments"].includes(activeTab) && loading && <div className="admin-v2-card" style={{ padding: 20, color: "#6B7280" }}>Loading STEA Code resources...</div>}
+      {!["products", "orders", "entitlements", "users", "payments"].includes(activeTab) && Object.keys(loadErrors).length > 0 && (
         <div className="admin-v2-error">
           {Object.entries(loadErrors).map(([name, message]) => (
             <div key={name}>Unable to load {name}: {message}</div>

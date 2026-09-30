@@ -19,7 +19,7 @@ import { corsHeaders } from "../cors";
 import { extractBearerToken, verifyFirebaseToken } from "../auth";
 import { putObject } from "../r2";
 
-const ADMIN_EMAILS = new Set(["stea.africa@gmail.com"]);
+const ADMIN_EMAILS = new Set(["stea.africa@gmail.com", "kukumlangoni@gmail.com"]);
 
 const PRODUCTS_COLLECTION = "stea_code_products";
 const SOURCES_COLLECTION = "stea_code_product_sources";

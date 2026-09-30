@@ -8,13 +8,13 @@ import { useCustomCategories } from "../hooks/useCustomCategories.js";
 import { createAutomaticNotification } from "../services/notificationService.js";
 
 const DEFAULT_CATEGORIES = [
-  { id: "ai", name: "AI Tools", icon: "🧠" },
-  { id: "editing", name: "Editing", icon: "✂️" },
-  { id: "design", name: "Design", icon: "🎨" },
-  { id: "productivity", name: "Productivity", icon: "⚡" },
-  { id: "education", name: "Education", icon: "📚" },
-  { id: "security", name: "Security Tools", icon: "🛡️" },
-  { id: "automation", name: "Automation", icon: "🤖" },
+  { id: "ai", name: "AI Tools", icon: "Bot" },
+  { id: "editing", name: "Editing", icon: "Edit3" },
+  { id: "design", name: "Design", icon: "Layout" },
+  { id: "productivity", name: "Productivity", icon: "Zap" },
+  { id: "education", name: "Education", icon: "BookOpen" },
+  { id: "security", name: "Security Tools", icon: "Shield" },
+  { id: "automation", name: "Automation", icon: "Cpu" },
 ];
 
 function ModalOverlay({ children, onClose }) {

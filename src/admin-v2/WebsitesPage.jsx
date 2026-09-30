@@ -450,7 +450,7 @@ function WebsiteEditorModal({ website, categories, onClose, onSave }) {
                   }}
                   style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid #D1D5DB", background: "#fff", color: "#374151", fontWeight: 600, cursor: "pointer", fontSize: 12, whiteSpace: "nowrap" }}
                 >
-                  🔄 Refresh
+                  Refresh Favicon
                 </button>
               </div>
             );
@@ -1418,11 +1418,11 @@ export default function WebsitesPage({ devPreview, isSuperAdmin }) {
                         </div>
                         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
                           <strong>Rating / Views</strong>
-                          <span style={{ fontWeight: 600 }}>⭐ {Number(item.rating || 5.0).toFixed(1)} / {item.visits || 0} visits</span>
+                          <span style={{ fontWeight: 600 }}>{Number(item.rating || 5.0).toFixed(1)} / {item.visits || 0} visits</span>
                         </div>
                         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
                           <strong>Saves / Trending</strong>
-                          <span style={{ fontWeight: 600 }}>❤️ {item.favoritesCount || 0} / 🔥 {item.trendingScore || 0}</span>
+                          <span style={{ fontWeight: 600 }}>{item.favoritesCount || 0} saves / {item.trendingScore || 0} score</span>
                         </div>
                         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
                           <strong>Last checked</strong>
@@ -1435,9 +1435,9 @@ export default function WebsitesPage({ devPreview, isSuperAdmin }) {
                           </div>
                         </div>
                         <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 10 }}>
-                          {safePinnedRank(item) && <span style={{ background: "#FFF7ED", color: "#B45309", fontSize: 10, padding: "2px 6px", borderRadius: 4, fontWeight: 700 }}>📌 Pinned #{safePinnedRank(item)}</span>}
-                          {item.editorChoice && <span style={{ background: "#FFF8E1", color: "#B7791F", fontSize: 10, padding: "2px 6px", borderRadius: 4, fontWeight: 700 }}>⭐ Editor Choice</span>}
-                          {item.homepageFeature && <span style={{ background: "#F3E8FF", color: "#7E22CE", fontSize: 10, padding: "2px 6px", borderRadius: 4, fontWeight: 700 }}>🏠 Homepage</span>}
+                          {safePinnedRank(item) && <span style={{ background: "#FFF7ED", color: "#B45309", fontSize: 10, padding: "2px 6px", borderRadius: 4, fontWeight: 700 }}>Pinned #{safePinnedRank(item)}</span>}
+                          {item.editorChoice && <span style={{ background: "#FFF8E1", color: "#B7791F", fontSize: 10, padding: "2px 6px", borderRadius: 4, fontWeight: 700 }}>Editor Choice</span>}
+                          {item.homepageFeature && <span style={{ background: "#F3E8FF", color: "#7E22CE", fontSize: 10, padding: "2px 6px", borderRadius: 4, fontWeight: 700 }}>Homepage</span>}
                         </div>
                         
                         {/* Admin debug audit info panel */}

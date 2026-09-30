@@ -338,6 +338,7 @@ export function ProductStudioV3({
   onClose,
   onSaved,
   onCreated,
+  onPublished,
   isSuperAdmin,
   devPreview = false,
   fullPage = false,
@@ -811,6 +812,11 @@ export function ProductStudioV3({
       setDirty(false);
       setNotice(isPublishing ? "Published ✓" : "Saved ✓");
       setTimeout(() => setNotice(""), 2000);
+
+      if (isPublishing && typeof onPublished === "function") {
+        onPublished(result?.product || result);
+        return;
+      }
 
       // Auto-navigate to Preview tab on successful save/publish
       setTab("preview");
