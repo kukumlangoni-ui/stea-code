@@ -9,8 +9,8 @@ const PRODUCTS_COLLECTION = "stea_code_products";
 
 /** Fields stripped from catalog responses to keep payloads small.
  *  The full product detail endpoint (/products/:id) returns everything.
- *  NOTE: sourceCode and publicFiles are kept because the modal (ProductDetail)
- *  uses them directly from the catalog product object. */
+ *  sourceCode and publicFiles are stripped — they're fetched per-product
+ *  on modal open via /api/stea-code/products/:id. */
 const CATALOG_STRIP_FIELDS = [
   "protectedFiles",
   "sourceFiles",
@@ -66,15 +66,16 @@ export async function handleCatalog(req: Request, env: Env): Promise<Response> {
     }
 
     // Cache strategy:
-    //   - Short edge cache (s-maxage=10) with max-age=0 so browsers always revalidate
-    //   - stale-while-revalidate=30 ensures instantaneous edge response while refreshing
+    //   - 60s browser cache (max-age) for instant back/forward nav
+    //   - 2min CDN edge cache (s-maxage) for fast global response
+    //   - 10min stale-while-revalidate — serves old data while refreshing
     return new Response(
       JSON.stringify({ products, total: products.length }),
       {
         status: 200,
         headers: {
           "Content-Type": "application/json",
-          "Cache-Control": "public, max-age=0, s-maxage=10, stale-while-revalidate=30, must-revalidate",
+          "Cache-Control": "public, max-age=60, s-maxage=120, stale-while-revalidate=600",
           ...corsHeaders(req.headers.get("origin")),
         },
       }
@@ -107,7 +108,7 @@ export async function handleProduct(req: Request, env: Env, productId: string): 
         status: 200,
         headers: {
           "Content-Type": "application/json",
-          "Cache-Control": "public, max-age=0, s-maxage=10, stale-while-revalidate=30, must-revalidate",
+          "Cache-Control": "public, max-age=120, s-maxage=300, stale-while-revalidate=600",
           ...corsHeaders(req.headers.get("origin")),
         },
       }

@@ -1617,26 +1617,26 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
                   <h2>{tLocal(COPY.trendingTitle)}</h2>
                   <p>{tLocal(COPY.trendingSub)}</p>
                 </div>
-              </div>
 
-              {/* Category filter pills */}
-              <div className="sc-homepage-pill-row" role="tablist" aria-label="Product categories">
-                {["All", "Buttons", "Cards", "Forms", "Text Animations", "Animations", "Backgrounds", "Loaders", "Navigation", "Portfolio", "Toggle Switches"].map((cat) => (
-                  <button
-                    key={cat}
-                    type="button"
-                    role="tab"
-                    aria-selected={category === cat}
-                    className={`sc-homepage-pill ${category === cat ? "is-active" : ""}`}
-                    onClick={() => {
-                      setCategory(cat);
-                      setPricing("All");
-                      setFramework("All Frameworks");
-                    }}
-                  >
-                    {tLocal(CATEGORY_LABELS[cat] || { en: cat, zhCN: cat })}
-                  </button>
-                ))}
+                {/* Category filter pills — right-aligned in header */}
+                <div className="sc-homepage-pill-row" role="tablist" aria-label="Product categories">
+                  {["All", "Buttons", "Cards", "Forms", "Text Animations", "Animations", "Backgrounds", "Loaders", "Navigation", "Portfolio", "Toggle Switches"].map((cat) => (
+                    <button
+                      key={cat}
+                      type="button"
+                      role="tab"
+                      aria-selected={category === cat}
+                      className={`sc-homepage-pill ${category === cat ? "is-active" : ""}`}
+                      onClick={() => {
+                        setCategory(cat);
+                        setPricing("All");
+                        setFramework("All Frameworks");
+                      }}
+                    >
+                      {tLocal(CATEGORY_LABELS[cat] || { en: cat, zhCN: cat })}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {isFallbackCatalog && (

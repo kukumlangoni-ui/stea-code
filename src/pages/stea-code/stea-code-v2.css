@@ -2631,7 +2631,7 @@ a.sc-v2-card { text-decoration: none; }
 /* Hero base — vertical rhythm + layering */
 .sc-market-hero {
   position: relative;
-  padding: 64px 24px 70px;
+  padding: 56px 24px 56px;
   text-align: center;
   overflow: hidden;
   isolation: isolate;
@@ -15168,4 +15168,33 @@ header,
   .sc-v2pal-panel {
     animation: none;
   }
+}
+
+/* ============================================================
+   TRENDING HEADER — pills right-aligned in section head
+   ============================================================ */
+.sc-market-section-head .sc-homepage-pill-row {
+  margin-bottom: 0 !important;
+  justify-content: flex-end;
+}
+@media (max-width: 768px) {
+  .sc-market-section-head .sc-homepage-pill-row {
+    justify-content: flex-start;
+  }
+}
+
+/* ============================================================
+   GO UNLIMITED — muted idle state
+   ============================================================ */
+.sc-go-unlimited-btn {
+  color: rgba(237, 227, 208, 0.7) !important;
+  border: 1px solid rgba(245, 166, 35, 0.3) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+.sc-go-unlimited-btn:hover {
+  color: #ede3d0 !important;
+  border-color: rgba(245, 166, 35, 0.65) !important;
+  background: rgba(245, 166, 35, 0.06) !important;
+  box-shadow: 0 0 20px rgba(245, 166, 35, 0.15) !important;
 }
