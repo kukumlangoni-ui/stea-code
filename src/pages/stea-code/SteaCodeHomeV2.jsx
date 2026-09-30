@@ -469,6 +469,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
   const [memberGateAction, setMemberGateAction] = useState(null);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [avatarSpin, setAvatarSpin] = useState("idle"); // 'idle' | 'left' | 'right'
+  const [unlimitedOpen, setUnlimitedOpen] = useState(false);
   const [localAuthUser, setLocalAuthUser] = useState(() => user || getFirebaseAuth()?.currentUser || null);
 
   useEffect(() => {
@@ -615,6 +616,22 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
       document.removeEventListener("keydown", onEsc);
     };
   }, [accountMenuOpen]);
+
+  // Close the Go Unlimited placeholder modal on Escape
+  useEffect(() => {
+    if (!unlimitedOpen) return undefined;
+    const onKey = (e) => { if (e.key === "Escape") setUnlimitedOpen(false); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [unlimitedOpen]);
+
+  // Soft pulse ripple on the button as the modal opens
+  const handleUnlimitedClick = (e) => {
+    const btn = e.currentTarget;
+    btn.classList.add("is-pulsing");
+    setTimeout(() => btn.classList.remove("is-pulsing"), 600);
+    setUnlimitedOpen(true);
+  };
 
   const handleSignOut = async (e) => {
     console.log('[signout] handler fired', { event: e?.type, target: e?.target?.className });
@@ -1227,8 +1244,67 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
               <line x1="3" y1="18" x2="21" y2="18"/>
             </svg>
           </button>
+
+          <button
+            type="button"
+            className="sc-topbar-unlimited"
+            onClick={handleUnlimitedClick}
+            aria-label="Go Unlimited — subscription plans coming soon"
+          >
+            <span className="sc-topbar-unlimited-label">Go Unlimited</span>
+            <span className="sc-topbar-unlimited-shine" aria-hidden="true" />
+          </button>
         </div>
       </header>
+
+      {unlimitedOpen && (
+        <div
+          className="sc-unlimited-backdrop"
+          onClick={() => setUnlimitedOpen(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Unlimited plan coming soon"
+        >
+          <div
+            className="sc-unlimited-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              className="sc-unlimited-close"
+              onClick={() => setUnlimitedOpen(false)}
+              aria-label="Close"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+
+            <div className="sc-unlimited-badge">COMING SOON</div>
+            <h2 className="sc-unlimited-title">Go Unlimited</h2>
+            <p className="sc-unlimited-sub">
+              Unlock every component, unlimited downloads, and priority support.
+              Plans are being prepared — you&apos;ll be able to join very soon.
+            </p>
+
+            <ul className="sc-unlimited-perks">
+              <li>Unlimited component downloads</li>
+              <li>Early access to new releases</li>
+              <li>Commercial license included</li>
+              <li>Priority support</li>
+            </ul>
+
+            <button
+              type="button"
+              className="sc-unlimited-cta"
+              onClick={() => setUnlimitedOpen(false)}
+            >
+              Got it — notify me when ready
+            </button>
+          </div>
+        </div>
+      )}
 
       {menuOpen ? (
         <MobileMenu
