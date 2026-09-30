@@ -15127,3 +15127,21 @@ header,
   border-color: rgba(255, 255, 255, 0.2);
   background: rgba(255, 255, 255, 0.08);
 }
+
+/* ============================================================
+   CATEGORY SWITCH — cross-fade transition
+   ============================================================ */
+.sc-product-grid {
+  transition: opacity 0.2s ease;
+}
+.sc-product-grid.is-switching {
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  .sc-product-grid,
+  .sc-product-grid.is-switching {
+    opacity: 1;
+    transition: none;
+  }
+}

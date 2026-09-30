@@ -344,6 +344,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
   const [category, setCategory] = useState("All");
   const [pricing, setPricing] = useState("All");
   const [framework, setFramework] = useState("All Frameworks");
+  const [isGridSwitching, setIsGridSwitching] = useState(false);
   const location = useLocation();
   const searchParams = useMemo(() => new URLSearchParams(location.search), [location.search]);
   const viewParam = searchParams.get("view");
@@ -360,6 +361,15 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
 
   const [selected, setSelected] = useState(null);
   const viewedProductsRef = useRef(new Set());
+
+  // Category/filter cross-fade: fade out → swap → fade in
+  useEffect(() => {
+    const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (prefersReduced) return;
+    setIsGridSwitching(true);
+    const t = setTimeout(() => setIsGridSwitching(false), 150);
+    return () => clearTimeout(t);
+  }, [category, pricing, framework]);
 
   // Track product views — fire once per product per session
   useEffect(() => {
@@ -1442,13 +1452,13 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
               </div>
             )}
             {isLoading ? (
-              <div className="sc-product-grid">
+              <div className={`sc-product-grid ${isGridSwitching ? "is-switching" : ""}`}>
                 {Array.from({ length: 6 }).map((_, i) => (
                   <SteaCodeProductSkeleton key={i} />
                 ))}
               </div>
             ) : homepageProducts.length > 0 ? (
-              <div className="sc-product-grid">
+              <div className={`sc-product-grid ${isGridSwitching ? "is-switching" : ""}`}>
                 {homepageProducts.map((product, index) => (
                   <Reveal key={getProductIdentity(product)} delay={index * 45}>
                     <PreviewErrorBoundary>
@@ -1658,13 +1668,13 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
               )}
 
               {isLoading ? (
-                <div className="sc-product-grid">
+                <div className={`sc-product-grid ${isGridSwitching ? "is-switching" : ""}`}>
                   {Array.from({ length: 6 }).map((_, i) => (
                     <SteaCodeProductSkeleton key={i} />
                   ))}
                 </div>
               ) : homepageProducts.length > 0 ? (
-                <div className="sc-product-grid">
+                <div className={`sc-product-grid ${isGridSwitching ? "is-switching" : ""}`}>
                   {homepageProducts.map((product, index) => (
                     <Reveal key={getProductIdentity(product)} delay={index * 45}>
                       <PreviewErrorBoundary>
