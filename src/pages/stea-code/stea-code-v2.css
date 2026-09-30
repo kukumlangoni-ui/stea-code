@@ -14900,3 +14900,74 @@ header,
     transform: translateX(50%) rotate(45deg) !important;
   }
 }
+
+
+/* ============================================================
+   FOOTER — consistent layout across all devices
+   ============================================================ */
+
+/* Desktop: 4-column grid (matches current) */
+.sc-footer-grid {
+  display: grid !important;
+  grid-template-columns: minmax(240px, 1.6fr) 1fr 1fr 1fr !important;
+  gap: 48px !important;
+  align-items: flex-start !important;
+}
+
+/* Tablet: tighter but still 4 columns */
+@media (max-width: 1024px) and (min-width: 641px) {
+  .sc-footer-grid {
+    grid-template-columns: minmax(200px, 1.5fr) 1fr 1fr 1fr !important;
+    gap: 28px !important;
+    padding: 0 24px !important;
+  }
+  .sc-footer-column h4 {
+    font-size: 10px !important;
+  }
+  .sc-footer-column a {
+    font-size: 12px !important;
+  }
+}
+
+/* Mobile: brand full-width, nav in 2 columns, company full-width below */
+@media (max-width: 640px) {
+  .sc-footer-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 32px 20px !important;
+    padding: 0 20px !important;
+  }
+  .sc-footer-brand {
+    grid-column: 1 / -1 !important;
+  }
+  /* Company column (4th) spans full width */
+  .sc-footer-column:nth-child(4) {
+    grid-column: 1 / -1 !important;
+  }
+  /* Prevent text overflow */
+  .sc-footer-tagline {
+    font-size: 13px !important;
+    line-height: 1.5 !important;
+  }
+  .sc-footer-column h4 {
+    font-size: 10px !important;
+    margin-bottom: 12px !important;
+  }
+  .sc-footer-column a {
+    font-size: 13px !important;
+    line-height: 1.8 !important;
+  }
+  /* Bottom bar — stack */
+  .sc-footer-bottom {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 12px !important;
+    padding: 0 20px !important;
+  }
+}
+
+/* Ensure no horizontal overflow ever */
+.sc-footer {
+  overflow-x: clip !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
