@@ -451,6 +451,12 @@ function Badge({ children, tone = "neutral" }) {
 
 export default function SteaCodePage({ isSuperAdmin, devPreview = false, initialTab = "products", compactHeader = false, hideInternalTabs = false, dedicatedAdmin = false, baseRoute = "/admin" }) {
   const [activeTab, setActiveTab] = useState(initialTab);
+
+  useEffect(() => {
+    if (initialTab && initialTab !== activeTab) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab]);
   const [codeItems, setCodeItems] = useState([]);
   const [inspirationItems, setInspirationItems] = useState([]);
   const [hostingItems, setHostingItems] = useState([]);

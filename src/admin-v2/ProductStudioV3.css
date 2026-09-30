@@ -29,12 +29,14 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 24px;
-  border-bottom: 1px solid var(--psv3-border);
-  background: var(--psv3-surface);
+  padding: 10px 24px;
+  min-height: 56px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: #121218;
   position: sticky;
   top: 0;
   z-index: 10;
+  box-sizing: border-box;
 }
 
 .psv3-header-left {
@@ -56,20 +58,21 @@
   transition: all 0.15s;
 }
 .psv3-back-btn:hover {
-  color: var(--psv3-text);
-  background: var(--psv3-surface-2);
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .psv3-header-text h1 {
   margin: 0;
-  font-size: 18px;
-  font-weight: 600;
+  font-size: 16px;
+  font-weight: 700;
   letter-spacing: -0.01em;
+  color: #ffffff;
 }
 .psv3-header-text p {
-  margin: 2px 0 0;
+  margin: 1px 0 0;
   font-size: 12px;
-  color: var(--psv3-text-muted);
+  color: rgba(255, 255, 255, 0.45);
 }
 
 .psv3-header-right {
@@ -84,6 +87,7 @@
   padding: 4px 10px;
   background: var(--psv3-gold-soft);
   border-radius: 999px;
+  font-weight: 600;
 }
 .psv3-saved-badge {
   font-size: 12px;
@@ -91,21 +95,25 @@
   padding: 4px 10px;
   background: rgba(34, 197, 94, 0.12);
   border-radius: 999px;
+  font-weight: 600;
 }
 
 /* ---------- Buttons ---------- */
 .psv3-btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
-  padding: 8px 16px;
+  height: 36px;
+  padding: 0 16px;
   font-size: 13px;
-  font-weight: 500;
-  border-radius: var(--psv3-radius-sm);
+  font-weight: 600;
+  border-radius: 8px;
   border: 1px solid transparent;
   cursor: pointer;
   transition: all 0.15s;
   font-family: inherit;
+  box-sizing: border-box;
 }
 .psv3-btn:disabled {
   opacity: 0.45;
@@ -113,46 +121,51 @@
 }
 
 .psv3-btn--primary {
-  background: var(--psv3-gold);
+  background: linear-gradient(135deg, #f7b733, #f5a623);
   color: #0a0a0f;
-  border-color: var(--psv3-gold);
+  border-color: #f5a623;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(245, 166, 35, 0.25);
 }
 .psv3-btn--primary:hover:not(:disabled) {
-  background: #ffb838;
+  filter: brightness(1.08);
+  transform: translateY(-1px);
 }
 
 .psv3-btn--ghost {
-  background: transparent;
-  color: var(--psv3-text);
-  border-color: var(--psv3-border-strong);
+  background: rgba(255, 255, 255, 0.04);
+  color: #e2e8f0;
+  border-color: rgba(255, 255, 255, 0.1);
 }
 .psv3-btn--ghost:hover:not(:disabled) {
-  background: var(--psv3-surface-2);
+  background: rgba(255, 255, 255, 0.08);
   border-color: var(--psv3-gold);
+  color: #ffffff;
 }
 
 .psv3-btn--cancel {
   background: transparent;
-  color: var(--psv3-text-muted);
+  color: rgba(255, 255, 255, 0.6);
   border-color: rgba(255, 255, 255, 0.12);
 }
 .psv3-btn--cancel:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.06);
-  color: var(--psv3-text);
+  color: #ffffff;
   border-color: rgba(255, 255, 255, 0.25);
 }
 
 .psv3-btn--danger {
-  background: transparent;
+  background: rgba(239, 68, 68, 0.1);
   color: var(--psv3-danger);
   border-color: rgba(239, 68, 68, 0.3);
 }
 .psv3-btn--danger:hover:not(:disabled) {
-  background: rgba(239, 68, 68, 0.1);
+  background: rgba(239, 68, 68, 0.2);
 }
 
 .psv3-btn--sm {
-  padding: 5px 10px;
+  height: 28px;
+  padding: 0 10px;
   font-size: 12px;
 }
 
@@ -168,10 +181,10 @@
   display: flex;
   gap: 0;
   padding: 0 24px;
-  border-bottom: 1px solid var(--psv3-border);
-  background: var(--psv3-surface);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background: #121218;
   position: sticky;
-  top: 65px;
+  top: 56px;
   z-index: 9;
 }
 
@@ -179,19 +192,19 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 14px 18px;
+  padding: 12px 18px;
   background: transparent;
   border: none;
-  color: var(--psv3-text-muted);
+  color: rgba(255, 255, 255, 0.55);
   cursor: pointer;
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 600;
   font-family: inherit;
   position: relative;
   transition: color 0.15s;
 }
 .psv3-tab:hover {
-  color: var(--psv3-text);
+  color: #ffffff;
 }
 .psv3-tab.is-active {
   color: var(--psv3-gold);
@@ -204,9 +217,6 @@
   right: 18px;
   height: 2px;
   background: var(--psv3-gold);
-  border-radius: 2px 2px 0 0;
-}
-
 .psv3-tab-dot {
   width: 7px;
   height: 7px;
@@ -221,23 +231,24 @@
 
 /* ---------- Content ---------- */
 .psv3-content {
-  padding: 28px 24px 80px;
+  padding: 24px 24px 80px;
   max-width: 960px;
   margin: 0 auto;
 }
 
 /* ---------- Section Cards ---------- */
 .psv3-section {
-  background: var(--psv3-surface);
-  border: 1px solid var(--psv3-border);
-  border-radius: var(--psv3-radius);
+  background: #0f0f15;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
   margin-bottom: 20px;
   overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
 }
 
 .psv3-section-header {
   padding: 16px 20px;
-  border-bottom: 1px solid var(--psv3-border);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -245,13 +256,14 @@
 .psv3-section-header h3 {
   margin: 0;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: -0.005em;
+  color: #ffffff;
 }
 .psv3-section-header p {
   margin: 2px 0 0;
   font-size: 12px;
-  color: var(--psv3-text-muted);
+  color: rgba(255, 255, 255, 0.5);
 }
 
 .psv3-section-body {
@@ -278,20 +290,20 @@
 }
 
 .psv3-field-label {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--psv3-text-muted);
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.6);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
 }
 .psv3-field-label .psv3-required {
   color: var(--psv3-gold);
-  margin-left: 2px;
+  margin-left: 3px;
 }
 
 .psv3-field-hint {
   font-size: 11px;
-  color: var(--psv3-text-muted);
+  color: rgba(255, 255, 255, 0.4);
   margin: 0;
 }
 
@@ -300,22 +312,23 @@
 .psv3-textarea,
 .psv3-select {
   width: 100%;
-  padding: 9px 12px;
+  padding: 10px 14px;
   font-size: 13px;
-  background: var(--psv3-bg);
-  color: var(--psv3-text);
-  border: 1px solid var(--psv3-border-strong);
-  border-radius: var(--psv3-radius-sm);
+  background: rgba(255, 255, 255, 0.03);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
   font-family: inherit;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition: border-color 0.15s, box-shadow 0.15s, background-color 0.15s;
   box-sizing: border-box;
 }
 .psv3-input:focus,
 .psv3-textarea:focus,
 .psv3-select:focus {
   outline: none;
-  border-color: var(--psv3-gold);
-  box-shadow: 0 0 0 3px var(--psv3-gold-soft);
+  background: rgba(255, 255, 255, 0.05);
+  border-color: #f5a623;
+  box-shadow: 0 0 0 3px rgba(245, 166, 35, 0.2);
 }
 
 .psv3-textarea {
@@ -344,10 +357,10 @@
 .psv3-toggle-track {
   width: 36px;
   height: 20px;
-  background: var(--psv3-surface-2);
+  background: rgba(255, 255, 255, 0.08);
   border-radius: 999px;
   position: relative;
-  border: 1px solid var(--psv3-border-strong);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   transition: background 0.15s;
 }
 .psv3-toggle.is-on .psv3-toggle-track {
@@ -378,25 +391,33 @@
   flex-wrap: wrap;
 }
 .psv3-radio {
-  padding: 8px 14px;
-  font-size: 12px;
-  font-weight: 500;
-  background: var(--psv3-bg);
-  color: var(--psv3-text-muted);
-  border: 1px solid var(--psv3-border-strong);
+  height: 36px;
+  padding: 0 18px;
+  font-size: 13px;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 999px;
   cursor: pointer;
   transition: all 0.15s;
   font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 .psv3-radio:hover {
-  color: var(--psv3-text);
+  color: #ffffff;
   border-color: var(--psv3-gold);
+  background: rgba(255, 255, 255, 0.08);
 }
 .psv3-radio.is-active {
-  background: var(--psv3-gold-soft);
-  color: var(--psv3-gold);
-  border-color: var(--psv3-gold);
+  background: linear-gradient(135deg, #f7b733, #f5a623);
+  color: #0a0a0f;
+  border-color: #f5a623;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(245, 166, 35, 0.25);
+}
 }
 
 /* ---------- Chip buttons (preset picker) ---------- */

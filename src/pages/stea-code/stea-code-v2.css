@@ -13811,3 +13811,51 @@ header,
     rgba(245, 166, 35, 0.00) 75%) !important;
   filter: blur(14px) !important;
 }
+
+
+/* ============================================================
+   FINAL HEADER LAYOUT — pinned right corner
+   ============================================================ */
+
+/* Header: pin logo left, nav center, actions right */
+.sc-topbar {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  padding-left: max(20px, env(safe-area-inset-left)) !important;
+  padding-right: max(20px, env(safe-area-inset-right)) !important;
+}
+
+/* Actions group hugs the right edge, whatever the nav does */
+.sc-topbar-actions {
+  margin-left: auto !important;
+  margin-right: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  flex-shrink: 0 !important;
+  justify-content: flex-end !important;
+}
+
+/* In case there's a wrapper between header and actions */
+.sc-topbar-inner {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* Fallback — if the actions group is inside .sc-topbar-inner, pin it too */
+.sc-topbar-inner .sc-topbar-actions,
+.sc-topbar > .sc-topbar-actions {
+  margin-left: auto !important;
+}
+
+/* Nav stays in the middle even when actions get wide */
+.sc-topbar-nav {
+  flex-shrink: 1 !important;
+  min-width: 0 !important;
+}

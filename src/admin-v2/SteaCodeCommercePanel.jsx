@@ -4285,7 +4285,13 @@ export default function SteaCodeCommercePanel({ isSuperAdmin, initialTab = "prod
             <button
               key={id}
               className={tab === id ? "is-active" : ""}
-              onClick={() => setTab(id)}
+              onClick={() => {
+                setTab(id);
+                if (dedicatedAdmin) {
+                  const base = baseRoute.replace(/\/$/, "");
+                  navigate(`${base}/${id}`);
+                }
+              }}
             >
               {label}
             </button>

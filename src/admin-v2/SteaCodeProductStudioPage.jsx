@@ -193,30 +193,17 @@ export default function SteaCodeProductStudioPage({
       : "ProductStudio V3 (latest)";
 
   return (
-    <>
-      {/* Version indicator / legacy toggle — floating FAB */}
-      <button
-        className={`psv2-toggle-fab ${editorVersion !== "v1" ? "is-v2" : ""}`}
-        onClick={toggleLegacy}
-        title={fabTitle + " — click to toggle legacy mode"}
-        style={{ zIndex: 100 }}
-      >
-        <SteaCodeLogo size={18} />
-        <span>{fabLabel}</span>
-      </button>
-
-      <StudioComponent
-        product={editing ? product : null}
-        onClose={handleBack}
-        onSaved={handleSaved}
-        onCreated={handleCreated}
-        onPublished={handlePublished}
-        isSuperAdmin={isSuperAdmin}
-        devPreview={devPreview}
-        initialTab={initialTab}
-        baseRoute={baseRoute}
-        fullPage
-      />
-    </>
+    <StudioComponent
+      product={editing ? product : null}
+      onClose={handleBack}
+      onSaved={handleSaved}
+      onCreated={handleCreated}
+      onPublished={handlePublished}
+      isSuperAdmin={isSuperAdmin}
+      devPreview={devPreview}
+      initialTab={initialTab}
+      baseRoute={baseRoute}
+      fullPage
+    />
   );
 }
