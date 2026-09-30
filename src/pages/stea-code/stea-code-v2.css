@@ -14315,3 +14315,52 @@ header,
   .sc-empty-orb   { width: 76px; height: 76px; }
   .sc-empty-orb-inner { width: 44px; height: 44px; }
 }
+
+
+/* ============================================================
+   STABLE HEADER — actions hug the logo, gap always consistent
+   ============================================================ */
+
+.sc-topbar {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;   /* was space-between → the culprit */
+  gap: 24px !important;
+  padding: 0 20px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* Logo — no auto margin, sits first */
+.sc-topbar-logo {
+  margin-right: 0 !important;
+  flex-shrink: 0 !important;
+}
+
+/* Nav — sits immediately after logo, with a small gap */
+.sc-topbar-nav {
+  flex-shrink: 1 !important;
+  min-width: 0 !important;
+  margin-right: 0 !important;
+}
+
+/* Actions — hug the logo/nav, do NOT push to the right edge */
+.sc-topbar-actions {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  margin-left: 0 !important;    /* was auto — this was pinning to the right */
+  flex-shrink: 0 !important;
+}
+
+/* Mobile-only hamburger keeps its own position at the very end (still inside actions) */
+.sc-topbar-icon-btn.sc-mobile-only {
+  margin-left: 4px !important;
+}
+
+/* Optional: on very wide screens, cap the header so the composition doesn't stretch forever */
+@media (min-width: 1600px) {
+  .sc-topbar {
+    padding: 0 32px !important;
+  }
+}
