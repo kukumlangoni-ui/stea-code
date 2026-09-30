@@ -125,6 +125,7 @@ const NAV_LINKS = [
 const CATEGORY_LABELS = {
   All: { en: "All", zhCN: "全部" },
   "Text Effects": { en: "Text Effects", zhCN: "文字效果" },
+  Animations: { en: "Animations", zhCN: "动画" },
   Buttons: { en: "Buttons", zhCN: "按钮" },
   Backgrounds: { en: "Backgrounds", zhCN: "背景" },
   Cards: { en: "Cards", zhCN: "卡片" },
@@ -1435,17 +1436,50 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
                 ))}
               </div>
             ) : (
-              <div className="sc-product-grid-empty">
-                <p>
-                  {uiLocale === "zhCN"
-                    ? "此类别暂无产品。"
-                    : "No products in this category yet."}
-                </p>
-                <p>
-                  {uiLocale === "zhCN"
-                    ? "请尝试其他筛选条件或浏览所有组件。"
-                    : "Try a different filter or browse all components."}
-                </p>
+              <div className="sc-empty-state" role="status" aria-live="polite">
+                <div className="sc-empty-orb" aria-hidden="true">
+                  <span className="sc-empty-orb-inner" />
+                  <span className="sc-empty-orb-ring" />
+                  <span className="sc-empty-orb-ring sc-empty-orb-ring-2" />
+                </div>
+                <div className="sc-empty-copy">
+                  <span className="sc-empty-kicker">
+                    {uiLocale === "zhCN" ? "即将上线" : "Coming soon"}
+                  </span>
+                  <h3 className="sc-empty-title">
+                    {category && category !== "All"
+                      ? (uiLocale === "zhCN"
+                          ? `${tLocal(CATEGORY_LABELS[category] || { en: category, zhCN: category })} 即将推出`
+                          : `${tLocal(CATEGORY_LABELS[category] || { en: category, zhCN: category })} is on the way`)
+                      : (uiLocale === "zhCN" ? "新组件即将到来" : "New drops are on the way")}
+                  </h3>
+                  <p className="sc-empty-desc">
+                    {uiLocale === "zhCN"
+                      ? "我们正在为这个分类打造全新组件。关注社区，第一时间获取。"
+                      : "We're crafting fresh components for this category. Follow the community to be first in line when they land."}
+                  </p>
+                </div>
+                <div className="sc-empty-actions">
+                  <button
+                    type="button"
+                    className="sc-empty-primary"
+                    onClick={() => { setCategory("All"); setPricing("All"); setFramework("All Frameworks"); }}
+                  >
+                    {uiLocale === "zhCN" ? "浏览所有组件" : "Browse all products"}
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <line x1="5" y1="12" x2="19" y2="12" />
+                      <polyline points="12 5 19 12 12 19" />
+                    </svg>
+                  </button>
+                  <a
+                    href="https://t.me/steacode"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="sc-empty-secondary"
+                  >
+                    {uiLocale === "zhCN" ? "加入社区" : "Join the community"}
+                  </a>
+                </div>
               </div>
             )}
 
@@ -1564,7 +1598,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
 
               {/* Category filter pills */}
               <div className="sc-homepage-pill-row" role="tablist" aria-label="Product categories">
-                {["All", "Buttons", "Cards", "Forms", "Text Effects", "Backgrounds", "Loaders", "Navigation", "Portfolio", "Toggle Switches"].map((cat) => (
+                {["All", "Buttons", "Cards", "Forms", "Text Effects", "Animations", "Backgrounds", "Loaders", "Navigation", "Portfolio", "Toggle Switches"].map((cat) => (
                   <button
                     key={cat}
                     type="button"
@@ -1631,18 +1665,51 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
                   ))}
                 </div>
               ) : (
-                <div className="sc-product-grid-empty">
-                  <p>
+                <div className="sc-empty-state" role="status" aria-live="polite">
+                <div className="sc-empty-orb" aria-hidden="true">
+                  <span className="sc-empty-orb-inner" />
+                  <span className="sc-empty-orb-ring" />
+                  <span className="sc-empty-orb-ring sc-empty-orb-ring-2" />
+                </div>
+                <div className="sc-empty-copy">
+                  <span className="sc-empty-kicker">
+                    {uiLocale === "zhCN" ? "即将上线" : "Coming soon"}
+                  </span>
+                  <h3 className="sc-empty-title">
+                    {category && category !== "All"
+                      ? (uiLocale === "zhCN"
+                          ? `${tLocal(CATEGORY_LABELS[category] || { en: category, zhCN: category })} 即将推出`
+                          : `${tLocal(CATEGORY_LABELS[category] || { en: category, zhCN: category })} is on the way`)
+                      : (uiLocale === "zhCN" ? "新组件即将到来" : "New drops are on the way")}
+                  </h3>
+                  <p className="sc-empty-desc">
                     {uiLocale === "zhCN"
-                      ? "此类别暂无产品。"
-                      : "No products in this category yet."}
-                  </p>
-                  <p>
-                    {uiLocale === "zhCN"
-                      ? "请尝试其他筛选条件或浏览所有组件。"
-                      : "Try a different filter or browse all components."}
+                      ? "我们正在为这个分类打造全新组件。关注社区，第一时间获取。"
+                      : "We're crafting fresh components for this category. Follow the community to be first in line when they land."}
                   </p>
                 </div>
+                <div className="sc-empty-actions">
+                  <button
+                    type="button"
+                    className="sc-empty-primary"
+                    onClick={() => { setCategory("All"); setPricing("All"); setFramework("All Frameworks"); }}
+                  >
+                    {uiLocale === "zhCN" ? "浏览所有组件" : "Browse all products"}
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <line x1="5" y1="12" x2="19" y2="12" />
+                      <polyline points="12 5 19 12 12 19" />
+                    </svg>
+                  </button>
+                  <a
+                    href="https://t.me/steacode"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="sc-empty-secondary"
+                  >
+                    {uiLocale === "zhCN" ? "加入社区" : "Join the community"}
+                  </a>
+                </div>
+              </div>
               )}
             </section>
 
