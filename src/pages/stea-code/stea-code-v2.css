@@ -15040,3 +15040,26 @@ header,
 .sc-product-modal-panel .sc-live-preview-ctrl {
   display: none !important;
 }
+
+/* ============================================================
+   SCROLL REVEAL — product card entrance animation
+   ============================================================ */
+.sc-reveal {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+              transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform;
+}
+.sc-reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+@media (prefers-reduced-motion: reduce) {
+  .sc-reveal,
+  .sc-reveal.is-visible {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}

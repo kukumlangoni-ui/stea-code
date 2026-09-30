@@ -67,6 +67,21 @@ import {
   FALLBACK_CODE_PRODUCTS } from "../../data/stea-code/codeProducts.js";
 import { STEA_CODE_SERVER_PRODUCTS } from "../../data/stea-code/codeProductsServer.js";
 import { V2_WORLDS } from "../../data/stea-code/v2Worlds.js";
+import { useScrollReveal } from "../../hooks/useScrollReveal.js";
+
+function Reveal({ children, delay = 0, as: Tag = "div", className = "", ...rest }) {
+  const [ref, visible] = useScrollReveal();
+  return (
+    <Tag
+      ref={ref}
+      className={`sc-reveal ${visible ? "is-visible" : ""} ${className}`.trim()}
+      style={{ transitionDelay: `${delay}ms` }}
+      {...rest}
+    >
+      {children}
+    </Tag>
+  );
+}
 
 const COPY = {
   builtFor: { en: "BUILT FOR DEVELOPERS", zhCN: "为开发者打造" },
@@ -1434,16 +1449,18 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
               </div>
             ) : homepageProducts.length > 0 ? (
               <div className="sc-product-grid">
-                {homepageProducts.map((product) => (
-                  <PreviewErrorBoundary key={getProductIdentity(product)}>
-                    <CodeProductCard
-                      product={product}
-                      tLocal={tLocal}
-                      onOpen={() => openProduct(product)}
-                      isFavorited={favorites.has(getProductIdentity(product))}
-                      onToggleFavorite={handleToggleFavorite}
-                    />
-                  </PreviewErrorBoundary>
+                {homepageProducts.map((product, index) => (
+                  <Reveal key={getProductIdentity(product)} delay={index * 45}>
+                    <PreviewErrorBoundary>
+                      <CodeProductCard
+                        product={product}
+                        tLocal={tLocal}
+                        onOpen={() => openProduct(product)}
+                        isFavorited={favorites.has(getProductIdentity(product))}
+                        onToggleFavorite={handleToggleFavorite}
+                      />
+                    </PreviewErrorBoundary>
+                  </Reveal>
                 ))}
               </div>
             ) : (
@@ -1648,16 +1665,18 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
                 </div>
               ) : homepageProducts.length > 0 ? (
                 <div className="sc-product-grid">
-                  {homepageProducts.map((product) => (
-                    <PreviewErrorBoundary key={getProductIdentity(product)}>
-                      <CodeProductCard
-                        product={product}
-                        tLocal={tLocal}
-                        onOpen={() => openProduct(product)}
-                        isFavorited={favorites.has(getProductIdentity(product))}
-                        onToggleFavorite={handleToggleFavorite}
-                      />
-                    </PreviewErrorBoundary>
+                  {homepageProducts.map((product, index) => (
+                    <Reveal key={getProductIdentity(product)} delay={index * 45}>
+                      <PreviewErrorBoundary>
+                        <CodeProductCard
+                          product={product}
+                          tLocal={tLocal}
+                          onOpen={() => openProduct(product)}
+                          isFavorited={favorites.has(getProductIdentity(product))}
+                          onToggleFavorite={handleToggleFavorite}
+                        />
+                      </PreviewErrorBoundary>
+                    </Reveal>
                   ))}
                 </div>
               ) : (
