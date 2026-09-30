@@ -3260,15 +3260,6 @@ ${file.content}`
         <div className="sc-product-detail-media">
           <div className="sc-modal-media-header">
             <div className="sc-modal-media-header-left">
-              <div
-                className={`sc-product-detail-type ${
-                  isPremium ? "is-premium" : "is-free"
-                }`}
-              >
-                {isPremium
-                  ? tLocal({ en: "PREMIUM", zhCN: "高级" })
-                  : tLocal({ en: "FREE", zhCN: "免费" })}
-              </div>
 
               {hasVideo && hasLiveDemo && (
                 <div
@@ -3461,15 +3452,6 @@ ${file.content}`
 
         <div className="sc-product-detail-copy">
           <div className="sc-product-detail-topline">
-            <span
-              className={`sc-product-pill ${
-                isPremium ? "is-premium" : "is-free"
-              }`}
-            >
-              {isPremium
-                ? tLocal({ en: "Premium Code", zhCN: "高级代码" })
-                : tLocal({ en: "Free Code", zhCN: "免费代码" })}
-            </span>
 
             {product?.category && (
               <span
