@@ -2631,7 +2631,7 @@ a.sc-v2-card { text-decoration: none; }
 /* Hero base — vertical rhythm + layering */
 .sc-market-hero {
   position: relative;
-  padding: 64px 24px 100px;
+  padding: 64px 24px 70px;
   text-align: center;
   overflow: hidden;
   isolation: isolate;
