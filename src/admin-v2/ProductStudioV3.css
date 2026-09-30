@@ -217,6 +217,9 @@
   right: 18px;
   height: 2px;
   background: var(--psv3-gold);
+  border-radius: 2px 2px 0 0;
+}
+
 .psv3-tab-dot {
   width: 7px;
   height: 7px;
@@ -417,7 +420,6 @@
   border-color: #f5a623;
   font-weight: 700;
   box-shadow: 0 2px 8px rgba(245, 166, 35, 0.25);
-}
 }
 
 /* ---------- Chip buttons (preset picker) ---------- */

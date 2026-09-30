@@ -123,7 +123,7 @@
 .sca-admin-nav-item.is-active { color: var(--sc-gold); border-bottom-color: var(--sc-gold); }
 
 /* ---- content ---- */
-.sca-admin-content { padding: 24px 28px; max-width: 1600px; margin: 0 auto; width: 100%; }
+.sca-admin-content { padding: 24px 28px; max-width: 1600px; margin: 0 auto; width: 100%; box-sizing: border-box; }
 
 /* ---- health ---- */
 .sca-admin-health { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 18px; font-size: 12px; color: var(--sc-muted); }
