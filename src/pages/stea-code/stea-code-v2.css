@@ -13707,3 +13707,107 @@ iframe::-webkit-scrollbar-corner {
     opacity   0.35s ease,
     transform 0.55s cubic-bezier(0.34, 1.4, 0.64, 1) !important;
 }
+
+
+/* ============================================================
+   FINAL HEADER FIX — brand colors + right alignment
+   ============================================================ */
+
+/* 1) Force the header to distribute children to the far edges */
+header,
+.sc-topbar,
+.sc-header,
+.sc-home-header,
+.sc-topbar-inner {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  width: 100% !important;
+}
+
+/* 2) Actions group pinned to the right edge */
+.sc-topbar-actions {
+  margin-left: auto !important;
+  justify-content: flex-end !important;
+  flex-shrink: 0 !important;
+}
+
+/* 3) Brand cream color, matching the hero words */
+:root {
+  --stea-cream: #ede3d0;
+  --stea-cream-soft: rgba(237, 227, 208, 0.75);
+  --stea-gold-line: rgba(245, 166, 35, 0.35);
+  --stea-rose-line: rgba(242, 138, 111, 0.35);
+  --stea-blue: #29a9eb;
+}
+
+/* 4) ADMIN / MEMBER badge — cream text, subtle gold border */
+.sc-hub-badge {
+  color: var(--stea-cream) !important;
+  border: 1px solid var(--stea-gold-line) !important;
+  background: linear-gradient(135deg,
+    rgba(245, 166, 35, 0.10) 0%,
+    rgba(245, 166, 35, 0.03) 100%) !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.9px !important;
+  box-shadow: 0 0 10px rgba(245, 166, 35, 0.10) !important;
+}
+
+/* 5) Sign out — cream text with soft rose border */
+.sc-hub-signout {
+  color: var(--stea-cream) !important;
+  border: 1px solid var(--stea-rose-line) !important;
+  background: linear-gradient(135deg,
+    rgba(242, 138, 111, 0.10) 0%,
+    rgba(242, 138, 111, 0.03) 100%) !important;
+  font-weight: 600 !important;
+}
+.sc-hub-signout:hover {
+  color: #fff5e6 !important;
+  border-color: rgba(242, 138, 111, 0.65) !important;
+  background: linear-gradient(135deg,
+    rgba(242, 138, 111, 0.18) 0%,
+    rgba(242, 138, 111, 0.08) 100%) !important;
+  box-shadow: 0 0 18px rgba(242, 138, 111, 0.25) !important;
+}
+.sc-hub-signout svg {
+  stroke: currentColor !important;
+}
+
+/* 6) Email text — pure cream, matches hero */
+.sc-hub-email {
+  color: var(--stea-cream) !important;
+  font-weight: 500 !important;
+}
+
+/* 7) Telegram icon — revert to its original brand blue */
+.sc-topbar-community-icon,
+.sc-topbar-community-icon svg,
+.sc-topbar-community-icon path {
+  color: var(--stea-blue) !important;
+  fill: var(--stea-blue) !important;
+  stroke: none !important;
+}
+.sc-topbar-actions.is-expanded .sc-topbar-community-icon,
+.sc-topbar-actions.is-expanded .sc-topbar-community-icon svg,
+.sc-topbar-actions.is-expanded .sc-topbar-community-icon path {
+  color: var(--stea-blue) !important;
+  fill: var(--stea-blue) !important;
+}
+
+/* 8) Avatar halo — keep it warm but restrained */
+.sc-account-avatar-btn::after {
+  background: radial-gradient(circle,
+    rgba(245, 166, 35, 0.5) 0%,
+    rgba(245, 166, 35, 0.15) 40%,
+    transparent 70%) !important;
+}
+
+/* 9) Hub glow — soft cream/amber wash, no purple */
+.sc-account-hub .sc-hub-glow {
+  background: radial-gradient(120% 140% at 15% 50%,
+    rgba(245, 166, 35, 0.18) 0%,
+    rgba(237, 227, 208, 0.06) 40%,
+    rgba(245, 166, 35, 0.00) 75%) !important;
+  filter: blur(14px) !important;
+}
