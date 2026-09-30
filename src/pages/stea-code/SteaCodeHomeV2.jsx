@@ -124,7 +124,7 @@ const NAV_LINKS = [
 
 const CATEGORY_LABELS = {
   All: { en: "All", zhCN: "全部" },
-  "Text Effects": { en: "Text Effects", zhCN: "文字效果" },
+  "Text Animations": { en: "Text Animations", zhCN: "文字动画" },
   Animations: { en: "Animations", zhCN: "动画" },
   Buttons: { en: "Buttons", zhCN: "按钮" },
   Backgrounds: { en: "Backgrounds", zhCN: "背景" },
@@ -148,7 +148,7 @@ const BROWSE_CATEGORIES = [
   "Navigation",
   "Forms",
   "Loaders",
-  "Text Effects",
+  "Text Animations",
   "Page Transitions",
   "Components",
   "Portfolio",
@@ -1609,7 +1609,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
 
               {/* Category filter pills */}
               <div className="sc-homepage-pill-row" role="tablist" aria-label="Product categories">
-                {["All", "Buttons", "Cards", "Forms", "Text Effects", "Animations", "Backgrounds", "Loaders", "Navigation", "Portfolio", "Toggle Switches"].map((cat) => (
+                {["All", "Buttons", "Cards", "Forms", "Text Animations", "Animations", "Backgrounds", "Loaders", "Navigation", "Portfolio", "Toggle Switches"].map((cat) => (
                   <button
                     key={cat}
                     type="button"

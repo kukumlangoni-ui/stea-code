@@ -1,6 +1,6 @@
 export const CODE_PRODUCT_CATEGORIES = [
   "All",
-  "Text Effects",
+  "Text Animations",
   "Animations",
   "Buttons",
   "Backgrounds",
