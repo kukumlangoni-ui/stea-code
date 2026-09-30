@@ -15173,14 +15173,9 @@ header,
 /* ============================================================
    TRENDING HEADER — pills right-aligned in section head
    ============================================================ */
-.sc-market-section-head .sc-homepage-pill-row {
-  margin-bottom: 0 !important;
-  justify-content: flex-end;
-}
+
 @media (max-width: 768px) {
-  .sc-market-section-head .sc-homepage-pill-row {
-    justify-content: flex-start;
-  }
+  
 }
 
 /* ============================================================
