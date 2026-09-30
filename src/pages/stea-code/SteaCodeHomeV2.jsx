@@ -1882,38 +1882,179 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
   );
 }
 
-function MobileMenu({ onClose, onGoWorld, tLocal, onSelectNav }) {
+function MobileMenu({
+  onClose,
+  onGoWorld,
+  tLocal,
+  onSelectNav,
+  user,
+  isAdmin,
+  onSignOut,
+  onGoUnlimited,
+  category,
+  setCategory,
+  setPricing,
+  setFramework,
+  mobileMenuCategories,
+}) {
+  const signedInEmail = user?.email || "";
+  const initial = String(signedInEmail || "U").charAt(0).toUpperCase() || "U";
+  const photoURL = user?.photoURL;
+
   return (
     <div className="sc-market-drawer" role="dialog" aria-modal="true" aria-label="STEA Code menu">
       <button className="sc-market-drawer-bg" onClick={onClose} aria-label="Close menu" />
       <section className="sc-market-drawer-panel">
-        <button type="button" className="sc-icon-btn" onClick={onClose} aria-label="Close"><X size={18} /></button>
-        {NAV_LINKS.map((item) => (
+
+        {/* ---- Top bar with close ---- */}
+        <header className="sc-drawer-topbar">
+          <span className="sc-drawer-brand">
+            <span className="sc-drawer-brand-mark">&lt;/&gt;</span>
+            <span className="sc-drawer-brand-name">STEA Code</span>
+          </span>
           <button
-            key={item.id}
             type="button"
-            className="sc-mobile-nav-item"
-            style={{
-              background: "none",
-              border: "none",
-              color: "#f8fafc",
-              fontSize: "16px",
-              fontWeight: "600",
-              textAlign: "left",
-              padding: "12px 0",
-              cursor: "pointer",
-            }}
-            onClick={() => onSelectNav?.(item)}
+            className="sc-drawer-close"
+            onClick={onClose}
+            aria-label="Close menu"
           >
-            {tLocal(item.label)}
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
           </button>
-        ))}
-        <a href="/profile" onClick={onClose}>{tLocal(COPY.account)}</a>
-        {RESOURCE_LINKS.map((item) => (
-          <button key={item.id} type="button" onClick={() => { onClose(); onGoWorld(item.view, item.intent); }}>
-            {tLocal(item.title)}
+        </header>
+
+        {/* ---- Account card (signed in) or Sign-in CTA (signed out) ---- */}
+        {user ? (
+          <div className="sc-drawer-account">
+            <div className="sc-drawer-account-avatar">
+              {photoURL ? (
+                <img src={photoURL} alt="" referrerPolicy="no-referrer" />
+              ) : (
+                <span>{initial}</span>
+              )}
+            </div>
+            <div className="sc-drawer-account-info">
+              <div className="sc-drawer-account-email">{signedInEmail}</div>
+              <div className={`sc-drawer-account-badge ${isAdmin ? "is-admin" : ""}`}>
+                {isAdmin ? "ADMIN" : "MEMBER"}
+              </div>
+            </div>
+            <button
+              type="button"
+              className="sc-drawer-signout"
+              onClick={() => { onClose(); onSignOut(); }}
+              aria-label="Sign out"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                <polyline points="16 17 21 12 16 7" />
+                <line x1="21" y1="12" x2="9" y2="12" />
+              </svg>
+              Sign out
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            className="sc-drawer-signin"
+            onClick={() => { onClose(); window.dispatchEvent(new Event("open-auth")); }}
+          >
+            Sign in
           </button>
-        ))}
+        )}
+
+        {/* ---- Go Unlimited ---- */}
+        <button
+          type="button"
+          className="sc-drawer-unlimited"
+          onClick={() => { onClose(); onGoUnlimited?.(); }}
+        >
+          <span className="sc-drawer-unlimited-shine" aria-hidden="true" />
+          <span className="sc-drawer-unlimited-label">Go Unlimited</span>
+          <span className="sc-drawer-unlimited-badge">SOON</span>
+        </button>
+
+        {/* ---- Main navigation ---- */}
+        <div className="sc-drawer-section">
+          <div className="sc-drawer-section-title">Navigate</div>
+          {NAV_LINKS.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              className="sc-drawer-item"
+              onClick={() => { onClose(); onSelectNav?.(item); }}
+            >
+              <span className="sc-drawer-item-label">{tLocal(item.label)}</span>
+              <svg className="sc-drawer-item-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="9 6 15 12 9 18" />
+              </svg>
+            </button>
+          ))}
+        </div>
+
+        {/* ---- Categories ---- */}
+        {mobileMenuCategories && mobileMenuCategories.length > 0 && (
+          <div className="sc-drawer-section">
+            <div className="sc-drawer-section-title">Categories</div>
+            <div className="sc-drawer-categories">
+              {mobileMenuCategories.map((cat) => (
+                <button
+                  key={cat}
+                  type="button"
+                  className={`sc-drawer-chip ${category === cat ? "is-active" : ""}`}
+                  onClick={() => {
+                    setCategory?.(cat);
+                    setPricing?.("All");
+                    setFramework?.("All Frameworks");
+                    onClose();
+                  }}
+                >
+                  {tLocal(CATEGORY_LABELS[cat] || { en: cat, zhCN: cat })}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ---- Resources ---- */}
+        <div className="sc-drawer-section">
+          <div className="sc-drawer-section-title">Explore</div>
+          {RESOURCE_LINKS.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              className="sc-drawer-item"
+              onClick={() => { onClose(); onGoWorld(item.view, item.intent); }}
+            >
+              <span className="sc-drawer-item-label">{tLocal(item.title)}</span>
+              <svg className="sc-drawer-item-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="9 6 15 12 9 18" />
+              </svg>
+            </button>
+          ))}
+        </div>
+
+        {/* ---- Community footer ---- */}
+        <a
+          href="https://t.me/steacode"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="sc-drawer-community"
+          onClick={onClose}
+        >
+          <span className="sc-drawer-community-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
+            </svg>
+          </span>
+          <span>Join the Community</span>
+          <svg className="sc-drawer-item-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="9 6 15 12 9 18" />
+          </svg>
+        </a>
+
       </section>
     </div>
   );
