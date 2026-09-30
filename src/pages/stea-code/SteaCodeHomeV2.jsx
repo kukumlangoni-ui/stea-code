@@ -1590,21 +1590,6 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
                   <h2>{tLocal(COPY.trendingTitle)}</h2>
                   <p>{tLocal(COPY.trendingSub)}</p>
                 </div>
-                <button
-                  type="button"
-                  className="sc-tool-back-link sc-view-all-link"
-                  onClick={() => {
-                    setCategory("All");
-                    setPricing("All");
-                    setViewMode("explore");
-                  }}
-                >
-                  <span>{tLocal(COPY.viewAll)}</span>
-                  <svg className="sc-view-all-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="5" y1="12" x2="19" y2="12"/>
-                    <polyline points="12 5 19 12 12 19"/>
-                  </svg>
-                </button>
               </div>
 
               {/* Category filter pills */}
