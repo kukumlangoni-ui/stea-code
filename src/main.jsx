@@ -1,3 +1,43 @@
+
+// ============================================================
+// Auto-recover from chunk-load failures (deploy race condition)
+// When Vite's dynamic import fails because the browser has stale
+// HTML pointing at a bundle hash that no longer exists, we reload
+// the page once to fetch the fresh HTML + bundle pair.
+// ============================================================
+if (typeof window !== "undefined") {
+  const RELOAD_KEY = "stea_chunk_reload_at";
+  const now = Date.now();
+  const last = Number(sessionStorage.getItem(RELOAD_KEY) || "0");
+
+  window.addEventListener("error", (e) => {
+    const msg = String(e?.message || "");
+    if (
+      msg.includes("Failed to fetch dynamically imported module") ||
+      msg.includes("Importing a module script failed")
+    ) {
+      // Only auto-reload if we haven't done so in the last 15 seconds
+      if (now - last > 15000) {
+        sessionStorage.setItem(RELOAD_KEY, String(now));
+        window.location.reload();
+      }
+    }
+  });
+
+  window.addEventListener("unhandledrejection", (e) => {
+    const msg = String(e?.reason?.message || "");
+    if (
+      msg.includes("Failed to fetch dynamically imported module") ||
+      msg.includes("Importing a module script failed")
+    ) {
+      if (now - last > 15000) {
+        sessionStorage.setItem(RELOAD_KEY, String(now));
+        window.location.reload();
+      }
+    }
+  });
+}
+
 const originalConsoleError = console.error;
 const originalConsoleLog = console.log;
 const originalConsoleWarn = console.warn;
