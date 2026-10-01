@@ -1001,11 +1001,48 @@ export function ProductStudio({ product, onClose, onSaved, onCreated, onPublishe
   const [previewKey, setPreviewKey] = useState(0);
   const [videoUploading, setVideoUploading] = useState(false);
   const [videoUploadError, setVideoUploadError] = useState("");
+  const [videoUploadProgress, setVideoUploadProgress] = useState(0);
   const [posterUploading, setPosterUploading] = useState(false);
   const [posterUploadError, setPosterUploadError] = useState("");
+  const [posterUploadProgress, setPosterUploadProgress] = useState(0);
   const videoFileInputRef = useRef(null);
   const posterFileInputRef = useRef(null);
   const autoRunTimer = useRef(null);
+
+  // XHR upload with real progress events — fetch() hangs without progress
+  // callbacks, which caused the "stuck at 0%" state. Matches the existing
+  // Worker contract: POST /api/stea-code/media/upload with productId + file.
+  const uploadFileWithProgress = (file, productId, onProgress) =>
+    new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      const fd = new FormData();
+      fd.append("productId", productId);
+      fd.append("file", file);
+
+      xhr.upload.addEventListener("progress", (e) => {
+        if (e.lengthComputable) {
+          onProgress(Math.round((e.loaded / e.total) * 100));
+        }
+      });
+
+      xhr.addEventListener("load", () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          try {
+            resolve(JSON.parse(xhr.responseText));
+          } catch {
+            reject(new Error(`Invalid response: ${xhr.responseText.slice(0, 200)}`));
+          }
+        } else {
+          reject(new Error(`Upload failed (${xhr.status}): ${xhr.responseText.slice(0, 200)}`));
+        }
+      });
+
+      xhr.addEventListener("error", () => reject(new Error("Network error — check your connection and retry.")));
+      xhr.addEventListener("abort", () => reject(new Error("Upload cancelled.")));
+
+      xhr.open("POST", "/api/stea-code/media/upload", true);
+      xhr.send(fd);
+    });
 
   const uploadVideoFile = async (file) => {
     if (!file) return;
@@ -1024,27 +1061,26 @@ export function ProductStudio({ product, onClose, onSaved, onCreated, onPublishe
       return;
     }
     setVideoUploading(true);
+    setVideoUploadProgress(0);
     setVideoUploadError("");
     try {
-      const result = await uploadSteaCodePreviewAssets(pid, { video: file });
-      const videoKey = result?.video?.key;
-      const videoUrl = result?.video?.url;
-      if (!videoKey) {
-        throw new Error("Upload succeeded but no key was returned.");
+      const data = await uploadFileWithProgress(file, pid, (pct) => setVideoUploadProgress(pct));
+      if (!data.ok || !data.key) {
+        throw new Error(data.error || "Upload failed.");
       }
       // Store BOTH: key (persistence) and URL (immediate preview render)
       setForm((current) => ({
         ...current,
-        preview: { ...current.preview, enabled: true, videoKey },
-        previewVideoUrl: videoUrl || current.previewVideoUrl,
+        preview: { ...current.preview, enabled: true, videoKey: data.key },
+        previewVideoUrl: data.url || current.previewVideoUrl,
       }));
       setDirty(true);
-      // Reset file input so re-selecting the same file re-triggers onChange
       if (videoFileInputRef.current) videoFileInputRef.current.value = "";
     } catch (err) {
       setVideoUploadError(getUploadErrorMessage(err, "video upload"));
     } finally {
       setVideoUploading(false);
+      setVideoUploadProgress(0);
     }
   };
 
@@ -1065,18 +1101,17 @@ export function ProductStudio({ product, onClose, onSaved, onCreated, onPublishe
       return;
     }
     setPosterUploading(true);
+    setPosterUploadProgress(0);
     setPosterUploadError("");
     try {
-      const result = await uploadSteaCodePreviewAssets(pid, { poster: file });
-      const posterKey = result?.poster?.key;
-      const posterUrl = result?.poster?.url;
-      if (!posterKey) {
-        throw new Error("Upload succeeded but no key was returned.");
+      const data = await uploadFileWithProgress(file, pid, (pct) => setPosterUploadProgress(pct));
+      if (!data.ok || !data.key) {
+        throw new Error(data.error || "Upload failed.");
       }
       setForm((current) => ({
         ...current,
-        preview: { ...current.preview, posterKey },
-        posterImageUrl: posterUrl || current.posterImageUrl,
+        preview: { ...current.preview, posterKey: data.key },
+        posterImageUrl: data.url || current.posterImageUrl,
       }));
       setDirty(true);
       if (posterFileInputRef.current) posterFileInputRef.current.value = "";
@@ -1084,6 +1119,7 @@ export function ProductStudio({ product, onClose, onSaved, onCreated, onPublishe
       setPosterUploadError(getUploadErrorMessage(err, "poster upload"));
     } finally {
       setPosterUploading(false);
+      setPosterUploadProgress(0);
     }
   };
 
@@ -1900,149 +1936,26 @@ export function ProductStudio({ product, onClose, onSaved, onCreated, onPublishe
                         </label>
                       </div>
 
-                      {/* PREVIEW VIDEO SECTION (PRIMARY PUBLISHING METHOD) */}
-                      <div style={{
-                        marginTop: 18,
-                        marginBottom: 18,
-                        padding: 16,
-                        borderRadius: 12,
-                        background: "rgba(245, 166, 35, 0.04)",
-                        border: "1px solid rgba(245, 166, 35, 0.22)"
-                      }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-                          <div>
-                            <strong style={{ color: "#f5a623", fontSize: 13, display: "flex", alignItems: "center", gap: 6 }}>
-                              <Video size={15} /> PREVIEW VIDEO (PRIMARY PUBLISHING METHOD)
-                            </strong>
-                            <small style={{ color: "rgba(148, 163, 184, 0.9)", fontSize: 11, display: "block", marginTop: 2 }}>
-                              Upload an MP4/WebM video or paste a URL. Adding a video satisfies preview requirements for publishing!
-                            </small>
-                          </div>
-                        </div>
-
-                        <div className="sc-studio-grid" style={{ marginBottom: 0 }}>
-                          <label className="sc-studio-field" style={{ marginBottom: 0 }}>
-                            <span className="sc-studio-field-label">Preview Video (MP4 / WebM)</span>
-                            <div style={{ display: "flex", gap: 8 }}>
-                              <input
-                                className="sc-studio-input"
-                                value={form.previewVideoUrl || ""}
-                                onChange={(e) => set("previewVideoUrl", e.target.value)}
-                                placeholder="https://.../preview.mp4"
-                                style={{ flex: 1 }}
-                              />
-                              <button
-                                type="button"
-                                className="sc-studio-btn sc-studio-btn-primary"
-                                onClick={() => videoFileInputRef.current?.click()}
-                                disabled={videoUploading}
-                                style={{ whiteSpace: "nowrap" }}
-                              >
-                                {videoUploading ? <Loader2 size={13} className="sc-spin" /> : <UploadCloud size={13} />}
-                                {videoUploading ? "Uploading..." : "Upload Video"}
-                              </button>
-                              <input
-                                type="file"
-                                ref={videoFileInputRef}
-                                hidden
-                                accept="video/mp4,video/webm,video/quicktime,video/ogg"
-                                onChange={(e) => {
-                                  const file = e.target.files?.[0];
-                                  if (file) uploadVideoFile(file);
-                                }}
-                              />
-                            </div>
-                          </label>
-
-                          <label className="sc-studio-field" style={{ marginBottom: 0 }}>
-                            <span className="sc-studio-field-label">Poster Image (Fallback / Thumbnail)</span>
-                            <div style={{ display: "flex", gap: 8 }}>
-                              <input
-                                className="sc-studio-input"
-                                value={form.posterImageUrl || ""}
-                                onChange={(e) => set("posterImageUrl", e.target.value)}
-                                placeholder="https://.../poster.jpg"
-                                style={{ flex: 1 }}
-                              />
-                              <button
-                                type="button"
-                                className="sc-studio-btn"
-                                onClick={() => posterFileInputRef.current?.click()}
-                                disabled={posterUploading}
-                                style={{ whiteSpace: "nowrap" }}
-                              >
-                                {posterUploading ? <Loader2 size={13} className="sc-spin" /> : <UploadCloud size={13} />}
-                                {posterUploading ? "Uploading..." : "Upload Image"}
-                              </button>
-                              <input
-                                type="file"
-                                ref={posterFileInputRef}
-                                hidden
-                                accept="image/jpeg,image/png,image/webp,image/gif"
-                                onChange={(e) => {
-                                  const file = e.target.files?.[0];
-                                  if (file) uploadPosterFile(file);
-                                }}
-                              />
-                            </div>
-                          </label>
-                        </div>
-
-                        {videoUploadError && (
-                          <div className="sc-admin-error" style={{ margin: "10px 0 0" }}>{videoUploadError}</div>
-                        )}
-                        {posterUploadError && (
-                          <div className="sc-admin-error" style={{ margin: "10px 0 0" }}>{posterUploadError}</div>
-                        )}
-
-                        {form.previewVideoUrl && String(form.previewVideoUrl).trim() && (
-                          <div style={{ marginTop: 12, padding: 10, borderRadius: 8, background: "#080c14", border: "1px solid rgba(245,166,35,0.18)" }}>
-                            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-                              <span style={{ fontSize: 11, fontWeight: 700, color: "#63dba9", display: "flex", alignItems: "center", gap: 6 }}>
-                                <CheckCircle2 size={13} /> Video Ready · Player Preview
-                              </span>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setForm((current) => ({
-                                    ...current,
-                                    preview: { ...current.preview, videoKey: "", enabled: false },
-                                    previewVideoUrl: "",
-                                  }));
-                                  setDirty(true);
-                                }}
-                                style={{
-                                  background: "transparent",
-                                  border: "1px solid rgba(255,255,255,0.12)",
-                                  color: "rgba(255,255,255,0.6)",
-                                  fontSize: 11,
-                                  padding: "4px 10px",
-                                  borderRadius: 6,
-                                  cursor: "pointer",
-                                  fontWeight: 600,
-                                }}
-                              >
-                                Remove video
-                              </button>
-                            </div>
-                            <div style={{ maxWidth: 440, maxHeight: 220, overflow: "hidden", borderRadius: 6, background: "#000" }}>
-                              <video
-                                src={form.previewVideoUrl.trim()}
-                                controls
-                                autoPlay
-                                muted
-                                loop
-                                playsInline
-                                style={{ width: "100%", maxHeight: 220, objectFit: "contain", display: "block" }}
-                              />
-                            </div>
-                            {form.preview?.videoKey && (
-                              <div style={{ fontSize: 11, color: "rgba(148, 163, 184, 0.75)", marginTop: 8, fontFamily: "monospace", wordBreak: "break-all" }}>
-                                Key: {form.preview.videoKey}
-                              </div>
-                            )}
-                          </div>
-                        )}
+                      {/* Preview URLs (managed in the Preview tab) */}
+                      <div className="sc-studio-config-row">
+                        <label className="sc-studio-field">
+                          <span className="sc-studio-field-label">Preview Video URL</span>
+                          <input
+                            className="sc-studio-input"
+                            value={form.previewVideoUrl || ""}
+                            onChange={(e) => set("previewVideoUrl", e.target.value)}
+                            placeholder="https://.../preview.mp4"
+                          />
+                        </label>
+                        <label className="sc-studio-field">
+                          <span className="sc-studio-field-label">Poster Image URL</span>
+                          <input
+                            className="sc-studio-input"
+                            value={form.posterImageUrl || ""}
+                            onChange={(e) => set("posterImageUrl", e.target.value)}
+                            placeholder="https://.../poster.jpg"
+                          />
+                        </label>
                       </div>
 
                       <div className="sc-studio-config-row">
@@ -2266,78 +2179,68 @@ export function ProductStudio({ product, onClose, onSaved, onCreated, onPublishe
                     </div>
                   )}
 
-                  <section className="sc-studio-section" style={{ border: "1px solid rgba(245, 166, 35, 0.22)", background: "rgba(245, 166, 35, 0.03)", marginBottom: 16 }}>
-                    <div className="sc-studio-section-head">
-                      <div style={{ display: "grid", gap: 3 }}>
-                        <strong style={{ color: "#f5a623", display: "flex", alignItems: "center", gap: 6 }}>
-                          <Video size={15} /> PREVIEW VIDEO (SIMPLE PUBLISHING)
-                        </strong>
-                        <span>Upload or enter a video URL. A preview video is sufficient to publish this product.</span>
-                      </div>
-                    </div>
-                    <div className="sc-studio-section-body">
-                      <div className="sc-studio-grid" style={{ marginBottom: 0 }}>
-                        <label className="sc-studio-field" style={{ marginBottom: 0 }}>
-                          <span className="sc-studio-field-label">Preview Video URL</span>
-                          <div style={{ display: "flex", gap: 8 }}>
-                            <input
-                              className="sc-studio-input"
-                              value={form.previewVideoUrl || ""}
-                              onChange={(e) => set("previewVideoUrl", e.target.value)}
-                              placeholder="https://.../preview.mp4 or webm"
-                              style={{ flex: 1 }}
-                            />
-                            <button
-                              type="button"
-                              className="sc-studio-btn sc-studio-btn-primary"
-                              onClick={() => videoFileInputRef.current?.click()}
-                              disabled={videoUploading}
-                              style={{ whiteSpace: "nowrap" }}
-                            >
-                              {videoUploading ? <Loader2 size={13} className="sc-spin" /> : <UploadCloud size={13} />}
-                              {videoUploading ? "Uploading..." : "Upload Video"}
-                            </button>
-                          </div>
-                        </label>
-                        <label className="sc-studio-field" style={{ marginBottom: 0 }}>
-                          <span className="sc-studio-field-label">Fallback Poster Image URL</span>
-                          <div style={{ display: "flex", gap: 8 }}>
-                            <input
-                              className="sc-studio-input"
-                              value={form.posterImageUrl || ""}
-                              onChange={(e) => set("posterImageUrl", e.target.value)}
-                              placeholder="https://.../poster.jpg"
-                              style={{ flex: 1 }}
-                            />
-                            <button
-                              type="button"
-                              className="sc-studio-btn"
-                              onClick={() => posterFileInputRef.current?.click()}
-                              disabled={posterUploading}
-                              style={{ whiteSpace: "nowrap" }}
-                            >
-                              {posterUploading ? <Loader2 size={13} className="sc-spin" /> : <UploadCloud size={13} />}
-                              {posterUploading ? "Uploading..." : "Upload Image"}
-                            </button>
-                          </div>
-                        </label>
-                      </div>
+                  {/* ============== PREVIEW MEDIA UPLOADS (video + poster) ============== */}
+                  <div className="sc-studio-preview-tab">
 
-                      {videoUploadError && (
-                        <div className="sc-admin-error" style={{ margin: "10px 0 0" }}>{videoUploadError}</div>
-                      )}
-                      {posterUploadError && (
-                        <div className="sc-admin-error" style={{ margin: "10px 0 0" }}>{posterUploadError}</div>
+                    {/* VIDEO CARD */}
+                    <div className="sc-studio-card">
+                      <h3 className="sc-studio-card-title">
+                        <Video size={15} style={{ verticalAlign: "-2px", marginRight: 6 }} />
+                        Preview Video
+                      </h3>
+                      <p className="sc-studio-card-sub">
+                        MP4 or WebM · up to 100 MB · a video satisfies preview requirements for publishing
+                      </p>
+
+                      {!form.previewVideoUrl && !videoUploading && (
+                        <label className="sc-studio-dropzone">
+                          <UploadCloud size={28} className="sc-studio-dropzone-icon" />
+                          <span className="sc-studio-dropzone-title">Upload Video</span>
+                          <span className="sc-studio-dropzone-hint">MP4 or WebM · up to 100 MB</span>
+                          <input
+                            type="file"
+                            ref={videoFileInputRef}
+                            hidden
+                            accept="video/mp4,video/webm,video/quicktime,video/ogg"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) uploadVideoFile(file);
+                            }}
+                          />
+                        </label>
                       )}
 
-                      {form.previewVideoUrl && String(form.previewVideoUrl).trim() && (
-                        <div style={{ marginTop: 14, padding: 12, borderRadius: 10, background: "#080c14", border: "1px solid rgba(245,166,35,0.18)" }}>
-                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-                            <span style={{ fontSize: 11, fontWeight: 700, color: "#63dba9", display: "flex", alignItems: "center", gap: 6 }}>
-                              <CheckCircle2 size={13} /> Video Ready · Player Preview
-                            </span>
+                      {videoUploading && (
+                        <div className="sc-studio-uploading">
+                          <Loader2 size={22} className="sc-spin" />
+                          <span>Uploading… {videoUploadProgress}%</span>
+                          <div className="sc-studio-progress-track">
+                            <div
+                              className="sc-studio-progress-fill"
+                              style={{ width: `${videoUploadProgress}%` }}
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      {form.previewVideoUrl && String(form.previewVideoUrl).trim() && !videoUploading && (
+                        <div className="sc-studio-video-ready">
+                          <div className="sc-studio-video-badge">
+                            <CheckCircle2 size={14} />
+                            <span>Video Ready</span>
+                          </div>
+                          <video
+                            src={form.previewVideoUrl.trim()}
+                            controls
+                            playsInline
+                            preload="metadata"
+                            className="sc-studio-video-player"
+                          />
+                          <div className="sc-studio-video-meta">
+                            <code>{form.preview?.videoKey || "—"}</code>
                             <button
                               type="button"
+                              className="sc-studio-btn-danger"
                               onClick={() => {
                                 setForm((current) => ({
                                   ...current,
@@ -2346,40 +2249,83 @@ export function ProductStudio({ product, onClose, onSaved, onCreated, onPublishe
                                 }));
                                 setDirty(true);
                               }}
-                              style={{
-                                background: "transparent",
-                                border: "1px solid rgba(255,255,255,0.12)",
-                                color: "rgba(255,255,255,0.6)",
-                                fontSize: 11,
-                                padding: "4px 10px",
-                                borderRadius: 6,
-                                cursor: "pointer",
-                                fontWeight: 600,
-                              }}
                             >
                               Remove video
                             </button>
                           </div>
-                          <div style={{ maxWidth: 440, maxHeight: 240, overflow: "hidden", borderRadius: 8, background: "#000" }}>
-                            <video
-                              src={form.previewVideoUrl.trim()}
-                              controls
-                              autoPlay
-                              muted
-                              loop
-                              playsInline
-                              style={{ width: "100%", maxHeight: 240, objectFit: "contain", display: "block" }}
-                            />
-                          </div>
-                          {form.preview?.videoKey && (
-                            <div style={{ fontSize: 11, color: "rgba(148, 163, 184, 0.75)", marginTop: 8, fontFamily: "monospace", wordBreak: "break-all" }}>
-                              Key: {form.preview.videoKey}
-                            </div>
-                          )}
                         </div>
                       )}
+
+                      {videoUploadError && (
+                        <div className="sc-studio-error">{videoUploadError}</div>
+                      )}
                     </div>
-                  </section>
+
+                    {/* POSTER CARD */}
+                    <div className="sc-studio-card">
+                      <h3 className="sc-studio-card-title">Poster Image</h3>
+                      <p className="sc-studio-card-sub">Shown before the video plays</p>
+
+                      {!form.posterImageUrl && !posterUploading && (
+                        <label className="sc-studio-dropzone">
+                          <UploadCloud size={28} className="sc-studio-dropzone-icon" />
+                          <span className="sc-studio-dropzone-title">Upload Image</span>
+                          <span className="sc-studio-dropzone-hint">JPG, PNG, WebP · up to 15 MB</span>
+                          <input
+                            type="file"
+                            ref={posterFileInputRef}
+                            hidden
+                            accept="image/jpeg,image/png,image/webp,image/gif"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) uploadPosterFile(file);
+                            }}
+                          />
+                        </label>
+                      )}
+
+                      {posterUploading && (
+                        <div className="sc-studio-uploading">
+                          <Loader2 size={22} className="sc-spin" />
+                          <span>Uploading… {posterUploadProgress}%</span>
+                          <div className="sc-studio-progress-track">
+                            <div
+                              className="sc-studio-progress-fill"
+                              style={{ width: `${posterUploadProgress}%` }}
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      {form.posterImageUrl && String(form.posterImageUrl).trim() && !posterUploading && (
+                        <div className="sc-studio-poster-ready">
+                          <img
+                            src={form.posterImageUrl.trim()}
+                            alt="Poster"
+                            className="sc-studio-poster-preview"
+                          />
+                          <button
+                            type="button"
+                            className="sc-studio-btn-danger"
+                            onClick={() => {
+                              setForm((current) => ({
+                                ...current,
+                                preview: { ...current.preview, posterKey: "" },
+                                posterImageUrl: "",
+                              }));
+                              setDirty(true);
+                            }}
+                          >
+                            Remove image
+                          </button>
+                        </div>
+                      )}
+
+                      {posterUploadError && (
+                        <div className="sc-studio-error">{posterUploadError}</div>
+                      )}
+                    </div>
+                  </div>
 
                   <section className="sc-studio-section">
                     <div className="sc-studio-section-head">

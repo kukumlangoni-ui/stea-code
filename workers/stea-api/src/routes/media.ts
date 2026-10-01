@@ -214,8 +214,10 @@ export async function handleMediaUpload(req: Request, env: any): Promise<Respons
     const slot = isVideo ? "preview" : "poster";
     const key = `products/${productId}/${slot}/${slot}-${timestamp}.${ext}`;
 
-    const arrayBuf = await file.arrayBuffer();
-    await env.STEA_BUCKET.put(key, arrayBuf, {
+    // Stream directly to R2 — never buffer the full file in memory.
+    // Buffering breaks on larger videos (Worker CPU/memory limits).
+    const stream = file.stream();
+    await env.STEA_BUCKET.put(key, stream, {
       httpMetadata: { contentType: file.type || (isVideo ? "video/mp4" : "image/jpeg") },
     });
 
