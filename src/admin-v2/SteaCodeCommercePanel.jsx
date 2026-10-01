@@ -137,6 +137,8 @@ const BASE_PREVIEW = {
   fullDocument: "",
   baseUrl: "",
   externalUrl: "",
+  videoKey: "",
+  posterKey: "",
 };
 
 const emptyProduct = {
@@ -1025,13 +1027,20 @@ export function ProductStudio({ product, onClose, onSaved, onCreated, onPublishe
     setVideoUploadError("");
     try {
       const result = await uploadSteaCodePreviewAssets(pid, { video: file });
-      if (result?.video?.key) {
-        setForm((current) => ({
-          ...current,
-          preview: { ...current.preview, videoKey: result.video.key },
-        }));
-        setDirty(true);
+      const videoKey = result?.video?.key;
+      const videoUrl = result?.video?.url;
+      if (!videoKey) {
+        throw new Error("Upload succeeded but no key was returned.");
       }
+      // Store BOTH: key (persistence) and URL (immediate preview render)
+      setForm((current) => ({
+        ...current,
+        preview: { ...current.preview, enabled: true, videoKey },
+        previewVideoUrl: videoUrl || current.previewVideoUrl,
+      }));
+      setDirty(true);
+      // Reset file input so re-selecting the same file re-triggers onChange
+      if (videoFileInputRef.current) videoFileInputRef.current.value = "";
     } catch (err) {
       setVideoUploadError(getUploadErrorMessage(err, "video upload"));
     } finally {
@@ -1059,13 +1068,18 @@ export function ProductStudio({ product, onClose, onSaved, onCreated, onPublishe
     setPosterUploadError("");
     try {
       const result = await uploadSteaCodePreviewAssets(pid, { poster: file });
-      if (result?.poster?.key) {
-        setForm((current) => ({
-          ...current,
-          preview: { ...current.preview, posterKey: result.poster.key },
-        }));
-        setDirty(true);
+      const posterKey = result?.poster?.key;
+      const posterUrl = result?.poster?.url;
+      if (!posterKey) {
+        throw new Error("Upload succeeded but no key was returned.");
       }
+      setForm((current) => ({
+        ...current,
+        preview: { ...current.preview, posterKey },
+        posterImageUrl: posterUrl || current.posterImageUrl,
+      }));
+      setDirty(true);
+      if (posterFileInputRef.current) posterFileInputRef.current.value = "";
     } catch (err) {
       setPosterUploadError(getUploadErrorMessage(err, "poster upload"));
     } finally {
@@ -1370,6 +1384,8 @@ export function ProductStudio({ product, onClose, onSaved, onCreated, onPublishe
       scaleMode: preview.scaleMode,
       baseUrl: preview.baseUrl,
       externalUrl: preview.externalUrl,
+      videoKey: preview.videoKey || "",
+      posterKey: preview.posterKey || "",
     };
 
     // Publishing makes the product visible on the homepage by default.
@@ -1981,9 +1997,34 @@ export function ProductStudio({ product, onClose, onSaved, onCreated, onPublishe
 
                         {form.previewVideoUrl && String(form.previewVideoUrl).trim() && (
                           <div style={{ marginTop: 12, padding: 10, borderRadius: 8, background: "#080c14", border: "1px solid rgba(245,166,35,0.18)" }}>
-                            <span style={{ fontSize: 11, fontWeight: 700, color: "#63dba9", display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
-                              <CheckCircle2 size={13} /> Video Ready · Player Preview
-                            </span>
+                            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+                              <span style={{ fontSize: 11, fontWeight: 700, color: "#63dba9", display: "flex", alignItems: "center", gap: 6 }}>
+                                <CheckCircle2 size={13} /> Video Ready · Player Preview
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setForm((current) => ({
+                                    ...current,
+                                    preview: { ...current.preview, videoKey: "", enabled: false },
+                                    previewVideoUrl: "",
+                                  }));
+                                  setDirty(true);
+                                }}
+                                style={{
+                                  background: "transparent",
+                                  border: "1px solid rgba(255,255,255,0.12)",
+                                  color: "rgba(255,255,255,0.6)",
+                                  fontSize: 11,
+                                  padding: "4px 10px",
+                                  borderRadius: 6,
+                                  cursor: "pointer",
+                                  fontWeight: 600,
+                                }}
+                              >
+                                Remove video
+                              </button>
+                            </div>
                             <div style={{ maxWidth: 440, maxHeight: 220, overflow: "hidden", borderRadius: 6, background: "#000" }}>
                               <video
                                 src={form.previewVideoUrl.trim()}
@@ -1995,6 +2036,11 @@ export function ProductStudio({ product, onClose, onSaved, onCreated, onPublishe
                                 style={{ width: "100%", maxHeight: 220, objectFit: "contain", display: "block" }}
                               />
                             </div>
+                            {form.preview?.videoKey && (
+                              <div style={{ fontSize: 11, color: "rgba(148, 163, 184, 0.75)", marginTop: 8, fontFamily: "monospace", wordBreak: "break-all" }}>
+                                Key: {form.preview.videoKey}
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
@@ -2286,9 +2332,34 @@ export function ProductStudio({ product, onClose, onSaved, onCreated, onPublishe
 
                       {form.previewVideoUrl && String(form.previewVideoUrl).trim() && (
                         <div style={{ marginTop: 14, padding: 12, borderRadius: 10, background: "#080c14", border: "1px solid rgba(245,166,35,0.18)" }}>
-                          <span style={{ fontSize: 11, fontWeight: 700, color: "#63dba9", display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
-                            <CheckCircle2 size={13} /> Video Ready · Player Preview
-                          </span>
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                            <span style={{ fontSize: 11, fontWeight: 700, color: "#63dba9", display: "flex", alignItems: "center", gap: 6 }}>
+                              <CheckCircle2 size={13} /> Video Ready · Player Preview
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setForm((current) => ({
+                                  ...current,
+                                  preview: { ...current.preview, videoKey: "", enabled: false },
+                                  previewVideoUrl: "",
+                                }));
+                                setDirty(true);
+                              }}
+                              style={{
+                                background: "transparent",
+                                border: "1px solid rgba(255,255,255,0.12)",
+                                color: "rgba(255,255,255,0.6)",
+                                fontSize: 11,
+                                padding: "4px 10px",
+                                borderRadius: 6,
+                                cursor: "pointer",
+                                fontWeight: 600,
+                              }}
+                            >
+                              Remove video
+                            </button>
+                          </div>
                           <div style={{ maxWidth: 440, maxHeight: 240, overflow: "hidden", borderRadius: 8, background: "#000" }}>
                             <video
                               src={form.previewVideoUrl.trim()}
@@ -2300,6 +2371,11 @@ export function ProductStudio({ product, onClose, onSaved, onCreated, onPublishe
                               style={{ width: "100%", maxHeight: 240, objectFit: "contain", display: "block" }}
                             />
                           </div>
+                          {form.preview?.videoKey && (
+                            <div style={{ fontSize: 11, color: "rgba(148, 163, 184, 0.75)", marginTop: 8, fontFamily: "monospace", wordBreak: "break-all" }}>
+                              Key: {form.preview.videoKey}
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
