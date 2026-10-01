@@ -2282,7 +2282,7 @@ function CodeProductCard({ product, tLocal, onOpen, isFavorited, onToggleFavorit
       >
         <div className="sc-code-card__preview">
           <div className="sc-product-preview-art">
-            <ProductPreview product={product} fillMode="cover" cardZoom={product.cardZoom || "full"} offsetX={product.cardOffsetX || 0} offsetY={product.cardOffsetY || 0} interactive={false} />
+            <ProductPreview product={product} fillMode="cover" cardZoom={product.cardZoom || "full"} offsetX={product.cardOffsetX || 0} offsetY={product.cardOffsetY || 0} interactive={false} preferVideo={true} />
           </div>
         </div>
 
@@ -2372,21 +2372,31 @@ function getPreviewPosterUrl(product) {
 function ProductVideoPreview({ videoUrl, title, onVideoError }) {
   const videoRef = useRef(null);
   const containerRef = useRef(null);
+  const inViewRef = useRef(false);
   const [loadError, setLoadError] = useState(false);
+
+  // Accessibility + data-saver: skip autoplay, show static first frame.
+  const [noAutoplay] = useState(() => {
+    if (typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return true;
+    if (typeof navigator !== "undefined" && navigator.connection?.saveData) return true;
+    return false;
+  });
 
   useEffect(() => {
     const video = videoRef.current;
     const container = containerRef.current;
-    if (!video || !container || loadError) return undefined;
+    if (!video || !container || loadError || noAutoplay) return undefined;
 
     let observer = null;
     if (typeof IntersectionObserver !== "undefined") {
       observer = new IntersectionObserver(
         (entries) => {
           const entry = entries[0];
-          if (entry && entry.isIntersecting) {
+          if (!entry) return;
+          inViewRef.current = entry.isIntersecting;
+          if (entry.isIntersecting && !document.hidden) {
             video.play().catch(() => {});
-          } else if (entry && !entry.isIntersecting) {
+          } else if (!entry.isIntersecting) {
             video.pause();
           }
         },
@@ -2394,16 +2404,28 @@ function ProductVideoPreview({ videoUrl, title, onVideoError }) {
       );
       observer.observe(container);
     } else {
+      inViewRef.current = true;
       video.play().catch(() => {});
     }
 
+    // Pause when the tab is hidden; resume only if still in view.
+    const onVisibility = () => {
+      if (document.hidden) {
+        video.pause();
+      } else if (inViewRef.current) {
+        video.play().catch(() => {});
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+
     return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
       if (observer && container) {
         observer.unobserve(container);
         observer.disconnect();
       }
     };
-  }, [videoUrl, loadError]);
+  }, [videoUrl, loadError, noAutoplay]);
 
   if (loadError) return null;
 
@@ -2425,10 +2447,12 @@ function ProductVideoPreview({ videoUrl, title, onVideoError }) {
         src={videoUrl}
         aria-label={title || "Product video preview"}
         muted
-        autoPlay
+        autoPlay={!noAutoplay}
         loop
         playsInline
         preload="metadata"
+        disablePictureInPicture
+        disableRemotePlayback
         onError={() => {
           setLoadError(true);
           if (typeof onVideoError === "function") onVideoError();
@@ -2451,6 +2475,7 @@ const ProductPreview = forwardRef(function ProductPreview({
   interactive = false,
   showControls = false,
   forceLiveDemo = false,
+  preferVideo = false,
   fillMode = "cover",
   cardZoom = undefined,
   modalZoom = 1,
@@ -2469,6 +2494,10 @@ const ProductPreview = forwardRef(function ProductPreview({
 
   const videoUrl = getPreviewVideoUrl(product);
   const hasVideo = Boolean(videoUrl);
+
+  // Card autoplay-video fallback: if the video errors (404, codec), drop
+  // through to the live preview / poster branches below.
+  const [cardVideoFailed, setCardVideoFailed] = useState(false);
 
   // Priority 1: Native preview (if any registered)
   if (NativePreview) {
@@ -2491,7 +2520,28 @@ const ProductPreview = forwardRef(function ProductPreview({
     );
   }
 
-  // Priority 2: Live interactive code preview (the PRIMARY experience).
+  // Priority 2 (cards only): Autoplay loop video — primary preview on homepage
+  // cards when the admin has uploaded a demo video. Falls back to live preview
+  // if the video errors (404, unsupported codec).
+  if (preferVideo && hasVideo && !forceLiveDemo && !cardVideoFailed) {
+    return (
+      <div
+        className="sc-product-preview sc-product-preview-video"
+        data-preview-product={productId}
+        aria-label={categoryLabel + " video preview"}
+      >
+        <div className="sc-preview-art">
+          <ProductVideoPreview
+            videoUrl={videoUrl}
+            title={product?.titleEn || product?.titleZh || ""}
+            onVideoError={() => setCardVideoFailed(true)}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // Priority 3: Live interactive code preview (the PRIMARY experience).
   // Users should touch and feel the running animation, not watch a video.
   // Video is demoted to a fallback only when no source/preview is available.
   // Eligibility: admin-published preview OR source files OR a bundled
