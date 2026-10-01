@@ -24,7 +24,6 @@ import {
   saveAdminSteaCodeSource,
   updateAdminSteaCodeProduct,
   uploadSteaCodePackage,
-  uploadSteaCodePreviewAssets,
 } from "../services/steaCodeAdmin.js";
 import {
   invalidateSteaCodeCatalogCache,
@@ -557,22 +556,74 @@ export function ProductStudioV3({
   const [packageError, setPackageError] = useState("");
   const [packageDragging, setPackageDragging] = useState(false);
 
+  // XHR upload with real progress — fetch() cannot report upload progress,
+  // which is why uploads sat at 0%. Same contract as uploadSteaCodePreviewAssets:
+  // POST /api/stea-code/media/upload with productId + file → { ok, key, url }
+  const uploadFileWithProgress = (file, productId, onProgress) =>
+    new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      const fd = new FormData();
+      fd.append("productId", productId);
+      fd.append("file", file);
+
+      xhr.upload.addEventListener("progress", (e) => {
+        if (e.lengthComputable) {
+          onProgress(Math.round((e.loaded / e.total) * 100));
+        }
+      });
+
+      xhr.addEventListener("load", () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          try {
+            resolve(JSON.parse(xhr.responseText));
+          } catch {
+            reject(new Error("Invalid response from server"));
+          }
+        } else {
+          reject(new Error(`Upload failed (${xhr.status}): ${xhr.responseText.slice(0, 200)}`));
+        }
+      });
+
+      xhr.addEventListener("error", () =>
+        reject(new Error("Network error — check your connection and retry."))
+      );
+      xhr.addEventListener("abort", () => reject(new Error("Upload cancelled.")));
+
+      xhr.open("POST", "/api/stea-code/media/upload", true);
+      xhr.send(fd);
+    });
+
   const uploadPoster = async (file) => {
     if (!file) return;
+    const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    if (!allowed.includes(file.type) && !file.name.match(/\.(jpg|jpeg|png|webp|gif)$/i)) {
+      setError("Only JPG, PNG, WebP or GIF images are supported.");
+      return;
+    }
+    if (file.size > 15 * 1024 * 1024) {
+      setError("Image must be under 15 MB.");
+      return;
+    }
+    const pid = uploadId || product?.id;
+    if (!pid) {
+      setError("Save the product first before uploading an image.");
+      return;
+    }
     setPosterUploading(true);
     setPosterUploadProgress(0);
+    setError("");
     try {
-      const result = await uploadSteaCodePreviewAssets(
-        uploadId,
-        { poster: file },
-        { onProgress: (p) => setPosterUploadProgress(p) }
+      const result = await uploadFileWithProgress(file, pid, (percent) =>
+        setPosterUploadProgress(percent)
       );
-      if (result?.poster?.key) {
-        setForm((prev) => ({
-          ...prev,
-          preview: { ...prev.preview, posterKey: result.poster.key },
-        }));
+      if (!result?.ok || !result?.key) {
+        throw new Error(result?.error || "Upload failed");
       }
+      setForm((prev) => ({
+        ...prev,
+        preview: { ...prev.preview, posterKey: result.key },
+        posterImageUrl: result.url || `/api/stea-code/media/${result.key}`,
+      }));
       setNotice("Poster uploaded");
       setTimeout(() => setNotice(""), 2000);
     } catch (err) {
@@ -585,28 +636,37 @@ export function ProductStudioV3({
 
   const uploadVideo = async (file) => {
     if (!file) return;
-
-    // Upload original file directly (no compression)
-    const fileToUpload = file;
-
-    // Step 2: Upload
+    const allowed = ["video/mp4", "video/webm", "video/quicktime", "video/ogg"];
+    if (!allowed.includes(file.type) && !file.name.match(/\.(mp4|webm|mov|ogg)$/i)) {
+      setError("Only MP4 or WebM video files are supported.");
+      return;
+    }
+    if (file.size > 100 * 1024 * 1024) {
+      setError("Video file must be under 100 MB.");
+      return;
+    }
+    const pid = uploadId || product?.id;
+    if (!pid) {
+      setError("Save the product first before uploading a video.");
+      return;
+    }
     setVideoUploading(true);
     setVideoUploadProgress(0);
+    setError("");
     try {
-      const result = await uploadSteaCodePreviewAssets(
-        uploadId,
-        { video: fileToUpload },
-        { onProgress: (p) => setVideoUploadProgress(p) }
+      const result = await uploadFileWithProgress(file, pid, (percent) =>
+        setVideoUploadProgress(percent)
       );
-      if (result?.video?.key) {
-        setForm((prev) => ({
-          ...prev,
-          preview: { ...prev.preview, videoKey: result.video.key },
-        }));
-        // If not already in video mode, switch
-        if (form.previewMode !== "video") {
-          setPreviewMode("video");
-        }
+      if (!result?.ok || !result?.key) {
+        throw new Error(result?.error || "Upload failed");
+      }
+      setForm((prev) => ({
+        ...prev,
+        preview: { ...prev.preview, enabled: true, videoKey: result.key },
+        previewVideoUrl: result.url || `/api/stea-code/media/${result.key}`,
+      }));
+      if (form.previewMode !== "video") {
+        setPreviewMode("video");
       }
       setNotice("Video uploaded");
       setTimeout(() => setNotice(""), 2000);
@@ -717,6 +777,8 @@ export function ProductStudioV3({
         scaleMode: "cover",
         baseUrl: preview.baseUrl,
         externalUrl: preview.externalUrl,
+        videoKey: preview.videoKey || "",
+        posterKey: preview.posterKey || "",
       };
 
       // Source code snapshot (saved alongside product for /free-content fallback)
@@ -1190,41 +1252,9 @@ export function ProductStudioV3({
                 </Field>
                 {previewMode === "video" && (
                   <Field label="Preview Video" full>
-                    <div
-                      className="psv3-upload"
-                      onClick={() => {
-                        if (videoUploading) return;
-                        videoInputRef.current?.click();
-                      }}
-                      style={{ cursor: videoUploading ? "wait" : "pointer" }}
-                    >
-                      <Upload size={24} className="psv3-upload-icon" />
-                      <p className="psv3-upload-text">
-                        {videoUploading
-                          ? `Uploading… ${videoUploadProgress}%`
-                          : form.previewVideoUrl
-                          ? "Replace video"
-                          : "Upload Video"}
-                      </p>
-                      <p className="psv3-upload-hint">MP4 or WebM, under 50MB recommended</p>
-                    </div>
-                    <input
-                      ref={videoInputRef}
-                      type="file"
-                      accept="video/mp4,video/webm"
-                      style={{ display: "none" }}
-                      onChange={(e) => uploadVideo(e.target.files?.[0])}
-                    />
-                    {form.previewVideoUrl && (
-                      <button
-                        type="button"
-                        className="psv3-btn psv3-btn--sm psv3-btn--ghost"
-                        style={{ marginTop: 8 }}
-                        onClick={() => updateForm("previewVideoUrl", "")}
-                      >
-                        <X size={12} /> Remove video
-                      </button>
-                    )}
+                    <p className="psv3-field-hint" style={{ margin: 0 }}>
+                      Video uploads live in the Preview tab — open it to upload or manage the preview video.
+                    </p>
                   </Field>
                 )}
               </div>
@@ -1315,54 +1345,98 @@ export function ProductStudioV3({
             )}
 
             {previewMode === "video" && (
-              <Section title="Video Preview">
+              <Section title="Video Preview" subtitle="MP4 or WebM · up to 100 MB">
                 <div className="psv3-grid">
+                  {/* VIDEO — 3-state machine: dropzone / uploading / ready */}
                   <Field label="Video File" full>
-                    <div
-                      className="psv3-upload"
-                      onClick={() => {
-                        if (videoUploading) return;
-                        videoInputRef.current?.click();
-                      }}
-                      style={{ cursor: videoUploading ? "wait" : "pointer" }}
-                    >
-                      <Upload size={24} className="psv3-upload-icon" />
-                      <p className="psv3-upload-text">
-                        {videoUploading
-                          ? `Uploading… ${videoUploadProgress}%`
-                          : form.previewVideoUrl
-                          ? "Replace video"
-                          : "Upload Video"}
-                      </p>
-                      <p className="psv3-upload-hint">MP4 or WebM</p>
-                    </div>
+                    {!form.previewVideoUrl && !videoUploading && (
+                      <div
+                        className="psv3-upload"
+                        onClick={() => videoInputRef.current?.click()}
+                      >
+                        <Upload size={24} className="psv3-upload-icon" />
+                        <p className="psv3-upload-text">Upload Video</p>
+                        <p className="psv3-upload-hint">MP4 or WebM · up to 100 MB</p>
+                      </div>
+                    )}
+
+                    {videoUploading && (
+                      <div className="psv3-upload is-uploading">
+                        <Upload size={24} className="psv3-upload-icon" />
+                        <p className="psv3-upload-text">Uploading… {videoUploadProgress}%</p>
+                        <div className="psv3-progress-track">
+                          <div
+                            className="psv3-progress-fill"
+                            style={{ width: `${videoUploadProgress}%` }}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {form.previewVideoUrl && !videoUploading && (
+                      <div className="psv3-video-ready">
+                        <div className="psv3-video-badge">
+                          <CheckCircle2 size={13} /> Video Ready
+                        </div>
+                        <video
+                          src={form.previewVideoUrl}
+                          poster={form.posterImageUrl || undefined}
+                          controls
+                          playsInline
+                          preload="metadata"
+                          className="psv3-video-player"
+                        />
+                        <div className="psv3-video-meta">
+                          <code>{form.preview?.videoKey || "—"}</code>
+                          <button
+                            type="button"
+                            className="psv3-btn psv3-btn--sm psv3-btn--danger"
+                            onClick={() => {
+                              updateForm("previewVideoUrl", "");
+                              updateForm("preview.videoKey", "");
+                              updateForm("preview.enabled", false);
+                            }}
+                          >
+                            <X size={12} /> Remove video
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
                     <input
                       ref={videoInputRef}
                       type="file"
                       accept="video/mp4,video/webm"
                       style={{ display: "none" }}
-                      onChange={(e) => uploadVideo(e.target.files?.[0])}
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f) uploadVideo(f);
+                        e.target.value = "";
+                      }}
                     />
                   </Field>
+
+                  {/* POSTER */}
                   <Field label="Poster Image" hint="Shown before video plays">
                     <ImageUpload
                       value={form.posterImageUrl}
                       onUpload={uploadPoster}
-                      onClear={() => updateForm("posterImageUrl", "")}
+                      onClear={() => {
+                        updateForm("posterImageUrl", "");
+                        updateForm("preview.posterKey", "");
+                      }}
                       uploading={posterUploading}
                     />
+                    {posterUploading && (
+                      <div className="psv3-progress-track" style={{ marginTop: 8 }}>
+                        <div
+                          className="psv3-progress-fill"
+                          style={{ width: `${posterUploadProgress}%` }}
+                        />
+                      </div>
+                    )}
                   </Field>
                 </div>
-                {form.previewVideoUrl && (
-                  <div style={{ marginTop: 16 }}>
-                    <video
-                      src={form.previewVideoUrl}
-                      poster={form.posterImageUrl || undefined}
-                      controls
-                      style={{ width: "100%", borderRadius: 8 }}
-                    />
-                  </div>
-                )}
               </Section>
             )}
 
