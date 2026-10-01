@@ -68,6 +68,7 @@ import {
 import { STEA_CODE_SERVER_PRODUCTS } from "../../data/stea-code/codeProductsServer.js";
 import { V2_WORLDS } from "../../data/stea-code/v2Worlds.js";
 import { useScrollReveal } from "../../hooks/useScrollReveal.js";
+import { useTilt } from "../../hooks/useTilt.js";
 
 function Reveal({ children, delay = 0, as: Tag = "div", className = "", ...rest }) {
   const [ref, visible] = useScrollReveal();
@@ -81,6 +82,11 @@ function Reveal({ children, delay = 0, as: Tag = "div", className = "", ...rest 
       {children}
     </Tag>
   );
+}
+
+function TiltCard({ children }) {
+  const ref = useTilt({ maxTilt: 5 });
+  return <div ref={ref} className="sc-tilt-card">{children}</div>;
 }
 
 const COPY = {
@@ -1461,15 +1467,17 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
               <div className={`sc-product-grid ${isGridSwitching ? "is-switching" : ""}`}>
                 {homepageProducts.map((product, index) => (
                   <Reveal key={getProductIdentity(product)} delay={Math.min(index, 6) * 25}>
-                    <PreviewErrorBoundary>
-                      <CodeProductCard
-                        product={product}
-                        tLocal={tLocal}
-                        onOpen={() => openProduct(product)}
-                        isFavorited={favorites.has(getProductIdentity(product))}
-                        onToggleFavorite={handleToggleFavorite}
-                      />
-                    </PreviewErrorBoundary>
+                    <TiltCard>
+                      <PreviewErrorBoundary>
+                        <CodeProductCard
+                          product={product}
+                          tLocal={tLocal}
+                          onOpen={() => openProduct(product)}
+                          isFavorited={favorites.has(getProductIdentity(product))}
+                          onToggleFavorite={handleToggleFavorite}
+                        />
+                      </PreviewErrorBoundary>
+                    </TiltCard>
                   </Reveal>
                 ))}
               </div>
@@ -1677,15 +1685,17 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
                 <div className={`sc-product-grid ${isGridSwitching ? "is-switching" : ""}`}>
                   {homepageProducts.map((product, index) => (
                     <Reveal key={getProductIdentity(product)} delay={Math.min(index, 6) * 25}>
-                      <PreviewErrorBoundary>
-                        <CodeProductCard
-                          product={product}
-                          tLocal={tLocal}
-                          onOpen={() => openProduct(product)}
-                          isFavorited={favorites.has(getProductIdentity(product))}
-                          onToggleFavorite={handleToggleFavorite}
-                        />
-                      </PreviewErrorBoundary>
+                      <TiltCard>
+                        <PreviewErrorBoundary>
+                          <CodeProductCard
+                            product={product}
+                            tLocal={tLocal}
+                            onOpen={() => openProduct(product)}
+                            isFavorited={favorites.has(getProductIdentity(product))}
+                            onToggleFavorite={handleToggleFavorite}
+                          />
+                        </PreviewErrorBoundary>
+                      </TiltCard>
                     </Reveal>
                   ))}
                 </div>

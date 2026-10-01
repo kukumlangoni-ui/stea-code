@@ -15212,3 +15212,18 @@ header,
   flex-direction: column;
   justify-content: center;
 }
+
+/* ============================================================
+   CARD TILT — 3D hover effect wrapper
+   ============================================================ */
+.sc-tilt-card {
+  transform-style: preserve-3d;
+  will-change: transform;
+  transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .sc-tilt-card {
+    transform: none !important;
+    transition: none !important;
+  }
+}
