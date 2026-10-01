@@ -1174,15 +1174,6 @@ export function ProductStudioV3({
 
             <Section title="Cover & Preview">
               <div className="psv3-grid">
-                <Field label="Cover Image" hint="Poster / thumbnail shown on the card">
-                  <ImageUpload
-                    value={form.posterImageUrl}
-                    onUpload={uploadPoster}
-                    onClear={() => updateForm("posterImageUrl", "")}
-                    uploading={posterUploading}
-                    label="Upload Cover Image"
-                  />
-                </Field>
                 <Field
                   label="Live URL"
                   hint="Optional. If this product is a portfolio or external site, paste the live URL. A 'View Live Site' button will appear in the product modal."
@@ -1441,15 +1432,27 @@ export function ProductStudioV3({
             )}
 
             {previewMode === "poster" && (
-              <Section title="Poster Preview">
+              <Section title="Poster Preview" subtitle="Static image shown on the product card">
                 <div className="psv3-grid">
-                  <Field label="Cover Image" full>
+                  <Field label="Cover Image" hint="Poster / thumbnail shown on the card" full>
                     <ImageUpload
                       value={form.posterImageUrl}
                       onUpload={uploadPoster}
-                      onClear={() => updateForm("posterImageUrl", "")}
+                      onClear={() => {
+                        updateForm("posterImageUrl", "");
+                        updateForm("preview.posterKey", "");
+                      }}
                       uploading={posterUploading}
+                      label="Upload Cover Image"
                     />
+                    {posterUploading && (
+                      <div className="psv3-progress-track" style={{ marginTop: 8 }}>
+                        <div
+                          className="psv3-progress-fill"
+                          style={{ width: `${posterUploadProgress}%` }}
+                        />
+                      </div>
+                    )}
                   </Field>
                 </div>
               </Section>
