@@ -589,9 +589,9 @@ export function ProductStudioV3({
     // Step 1: Compress (only if file is bigger than 5 MB)
     let fileToUpload = file;
     if (file.size > 5 * 1024 * 1024) {
-      setVideoCompressProgress(0);
-              fileToUpload = file; finally {
-        setVideoCompressProgress(null);
+        fileToUpload = file;
+      } else {
+        fileToUpload = file;
       }
     }
 
