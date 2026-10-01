@@ -552,7 +552,6 @@ export function ProductStudioV3({
   const [posterUploadProgress, setPosterUploadProgress] = useState(0);
   const [videoUploading, setVideoUploading] = useState(false);
   const [videoUploadProgress, setVideoUploadProgress] = useState(0);
-  const [videoCompressProgress, setVideoCompressProgress] = useState(null);
   const [packageUploading, setPackageUploading] = useState(false);
   const [packageUploadProgress, setPackageUploadProgress] = useState(0);
   const [packageError, setPackageError] = useState("");
@@ -591,17 +590,7 @@ export function ProductStudioV3({
     let fileToUpload = file;
     if (file.size > 5 * 1024 * 1024) {
       setVideoCompressProgress(0);
-      try {
-        const compressed = await compressVideoToFile(file, (p) => {
-          setVideoCompressProgress(p);
-        });
-        fileToUpload = compressed;
-        // Safety: if compression somehow made it bigger, use original
-        if (compressed.size >= file.size) fileToUpload = file;
-      } catch (err) {
-        console.warn("[compress] failed, uploading original:", err);
-        fileToUpload = file;
-      } finally {
+              fileToUpload = file; finally {
         setVideoCompressProgress(null);
       }
     }
@@ -1210,10 +1199,10 @@ export function ProductStudioV3({
                     <div
                       className="psv3-upload"
                       onClick={() => {
-                        if (videoUploading || videoCompressProgress !== null) return;
+                        if (videoUploading) return;
                         videoInputRef.current?.click();
                       }}
-                      style={{ cursor: videoUploading || videoCompressProgress !== null ? "wait" : "pointer" }}
+                      style={{ cursor: videoUploading ? "wait" : "pointer" }}
                     >
                       <Upload size={24} className="psv3-upload-icon" />
                       <p className="psv3-upload-text">
@@ -1340,10 +1329,10 @@ export function ProductStudioV3({
                     <div
                       className="psv3-upload"
                       onClick={() => {
-                        if (videoUploading || videoCompressProgress !== null) return;
+                        if (videoUploading) return;
                         videoInputRef.current?.click();
                       }}
-                      style={{ cursor: videoUploading || videoCompressProgress !== null ? "wait" : "pointer" }}
+                      style={{ cursor: videoUploading ? "wait" : "pointer" }}
                     >
                       <Upload size={24} className="psv3-upload-icon" />
                       <p className="psv3-upload-text">
