@@ -431,17 +431,34 @@ export async function uploadSteaCodePackage(productId, file, options = {}) {
  * @param {function(number):void} [options.onProgress] - Progress callback (0-100)
  * @returns {Promise<{success: boolean, video?: {key, size}, poster?: {key, size}}>}
  */
-export async function uploadSteaCodePreviewAssets(productId, files, options = {}) {
-  const formData = new FormData();
-  if (files?.video) formData.append("video", files.video);
-  if (files?.poster) formData.append("poster", files.poster);
+export async function uploadSteaCodePreviewAssets(productId, { video, poster } = {}) {
+  if (!productId) throw new Error("Missing productId");
 
-  const totalBytes = files?.video?.size || files?.poster?.size || 0;
-  return uploadWithProgress(
-    `/api/admin/stea-code/products/${encodeURIComponent(productId)}/preview/upload`,
-    formData,
-    { timeoutMs: 600000, totalBytes, ...options }
-  );
+  const out = {};
+
+  for (const [slot, file] of Object.entries({ video, poster })) {
+    if (!file) continue;
+
+    const fd = new FormData();
+    fd.append("productId", productId);
+    fd.append("file", file);
+
+    const res = await fetch("/api/stea-code/media/upload", {
+      method: "POST",
+      body: fd,
+    });
+
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      throw new Error(`Upload failed (${res.status}): ${text.slice(0, 200)}`);
+    }
+
+    const data = await res.json();
+    if (!data.ok || !data.key) throw new Error(data.error || "Upload failed");
+    out[slot] = { key: data.key, url: data.url };
+  }
+
+  return out;
 }
 
 export async function getAdminSteaCodeOrders(options = {}) {

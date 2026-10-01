@@ -13,7 +13,7 @@ import { corsHeaders, isPreflight, preflightResponse } from "./cors";
 import { handleCatalog, handleProduct } from "./routes/catalog";
 import { handlePreview, handleFreeContent, handleContent } from "./routes/content";
 import { handleDownload } from "./routes/download";
-import { handleMedia } from "./routes/media";
+import { handleMedia, handleMediaUpload } from "./routes/media";
 import {
   handleRecordView,
   handleRecordCopy,
@@ -134,6 +134,14 @@ export default {
       }
 
       // Public media (video, poster, images) from R2
+      // /api/stea-code/media/upload (POST)
+      if (apiPath === "/stea-code/media/upload" && method === "POST") {
+        return handleMediaUpload(request, env);
+      }
+      if (apiPath === "/stea-code/media/upload" && method === "OPTIONS") {
+        return handleMediaUpload(request, env);
+      }
+
       // /api/stea-code/media/products/...
       const mediaMatch = apiPath.match(/^\/stea-code\/media\/(.+)$/);
       if (mediaMatch) {

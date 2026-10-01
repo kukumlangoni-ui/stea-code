@@ -147,3 +147,92 @@ function parseRangeHeader(range: string | null): { offset: number; length?: numb
   if (isNaN(end) || end < offset) return null;
   return { offset, length: end - offset + 1 };
 }
+
+/**
+ * POST /api/stea-code/media/upload
+ * Accepts multipart form data with `productId` + `file` (video or image),
+ * streams it to R2 bucket `STEA_BUCKET`, returns the storage key.
+ */
+export async function handleMediaUpload(req: Request, env: any): Promise<Response> {
+  const origin = req.headers.get("origin");
+
+  if (req.method === "OPTIONS") {
+    return new Response(null, {
+      status: 204,
+      headers: {
+        "Access-Control-Allow-Origin": origin || "*",
+        "Access-Control-Allow-Methods": "POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization",
+        "Access-Control-Max-Age": "86400",
+      },
+    });
+  }
+
+  if (req.method !== "POST") {
+    return new Response(JSON.stringify({ error: "Method not allowed" }), {
+      status: 405,
+      headers: { "Content-Type": "application/json", ...corsHeaders(origin) },
+    });
+  }
+
+  try {
+    const form = await req.formData();
+    const productId = String(form.get("productId") || "").trim();
+    const file = form.get("file") as File | null;
+
+    if (!productId) {
+      return new Response(JSON.stringify({ error: "Missing productId" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json", ...corsHeaders(origin) },
+      });
+    }
+    if (!file || typeof file === "string") {
+      return new Response(JSON.stringify({ error: "Missing file" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json", ...corsHeaders(origin) },
+      });
+    }
+
+    if (file.size > 100 * 1024 * 1024) {
+      return new Response(JSON.stringify({ error: "File too large (max 100MB)" }), {
+        status: 413,
+        headers: { "Content-Type": "application/json", ...corsHeaders(origin) },
+      });
+    }
+
+    const isVideo = file.type.startsWith("video/");
+    const isImage = file.type.startsWith("image/");
+    if (!isVideo && !isImage) {
+      return new Response(JSON.stringify({ error: "Only video or image files allowed" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json", ...corsHeaders(origin) },
+      });
+    }
+
+    const ext = (file.name.split(".").pop() || (isVideo ? "mp4" : "jpg")).toLowerCase();
+    const timestamp = Date.now();
+    const slot = isVideo ? "preview" : "poster";
+    const key = `products/${productId}/${slot}/${slot}-${timestamp}.${ext}`;
+
+    const arrayBuf = await file.arrayBuffer();
+    await env.STEA_BUCKET.put(key, arrayBuf, {
+      httpMetadata: { contentType: file.type || (isVideo ? "video/mp4" : "image/jpeg") },
+    });
+
+    return new Response(JSON.stringify({
+      ok: true,
+      key,
+      url: `/api/stea-code/media/${key}`,
+      size: file.size,
+      kind: isVideo ? "video" : "poster",
+    }), {
+      status: 200,
+      headers: { "Content-Type": "application/json", ...corsHeaders(origin) },
+    });
+  } catch (e: any) {
+    return new Response(JSON.stringify({ error: e?.message || "Upload failed" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json", ...corsHeaders(origin) },
+    });
+  }
+}
