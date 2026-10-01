@@ -615,6 +615,27 @@
 /* ---------- Video Ready State ---------- */
 .psv3-video-ready {
   margin-top: 16px;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.psv3-video-shell {
+  width: 100%;
+  max-width: 640px;
+  max-height: 400px;
+  margin: 0 auto;
+  overflow: hidden;
+  border-radius: 10px;
+  background: #000;
+  border: 1px solid rgba(245, 166, 35, 0.18);
+}
+
+.psv3-video-player {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #000;
 }
 
 .psv3-video-badge {

@@ -1369,14 +1369,21 @@ export function ProductStudioV3({
                         <div className="psv3-video-badge">
                           <CheckCircle2 size={13} /> Video Ready
                         </div>
-                        <video
-                          src={form.previewVideoUrl}
-                          poster={form.posterImageUrl || undefined}
-                          controls
-                          playsInline
-                          preload="metadata"
-                          className="psv3-video-player"
-                        />
+                        <div
+                          className="psv3-video-shell"
+                          style={{
+                            aspectRatio: `${form.designWidth || 640} / ${form.designHeight || 480}`,
+                          }}
+                        >
+                          <video
+                            src={form.previewVideoUrl}
+                            poster={form.posterImageUrl || undefined}
+                            controls
+                            playsInline
+                            preload="metadata"
+                            className="psv3-video-player"
+                          />
+                        </div>
                         <div className="psv3-video-meta">
                           <code>{form.preview?.videoKey || "—"}</code>
                           <button
