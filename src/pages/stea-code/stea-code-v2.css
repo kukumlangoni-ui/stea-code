@@ -15193,3 +15193,22 @@ header,
   background: rgba(245, 166, 35, 0.06) !important;
   box-shadow: 0 0 20px rgba(245, 166, 35, 0.15) !important;
 }
+
+/* ============================================================
+   CARD PREVIEW — enforce consistent aspect ratio across all cards
+   ============================================================ */
+.sc-code-card__preview-wrap {
+  aspect-ratio: 4 / 3 !important;
+}
+/* Ensure all card bodies have consistent height for a clean grid */
+.sc-code-card {
+  display: flex;
+  flex-direction: column;
+}
+.sc-code-card__body {
+  flex: 0 0 auto;
+  min-height: 64px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
