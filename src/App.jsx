@@ -34,21 +34,15 @@ class LocalErrorBoundary extends Component {
   }
   componentDidCatch(error, info) {
     // LAYER 2 — chunk-load failure recovery
-    // During deploys, HTML and JS bundles can be out of sync. If a
-    // dynamic import fails on a stale hash, silently reload once with
-    // a cache-bust param instead of showing the error screen.
+    // Delegates to the shared recovery helper in main.jsx (attempt
+    // counter + cache-bust). Only shows the error screen after the
+    // helper gives up (3 failed attempts within 2 minutes).
     const msg = String(error?.message || "");
     const isChunkError = /Failed to fetch dynamically imported module|Importing a module script failed|error loading dynamically imported module/i.test(msg);
 
-    if (isChunkError) {
-      const now = Date.now();
-      const last = Number(sessionStorage.getItem("stea_chunk_reload_at") || "0");
-      if (now - last > 20000) {
-        sessionStorage.setItem("stea_chunk_reload_at", String(now));
-        const clean = window.location.href.split("?")[0];
-        window.location.replace(`${clean}?_r=${now}`);
-        return;
-      }
+    if (isChunkError && typeof window !== "undefined") {
+      const recovered = window.__steaRecoverChunkError?.();
+      if (recovered) return; // navigation in progress — error screen may flash briefly
     }
 
     console.error("STEA Code Error Boundary:", error, info);
@@ -76,14 +70,29 @@ class LocalErrorBoundary extends Component {
           <p style={{ fontSize: "14px", color: "rgba(255,255,255,0.6)", maxWidth: 500, margin: "0 0 20px 0" }}>
             {this.state.error?.message || "An unexpected error occurred."}
           </p>
-          <button
-            onClick={() => window.location.reload()}
-            style={{
-              padding: "10px 20px", borderRadius: "10px",
-              background: "#F5A623", color: "#000", fontWeight: 700,
-              fontSize: "14px", border: "none", cursor: "pointer"
-            }}
-          >Reload</button>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "center" }}>
+            <button
+              onClick={() => window.location.reload()}
+              style={{
+                padding: "10px 20px", borderRadius: "10px",
+                background: "#F5A623", color: "#000", fontWeight: 700,
+                fontSize: "14px", border: "none", cursor: "pointer"
+              }}
+            >Reload</button>
+            <button
+              onClick={() => {
+                sessionStorage.clear();
+                const url = new URL(window.location.href);
+                url.searchParams.set("_r", String(Date.now()));
+                window.location.replace(url.toString());
+              }}
+              style={{
+                padding: "10px 20px", borderRadius: "10px",
+                background: "transparent", color: "rgba(255,255,255,0.7)", fontWeight: 600,
+                fontSize: "14px", border: "1px solid rgba(255,255,255,0.15)", cursor: "pointer"
+              }}
+            >Hard Reload</button>
+          </div>
         </div>
       );
     }
