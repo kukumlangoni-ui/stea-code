@@ -586,14 +586,8 @@ export function ProductStudioV3({
   const uploadVideo = async (file) => {
     if (!file) return;
 
-    // Step 1: Compress (only if file is bigger than 5 MB)
-    let fileToUpload = file;
-    if (file.size > 5 * 1024 * 1024) {
-        fileToUpload = file;
-      } else {
-        fileToUpload = file;
-      }
-    }
+    // Upload original file directly (no compression)
+    const fileToUpload = file;
 
     // Step 2: Upload
     setVideoUploading(true);
@@ -1206,9 +1200,7 @@ export function ProductStudioV3({
                     >
                       <Upload size={24} className="psv3-upload-icon" />
                       <p className="psv3-upload-text">
-                        {videoCompressProgress !== null
-                          ? `Compressing… ${videoCompressProgress}%`
-                          : videoUploading
+                        {videoUploading
                           ? `Uploading… ${videoUploadProgress}%`
                           : form.previewVideoUrl
                           ? "Replace video"
@@ -1336,9 +1328,7 @@ export function ProductStudioV3({
                     >
                       <Upload size={24} className="psv3-upload-icon" />
                       <p className="psv3-upload-text">
-                        {videoCompressProgress !== null
-                          ? `Compressing… ${videoCompressProgress}%`
-                          : videoUploading
+                        {videoUploading
                           ? `Uploading… ${videoUploadProgress}%`
                           : form.previewVideoUrl
                           ? "Replace video"
