@@ -15227,3 +15227,40 @@ header,
     transition: none !important;
   }
 }
+
+/* ============================================================
+   TRUST SIGNAL BAR — under hero
+   ============================================================ */
+.sc-trust-bar {
+  display: flex; align-items: center; justify-content: center;
+  gap: 32px; margin-top: 40px; padding: 20px 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  max-width: 720px; margin-left: auto; margin-right: auto;
+  opacity: 0;
+  transform: translateY(16px);
+  transition:
+    opacity 900ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 900ms cubic-bezier(0.16, 1, 0.3, 1);
+  transition-delay: 600ms;
+}
+.sc-market-hero.is-ready .sc-trust-bar {
+  opacity: 1;
+  transform: translateY(0);
+}
+.sc-trust-item { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.sc-trust-value { font-size: 16px; font-weight: 700; color: #ede3d0; letter-spacing: -0.01em; }
+.sc-trust-label {
+  font-size: 10px; font-weight: 700; letter-spacing: 1.2px;
+  text-transform: uppercase; color: rgba(255, 255, 255, 0.4);
+}
+.sc-trust-divider { width: 1px; height: 28px; background: rgba(255, 255, 255, 0.08); }
+@media (max-width: 640px) {
+  .sc-trust-bar { gap: 16px; padding: 16px 12px; }
+  .sc-trust-value { font-size: 14px; }
+  .sc-trust-label { font-size: 9px; letter-spacing: 0.8px; }
+  .sc-trust-divider { height: 20px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sc-trust-bar { transition: none; opacity: 1; transform: none; }
+}

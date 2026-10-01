@@ -1616,6 +1616,28 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
                   <span key={tech}>{tech}</span>
                 ))}
               </div>
+
+              <div className="sc-trust-bar" role="status" aria-label="STEA Code stats">
+                <div className="sc-trust-item">
+                  <span className="sc-trust-value">{products.length || 94}+</span>
+                  <span className="sc-trust-label">{uiLocale === "zhCN" ? "组件" : "Components"}</span>
+                </div>
+                <div className="sc-trust-divider" aria-hidden="true" />
+                <div className="sc-trust-item">
+                  <span className="sc-trust-value">11</span>
+                  <span className="sc-trust-label">{uiLocale === "zhCN" ? "分类" : "Categories"}</span>
+                </div>
+                <div className="sc-trust-divider" aria-hidden="true" />
+                <div className="sc-trust-item">
+                  <span className="sc-trust-value">{uiLocale === "zhCN" ? "免费" : "Free"}</span>
+                  <span className="sc-trust-label">{uiLocale === "zhCN" ? "永久" : "Forever"}</span>
+                </div>
+                <div className="sc-trust-divider" aria-hidden="true" />
+                <div className="sc-trust-item">
+                  <span className="sc-trust-value">{uiLocale === "zhCN" ? "每周" : "Updated"}</span>
+                  <span className="sc-trust-label">{uiLocale === "zhCN" ? "更新" : "Weekly"}</span>
+                </div>
+              </div>
             </section>
 
             {/* 2. LATEST & FEATURED PRODUCTS */}
