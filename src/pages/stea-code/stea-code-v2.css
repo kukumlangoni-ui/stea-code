@@ -15264,3 +15264,31 @@ header,
 @media (prefers-reduced-motion: reduce) {
   .sc-trust-bar { transition: none; opacity: 1; transform: none; }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   🔒 HERO TITLE FONT — PERMANENTLY LOCKED
+   ⚠️ DO NOT MODIFY. Any change requires explicit user approval.
+   ───────────────────────────────────────────────────────────────
+   Line 1 "Build better." = sans-serif, upright, heavy
+   Line 2 "Code faster."  = Instrument Serif, upright, cream
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Line 1 — Build better. (sans) */
+.sc-market-hero h1.sc-hero-title > span {
+  font-family: "Bricolage Grotesque", "Instrument Sans", Inter, system-ui, -apple-system, sans-serif !important;
+  font-style: normal !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.035em !important;
+  color: #ffffff !important;
+}
+
+/* Line 2 — Code faster. (serif, cream) */
+.sc-market-hero h1.sc-hero-title > strong {
+  font-family: "Instrument Serif", "Playfair Display", Georgia, serif !important;
+  font-style: normal !important;
+  font-weight: 400 !important;
+  letter-spacing: -0.02em !important;
+  color: #ede3d0 !important;
+  background: none !important;
+  -webkit-text-fill-color: #ede3d0 !important;
+}
