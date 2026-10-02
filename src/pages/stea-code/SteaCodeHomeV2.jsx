@@ -394,11 +394,18 @@ function EmailVerificationBanner({ user, tLocal, onToast }) {
   };
 
   return (
-    <div className="sc-email-verify-banner" role="status">
-      <Mail size={14} className="sc-email-verify-icon" aria-hidden="true" />
-      <span className="sc-email-verify-text">
-        {tLocal({ en: "Verify your email to unlock downloads and features", zhCN: "验证邮箱以解锁下载和全部功能" })}
-      </span>
+    <div className="sc-email-verify-banner" role="status" aria-live="polite">
+      <div className="sc-email-verify-icon" aria-hidden="true">
+        <Mail size={16} />
+      </div>
+      <div className="sc-email-verify-copy">
+        <strong className="sc-email-verify-title">
+          {tLocal({ en: "Verify your email", zhCN: "验证你的邮箱" })}
+        </strong>
+        <span className="sc-email-verify-sub">
+          {tLocal({ en: "Unlock downloads and premium features", zhCN: "解锁下载和全部高级功能" })}
+        </span>
+      </div>
       <button
         type="button"
         className="sc-email-verify-resend"
