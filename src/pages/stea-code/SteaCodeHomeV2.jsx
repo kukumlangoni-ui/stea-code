@@ -18,6 +18,7 @@ import {
   Globe2,
   Layers,
   Lock,
+  Mail,
   Package,
   Palette,
   Play,
@@ -30,7 +31,7 @@ import {
 import SteaCodeLiquidHero from "../../components/SteaCodeLiquidHero.jsx";
 import { useSteaCodeI18n } from "../../components/stea-code/useSteaCodeI18n.js";
 import { createPortal } from "react-dom";
-import { onAuthStateChanged, signOut } from "firebase/auth";
+import { onAuthStateChanged, signOut, sendEmailVerification } from "firebase/auth";
 import SteaCodeMemberGate from "../../components/stea-code/SteaCodeMemberGate.jsx";
 import SteaCodeProductLivePreview from "../../components/stea-code/SteaCodeProductLivePreview.jsx";
 import SteaCodeProductSkeleton from "../../components/stea-code/SteaCodeProductSkeleton.jsx";
@@ -340,6 +341,83 @@ function SteaCodeUserAvatar({ user, email, size = 36 }) {
   }
 
   return <span className="sc-avatar-initial">{initial}</span>;
+}
+
+function EmailVerificationBanner({ user, tLocal, onToast }) {
+  const [dismissed, setDismissed] = useState(() => {
+    try { return sessionStorage.getItem("sc-email-verify-dismissed") === "1"; } catch { return false; }
+  });
+  const [verified, setVerified] = useState(() => Boolean(user?.emailVerified));
+  const [sending, setSending] = useState(false);
+
+  // Sync when the auth user object changes (sign-in/out).
+  useEffect(() => {
+    setVerified(Boolean(user?.emailVerified));
+  }, [user?.emailVerified, user?.uid]);
+
+  // Re-check verification when the user returns from their email tab.
+  useEffect(() => {
+    if (!user || verified) return undefined;
+    const onFocus = async () => {
+      try {
+        await user.reload();
+        if (user.emailVerified) setVerified(true);
+      } catch { /* network hiccup — retried on next focus */ }
+    };
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [user, verified]);
+
+  if (!user || verified || dismissed) return null;
+  // Only nudge password accounts — OAuth users (Google) are verified by provider.
+  const isPasswordUser = user.providerData?.some((p) => p?.providerId === "password");
+  if (!isPasswordUser) return null;
+
+  const resend = async () => {
+    if (sending) return;
+    setSending(true);
+    try {
+      await sendEmailVerification(user);
+      onToast?.("success", tLocal({ en: `Verification email sent to ${user.email}`, zhCN: `验证邮件已发送至 ${user.email}` }));
+    } catch (err) {
+      console.warn("[STEA CODE] Resend verification failed:", err?.code || err?.message);
+      onToast?.("error", tLocal({ en: "Could not send verification email. Try again later.", zhCN: "验证邮件发送失败，请稍后再试。" }));
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const dismiss = () => {
+    try { sessionStorage.setItem("sc-email-verify-dismissed", "1"); } catch { /* private mode */ }
+    setDismissed(true);
+  };
+
+  return (
+    <div className="sc-email-verify-banner" role="status">
+      <Mail size={14} className="sc-email-verify-icon" aria-hidden="true" />
+      <span className="sc-email-verify-text">
+        {tLocal({ en: "Verify your email to unlock downloads and features", zhCN: "验证邮箱以解锁下载和全部功能" })}
+      </span>
+      <button
+        type="button"
+        className="sc-email-verify-resend"
+        onClick={resend}
+        disabled={sending}
+      >
+        {sending
+          ? tLocal({ en: "Sending…", zhCN: "发送中…" })
+          : tLocal({ en: "Resend email", zhCN: "重新发送" })}
+      </button>
+      <button
+        type="button"
+        className="sc-email-verify-dismiss"
+        onClick={dismiss}
+        aria-label={tLocal({ en: "Dismiss", zhCN: "关闭" })}
+      >
+        <X size={14} />
+      </button>
+    </div>
+  );
 }
 
 export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSearch }) {
@@ -687,8 +765,11 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
     openMemberGate(makeFreeCodeAction(productId));
   };
 
-  const handleMemberGateAuthenticated = (_user, action) => {
+  const handleMemberGateAuthenticated = (authedUser, action, meta) => {
     setMemberGateOpen(false);
+    if (meta?.verificationSent && authedUser?.email) {
+      showPageToast("success", tLocal({ en: `Verification email sent to ${authedUser.email}`, zhCN: `验证邮件已发送至 ${authedUser.email}` }));
+    }
     resumePendingAction(action);
   };
 
@@ -1318,6 +1399,8 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
           mobileMenuCategories={CODE_PRODUCT_CATEGORIES.filter((c) => c !== "All")}
         />
       ) : null}
+
+      <EmailVerificationBanner user={effectiveUser} tLocal={tLocal} onToast={showPageToast} />
 
       <main>
         {effectiveView === "checkout" ? (

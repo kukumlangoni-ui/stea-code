@@ -15,6 +15,7 @@ import {
   createUserWithEmailAndPassword,
   sendPasswordResetEmail,
 } from "../../firebase.js";
+import { sendEmailVerification } from "firebase/auth";
 import { useSteaCodeI18n } from "./useSteaCodeI18n.js";
 import { touchSteaCodeMemberProfile } from "../../services/steaCodeMemberService.js";
 import {
@@ -391,6 +392,21 @@ export default function SteaCodeMemberGate({
         throw new Error("Authentication returned no user.");
       }
 
+      // New password accounts: fire the verification email immediately.
+      // Non-blocking — failure here never blocks sign-up.
+      let verificationSent = false;
+      if (mode === "signUp") {
+        try {
+          await sendEmailVerification(result.user);
+          verificationSent = true;
+        } catch (verifyError) {
+          console.warn(
+            "[STEA CODE] Verification email failed:",
+            verifyError?.code || verifyError?.message || "unknown"
+          );
+        }
+      }
+
       void touchSteaCodeMemberProfile().catch((profileError) => {
         console.warn(
           "[STEA CODE] Member profile sync failed after successful authentication:",
@@ -400,7 +416,7 @@ export default function SteaCodeMemberGate({
 
       const action = getSteaCodePendingAction();
       clearSteaCodePendingAction();
-      onAuthenticated?.(result.user, action);
+      onAuthenticated?.(result.user, action, { isNewUser: mode === "signUp", verificationSent });
     } catch (err) {
       console.error("[STEA CODE MEMBER EMAIL AUTH]", {
         code: err?.code || null,

@@ -11652,6 +11652,70 @@ a.sc-v2-card { text-decoration: none; }
   100% { transform: translateX(-50%) translateY(0);    opacity: 1; }
 }
 
+/* ── Email Verification Banner ── */
+.sc-email-verify-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  background: rgba(245, 166, 35, 0.08);
+  border-bottom: 1px solid rgba(245, 166, 35, 0.15);
+  color: rgba(245, 166, 35, 0.92);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  position: relative;
+  z-index: 40;
+}
+.sc-email-verify-icon {
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+.sc-email-verify-text {
+  flex: 1 1 auto;
+  line-height: 1.4;
+}
+.sc-email-verify-resend {
+  flex-shrink: 0;
+  background: rgba(245, 166, 35, 0.14);
+  border: 1px solid rgba(245, 166, 35, 0.25);
+  color: rgba(245, 166, 35, 0.95);
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease;
+  white-space: nowrap;
+}
+.sc-email-verify-resend:hover:not(:disabled) {
+  background: rgba(245, 166, 35, 0.22);
+  border-color: rgba(245, 166, 35, 0.4);
+}
+.sc-email-verify-resend:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+.sc-email-verify-dismiss {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  background: transparent;
+  border: none;
+  color: rgba(245, 166, 35, 0.65);
+  cursor: pointer;
+  border-radius: 4px;
+  transition: color 0.18s ease, background 0.18s ease;
+}
+.sc-email-verify-dismiss:hover {
+  color: rgba(245, 166, 35, 1);
+  background: rgba(245, 166, 35, 0.1);
+}
+
 /* Page-level toast (same visual style as .sc-toast in ProductDetail) */
 .sc-page-toast {
   position: fixed;
