@@ -1457,7 +1457,8 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
         />
       ) : null}
 
-      <EmailVerificationBanner user={effectiveUser} tLocal={tLocal} onToast={showPageToast} />
+      {/* Email verification banner disabled — re-enable when SMTP delivery is configured */}
+      {false && <EmailVerificationBanner user={effectiveUser} tLocal={tLocal} onToast={showPageToast} />}
 
       <main>
         {effectiveView === "checkout" ? (
