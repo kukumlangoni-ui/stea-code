@@ -1,0 +1,27 @@
+rules_version = '2';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// WARNING — MERGE BEFORE DEPLOYING
+// This file currently contains ONLY the analytics-events rules added for
+// copy/download tracking. The production ruleset lives in Firebase Console.
+// Do NOT deploy this file as-is — a partial ruleset default-denies every
+// other collection. Merge these match blocks into the existing rules first.
+// ─────────────────────────────────────────────────────────────────────────────
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Per-user analytics events (copy / download tracking)
+    match /users/{uid}/events/{eventId} {
+      allow create: if request.auth != null && request.auth.uid == uid;
+      allow read: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // Anonymous analytics events — write-only
+    match /anonymous_events/{eventId} {
+      allow create: if true;
+      allow read: if false;
+    }
+
+  }
+}

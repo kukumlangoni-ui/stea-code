@@ -60,6 +60,7 @@ import {
   toggleSteaCodeFavorite,
   getSteaCodeFavorites,
 } from "../../services/steaCodeCommerce.js";
+import { trackUserEvent } from "../../services/analytics.js";
 
 import {
   CODE_PRODUCT_CATEGORIES,
@@ -3429,6 +3430,10 @@ ${file.content}`
     setPackageError("");
     try {
       await downloadSteaCodeSource(productId);
+      void trackUserEvent("download", {
+        productId,
+        productSlug: product?.slug || "",
+      });
     } catch (err) {
       setPackageError(err?.message || "Download failed. Please try again.");
     } finally {
@@ -4245,6 +4250,10 @@ ${file.content}`
                     }
                     setCopiedPrompt(true);
                     recordSteaCodeCopy(getProductIdentity(product));
+                    void trackUserEvent("copy", {
+                      productId: getProductIdentity(product),
+                      productSlug: product?.slug || "",
+                    });
                     setToast({ type: 'success', message: 'AI Prompt copied' });
                     setTimeout(() => setCopiedPrompt(false), 2200);
                     setTimeout(() => setToast(null), 2600);
@@ -4301,6 +4310,10 @@ ${file.content}`
                     }
                     setCopiedCode(true);
                     recordSteaCodeCopy(getProductIdentity(product));
+                    void trackUserEvent("copy", {
+                      productId: getProductIdentity(product),
+                      productSlug: product?.slug || "",
+                    });
                     setToast({ type: 'success', message: 'Source code copied' });
                     setTimeout(() => setCopiedCode(false), 2200);
                     setTimeout(() => setToast(null), 2600);
