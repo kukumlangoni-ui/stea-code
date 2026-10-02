@@ -15470,3 +15470,43 @@ header,
   border-radius: 0 0 16px 16px;
 }
 
+
+
+/* ═══════════════════════════════════════════════════════════════
+   ROUND THE DEMO IFRAME — matches the preview stage's rounded corners
+   so white demos don't show sharp rectangles inside rounded frames
+   ═══════════════════════════════════════════════════════════════ */
+
+/* The live demo iframe — gets the same rounding as its parent stage */
+.sc-preview-art iframe,
+.sc-product-preview-art iframe,
+.sc-product-detail-preview-shell iframe,
+.sc-preview-art .sc-live-preview-iframe,
+.sc-product-preview-art .sc-live-preview-iframe,
+.sc-product-detail-preview-shell .sc-live-preview-iframe,
+.sc-live-preview-iframe {
+  border-radius: 12px !important;
+  overflow: hidden !important;
+}
+
+/* Also round the video poster / video player inside the modal + cards
+   in case a demo renders media instead of an iframe */
+.sc-preview-art video,
+.sc-product-preview-art video,
+.sc-product-detail-preview-shell video,
+.sc-preview-art img,
+.sc-product-preview-art img,
+.sc-product-detail-preview-shell img {
+  border-radius: 12px !important;
+}
+
+/* Ensure the iframe's own inner content (if it's a white-background demo)
+   also inherits the rounded clipping */
+.sc-preview-art > *,
+.sc-product-preview-art > *,
+.sc-product-detail-preview-shell > .sc-product-preview,
+.sc-product-detail-preview-shell > .sc-product-preview > *,
+.sc-product-detail-preview-shell .sc-product-detail-video-player {
+  border-radius: inherit;
+  overflow: hidden;
+}
