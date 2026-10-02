@@ -15543,3 +15543,10 @@ header,
   border-radius: inherit;
   overflow: hidden;
 }
+
+.sc-product-detail-preview-shell {
+  overflow: hidden !important;
+}
+.sc-code-card__preview-wrap {
+  overflow: hidden !important;
+}
