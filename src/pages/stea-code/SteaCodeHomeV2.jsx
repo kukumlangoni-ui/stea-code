@@ -585,6 +585,12 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
   const [menuOpen, setMenuOpen] = useState(false);
   const [memberGateOpen, setMemberGateOpen] = useState(false);
   const [memberGateAction, setMemberGateAction] = useState(null);
+
+  useEffect(() => {
+    const handleOpenAuth = () => setMemberGateOpen(true);
+    window.addEventListener("open-auth", handleOpenAuth);
+    return () => window.removeEventListener("open-auth", handleOpenAuth);
+  }, []);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [avatarSpin, setAvatarSpin] = useState("idle"); // 'idle' | 'left' | 'right'
   const [goUnlimitedPulse, setGoUnlimitedPulse] = useState(false);
@@ -3448,6 +3454,179 @@ ${file.content}`
     }
   };
 
+  const [currentUser, setCurrentUser] = useState(() => getFirebaseAuth()?.currentUser || null);
+
+  useEffect(() => {
+    const auth = getFirebaseAuth();
+    if (!auth) return undefined;
+    const unsub = onAuthStateChanged(auth, (u) => {
+      setCurrentUser(u || null);
+    });
+    return () => unsub();
+  }, []);
+
+  const isSignedIn = Boolean(currentUser);
+
+  // Shared copy-to-clipboard helper with fallback
+  const safeCopyToClipboard = useCallback(async (text) => {
+    if (!text || !text.trim()) {
+      throw new Error("EMPTY_CONTENT");
+    }
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+    } else {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      const success = document.execCommand("copy");
+      ta.remove();
+      if (!success) {
+        throw new Error("EXEC_COMMAND_FAILED");
+      }
+    }
+  }, []);
+
+  // Shared success handlers — fire ONLY when copy/download succeeds
+  const handleCopyPromptSuccess = useCallback(() => {
+    setCopiedPrompt(true);
+    recordSteaCodeCopy(getProductIdentity(product));
+    void trackUserEvent("copy", {
+      productId: getProductIdentity(product),
+      productSlug: product?.slug || "",
+      email: currentUser?.email || "",
+    });
+    setToast({ type: "success", message: "AI Prompt copied" });
+    setTimeout(() => setCopiedPrompt(false), 2200);
+    setTimeout(() => setToast(null), 2600);
+  }, [product, currentUser]);
+
+  const handleCopySourceSuccess = useCallback(() => {
+    setCopiedCode(true);
+    recordSteaCodeCopy(getProductIdentity(product));
+    void trackUserEvent("copy", {
+      productId: getProductIdentity(product),
+      productSlug: product?.slug || "",
+      email: currentUser?.email || "",
+    });
+    setToast({ type: "success", message: "Source code copied" });
+    setTimeout(() => setCopiedCode(false), 2200);
+    setTimeout(() => setToast(null), 2600);
+  }, [product, currentUser]);
+
+  const handleDownloadSuccess = useCallback((pid) => {
+    const cleanId = pid || getProductIdentity(product);
+    void trackUserEvent("download", {
+      productId: cleanId,
+      productSlug: product?.slug || "",
+      email: currentUser?.email || "",
+    });
+  }, [product, currentUser]);
+
+  // Action executors
+  const executeCopyPrompt = useCallback(async () => {
+    try {
+      const text = String(product?.aiPrompt || "");
+      await safeCopyToClipboard(text);
+      handleCopyPromptSuccess();
+    } catch (err) {
+      console.error("[copy-prompt] failed:", err);
+      setToast({ type: "error", message: "Copy failed" });
+      setTimeout(() => setToast(null), 2600);
+    }
+  }, [product?.aiPrompt, safeCopyToClipboard, handleCopyPromptSuccess]);
+
+  const executeCopySource = useCallback(async () => {
+    try {
+      const text = sourceCodeHtml;
+      if (!text || !text.trim()) {
+        setToast({ type: "error", message: "No source available" });
+        setTimeout(() => setToast(null), 2600);
+        return;
+      }
+      await safeCopyToClipboard(text);
+      handleCopySourceSuccess();
+    } catch (err) {
+      console.error("[copy-source] failed:", err);
+      setToast({ type: "error", message: "Copy failed" });
+      setTimeout(() => setToast(null), 2600);
+    }
+  }, [sourceCodeHtml, safeCopyToClipboard, handleCopySourceSuccess]);
+
+  const executeDownload = useCallback((pid) => {
+    const cleanId = pid || getProductIdentity(product);
+    setDownloading(true);
+    window.location.href = `/api/stea-code/products/${encodeURIComponent(cleanId)}/download`;
+    handleDownloadSuccess(cleanId);
+    setTimeout(() => setDownloading(false), 1500);
+  }, [product, handleDownloadSuccess]);
+
+  // Gate click handler — saves pending action and opens auth without tracking
+  const handleGateAction = useCallback((actionType) => {
+    const productId = String(product?.id || product?.slug || "").trim();
+    try {
+      sessionStorage.setItem("stea_pending_action", JSON.stringify({
+        type: actionType,
+        productId,
+      }));
+    } catch (err) {
+      console.warn("Failed saving pending action:", err);
+    }
+    window.dispatchEvent(new Event("open-auth"));
+  }, [product]);
+
+  // Button click handlers
+  const handleCopyPromptClick = useCallback((e) => {
+    e.stopPropagation();
+    if (!isSignedIn) {
+      handleGateAction("copy-prompt");
+      return;
+    }
+    executeCopyPrompt();
+  }, [isSignedIn, handleGateAction, executeCopyPrompt]);
+
+  const handleCopySourceClick = useCallback((e) => {
+    e.stopPropagation();
+    if (!isSignedIn) {
+      handleGateAction("copy-source");
+      return;
+    }
+    executeCopySource();
+  }, [isSignedIn, handleGateAction, executeCopySource]);
+
+  const handleDownloadClick = useCallback((e) => {
+    e.stopPropagation();
+    if (!isSignedIn) {
+      handleGateAction("download");
+      return;
+    }
+    executeDownload();
+  }, [isSignedIn, handleGateAction, executeDownload]);
+
+  // Resume pending action on mount or when user authenticates
+  useEffect(() => {
+    if (!currentUser) return;
+    try {
+      const raw = sessionStorage.getItem("stea_pending_action");
+      if (!raw) return;
+      const pending = JSON.parse(raw);
+      const currentPid = getProductIdentity(product);
+      if (pending && pending.productId === currentPid) {
+        sessionStorage.removeItem("stea_pending_action");
+        if (pending.type === "copy-source") {
+          executeCopySource();
+        } else if (pending.type === "copy-prompt") {
+          executeCopyPrompt();
+        } else if (pending.type === "download") {
+          executeDownload(currentPid);
+        }
+      }
+    } catch (err) {
+      console.warn("Failed resuming pending action in ProductDetail:", err);
+    }
+  }, [currentUser, product, executeCopySource, executeCopyPrompt, executeDownload]);
 
   const reduceMotion = useReducedMotion();
 
@@ -4238,41 +4417,12 @@ ${file.content}`
               <button
                 type="button"
                 className={`sc-detail-action sc-detail-action--prompt ${copiedPrompt ? 'is-copied' : ''}`}
-                onClick={async (e) => {
-                  e.stopPropagation();
-                  try {
-                    const text = String(product.aiPrompt);
-                    if (navigator.clipboard && window.isSecureContext) {
-                      await navigator.clipboard.writeText(text);
-                    } else {
-                      // Fallback for non-secure contexts
-                      const ta = document.createElement('textarea');
-                      ta.value = text;
-                      ta.style.position = 'fixed';
-                      ta.style.opacity = '0';
-                      document.body.appendChild(ta);
-                      ta.select();
-                      document.execCommand('copy');
-                      ta.remove();
-                    }
-                    setCopiedPrompt(true);
-                    recordSteaCodeCopy(getProductIdentity(product));
-                    void trackUserEvent("copy", {
-                      productId: getProductIdentity(product),
-                      productSlug: product?.slug || "",
-                    });
-                    setToast({ type: 'success', message: 'AI Prompt copied' });
-                    setTimeout(() => setCopiedPrompt(false), 2200);
-                    setTimeout(() => setToast(null), 2600);
-                  } catch (err) {
-                    console.error('[copy-prompt] failed:', err);
-                    setToast({ type: 'error', message: 'Copy failed' });
-                    setTimeout(() => setToast(null), 2600);
-                  }
-                }}
+                onClick={handleCopyPromptClick}
               >
                 <span className="sc-detail-action-icon" aria-hidden="true">
-                  {copiedPrompt ? (
+                  {!isSignedIn ? (
+                    <Lock size={18} />
+                  ) : copiedPrompt ? (
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                       <polyline points="20 6 9 17 4 12"/>
                     </svg>
@@ -4284,7 +4434,7 @@ ${file.content}`
                   )}
                 </span>
                 <span className="sc-detail-action-label">
-                  {copiedPrompt ? 'Prompt Copied' : 'Copy AI Prompt'}
+                  {!isSignedIn ? 'Sign in to copy' : copiedPrompt ? 'Prompt Copied' : 'Copy AI Prompt'}
                 </span>
               </button>
             )}
@@ -4294,45 +4444,12 @@ ${file.content}`
               <button
                 type="button"
                 className={`sc-detail-action sc-detail-action--code ${copiedCode ? 'is-copied' : ''}`}
-                onClick={async (e) => {
-                  e.stopPropagation();
-                  try {
-                    const text = sourceCodeHtml;
-                    if (!text || !text.trim()) {
-                      setToast({ type: 'error', message: 'No source available' });
-                      setTimeout(() => setToast(null), 2600);
-                      return;
-                    }
-                    if (navigator.clipboard && window.isSecureContext) {
-                      await navigator.clipboard.writeText(text);
-                    } else {
-                      const ta = document.createElement('textarea');
-                      ta.value = text;
-                      ta.style.position = 'fixed';
-                      ta.style.opacity = '0';
-                      document.body.appendChild(ta);
-                      ta.select();
-                      document.execCommand('copy');
-                      ta.remove();
-                    }
-                    setCopiedCode(true);
-                    recordSteaCodeCopy(getProductIdentity(product));
-                    void trackUserEvent("copy", {
-                      productId: getProductIdentity(product),
-                      productSlug: product?.slug || "",
-                    });
-                    setToast({ type: 'success', message: 'Source code copied' });
-                    setTimeout(() => setCopiedCode(false), 2200);
-                    setTimeout(() => setToast(null), 2600);
-                  } catch (err) {
-                    console.error('[copy-source] failed:', err);
-                    setToast({ type: 'error', message: 'Copy failed' });
-                    setTimeout(() => setToast(null), 2600);
-                  }
-                }}
+                onClick={handleCopySourceClick}
               >
                 <span className="sc-detail-action-icon" aria-hidden="true">
-                  {copiedCode ? (
+                  {!isSignedIn ? (
+                    <Lock size={18} />
+                  ) : copiedCode ? (
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                       <polyline points="20 6 9 17 4 12"/>
                     </svg>
@@ -4344,7 +4461,7 @@ ${file.content}`
                   )}
                 </span>
                 <span className="sc-detail-action-label">
-                  {copiedCode ? 'Code Copied' : 'Copy Source Code'}
+                  {!isSignedIn ? 'Sign in to copy' : copiedCode ? 'Code Copied' : 'Copy Source Code'}
                 </span>
               </button>
             )}
@@ -4355,22 +4472,25 @@ ${file.content}`
                 type="button"
                 className={`sc-detail-action sc-detail-action--download ${downloading ? 'is-loading' : ''}`}
                 disabled={downloading}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setDownloading(true);
-                  window.location.href = `/api/stea-code/products/${product.id}/download`;
-                  setTimeout(() => setDownloading(false), 1500);
-                }}
+                onClick={handleDownloadClick}
               >
                 <span className="sc-detail-action-icon" aria-hidden="true">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                    <polyline points="7 10 12 15 17 10"/>
-                    <line x1="12" y1="15" x2="12" y2="3"/>
-                  </svg>
+                  {!isSignedIn ? (
+                    <Lock size={18} />
+                  ) : (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                      <polyline points="7 10 12 15 17 10"/>
+                      <line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                  )}
                 </span>
                 <span className="sc-detail-action-label">
-                  {downloading ? 'Preparing download…' : 'Download Source Code'}
+                  {!isSignedIn
+                    ? 'Sign in to download'
+                    : downloading
+                    ? 'Preparing download…'
+                    : 'Download Source Code'}
                 </span>
               </button>
             )}

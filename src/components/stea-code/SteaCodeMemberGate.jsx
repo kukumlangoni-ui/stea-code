@@ -23,6 +23,8 @@ import {
   getSteaCodePendingAction,
   setSteaCodePendingAction,
 } from "../../services/steaCodeResumeAction.js";
+import { trackUserEvent } from "../../services/analytics.js";
+import { getSteaCodeProduct, getSteaCodeProductPreview } from "../../services/steaCodeCommerce.js";
 
 const I18N = {
   en: {
@@ -245,6 +247,49 @@ export default function SteaCodeMemberGate({
       }
     }
   }, [open, pendingAction]);
+
+  // Resume pending action on modal mount if user is authenticated
+  useEffect(() => {
+    try {
+      const raw = typeof window !== "undefined" ? window.sessionStorage.getItem("stea_pending_action") : null;
+      if (!raw) return;
+      const pending = JSON.parse(raw);
+      const auth = getFirebaseAuth();
+      const currentUser = auth?.currentUser;
+      if (currentUser && pending && pending.productId) {
+        window.sessionStorage.removeItem("stea_pending_action");
+        if (pending.type === "download") {
+          window.location.href = `/api/stea-code/products/${encodeURIComponent(pending.productId)}/download`;
+          void trackUserEvent("download", { productId: pending.productId, email: currentUser?.email || "" });
+        } else if (pending.type === "copy-source" || pending.type === "copy-prompt") {
+          void (async () => {
+            try {
+              let text = "";
+              if (pending.type === "copy-prompt") {
+                const prod = await getSteaCodeProduct(pending.productId);
+                text = String(prod?.aiPrompt || "");
+              } else {
+                const preview = await getSteaCodeProductPreview(pending.productId);
+                text = String(preview?.sourceCodeHtml || preview?.preview || "");
+                if (!text) {
+                  const prod = await getSteaCodeProduct(pending.productId);
+                  text = String(prod?.sourceCode || "");
+                }
+              }
+              if (text && navigator.clipboard && window.isSecureContext) {
+                await navigator.clipboard.writeText(text);
+                void trackUserEvent("copy", { productId: pending.productId, email: currentUser?.email || "" });
+              }
+            } catch (err) {
+              console.warn("[MemberGate] Resumed copy failed:", err);
+            }
+          })();
+        }
+      }
+    } catch (e) {
+      console.warn("[MemberGate] failed to resume pending action on mount:", e);
+    }
+  }, []);
 
   useEffect(() => {
     if (!open) return undefined;
