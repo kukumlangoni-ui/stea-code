@@ -15318,3 +15318,91 @@ header,
   background: none !important;
   -webkit-text-fill-color: #ede3d0 !important;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   PREMIUM PREVIEW STAGE — rounded corners + warm gradient border
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Modal preview shell — the big preview in the product modal */
+.sc-product-detail-preview-shell,
+.sc-premium-product-detail .sc-product-detail-preview-shell {
+  position: relative;
+  border-radius: 16px !important;
+  overflow: hidden !important;
+  border: 1px solid transparent !important;
+  background-image: linear-gradient(#0a0a0f, #0a0a0f),
+                    linear-gradient(135deg,
+                      rgba(237, 227, 208, 0.12) 0%,
+                      rgba(245, 166, 35, 0.22) 50%,
+                      rgba(242, 138, 111, 0.10) 100%) !important;
+  background-origin: border-box !important;
+  background-clip: padding-box, border-box !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 20px 60px rgba(0, 0, 0, 0.4),
+    0 4px 12px rgba(0, 0, 0, 0.25) !important;
+  transition: box-shadow 0.35s ease, border-color 0.35s ease;
+}
+
+/* Modal preview shell — subtle deepen on hover (optional but nice) */
+.sc-product-modal-panel:hover .sc-product-detail-preview-shell,
+.sc-premium-product-detail:hover .sc-product-detail-preview-shell {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 24px 72px rgba(0, 0, 0, 0.45),
+    0 6px 16px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Card preview wrap — same treatment, scoped to cards */
+.sc-code-card__preview-wrap,
+.sc-code-card--v2 .sc-code-card__preview-wrap {
+  border-radius: 14px !important;
+  overflow: hidden !important;
+  border: 1px solid transparent !important;
+  background-image: linear-gradient(#0a0a0f, #0a0a0f),
+                    linear-gradient(135deg,
+                      rgba(237, 227, 208, 0.10) 0%,
+                      rgba(245, 166, 35, 0.18) 50%,
+                      rgba(242, 138, 111, 0.08) 100%) !important;
+  background-origin: border-box !important;
+  background-clip: padding-box, border-box !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 8px 24px rgba(0, 0, 0, 0.3) !important;
+  transition: box-shadow 0.3s ease, transform 0.3s ease;
+}
+
+/* Card preview wrap — glow on card hover */
+.sc-code-card:hover .sc-code-card__preview-wrap,
+.sc-code-card.sc-code-card--v2:hover .sc-code-card__preview-wrap {
+  border-color: transparent !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 12px 32px rgba(0, 0, 0, 0.4),
+    0 0 24px rgba(245, 166, 35, 0.15) !important;
+}
+
+/* Inner preview art layer — inherits rounding so children stay clipped */
+.sc-product-detail-preview-shell .sc-preview-art,
+.sc-product-detail-preview-shell > .sc-product-preview,
+.sc-product-detail-preview-shell .sc-product-detail-video-player,
+.sc-code-card__preview-wrap .sc-preview-art,
+.sc-code-card__preview-wrap .sc-preview-video-wrap,
+.sc-product-preview-video {
+  border-radius: inherit !important;
+  overflow: hidden !important;
+}
+
+/* Video and poster inside the preview — inherit rounding so no sharp edges leak */
+.sc-preview-video-wrap video,
+.sc-preview-video-wrap img,
+.sc-product-detail-preview-shell video,
+.sc-product-detail-preview-shell img {
+  border-radius: inherit;
+}
+
+/* Preview caption below the modal preview — keep spacing clean */
+.sc-product-preview-caption {
+  border-radius: 0 0 16px 16px;
+}
+
