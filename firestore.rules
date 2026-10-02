@@ -11,16 +11,33 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Per-user analytics events (copy / download tracking)
-    match /users/{uid}/events/{eventId} {
-      allow create: if request.auth != null && request.auth.uid == uid;
-      allow read: if request.auth != null && request.auth.uid == uid;
+    function isAdmin() {
+      return request.auth != null && (
+        request.auth.token.admin == true ||
+        (request.auth.token.email_verified == true && request.auth.token.email in ["kukumlangoni@gmail.com", "stea.africa@gmail.com"])
+      );
     }
 
-    // Anonymous analytics events — write-only
+    // User profile documents
+    match /users/{uid} {
+      allow read: if isAdmin() || (request.auth != null && request.auth.uid == uid);
+      allow write: if request.auth != null && request.auth.uid == uid;
+
+      // Per-user analytics events (copy / download tracking)
+      match /events/{eventId} {
+        allow create, read: if request.auth != null && request.auth.uid == uid;
+      }
+    }
+
+    // Collection-group query on all events subcollections across all users
+    match /{path=**}/events/{eventId} {
+      allow read: if isAdmin();
+    }
+
+    // Anonymous analytics events
     match /anonymous_events/{eventId} {
       allow create: if true;
-      allow read: if false;
+      allow read: if isAdmin();
     }
 
   }

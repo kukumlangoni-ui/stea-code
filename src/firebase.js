@@ -10,7 +10,7 @@ import {
   collection, doc, addDoc, updateDoc, deleteDoc,
   getDocs, getDoc, setDoc, onSnapshot, query, orderBy, limit,
   serverTimestamp, increment, where, getDocFromServer, runTransaction, writeBatch,
-  initializeFirestore, getFirestore, or, getCountFromServer, arrayUnion, arrayRemove
+  initializeFirestore, getFirestore, or, getCountFromServer, collectionGroup, arrayUnion, arrayRemove
 } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, uploadBytesResumable, getDownloadURL, deleteObject } from "firebase/storage";
 
@@ -127,7 +127,7 @@ export {
 export {
   collection, doc, addDoc, updateDoc, deleteDoc,
   getDocs, getDoc, setDoc, onSnapshot, query, orderBy, limit,
-  serverTimestamp, increment, where, getDocFromServer, runTransaction, or, getCountFromServer, arrayUnion, arrayRemove, writeBatch,
+  serverTimestamp, increment, where, getDocFromServer, runTransaction, or, getCountFromServer, collectionGroup, arrayUnion, arrayRemove, writeBatch,
   initializeFirestore, getFirestore
 };
 export { getStorage, ref, uploadBytes, uploadBytesResumable, getDownloadURL, deleteObject };

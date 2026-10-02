@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import {
+  Activity,
   AlertTriangle,
   Box,
   CreditCard,
@@ -33,6 +34,7 @@ import SitesAdminLogin from "../sites/admin/SitesAdminLogin.jsx";
 import SteaCodePage from "./SteaCodePage.jsx";
 import LocalFirestoreBadge from "./LocalFirestoreBadge.dev-only.jsx";
 import SteaCodeProductStudioPage from "./SteaCodeProductStudioPage.jsx";
+import UserActivityDashboardPage from "./UserActivityDashboardPage.jsx";
 import SteaCodeLogo from "../components/stea-code/SteaCodeLogo.jsx";
 import "./admin-v2.css";
 import "./stea-code-admin.css";
@@ -64,6 +66,7 @@ const CODE_ADMIN_NAV = [
   { id: "orders", label: "Orders", icon: CreditCard, path: "/admin/orders" },
   { id: "payments", label: "Payments", icon: DollarSign, path: "/admin/payments" },
   { id: "users", label: "Users", icon: Users, path: "/admin/users" },
+  { id: "activity", label: "Activity", icon: Activity, path: "/admin/activity" },
   { id: "entitlements", label: "Entitlements", icon: KeyRound, path: "/admin/entitlements" },
 ];
 
@@ -77,6 +80,7 @@ const CODE_ADMIN_TITLES = {
   orders: "Orders — STEA Code Admin",
   payments: "Payments — STEA Code Admin",
   users: "Users — STEA Code Admin",
+  activity: "Activity — STEA Code Admin",
   entitlements: "Entitlements — STEA Code Admin",
   directory: "Developer Resources — STEA Code Admin",
   hosting: "Hosting — STEA Code Admin",
@@ -339,6 +343,8 @@ export default function SteaCodeAdminApp(props) {
         return "payments";
       case "users":
         return "users";
+      case "activity":
+        return "activity";
       case "entitlements":
         return "entitlements";
       case "resources":
@@ -451,6 +457,7 @@ export default function SteaCodeAdminApp(props) {
       orders: "orders",
       payments: "payments",
       users: "users",
+      activity: "activity",
       entitlements: "entitlements",
       directory: "resources",
       hosting: "hosting",
@@ -566,6 +573,16 @@ export default function SteaCodeAdminApp(props) {
               path="products/:productId/edit"
               element={
                 <SteaCodeProductStudioPage
+                  isSuperAdmin={isSuperAdmin}
+                  devPreview={devPreview}
+                  baseRoute={baseRoute}
+                />
+              }
+            />
+            <Route
+              path="activity"
+              element={
+                <UserActivityDashboardPage
                   isSuperAdmin={isSuperAdmin}
                   devPreview={devPreview}
                   baseRoute={baseRoute}

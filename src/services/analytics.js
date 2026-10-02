@@ -19,6 +19,7 @@ export async function trackUserEvent(type, payload = {}) {
       timestamp: serverTimestamp(),
       authMethod: user?.providerData?.[0]?.providerId || "anonymous",
       emailVerified: user?.emailVerified || false,
+      email: user?.email || payload?.email || null,
     };
 
     if (user) {
