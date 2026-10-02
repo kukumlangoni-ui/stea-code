@@ -3521,6 +3521,32 @@ a.sc-v2-card { text-decoration: none; }
   display: block !important;
 }
 
+/* Hover-to-play: card preview area is pointer-events:none, so re-enable on
+   the video wrapper or the hover handlers never fire. Clicks still bubble up
+   to the card button. */
+.sc-code-card__preview .sc-product-preview-video {
+  pointer-events: auto;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.sc-code-card__preview .sc-preview-video-wrap img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  border-radius: 0 !important;
+  display: block !important;
+}
+
+.sc-preview-video-wrap video,
+.sc-preview-video-wrap img {
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
 .sc-code-card__preview iframe {
   width: 100%;
   height: 100%;

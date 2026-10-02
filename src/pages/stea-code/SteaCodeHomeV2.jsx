@@ -2369,63 +2369,70 @@ function getPreviewPosterUrl(product) {
   return product?.posterImageUrl || null;
 }
 
-function ProductVideoPreview({ videoUrl, title, onVideoError }) {
+// Detects whether the device supports hover (desktop/laptop). Touch devices return false.
+function useCanHover() {
+  const [canHover, setCanHover] = useState(false);
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return undefined;
+    const mq = window.matchMedia("(hover: hover) and (pointer: fine)");
+    const update = () => setCanHover(mq.matches);
+    update();
+    if (mq.addEventListener) mq.addEventListener("change", update);
+    else mq.addListener(update);
+    return () => {
+      if (mq.removeEventListener) mq.removeEventListener("change", update);
+      else mq.removeListener(update);
+    };
+  }, []);
+  return canHover;
+}
+
+function ProductVideoPreview({ videoUrl, posterUrl, title, playing, onVideoError }) {
   const videoRef = useRef(null);
   const containerRef = useRef(null);
-  const inViewRef = useRef(false);
   const [loadError, setLoadError] = useState(false);
 
-  // Accessibility + data-saver: skip autoplay, show static first frame.
-  const [noAutoplay] = useState(() => {
-    if (typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return true;
-    if (typeof navigator !== "undefined" && navigator.connection?.saveData) return true;
-    return false;
-  });
+  // Accessibility: never play for reduced-motion users.
+  const noMotion = useMemo(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return false;
+    return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  }, []);
 
+  // Data-saver: skip video playback entirely.
+  const noData = useMemo(() => {
+    if (typeof navigator === "undefined") return false;
+    return Boolean(navigator.connection?.saveData);
+  }, []);
+
+  // Play/pause driven by the `playing` prop (hover state from the card).
   useEffect(() => {
     const video = videoRef.current;
-    const container = containerRef.current;
-    if (!video || !container || loadError || noAutoplay) return undefined;
-
-    let observer = null;
-    if (typeof IntersectionObserver !== "undefined") {
-      observer = new IntersectionObserver(
-        (entries) => {
-          const entry = entries[0];
-          if (!entry) return;
-          inViewRef.current = entry.isIntersecting;
-          if (entry.isIntersecting && !document.hidden) {
-            video.play().catch(() => {});
-          } else if (!entry.isIntersecting) {
-            video.pause();
-          }
-        },
-        { threshold: 0.05, rootMargin: "150px" }
-      );
-      observer.observe(container);
-    } else {
-      inViewRef.current = true;
-      video.play().catch(() => {});
+    if (!video || loadError) return;
+    if (noMotion || noData) {
+      video.pause();
+      return;
     }
+    if (playing && !document.hidden) {
+      video.play().catch(() => {});
+    } else {
+      video.pause();
+    }
+  }, [playing, loadError, noMotion, noData]);
 
-    // Pause when the tab is hidden; resume only if still in view.
-    const onVisibility = () => {
+  // Pause when the tab is hidden; resume only if still hovered.
+  useEffect(() => {
+    const onVis = () => {
+      const video = videoRef.current;
+      if (!video) return;
       if (document.hidden) {
         video.pause();
-      } else if (inViewRef.current) {
+      } else if (playing && !noMotion && !noData) {
         video.play().catch(() => {});
       }
     };
-    document.addEventListener("visibilitychange", onVisibility);
-
-    return () => {
-      document.removeEventListener("visibilitychange", onVisibility);
-      if (observer && container) {
-        observer.unobserve(container);
-        observer.disconnect();
-      }
-    };
-  }, [videoUrl, loadError, noAutoplay]);
+    document.addEventListener("visibilitychange", onVis);
+    return () => document.removeEventListener("visibilitychange", onVis);
+  }, [playing, noMotion, noData]);
 
   if (loadError) return null;
 
@@ -2439,18 +2446,38 @@ function ProductVideoPreview({ videoUrl, title, onVideoError }) {
         position: "relative",
         overflow: "hidden",
         borderRadius: "12px",
-        background: "#080c14",
+        background: "#000",
+        pointerEvents: "none",
       }}
     >
+      {posterUrl ? (
+        <img
+          src={posterUrl}
+          alt={title || ""}
+          loading="lazy"
+          decoding="async"
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            pointerEvents: "none",
+            opacity: playing ? 0 : 1,
+            transition: "opacity 0.25s ease",
+            zIndex: 1,
+          }}
+        />
+      ) : null}
       <video
         ref={videoRef}
         src={videoUrl}
         aria-label={title || "Product video preview"}
         muted
-        autoPlay={!noAutoplay}
         loop
         playsInline
         preload="metadata"
+        controls={false}
         disablePictureInPicture
         disableRemotePlayback
         onError={() => {
@@ -2458,12 +2485,16 @@ function ProductVideoPreview({ videoUrl, title, onVideoError }) {
           if (typeof onVideoError === "function") onVideoError();
         }}
         style={{
+          position: "absolute",
+          inset: 0,
           width: "100%",
           height: "100%",
           objectFit: "cover",
-          display: "block",
-          borderRadius: "12px",
+          background: "#000",
           pointerEvents: "none",
+          opacity: playing ? 1 : 0,
+          transition: "opacity 0.25s ease",
+          zIndex: 2,
         }}
       />
     </div>
@@ -2494,9 +2525,13 @@ const ProductPreview = forwardRef(function ProductPreview({
 
   const videoUrl = getPreviewVideoUrl(product);
   const hasVideo = Boolean(videoUrl);
+  const posterUrl = getPreviewPosterUrl(product) || "";
 
-  // Card autoplay-video fallback: if the video errors (404, codec), drop
-  // through to the live preview / poster branches below.
+  // Card hover-to-play: poster by default, video on desktop hover.
+  // If the video errors (404, codec), drop through to the live preview /
+  // poster branches below.
+  const canHover = useCanHover();
+  const [isHovering, setIsHovering] = useState(false);
   const [cardVideoFailed, setCardVideoFailed] = useState(false);
 
   // Priority 1: Native preview (if any registered)
@@ -2520,20 +2555,30 @@ const ProductPreview = forwardRef(function ProductPreview({
     );
   }
 
-  // Priority 2 (cards only): Autoplay loop video — primary preview on homepage
-  // cards when the admin has uploaded a demo video. Falls back to live preview
-  // if the video errors (404, unsupported codec).
-  if (preferVideo && hasVideo && !forceLiveDemo && !cardVideoFailed) {
+  // Priority 2 (cards): Hover-to-play video — poster image by default, video
+  // plays muted/looping on desktop hover. Requires a poster; without one the
+  // card falls through to the live preview below. forceLiveDemo (modal) skips.
+  const showVideoPreview =
+    Boolean(videoUrl) && Boolean(posterUrl) && !forceLiveDemo && !cardVideoFailed;
+  if (showVideoPreview) {
     return (
       <div
         className="sc-product-preview sc-product-preview-video"
         data-preview-product={productId}
-        aria-label={categoryLabel + " video preview"}
+        onMouseEnter={() => {
+          if (canHover) setIsHovering(true);
+        }}
+        onMouseLeave={() => {
+          if (canHover) setIsHovering(false);
+        }}
       >
-        <div className="sc-preview-art">
+        <div className="sc-preview-art" aria-label={categoryLabel + " video preview"}>
           <ProductVideoPreview
+            key={`card-video-${productId}`}
             videoUrl={videoUrl}
+            posterUrl={posterUrl}
             title={product?.titleEn || product?.titleZh || ""}
+            playing={canHover && isHovering}
             onVideoError={() => setCardVideoFailed(true)}
           />
         </div>
