@@ -19,8 +19,8 @@ export default function CookiePolicy() {
   return (
     <div style={{ minHeight: "100vh", background: "#05060a", color: "#e2e8f0", padding: "48px 20px 80px", fontFamily: "system-ui, -apple-system, sans-serif" }}>
       <SEO
-        title="Cookie Policy | STEA Africa & STEA Code"
-        description="Learn about the types of cookies and local storage items used on STEA Africa and STEA Code and how to manage your preferences."
+        title="Cookie Policy | STEA Africa & steacode"
+        description="Learn about the types of cookies and local storage items used on STEA Africa and steacode and how to manage your preferences."
       />
 
       <div style={{ maxWidth: 780, margin: "0 auto" }}>

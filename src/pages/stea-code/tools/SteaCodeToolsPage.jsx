@@ -36,9 +36,9 @@ export default function SteaCodeToolsPage() {
 
       {/* Header */}
       <header className="sc-market-header">
-        <a className="sc-market-brand" href="/code" aria-label="STEA Code home">
+        <a className="sc-market-brand" href="/code" aria-label="steacode home">
           <img src="/stea-apps/stea-code.png" alt="" width={34} height={34} />
-          <strong>STEA Code</strong>
+          <strong>steacode</strong>
         </a>
 
         <nav className="sc-market-nav" aria-label="Tools navigation">
@@ -58,7 +58,7 @@ export default function SteaCodeToolsPage() {
         <div className="sc-market-actions">
           <a href="/code" className="sc-tool-back-link">
             <ArrowLeft size={15} />
-            <span>STEA Code</span>
+            <span>steacode</span>
           </a>
         </div>
       </header>
@@ -78,9 +78,9 @@ export default function SteaCodeToolsPage() {
 
       {/* Footer */}
       <footer className="sc-market-footer">
-        <strong>STEA Code Tools</strong>
-        <nav aria-label="STEA Code footer">
-          <a href="/code">STEA Code</a>
+        <strong>steacode Tools</strong>
+        <nav aria-label="steacode footer">
+          <a href="/code">steacode</a>
           <a href="/tools">All Tools</a>
           <a href="/code">Components</a>
           <a href="/code">Changelog</a>

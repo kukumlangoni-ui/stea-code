@@ -141,8 +141,8 @@ export default function SteaCodePurchasesPage({
         <h1>{zh ? "我的开发库" : "My Library"}</h1>
         <p>
           {zh
-            ? "你拥有的 STEA Code 产品、代码与开发资源集中在这里。"
-            : "Your unlocked STEA Code products, source files, and developer resources."}
+            ? "你拥有的 steacode 产品、代码与开发资源集中在这里。"
+            : "Your unlocked steacode products, source files, and developer resources."}
         </p>
       </section>
 
@@ -212,7 +212,7 @@ export default function SteaCodePurchasesPage({
 
                     <h3>
                       {purchase.productSnapshot?.title ||
-                        (zh ? "STEA Code 产品" : "STEA Code Product")}
+                        (zh ? "steacode 产品" : "steacode Product")}
                     </h3>
 
                     <div className="sc-purchase-details">

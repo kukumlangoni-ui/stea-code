@@ -75,17 +75,17 @@ const CODE_ADMIN_NAV = [
  * The default route /admin redirects to /admin/products (Products first).
  */
 const CODE_ADMIN_TITLES = {
-  products: "Products — STEA Code Admin",
-  categories: "Categories — STEA Code Admin",
-  orders: "Orders — STEA Code Admin",
-  payments: "Payments — STEA Code Admin",
-  users: "Users — STEA Code Admin",
-  activity: "Activity — STEA Code Admin",
-  entitlements: "Entitlements — STEA Code Admin",
-  directory: "Developer Resources — STEA Code Admin",
-  hosting: "Hosting — STEA Code Admin",
-  inspiration: "Website Inspiration — STEA Code Admin",
-  legacy: "More / Legacy — STEA Code Admin",
+  products: "Products — steacode Admin",
+  categories: "Categories — steacode Admin",
+  orders: "Orders — steacode Admin",
+  payments: "Payments — steacode Admin",
+  users: "Users — steacode Admin",
+  activity: "Activity — steacode Admin",
+  entitlements: "Entitlements — steacode Admin",
+  directory: "Developer Resources — steacode Admin",
+  hosting: "Hosting — steacode Admin",
+  inspiration: "Website Inspiration — steacode Admin",
+  legacy: "More / Legacy — steacode Admin",
 };
 
 function applyTitle(title) {
@@ -119,7 +119,7 @@ function SteaCodeAdminAccessScreen({
   return (
     <div
       className="sca-admin-access-screen"
-      aria-label="STEA Code Admin access state"
+      aria-label="steacode Admin access state"
     >
       <div className="sca-admin-access-card">
         <div className="sca-admin-access-eyebrow">STEA CODE · STUDIO</div>
@@ -130,8 +130,8 @@ function SteaCodeAdminAccessScreen({
               ? "Your admin profile client read was denied. Server APIs remain authoritative. Use Retry or sign in with the official owner email."
               : "Your admin profile could not be loaded right now. No data was changed."
             : reason === "login"
-            ? "Sign in with your STEA Code admin account to open the Control Center."
-            : "This account does not have the code.view permission for STEA Code Studio."}
+            ? "Sign in with your steacode admin account to open the Control Center."
+            : "This account does not have the code.view permission for steacode Studio."}
         </p>
 
         <div className="sca-admin-access-stats">
@@ -217,9 +217,9 @@ function SteaCodeAdminTopbar({ user, isSuperAdmin, devPreview, onLogout, onRequi
           href={codePublicUrl}
           target="_blank"
           rel="noreferrer noopener"
-          title="Open public STEA Code"
+          title="Open public steacode"
         >
-          <ExternalLink size={14} /> Open STEA Code
+          <ExternalLink size={14} /> Open steacode
         </a>
 
         {devPreview ? (
@@ -271,7 +271,7 @@ function SteaCodeAdminTopbar({ user, isSuperAdmin, devPreview, onLogout, onRequi
 
 function SteaCodeAdminNav({ activeId, onSelect, baseRoute = "/admin" }) {
   return (
-    <nav className="sca-admin-nav" aria-label="STEA Code Admin sections">
+    <nav className="sca-admin-nav" aria-label="steacode Admin sections">
       {CODE_ADMIN_NAV.map((item) => {
         const Icon = item.icon;
         const active = activeId === item.id;
@@ -398,7 +398,7 @@ export default function SteaCodeAdminApp(props) {
     const next = deriveSectionFromPath(location.pathname);
     DEV_ADMIN_LOG("location.pathname=" + location.pathname + " section=" + next);
     setActiveSection(next);
-    applyTitle(CODE_ADMIN_TITLES[next] || "STEA Code Studio — Admin");
+    applyTitle(CODE_ADMIN_TITLES[next] || "steacode Studio — Admin");
   }, [location.pathname, baseRoute]);
 
   // Only after ALL hooks have executed may we return loading/access states.
@@ -470,7 +470,7 @@ export default function SteaCodeAdminApp(props) {
       navigate(target, { replace: false });
     }
     setActiveSection(id);
-    applyTitle(CODE_ADMIN_TITLES[id] || "STEA Code Studio — Admin");
+    applyTitle(CODE_ADMIN_TITLES[id] || "steacode Studio — Admin");
   };
 
   const Banner = profileError || usingStableFallback ? (

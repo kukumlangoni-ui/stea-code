@@ -10,8 +10,8 @@ export default function PrivacyPolicy() {
   return (
     <div style={{ minHeight: "100vh", background: "#05060a", color: "#e2e8f0", padding: "48px 20px 80px", fontFamily: "system-ui, -apple-system, sans-serif" }}>
       <SEO
-        title="Privacy Policy | STEA Africa & STEA Code"
-        description="Learn how STEA Africa and STEA Code collect, handle, and protect your personal data in accordance with GDPR, UK GDPR, and CCPA."
+        title="Privacy Policy | STEA Africa & steacode"
+        description="Learn how STEA Africa and steacode collect, handle, and protect your personal data in accordance with GDPR, UK GDPR, and CCPA."
       />
 
       <div style={{ maxWidth: 780, margin: "0 auto" }}>
@@ -44,7 +44,7 @@ export default function PrivacyPolicy() {
             <p>
               STEA Africa ("STEA", "we", "us", or "our") is dedicated to protecting your privacy and personal data.
               This Privacy Policy explains how we collect, process, and safeguard information when you use STEA Africa
-              (stea.africa), STEA Code (code.stea.africa), and related digital services.
+              (stea.africa), steacode (code.stea.africa), and related digital services.
             </p>
           </div>
 

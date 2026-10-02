@@ -1,5 +1,5 @@
 /* ======================================================================
- * STEA Code V2 Shell — single root component for /code.
+ * steacode V2 Shell — single root component for /code.
  *
  * 7-world router (plan/build/tools/ship/learn/inspire/monetize)
  *   - legacy 8 views silently redirect → new canonical view (URL updates once)
@@ -62,48 +62,48 @@ const LOADING = v2LoadingSnapshot();
 
 const SEO_TITLES = {
   home: {
-    en: "STEA Code — Developer Tools, Code, Hosting & Guides",
-    zhCN: "STEA Code — 全球开发者工具、代码、托管与指南",
+    en: "steacode — Developer Tools, Code, Hosting & Guides",
+    zhCN: "steacode — 全球开发者工具、代码、托管与指南",
   },
   plan: {
-    en: "Plan & Design Tools for Developers | STEA Code",
-    zhCN: "开发者规划与设计工具 | STEA Code",
+    en: "Plan & Design Tools for Developers | steacode",
+    zhCN: "开发者规划与设计工具 | steacode",
   },
   build: {
-    en: "Code Snippets & UI Components for Developers | STEA Code",
-    zhCN: "开发者代码片段与 UI 组件 | STEA Code",
+    en: "Code Snippets & UI Components for Developers | steacode",
+    zhCN: "开发者代码片段与 UI 组件 | steacode",
   },
   tools: {
-    en: "Developer Tools & Resources | STEA Code",
-    zhCN: "开发者工具与资源 | STEA Code",
+    en: "Developer Tools & Resources | steacode",
+    zhCN: "开发者工具与资源 | steacode",
   },
   ship: {
-    en: "Hosting & Deployment Tools for Developers | STEA Code",
-    zhCN: "网站托管与部署工具 | STEA Code",
+    en: "Hosting & Deployment Tools for Developers | steacode",
+    zhCN: "网站托管与部署工具 | steacode",
   },
   learn: {
-    en: "Developer Guides & Web Development Resources | STEA Code",
-    zhCN: "Web 开发指南与学习资源 | STEA Code",
+    en: "Developer Guides & Web Development Resources | steacode",
+    zhCN: "Web 开发指南与学习资源 | steacode",
   },
   inspire: {
-    en: "Website Design Inspiration & UI References | STEA Code",
-    zhCN: "网站设计灵感与 UI 参考 | STEA Code",
+    en: "Website Design Inspiration & UI References | steacode",
+    zhCN: "网站设计灵感与 UI 参考 | steacode",
   },
   monetize: {
-    en: "Website Monetization, Payments & SEO Tools | STEA Code",
-    zhCN: "网站变现、支付与 SEO 工具 | STEA Code",
+    en: "Website Monetization, Payments & SEO Tools | steacode",
+    zhCN: "网站变现、支付与 SEO 工具 | steacode",
   },
   checkout: {
-    en: "Checkout · STEA Code",
-    zhCN: "结账 · STEA Code",
+    en: "Checkout · steacode",
+    zhCN: "结账 · steacode",
   },
   "payment-return": {
-    en: "Payment Status · STEA Code",
-    zhCN: "付款状态 · STEA Code",
+    en: "Payment Status · steacode",
+    zhCN: "付款状态 · steacode",
   },
   purchases: {
-    en: "My Purchases · STEA Code",
-    zhCN: "我的购买 · STEA Code",
+    en: "My Purchases · steacode",
+    zhCN: "我的购买 · steacode",
   },
 };
 
@@ -159,7 +159,7 @@ export default function SteaCodeShellV2() {
   // SEO titles for commerce / home / worlds
   const seoKey = commerceView || (currentWorld || "home");
 
-  /* -------- STEA Code favicon -------------------------------------- */
+  /* -------- steacode favicon -------------------------------------- */
   useEffect(() => {
     let icon = document.querySelector('link[rel="icon"]');
 
@@ -323,7 +323,7 @@ export default function SteaCodeShellV2() {
         transition: { duration: 0.26, ease: "easeOut" },
       };
 
-  /* --------- STEA Code Member Gate (central provider for commerce views) --------- */
+  /* --------- steacode Member Gate (central provider for commerce views) --------- */
   const [memberGateOpen, setMemberGateOpen] = useState(false);
   const [memberGateAction, setMemberGateAction] = useState(null);
 

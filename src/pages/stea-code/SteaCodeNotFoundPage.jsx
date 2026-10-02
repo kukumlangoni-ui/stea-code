@@ -58,8 +58,8 @@ export default function SteaCodeNotFoundPage() {
   return (
     <div className="sc-404-page stea-code-app sc-v2 sc-market-home sc-v2-home">
       <SEO
-        title="404 — Page Not Found | STEA Code"
-        description="We couldn't find the page or component you were looking for on STEA Code."
+        title="404 — Page Not Found | steacode"
+        description="We couldn't find the page or component you were looking for on steacode."
       />
 
       {/* Top Header */}
@@ -67,16 +67,16 @@ export default function SteaCodeNotFoundPage() {
         <Link
           className="sc-topbar-logo"
           to={homeUrl}
-          aria-label="STEA Code home"
+          aria-label="steacode home"
         >
           <img
             src="/stea-apps/stea-code.png"
-            alt="STEA Code"
+            alt="steacode"
             className="sc-topbar-logo-img"
             width={36}
             height={36}
           />
-          <span>STEA Code</span>
+          <span>steacode</span>
         </Link>
 
         <nav className="sc-topbar-nav" aria-label="Marketplace navigation">
@@ -176,8 +176,8 @@ export default function SteaCodeNotFoundPage() {
           {/* BRAND COLUMN */}
           <div className="sc-footer-brand">
             <Link to={homeUrl} className="sc-footer-brand-logo">
-              <img src="/stea-apps/stea-code.png" alt="STEA Code" width={28} height={28} />
-              STEA Code
+              <img src="/stea-apps/stea-code.png" alt="steacode" width={28} height={28} />
+              steacode
             </Link>
             <p className="sc-footer-tagline">
               The home of premium code components for modern developers.
@@ -245,7 +245,7 @@ export default function SteaCodeNotFoundPage() {
 
         {/* BOTTOM ROW */}
         <div className="sc-footer-bottom">
-          <span>&copy; 2026 STEA Code. All rights reserved.</span>
+          <span>&copy; 2026 steacode. All rights reserved.</span>
           <span className="sc-footer-bottom-right">Made for developers &hearts;</span>
         </div>
 

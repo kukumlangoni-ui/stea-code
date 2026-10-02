@@ -397,7 +397,7 @@ export default function SteaCodePaymentReturnPage({
 
   const productTitle =
     order?.productSnapshot?.title ||
-    (zh ? "STEA Code 产品" : "STEA Code Product");
+    (zh ? "steacode 产品" : "steacode Product");
 
   return (
     <main className="sc-checkout-page sc-return-page sc-return-premium">
@@ -410,7 +410,7 @@ export default function SteaCodePaymentReturnPage({
         <a
           className="sc-checkout-brand"
           href="/code"
-          aria-label="STEA Code"
+          aria-label="steacode"
         >
           <span className="sc-checkout-brand-mark sc-checkout-brand-logo">
             <img
@@ -419,7 +419,7 @@ export default function SteaCodePaymentReturnPage({
               aria-hidden="true"
             />
           </span>
-          <strong>STEA Code</strong>
+          <strong>steacode</strong>
         </a>
 
         <span className="sc-checkout-secure">
@@ -690,7 +690,7 @@ export default function SteaCodePaymentReturnPage({
               className="sc-return-text-action"
               onClick={goBack}
             >
-              {zh ? "返回 STEA Code" : "Back to STEA Code"}
+              {zh ? "返回 steacode" : "Back to steacode"}
             </button>
           </section>
         )}

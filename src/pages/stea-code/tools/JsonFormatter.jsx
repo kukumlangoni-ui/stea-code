@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { AlertCircle, Check, CheckCircle2, Copy, FileCode2, Minimize2, Trash2 } from "lucide-react";
 
 const SAMPLE_JSON = `{
-  "product": "STEA Code",
+  "product": "steacode",
   "version": "1.0.0",
   "features": [
     "Components",

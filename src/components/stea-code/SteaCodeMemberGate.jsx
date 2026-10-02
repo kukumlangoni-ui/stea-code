@@ -1,5 +1,5 @@
 /* =============================================================
- * STEA Code — Dedicated Member Gate component
+ * steacode — Dedicated Member Gate component
  * Dark, premium, developer-focused. SAME Firebase / Google auth.
  * NOT the generic STEA AuthModal visual design.
  * ============================================================= */
@@ -28,7 +28,7 @@ import { getSteaCodeProduct, getSteaCodeProductPreview } from "../../services/st
 
 const I18N = {
   en: {
-    title: "Join STEA Code",
+    title: "Join steacode",
     subtitle: "Save your purchases and access them anywhere.",
     googleButton: "Continue with Google",
     connecting: "Connecting…",
@@ -51,7 +51,7 @@ const I18N = {
     signingIn: "Signing in…",
     signUpBtn: "Create account",
     signingUp: "Creating account…",
-    toggleToSignUp: "New to STEA Code?",
+    toggleToSignUp: "New to steacode?",
     toggleToSignUpLink: "Create an account",
     toggleToSignIn: "Already have an account?",
     toggleToSignInLink: "Sign in",
@@ -69,7 +69,7 @@ const I18N = {
     genericAuthError: "Something went wrong. Please try again.",
   },
   zhCN: {
-    title: "加入 STEA Code",
+    title: "加入 steacode",
     subtitle: "保存购买记录，随时随地访问。",
     googleButton: "使用 Google 继续",
     connecting: "正在连接…",
@@ -110,7 +110,7 @@ const I18N = {
     genericAuthError: "出错了，请重试。",
   },
   sw: {
-    title: "Join STEA Code",
+    title: "Join steacode",
     subtitle: "Save your purchases and access them anywhere.",
     googleButton: "Continue with Google",
     connecting: "Connecting…",
@@ -133,7 +133,7 @@ const I18N = {
     signingIn: "Signing in…",
     signUpBtn: "Create account",
     signingUp: "Creating account…",
-    toggleToSignUp: "New to STEA Code?",
+    toggleToSignUp: "New to steacode?",
     toggleToSignUpLink: "Create an account",
     toggleToSignIn: "Already have an account?",
     toggleToSignInLink: "Sign in",

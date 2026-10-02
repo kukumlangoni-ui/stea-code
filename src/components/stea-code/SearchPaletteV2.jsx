@@ -1,5 +1,5 @@
 /* ======================================================================
- * SearchPaletteV2 — ⌘K / Ctrl+K palette for STEA Code V2 (7 worlds).
+ * SearchPaletteV2 — ⌘K / Ctrl+K palette for steacode V2 (7 worlds).
  *
  * Groups: worlds (7) → group by section (Plan cats, Build categories,
  * Tools cats, Ship sections, Learn topics/types, Inspire groups,
@@ -137,7 +137,7 @@ export default function SearchPaletteV2({
   if (typeof document === "undefined" || !open) return null;
 
   return createPortal(
-    <div className="sc-v2pal" role="dialog" aria-modal="true" aria-label="Search STEA Code V2">
+    <div className="sc-v2pal" role="dialog" aria-modal="true" aria-label="Search steacode V2">
       <button className="sc-v2pal-bg" aria-label="Close search" onClick={onClose} />
       <div className="sc-v2pal-panel" role="region" aria-label="Search results">
         <div className="sc-v2pal-input-row">
@@ -149,7 +149,7 @@ export default function SearchPaletteV2({
             onChange={(e) => setQ(e.target.value)}
             onKeyDown={onKeyDown}
             placeholder="Search 7 developer worlds: Plan · Build · Tools · Ship · Learn · Inspire · Grow"
-            aria-label="Search STEA Code V2"
+            aria-label="Search steacode V2"
             autoComplete="off"
           />
           <button

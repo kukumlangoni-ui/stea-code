@@ -355,7 +355,7 @@ function GuideForm({ form, setForm, categories, onUpload, uploading, fileInputRe
     <div className="admin-v2-card">
       <div className="admin-v2-card-header">
         <h3 className="admin-v2-card-title">Add Guide, PDF, Video or Tech Note</h3>
-        <p className="admin-v2-card-subtitle">Publishes to STEA Code resources using the current STEA Code collections.</p>
+        <p className="admin-v2-card-subtitle">Publishes to steacode resources using the current steacode collections.</p>
       </div>
       <div style={{ padding: "0 20px 20px", display: "grid", gap: 14, maxWidth: 760 }}>
         <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 6 }}>
@@ -546,11 +546,11 @@ export default function SteaCodePage({ isSuperAdmin, devPreview = false, initial
     const payload = { ...data, updatedAt: serverTimestamp() };
     if (existingId) {
       await updateDoc(doc(db, collectionName, existingId), payload);
-      await createAuditLog("update_stea_code_content", collectionName, existingId, null, payload, "Admin updated STEA Code content");
+      await createAuditLog("update_stea_code_content", collectionName, existingId, null, payload, "Admin updated steacode content");
     } else {
       payload.createdAt = serverTimestamp();
       const created = await addDoc(collection(db, collectionName), payload);
-      await createAuditLog("create_stea_code_content", collectionName, created.id, null, payload, "Admin created STEA Code content");
+      await createAuditLog("create_stea_code_content", collectionName, created.id, null, payload, "Admin created steacode content");
     }
     setModal(null);
     await refreshData();
@@ -579,7 +579,7 @@ export default function SteaCodePage({ isSuperAdmin, devPreview = false, initial
     if (!deleteTarget) return;
     const db = getFirebaseDb();
     await deleteDoc(doc(db, deleteTarget.collectionName, deleteTarget.item.id));
-    await createAuditLog("delete_stea_code_content", deleteTarget.collectionName, deleteTarget.item.id, deleteTarget.item, null, "Delete this STEA Code resource?");
+    await createAuditLog("delete_stea_code_content", deleteTarget.collectionName, deleteTarget.item.id, deleteTarget.item, null, "Delete this steacode resource?");
     setDeleteTarget(null);
     await refreshData();
   };
@@ -633,14 +633,14 @@ export default function SteaCodePage({ isSuperAdmin, devPreview = false, initial
     }
 
     const created = await addDoc(collection(db, "stea_code_resources"), payload);
-    await createAuditLog("publish_stea_code_content", "stea_code_resources", created.id, null, payload, "Admin published STEA Code guide");
+    await createAuditLog("publish_stea_code_content", "stea_code_resources", created.id, null, payload, "Admin published steacode guide");
     if (isSuperAdmin) {
       await createAutomaticNotification({
         source: "stea_code",
         sourceId: created.id,
-        title: "New STEA Code content",
+        title: "New steacode content",
         message: guideForm.title,
-        type: "STEA Code",
+        type: "steacode",
         actionLink: "/daily",
       });
     }
@@ -693,7 +693,7 @@ export default function SteaCodePage({ isSuperAdmin, devPreview = false, initial
 
   return (
     <>
-      {!compactHeader && !hideInternalTabs && <AdminPageHeader title="STEA Code Product Studio" description="Manage canonical products, developer resources, hosting, website inspiration, categories, orders and entitlements." />}
+      {!compactHeader && !hideInternalTabs && <AdminPageHeader title="steacode Product Studio" description="Manage canonical products, developer resources, hosting, website inspiration, categories, orders and entitlements." />}
 
       {!hideInternalTabs && (
         <div className="admin-v2-tabs" style={{ marginBottom: 24, marginTop: 16, overflowX: "auto" }}>
@@ -702,7 +702,7 @@ export default function SteaCodePage({ isSuperAdmin, devPreview = false, initial
       )}
 
       {dedicatedAdmin && (
-        <div className="sca-admin-health" aria-label="STEA Code Admin health summary">
+        <div className="sca-admin-health" aria-label="steacode Admin health summary">
           <span>Products: <strong>{commerceCounts.products ?? "—"}</strong></span>
           <span>Resources: <strong>{directoryItems.length}</strong></span>
           <span>Hosting: <strong>{hostingItems.length}</strong></span>
@@ -716,7 +716,7 @@ export default function SteaCodePage({ isSuperAdmin, devPreview = false, initial
         <SteaCodeCommercePanel key={activeTab} isSuperAdmin={isSuperAdmin} initialTab={activeTab} embedded devPreview={devPreview} onCountsChange={setCommerceCounts} dedicatedAdmin={dedicatedAdmin} baseRoute={baseRoute} />
       )}
 
-      {!["products", "orders", "entitlements", "users", "payments"].includes(activeTab) && loading && <div className="admin-v2-card" style={{ padding: 20, color: "#6B7280" }}>Loading STEA Code resources...</div>}
+      {!["products", "orders", "entitlements", "users", "payments"].includes(activeTab) && loading && <div className="admin-v2-card" style={{ padding: 20, color: "#6B7280" }}>Loading steacode resources...</div>}
       {!["products", "orders", "entitlements", "users", "payments"].includes(activeTab) && Object.keys(loadErrors).length > 0 && (
         <div className="admin-v2-error">
           {Object.entries(loadErrors).map(([name, message]) => (
@@ -741,7 +741,7 @@ export default function SteaCodePage({ isSuperAdmin, devPreview = false, initial
             </div>
           </div>
           <div className="admin-v2-card">
-            <div className="admin-v2-card-header"><h3 className="admin-v2-card-title">Recent Content</h3><p className="admin-v2-card-subtitle">Recently created or edited STEA Code items.</p></div>
+            <div className="admin-v2-card-header"><h3 className="admin-v2-card-title">Recent Content</h3><p className="admin-v2-card-subtitle">Recently created or edited steacode items.</p></div>
             <div className="admin-v2-table-wrap">
               <table className="admin-v2-table"><tbody>{recent.map((item) => <tr key={`${item._source}-${item.id}`}><td><strong>{item.title || item.name}</strong><div style={{ color: "#6B7280", fontSize: 12 }}>{item._source}</div></td><td>{item.category || item.type || item.framework || ""}</td><td>{toBool(item.published) || item.status === "published" ? <Badge tone="green">Published</Badge> : <Badge tone="amber">Draft</Badge>}</td></tr>)}</tbody></table>
             </div>
@@ -752,7 +752,7 @@ export default function SteaCodePage({ isSuperAdmin, devPreview = false, initial
       {!loading && activeTab === "legacy-code" && (
         <AdminTable
           title="Code Library"
-          subtitle="Reusable snippets, components and effects for the public STEA Code page."
+          subtitle="Reusable snippets, components and effects for the public steacode page."
           items={codeItems}
           empty="No code resources yet. Create your first reusable component."
           addLabel="Add Code"
@@ -779,7 +779,7 @@ export default function SteaCodePage({ isSuperAdmin, devPreview = false, initial
       {!loading && activeTab === "legacy-existing" && (
         <AdminTable
           title="Existing Content"
-          subtitle="Legacy guides, PDFs, videos and resources still powering STEA Code."
+          subtitle="Legacy guides, PDFs, videos and resources still powering steacode."
           items={legacyItems}
           empty="No existing content found across legacy collections."
           addLabel="Add Guide"
@@ -798,7 +798,7 @@ export default function SteaCodePage({ isSuperAdmin, devPreview = false, initial
       {!loading && activeTab === "categories" && (
         <AdminTable
           title="Categories"
-          subtitle="Organize STEA Code products and developer resources."
+          subtitle="Organize steacode products and developer resources."
           items={activeCategories}
           empty="No categories found."
           addLabel="Add Category"
@@ -822,7 +822,7 @@ export default function SteaCodePage({ isSuperAdmin, devPreview = false, initial
 
       {deleteTarget && (
         <AdminConfirmationModal
-          title="Delete this STEA Code resource?"
+          title="Delete this steacode resource?"
           danger
           actionDescription={`This removes "${deleteTarget.item.title || deleteTarget.item.name}" from ${deleteTarget.collectionName}. Existing storage files will not be deleted.`}
           onClose={() => setDeleteTarget(null)}

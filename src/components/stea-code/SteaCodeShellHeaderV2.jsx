@@ -2,7 +2,7 @@
  * SteaCodeShellHeaderV2 — focused, quiet shell header for 7-world views.
  *
  * No giant 8-way nav:
- *   LEFT  : STEA Code logo + world eyebrow (04 / LEARN)
+ *   LEFT  : steacode logo + world eyebrow (04 / LEARN)
  *   RIGHT : Back home (← Home), Search (⌘K), Home icon, mobile menu
  *
  * Height 60-64px, translucent, tiny bottom border. No overflow.
@@ -37,11 +37,11 @@ export default function SteaCodeShellHeaderV2({ world, onHome, onOpenSearch, red
           className="sc-shell-brand sc-v2-brand"
           href="/code"
           onClick={goHome}
-          aria-label="STEA Code home"
+          aria-label="steacode home"
         >
           <img src="/stea-apps/stea-code.png" alt="" width="28" height="28" />
           <div className="sc-v2-brand-texts">
-            <strong>STEA Code</strong>
+            <strong>steacode</strong>
             {current && (
               <span
                 className="sc-v2-eyebrow"
@@ -58,7 +58,7 @@ export default function SteaCodeShellHeaderV2({ world, onHome, onOpenSearch, red
             href="/code"
             onClick={goHome}
             className="sc-shell-back"
-            aria-label="Back to STEA Code home"
+            aria-label="Back to steacode home"
           >
             <ArrowLeft size={14} aria-hidden="true" />
             <span>Home</span>
@@ -68,7 +68,7 @@ export default function SteaCodeShellHeaderV2({ world, onHome, onOpenSearch, red
             type="button"
             className="sc-icon-btn"
             onClick={doSearch}
-            aria-label="Search STEA Code (⌘K)"
+            aria-label="Search steacode (⌘K)"
             title="Search (⌘K / Ctrl+K)"
           >
             <Search size={16} aria-hidden="true" />
@@ -78,7 +78,7 @@ export default function SteaCodeShellHeaderV2({ world, onHome, onOpenSearch, red
             href="/code"
             onClick={goHome}
             className="sc-icon-btn"
-            aria-label="STEA Code home"
+            aria-label="steacode home"
             title="Home"
           >
             <Home size={16} aria-hidden="true" />
@@ -101,7 +101,7 @@ export default function SteaCodeShellHeaderV2({ world, onHome, onOpenSearch, red
         <nav id="sc-v2-mobile-nav" className="sc-mobile-menu" aria-label="Quick menu">
           <div className="sc-mobile-menu-inner">
             <a className="sc-mobile-link" href="/code" onClick={goHome}>
-              ← STEA Code Home
+              ← steacode Home
             </a>
             {V2_WORLDS.map((w) => (
               <a

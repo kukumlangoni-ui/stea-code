@@ -1,6 +1,6 @@
 import React from "react";
 
-export default function SteaCodeLogo({ size = 24, className = "", alt = "STEA Code" }) {
+export default function SteaCodeLogo({ size = 24, className = "", alt = "steacode" }) {
   return (
     <img
       src="/stea-code-logo.png"

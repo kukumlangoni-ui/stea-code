@@ -185,7 +185,7 @@ export default function SearchPalette({
   let flatIdx = -1;
 
   return createPortal(
-    <div className="sc-palette-shell" role="dialog" aria-modal="true" aria-label="Search STEA Code">
+    <div className="sc-palette-shell" role="dialog" aria-modal="true" aria-label="Search steacode">
       <button
         type="button"
         className="sc-palette-backdrop"

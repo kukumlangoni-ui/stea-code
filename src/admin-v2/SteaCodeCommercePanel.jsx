@@ -873,7 +873,7 @@ function PreviewStage(props) {
           <div className={`sc-studio-preview-stage ${preview.interactive ? "" : "is-passive"}`}>
             <iframe
               key={previewKey}
-              title="STEA Code Product Preview"
+              title="steacode Product Preview"
               sandbox="allow-scripts"
               srcDoc={previewDocument}
               onLoad={() => setIframeLoaded(true)}
@@ -934,7 +934,7 @@ function FullscreenPreview({ preview, previewDocument, previewKey, onClose, onRe
         <div className={`sc-studio-preview-stage ${preview.interactive ? "" : "is-passive"}`}>
           <iframe
             key={previewKey}
-            title="STEA Code Fullscreen Preview"
+            title="steacode Fullscreen Preview"
             sandbox="allow-scripts"
             srcDoc={previewDocument}
           />
@@ -1220,7 +1220,7 @@ export function ProductStudio({ product, onClose, onSaved, onCreated, onPublishe
     }, debounceMs);
   }, [preview.autoRun, preview.runtime]);
 
-  // Preview document builders are shared with the public STEA Code renderer
+  // Preview document builders are shared with the public steacode renderer
   // so Admin "Live Playground" behaviour is 1:1 with what customers see.
   const generatedPreviewDocument = useMemo(() => {
     return buildHtmlCssJsDoc({
@@ -1363,7 +1363,7 @@ export function ProductStudio({ product, onClose, onSaved, onCreated, onPublishe
       return;
     }
     if (devPreview) {
-      setError("Unable to save product: DEV_PREVIEW_ONLY. Sign in as a real admin to write STEA Code data.");
+      setError("Unable to save product: DEV_PREVIEW_ONLY. Sign in as a real admin to write steacode data.");
       return;
     }
 
@@ -1402,7 +1402,7 @@ export function ProductStudio({ product, onClose, onSaved, onCreated, onPublishe
     };
 
     // Diagnostic: verify previewSource has content before saving.
-    console.log("[STEA Code Save] previewSource:", {
+    console.log("[steacode Save] previewSource:", {
       htmlLen: previewSource.html.length,
       cssLen: previewSource.css.length,
       fullDocLen: previewSource.fullDocument.length,
@@ -1476,7 +1476,7 @@ export function ProductStudio({ product, onClose, onSaved, onCreated, onPublishe
         // serving the stale entry for up to 5 minutes.
         invalidateSteaCodeProductPreviewCache(realProductId);
       } catch (previewErr) {
-        console.error("[STEA Code Save] Preview save error:", {
+        console.error("[steacode Save] Preview save error:", {
           message: previewErr?.message,
           code: previewErr?.code,
           status: previewErr?.status,
@@ -1528,7 +1528,7 @@ export function ProductStudio({ product, onClose, onSaved, onCreated, onPublishe
         }
       }
     } catch (err) {
-      console.error("[STEA Code Save] Full error:", {
+      console.error("[steacode Save] Full error:", {
         message: err?.message,
         code: err?.code,
         status: err?.status,
@@ -1704,7 +1704,7 @@ export function ProductStudio({ product, onClose, onSaved, onCreated, onPublishe
               className="sc-studio-btn sc-studio-btn-primary"
               onClick={() => save("publish_homepage")}
               disabled={saving || !canPublish}
-              title={!canPublish ? `Missing requirements: ${publishValidation.missing.join(", ")}` : "Publish and place immediately in STEA Code storefront"}
+              title={!canPublish ? `Missing requirements: ${publishValidation.missing.join(", ")}` : "Publish and place immediately in steacode storefront"}
             >
               {saving ? <Loader2 size={14} className="sc-spin" /> : <Home size={14} />} Publish & Show on Homepage
             </button>
@@ -1975,7 +1975,7 @@ export function ProductStudio({ product, onClose, onSaved, onCreated, onPublishe
 
                         <label
                           className="sc-studio-toggle"
-                          title="Show on Homepage places this product in the STEA Code storefront"
+                          title="Show on Homepage places this product in the steacode storefront"
                         >
                           <input
                             type="checkbox"
@@ -1985,7 +1985,7 @@ export function ProductStudio({ product, onClose, onSaved, onCreated, onPublishe
                           <span>
                             <strong>Show on Homepage</strong>
                             <small style={{ display: "block", color: "rgba(148, 163, 184, 0.8)", fontSize: "10px", fontWeight: "normal" }}>
-                              Places product in the STEA Code storefront
+                              Places product in the steacode storefront
                             </small>
                           </span>
                         </label>
@@ -2007,7 +2007,7 @@ export function ProductStudio({ product, onClose, onSaved, onCreated, onPublishe
                         <strong>Publishing & Visibility Rules:</strong><br />
                         • <strong>Draft:</strong> Hides everywhere public.<br />
                         • <strong>Published:</strong> Makes the product publicly accessible via direct link or search/catalog.<br />
-                        • <strong>Show on Homepage:</strong> Places this product directly in the STEA Code storefront. Hidden keeps it live only by direct link or catalog search if published.<br />
+                        • <strong>Show on Homepage:</strong> Places this product directly in the steacode storefront. Hidden keeps it live only by direct link or catalog search if published.<br />
                         • <strong>Featured:</strong> Featured products appear first/trending/top slots in the storefront.
                       </div>
                     </div>
@@ -3468,7 +3468,7 @@ button { background: linear-gradient(180deg,#f5a623,#d48917); border:0;
                           className="sc-studio-btn sc-studio-btn-primary"
                           onClick={() => save("publish_homepage")}
                           disabled={saving || !canPublish}
-                          title={!canPublish ? `Missing: ${publishValidation.missing.join(", ")}` : "Publish and place immediately in STEA Code storefront"}
+                          title={!canPublish ? `Missing: ${publishValidation.missing.join(", ")}` : "Publish and place immediately in steacode storefront"}
                         >
                           {saving ? <Loader2 size={14} className="sc-spin" /> : <Home size={14} />}
                           Publish & Show on Homepage
@@ -3885,7 +3885,7 @@ export default function SteaCodeCommercePanel({ isSuperAdmin, initialTab = "prod
         entitlements: nextEntitlements,
       };
     } catch (err) {
-      setError(err?.message || "Could not load STEA Code commerce data.");
+      setError(err?.message || "Could not load steacode commerce data.");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -4237,7 +4237,7 @@ export default function SteaCodeCommercePanel({ isSuperAdmin, initialTab = "prod
       <div className="sc-admin-panel" style={{ padding: "32px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "20px" }}>
           <Loader2 className="sc-spin" size={20} color="#f5a623" />
-          <strong style={{ fontSize: "16px", color: "#ffffff" }}>Loading STEA Code Commerce Data…</strong>
+          <strong style={{ fontSize: "16px", color: "#ffffff" }}>Loading steacode Commerce Data…</strong>
         </div>
         <div className="sc-admin-skeleton-row" />
         <div className="sc-admin-skeleton-row" />
@@ -4270,7 +4270,7 @@ export default function SteaCodeCommercePanel({ isSuperAdmin, initialTab = "prod
             rel="noreferrer"
             className="admin-v2-btn-secondary"
           >
-            <Eye size={15} /> Open STEA Code
+            <Eye size={15} /> Open steacode
           </a>
           <button
             className="admin-v2-btn-secondary"

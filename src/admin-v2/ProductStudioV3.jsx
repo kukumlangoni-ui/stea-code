@@ -1325,7 +1325,7 @@ export function ProductStudioV3({
                     }}
                   >
                     <iframe
-                      title="STEA Code Product Preview"
+                      title="steacode Product Preview"
                       sandbox="allow-scripts"
                       srcDoc={previewDocument}
                       className="psv3-preview-iframe"
@@ -1657,7 +1657,7 @@ export function ProductStudioV3({
                 }}
               >
                 <iframe
-                  title="STEA Code Product Preview"
+                  title="steacode Product Preview"
                   sandbox="allow-scripts"
                   srcDoc={previewDocument}
                   className="psv3-preview-iframe"

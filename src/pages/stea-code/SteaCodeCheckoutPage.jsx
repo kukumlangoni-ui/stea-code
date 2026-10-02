@@ -155,12 +155,12 @@ export default function SteaCodeCheckoutPage({
         <a
           className="sc-checkout-brand"
           href="/code"
-          aria-label="STEA Code"
+          aria-label="steacode"
         >
           <span className="sc-checkout-brand-mark">
             S
           </span>
-          <strong>STEA Code</strong>
+          <strong>steacode</strong>
         </a>
 
         <span className="sc-checkout-secure">
@@ -180,8 +180,8 @@ export default function SteaCodeCheckoutPage({
         </h1>
         <p>
           {zh
-            ? "安全购买你的 STEA Code 数字开发产品。"
-            : "Secure payment for your STEA Code digital product."}
+            ? "安全购买你的 steacode 数字开发产品。"
+            : "Secure payment for your steacode digital product."}
         </p>
       </section>
 
@@ -230,7 +230,7 @@ export default function SteaCodeCheckoutPage({
             <div>
               <strong>
                 {order.productSnapshot?.title ||
-                  "STEA Code Product"}
+                  "steacode Product"}
               </strong>
 
               <span>

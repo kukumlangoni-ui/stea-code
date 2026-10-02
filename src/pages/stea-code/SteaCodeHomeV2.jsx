@@ -350,6 +350,14 @@ function EmailVerificationBanner({ user, tLocal, onToast }) {
   });
   const [verified, setVerified] = useState(() => Boolean(user?.emailVerified));
   const [sending, setSending] = useState(false);
+  const [rateLimited, setRateLimited] = useState(false);
+  const rateLimitTimerRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (rateLimitTimerRef.current) clearTimeout(rateLimitTimerRef.current);
+    };
+  }, []);
 
   // Sync when the auth user object changes (sign-in/out).
   useEffect(() => {
@@ -375,14 +383,44 @@ function EmailVerificationBanner({ user, tLocal, onToast }) {
   if (!isPasswordUser) return null;
 
   const resend = async () => {
-    if (sending) return;
+    if (sending || rateLimited) return;
     setSending(true);
     try {
       await sendEmailVerification(user);
-      onToast?.("success", tLocal({ en: `Verification email sent to ${user.email}`, zhCN: `验证邮件已发送至 ${user.email}` }));
+      onToast?.(
+        "success",
+        tLocal({
+          en: "Verification email sent. Check your inbox.",
+          zhCN: "验证邮件已发送，请检查收件箱。",
+        })
+      );
     } catch (err) {
-      console.warn("[STEA CODE] Resend verification failed:", err?.code || err?.message);
-      onToast?.("error", tLocal({ en: "Could not send verification email. Try again later.", zhCN: "验证邮件发送失败，请稍后再试。" }));
+      console.error("[STEA CODE] Resend verification failed:", err);
+      const isRateLimit =
+        err?.code === "auth/too-many-requests" ||
+        String(err?.message || "").includes("too-many-requests");
+      if (isRateLimit) {
+        setRateLimited(true);
+        if (rateLimitTimerRef.current) clearTimeout(rateLimitTimerRef.current);
+        rateLimitTimerRef.current = setTimeout(() => {
+          setRateLimited(false);
+        }, 5 * 60 * 1000);
+        onToast?.(
+          "error",
+          tLocal({
+            en: "Too many attempts. Please wait a few minutes and try again.",
+            zhCN: "尝试次数过多，请稍候几分钟再试。",
+          })
+        );
+      } else {
+        onToast?.(
+          "error",
+          tLocal({
+            en: "Couldn't send right now. Please try again later.",
+            zhCN: "暂时无法发送，请稍后再试。",
+          })
+        );
+      }
     } finally {
       setSending(false);
     }
@@ -403,17 +441,22 @@ function EmailVerificationBanner({ user, tLocal, onToast }) {
           {tLocal({ en: "Verify your email", zhCN: "验证你的邮箱" })}
         </strong>
         <span className="sc-email-verify-sub">
-          {tLocal({ en: "Unlock downloads and premium features", zhCN: "解锁下载和全部高级功能" })}
+          {tLocal({
+            en: "Verify your email to get product updates and receipts.",
+            zhCN: "验证你的邮箱以获取产品更新和收据。",
+          })}
         </span>
       </div>
       <button
         type="button"
         className="sc-email-verify-resend"
         onClick={resend}
-        disabled={sending}
+        disabled={sending || rateLimited}
       >
         {sending
           ? tLocal({ en: "Sending…", zhCN: "发送中…" })
+          : rateLimited
+          ? tLocal({ en: "Too many attempts…", zhCN: "尝试次数过多…" })
           : tLocal({ en: "Resend email", zhCN: "重新发送" })}
       </button>
       <button
@@ -861,7 +904,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
         setIsLoading(false);
       } catch (error) {
         console.error(
-          "[STEA Code] LIVE API LOAD FAILED — FALLING BACK TO SEED DATA!\n" +
+          "[steacode] LIVE API LOAD FAILED — FALLING BACK TO SEED DATA!\n" +
           "Error details:",
           error
         );
@@ -937,7 +980,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
       if (!isProductReady(product)) {
         const id = String(product.id || product.slug || "(unknown)");
         console.warn(
-          `[STEA Code] Hiding incomplete product from homepage grid: "${id}"`
+          `[steacode] Hiding incomplete product from homepage grid: "${id}"`
         );
         return false;
       }
@@ -1180,14 +1223,14 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
 
   // SEO meta for selected product
   const defaultCodeTitle = uiLocale === "zhCN"
-    ? "STEA Code — 开发者代码市场"
-    : "STEA Code — Developer Marketplace";
+    ? "steacode — 开发者代码市场"
+    : "steacode — Developer Marketplace";
   const defaultCodeDesc = uiLocale === "zhCN"
-    ? "STEA Code 开发者代码市场与实时交互预览。"
-    : "STEA Code — a marketplace for buying and selling code components.";
+    ? "steacode 开发者代码市场与实时交互预览。"
+    : "steacode — a marketplace for buying and selling code components.";
 
   const seoTitle = selected
-    ? `${String(selected.titleEn || selected.title || selected.titleZh || "").trim()} — STEA Code`
+    ? `${String(selected.titleEn || selected.title || selected.titleZh || "").trim()} — steacode`
     : defaultCodeTitle;
   const seoDescription = selected
     ? String(selected.shortDescriptionEn || selected.description || selected.shortDescriptionZh || "").trim()
@@ -1207,7 +1250,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
         ogImage={seoImage || undefined}
         ogUrl={seoUrl || undefined}
         type={selected ? "article" : "website"}
-        siteName="STEA Code"
+        siteName="steacode"
       />
     <div className="stea-code-app sc-v2 sc-market-home sc-v2-home sc-v2-has-liquid">
       <div className="sc-v2-liquid-wrap" aria-hidden="true"><PreviewErrorBoundary><SteaCodeLiquidHero theme="dark" /></PreviewErrorBoundary></div>
@@ -1217,7 +1260,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
         <a
           className="sc-topbar-logo"
           href="/code"
-          aria-label="STEA Code home"
+          aria-label="steacode home"
           onClick={(e) => {
             if (viewMode === "explore") {
               e.preventDefault();
@@ -1230,12 +1273,12 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
         >
           <img
             src="/stea-apps/stea-code.png"
-            alt="STEA Code"
+            alt="steacode"
             className="sc-topbar-logo-img"
             width={36}
             height={36}
           />
-          <span>STEA Code</span>
+          <span>steacode</span>
         </a>
 
         <nav className="sc-topbar-nav" aria-label="Marketplace navigation">
@@ -1292,7 +1335,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
             target="_blank"
             rel="noopener noreferrer"
             className="sc-topbar-community"
-            aria-label="Join the STEA Code community on Telegram"
+            aria-label="Join the steacode community on Telegram"
           >
             <span className="sc-topbar-community-icon">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -1714,7 +1757,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
                 ))}
               </div>
 
-              <div className="sc-trust-bar" role="status" aria-label="STEA Code stats">
+              <div className="sc-trust-bar" role="status" aria-label="steacode stats">
                 <div className="sc-trust-item">
                   <span className="sc-trust-value">{products.length || 94}+</span>
                   <span className="sc-trust-label">{uiLocale === "zhCN" ? "组件" : "Components"}</span>
@@ -1877,8 +1920,8 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
           {/* BRAND COLUMN */}
           <div className="sc-footer-brand">
             <a href="/code" className="sc-footer-brand-logo">
-              <img src="/stea-apps/stea-code.png" alt="STEA Code" width={28} height={28} />
-              STEA Code
+              <img src="/stea-apps/stea-code.png" alt="steacode" width={28} height={28} />
+              steacode
             </a>
             <p className="sc-footer-tagline">
               The home of premium code components for modern developers.
@@ -1952,7 +1995,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
 
         {/* BOTTOM ROW */}
         <div className="sc-footer-bottom">
-          <span>&copy; 2026 STEA Code. All rights reserved.</span>
+          <span>&copy; 2026 steacode. All rights reserved.</span>
           <span className="sc-footer-bottom-right">Made for developers &hearts;</span>
         </div>
 
@@ -2061,7 +2104,7 @@ function MobileMenu({
   const photoURL = user?.photoURL;
 
   return (
-    <div className="sc-market-drawer" role="dialog" aria-modal="true" aria-label="STEA Code menu">
+    <div className="sc-market-drawer" role="dialog" aria-modal="true" aria-label="steacode menu">
       <button className="sc-market-drawer-bg" onClick={onClose} aria-label="Close menu" />
       <section className="sc-market-drawer-panel">
 
@@ -2069,7 +2112,7 @@ function MobileMenu({
         <header className="sc-drawer-topbar">
           <span className="sc-drawer-brand">
             <span className="sc-drawer-brand-mark">&lt;/&gt;</span>
-            <span className="sc-drawer-brand-name">STEA Code</span>
+            <span className="sc-drawer-brand-name">steacode</span>
           </span>
           <button
             type="button"
@@ -2338,7 +2381,7 @@ function CodeProductCard({ product, tLocal, onOpen, isFavorited, onToggleFavorit
   const price = formatPrice(product);
 
   // Dynamic aspect ratio from admin-configured design canvas dimensions.
-  // Falls back to 640×480 (4:3 — STEA Code standard card canvas) if not set.
+  // Falls back to 640×480 (4:3 — steacode standard card canvas) if not set.
   const designW = Number(product?.designWidth)  || 640;
   const designH = Number(product?.designHeight) || 480;
   const previewAspect = `${designW} / ${designH}`;
@@ -2354,7 +2397,7 @@ function CodeProductCard({ product, tLocal, onOpen, isFavorited, onToggleFavorit
     : { scale: 0.985, transition: { duration: 0.12 } };
 
   const openModal = useCallback(() => {
-    console.log("[STEA Code] Card clicked, opening modal for:", productId);
+    console.log("[steacode] Card clicked, opening modal for:", productId);
     if (typeof onOpen === "function") onOpen();
   }, [onOpen, productId]);
 
@@ -3341,7 +3384,7 @@ ${file.content}`
 
     doc.setFont("helvetica", "bold");
     doc.setFontSize(12);
-    doc.text("STEA Code", margin, y);
+    doc.text("steacode", margin, y);
     y += 36;
 
     doc.setFontSize(24);
@@ -3416,7 +3459,7 @@ ${file.content}`
 
     heading("Need more help?", 15);
     paragraph(
-      "Visit STEA Code Developer Guides for free tutorials, setup help and developer resources."
+      "Visit steacode Developer Guides for free tutorials, setup help and developer resources."
     );
 
     heading("License", 15);
