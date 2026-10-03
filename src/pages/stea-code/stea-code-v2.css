@@ -15550,3 +15550,55 @@ header,
 .sc-code-card__preview-wrap {
   overflow: hidden !important;
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   steacode wordmark — premium treatment (appended override)
+   Overrides .sc-v2-brand-texts strong at line 52 (15px).
+   ═══════════════════════════════════════════════════════════════════ */
+.sc-v2-brand-texts strong {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  color: #ffffff;
+  display: inline-block;
+  transform: translateY(-1px);
+  font-feature-settings: "ss01" on, "cv01" on;
+}
+
+/* Eyebrow sits under a bigger wordmark — size it so it feels deliberate */
+.sc-v2-brand-texts .sc-v2-eyebrow {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-top: 4px;
+  opacity: 0.72;
+}
+
+/* Gap between the icon and the wordmark */
+.sc-shell-brand.sc-v2-brand {
+  gap: 12px;
+}
+
+/* Icon scales up so it doesn't look small next to the wordmark */
+.sc-shell-brand.sc-v2-brand img {
+  width: 32px;
+  height: 32px;
+}
+
+/* Mobile — proportional scale-down so the header stays clean */
+@media (max-width: 720px) {
+  .sc-v2-brand-texts strong {
+    font-size: 20px;
+    letter-spacing: -0.035em;
+  }
+  .sc-v2-brand-texts .sc-v2-eyebrow {
+    font-size: 10px;
+    letter-spacing: 0.07em;
+  }
+  .sc-shell-brand.sc-v2-brand img {
+    width: 28px;
+    height: 28px;
+  }
+}
