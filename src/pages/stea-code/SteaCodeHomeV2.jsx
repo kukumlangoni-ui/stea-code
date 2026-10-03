@@ -49,6 +49,7 @@ import {
   makePurchasesAction,
   setSteaCodePendingAction } from "../../services/steaCodeResumeAction.js";
 import { getFirebaseAuth } from "../../firebase.js";
+import { startActivityTracking } from "../../services/userActivity.js";
 import {
   downloadSteaCodeSource,
   getSteaCodeCatalog,
@@ -655,6 +656,13 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
     });
     return () => unsub();
   }, []);
+
+  // Start/stop user activity tracking along with auth state
+  useEffect(() => {
+    if (!localAuthUser) return undefined;
+    const stopTracking = startActivityTracking(localAuthUser);
+    return () => stopTracking();
+  }, [localAuthUser]);
 
   const effectiveUser = user !== undefined ? user : localAuthUser;
   const signedInEmail = (effectiveUser?.email || "").trim();

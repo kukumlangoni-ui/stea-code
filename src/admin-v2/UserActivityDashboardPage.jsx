@@ -15,6 +15,7 @@ import {
   UserCheck,
   UserX,
   Users,
+  Zap,
 } from "lucide-react";
 import {
   db,
@@ -68,6 +69,32 @@ function formatTimestamp(ts) {
   return String(ts);
 }
 
+function formatRelativeTime(ts) {
+  if (!ts) return "—";
+  try {
+    let date;
+    if (ts?.toDate && typeof ts.toDate === "function") {
+      date = ts.toDate();
+    } else if (typeof ts === "number") {
+      date = new Date(ts);
+    } else if (typeof ts === "string") {
+      date = new Date(ts);
+    } else {
+      return "—";
+    }
+    const diffMs = Date.now() - date.getTime();
+    const diffSec = Math.floor(diffMs / 1000);
+    if (diffSec < 30) return "just now";
+    if (diffSec < 60) return `${diffSec} sec ago`;
+    const diffMin = Math.floor(diffSec / 60);
+    if (diffMin < 60) return `${diffMin} min ago`;
+    const diffHr = Math.floor(diffMin / 60);
+    return `${diffHr} hr ago`;
+  } catch {
+    return "—";
+  }
+}
+
 export default function UserActivityDashboardPage({ isSuperAdmin, devPreview, baseRoute }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -84,6 +111,8 @@ export default function UserActivityDashboardPage({ isSuperAdmin, devPreview, ba
 
   const [topProducts, setTopProducts] = useState([]);
   const [recentEvents, setRecentEvents] = useState([]);
+  const [activeUsers, setActiveUsers] = useState([]);
+  const [activeUpdatedAt, setActiveUpdatedAt] = useState(null);
 
   const loadDashboardData = useCallback(async () => {
     setLoading(true);
@@ -214,9 +243,43 @@ export default function UserActivityDashboardPage({ isSuperAdmin, devPreview, ba
     }
   }, []);
 
+  // ── Active users (last 15 min) ────────────────────────────────────
+  const loadActiveUsers = useCallback(async () => {
+    const firestoreDb = getFirebaseDb() || db;
+    if (!firestoreDb) return;
+    try {
+      const cutoff = new Date(Date.now() - 15 * 60 * 1000);
+      const q = query(
+        collection(firestoreDb, "users"),
+        where("lastActive", ">", cutoff),
+        orderBy("lastActive", "desc")
+      );
+      const snap = await getDocs(q);
+      const users = snap.docs.map((d) => {
+        const data = d.data();
+        return {
+          id: d.id,
+          email: data.email || "—",
+          lastPath: data.lastPath || "/",
+          lastActive: data.lastActive || null,
+        };
+      });
+      setActiveUsers(users);
+      setActiveUpdatedAt(new Date());
+    } catch (err) {
+      console.warn("[ActivityDashboard] activeUsers query error:", err);
+      // Index may not exist yet — that's fine, show empty
+      setActiveUsers([]);
+    }
+  }, []);
+
   useEffect(() => {
     loadDashboardData();
-  }, [loadDashboardData]);
+    loadActiveUsers();
+    // Refresh active users every 60 seconds
+    const intervalId = setInterval(loadActiveUsers, 60 * 1000);
+    return () => clearInterval(intervalId);
+  }, [loadDashboardData, loadActiveUsers]);
 
   return (
     <div className="sc-activity-page">
@@ -294,6 +357,57 @@ export default function UserActivityDashboardPage({ isSuperAdmin, devPreview, ba
           </div>
         </div>
       )}
+
+      {/* Active Now Section */}
+      <section className="sc-activity-section sc-active-now-section">
+        <div className="sc-activity-section-head">
+          <div className="sc-activity-section-title-wrap">
+            <Zap size={18} className="sc-activity-zap" />
+            <h2 className="sc-activity-section-title">Active now</h2>
+            <span className="sc-active-now-count">
+              {activeUsers.length} {activeUsers.length === 1 ? "user" : "users"} active in the last 15 minutes
+            </span>
+          </div>
+          {activeUpdatedAt && (
+            <span className="sc-activity-section-badge">
+              Updated {activeUpdatedAt.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}
+            </span>
+          )}
+        </div>
+
+        <div className="sc-activity-table-wrap">
+          {activeUsers.length === 0 ? (
+            <div className="sc-activity-empty">
+              No users active in the last 15 minutes.
+            </div>
+          ) : (
+            <table className="sc-activity-table">
+              <thead>
+                <tr>
+                  <th>Email</th>
+                  <th>Current page</th>
+                  <th style={{ width: "140px", textAlign: "right" }}>Last seen</th>
+                </tr>
+              </thead>
+              <tbody>
+                {activeUsers.map((u) => (
+                  <tr key={u.id}>
+                    <td className="sc-activity-email-cell">
+                      <span>{u.email}</span>
+                    </td>
+                    <td>
+                      <code>{u.lastPath}</code>
+                    </td>
+                    <td className="sc-activity-time-cell" style={{ textAlign: "right" }}>
+                      {formatRelativeTime(u.lastActive)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </section>
 
       {/* Metrics Cards Grid */}
       <div className="sc-activity-grid">
@@ -875,6 +989,20 @@ export default function UserActivityDashboardPage({ isSuperAdmin, devPreview, ba
           text-align: center;
           color: rgba(255, 255, 255, 0.45);
           font-size: 13px;
+        }
+
+        /* Active now section */
+        .sc-active-now-section {
+          margin-bottom: 24px;
+        }
+
+        .sc-activity-zap { color: #4ade80; }
+
+        .sc-active-now-count {
+          font-size: 12px;
+          color: rgba(255, 255, 255, 0.55);
+          font-weight: 500;
+          margin-left: 4px;
         }
       `}</style>
     </div>
