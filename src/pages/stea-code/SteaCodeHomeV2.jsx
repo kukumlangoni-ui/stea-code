@@ -160,7 +160,8 @@ const CATEGORY_LABELS = {
   "Page Transitions": { en: "Page Transitions", zhCN: "页面转场" },
   Components: { en: "Components", zhCN: "组件" },
   Portfolio: { en: "Portfolio", zhCN: "作品集" },
-  "Toggle Switches": { en: "Toggle Switches", zhCN: "切换开关" } };
+  "Toggle Switches": { en: "Toggle Switches", zhCN: "切换开关" },
+  "Inputs": { en: "Inputs", zhCN: "输入框" } };
 
 const BROWSE_CATEGORIES = [
   "Animations",
@@ -1792,7 +1793,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
 
               {/* Category filter pills — own row below heading */}
               <div className="sc-homepage-pill-row" role="tablist" aria-label="Product categories">
-                {["All", "Buttons", "Cards", "Forms", "Text Animations", "Animations", "Backgrounds", "Loaders", "Navigation", "Portfolio", "Toggle Switches"].map((cat) => (
+                {["All", "Buttons", "Cards", "Forms", "Text Animations", "Animations", "Backgrounds", "Loaders", "Navigation", "Portfolio", "Toggle Switches", "Inputs"].map((cat) => (
                   <button
                     key={cat}
                     type="button"
