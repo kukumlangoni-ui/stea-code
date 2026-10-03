@@ -12,8 +12,10 @@
 import { corsHeaders, isPreflight, preflightResponse } from "./cors";
 import { handleCatalog, handleProduct } from "./routes/catalog";
 import { handlePreview, handleFreeContent, handleContent } from "./routes/content";
+import { handleCheckout } from "./routes/checkout";
 import { handleDownload } from "./routes/download";
 import { handleMedia, handleMediaUpload } from "./routes/media";
+import { handleStripeWebhook } from "./routes/stripe-webhook";
 import {
   handleRecordView,
   handleRecordCopy,
@@ -163,6 +165,16 @@ export default {
       const copyMatch = apiPath.match(/^\/stea-code\/products\/([^/]+)\/copy$/);
       if (copyMatch && method === "POST") {
         return handleRecordCopy(request, env, copyMatch[1]);
+      }
+
+      // Stripe checkout (auth required)
+      if (apiPath === "/stea-code/checkout" && method === "POST") {
+        return handleCheckout(request, env);
+      }
+
+      // Stripe webhook
+      if (apiPath === "/stea-code/stripe-webhook" && method === "POST") {
+        return handleStripeWebhook(request, env);
       }
 
       // Favorites — list (auth required)

@@ -794,13 +794,34 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
     };
   }, [accountMenuOpen]);
 
-  const handleGoUnlimited = (e) => {
+  const handleGoUnlimited = async (e) => {
     if (e) { e.preventDefault(); e.stopPropagation(); }
     if (goUnlimitedPulse) return; // ignore mid-animation clicks
+
+    const auth = getFirebaseAuth();
+    if (!auth?.currentUser) {
+      window.dispatchEvent(new Event("open-auth"));
+      return;
+    }
+
     setGoUnlimitedPulse(true);
-    setGoUnlimitedToast(true);
-    setTimeout(() => setGoUnlimitedPulse(false), 1200);
-    setTimeout(() => setGoUnlimitedToast(false), 2600);
+    try {
+      const token = await auth.currentUser.getIdToken();
+      const res = await fetch("/api/stea-code/checkout", {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
+        body: "{}",
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Checkout failed");
+      window.location.href = data.url;
+    } catch (err) {
+      setGoUnlimitedToast(true);
+      setTimeout(() => setGoUnlimitedToast(false), 2600);
+      alert(err.message || "Checkout failed");
+    } finally {
+      setTimeout(() => setGoUnlimitedPulse(false), 1200);
+    }
   };
 
   const handleSignOut = async (e) => {
@@ -1408,15 +1429,15 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
               type="button"
               className={`sc-go-unlimited-btn ${goUnlimitedPulse ? "is-pulsing" : ""}`}
               onClick={handleGoUnlimited}
-              aria-label="Go Unlimited — subscription plans coming soon"
+              aria-label="Get Lifetime Access — €29"
             >
               <span className="sc-go-unlimited-shine" aria-hidden="true" />
-              <span className="sc-go-unlimited-label">Go Unlimited</span>
+              <span className="sc-go-unlimited-label">Get Lifetime Access — €29</span>
             </button>
             {goUnlimitedToast && (
               <div className="sc-go-unlimited-toast" role="status">
                 <span className="sc-go-unlimited-toast-dot" aria-hidden="true" />
-                <span className="sc-go-unlimited-toast-text">Plans launching soon</span>
+                <span className="sc-go-unlimited-toast-text">Something went wrong</span>
               </div>
             )}
           </div>
@@ -2184,8 +2205,8 @@ function MobileMenu({
           onClick={() => { onClose(); onGoUnlimited?.(); }}
         >
           <span className="sc-drawer-unlimited-shine" aria-hidden="true" />
-          <span className="sc-drawer-unlimited-label">Go Unlimited</span>
-          <span className="sc-drawer-unlimited-badge">SOON</span>
+          <span className="sc-drawer-unlimited-label">Get Lifetime Access — €29</span>
+          <span className="sc-drawer-unlimited-badge">€29</span>
         </button>
 
         {/* ---- Main navigation ---- */}
