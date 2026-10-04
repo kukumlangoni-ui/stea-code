@@ -22,6 +22,10 @@ export default function SteaCodeUnlockModal({ product, onClose, onPurchased }) {
   const sweepTimerRef = useRef(null);
   const sweepActiveRef = useRef(false);
   const userInteractedRef = useRef(false);
+  const secondaryBtnRef = useRef(null);
+  const secondarySweepTimerRef = useRef(null);
+  const secondarySweepActiveRef = useRef(false);
+  const secondaryUserInteractedRef = useRef(false);
 
   const productTitle =
     (product?.titleEn && String(product.titleEn).trim()) ||
@@ -85,6 +89,57 @@ export default function SteaCodeUnlockModal({ product, onClose, onPurchased }) {
     return () => {
       clearTimeout(initialDelay);
       if (sweepTimerRef.current) clearInterval(sweepTimerRef.current);
+      btn.removeEventListener("pointerenter", stopAutoplay);
+      btn.removeEventListener("pointerdown", stopAutoplay);
+      btn.removeEventListener("focus", stopAutoplay);
+      btn.removeEventListener("keydown", stopAutoplay);
+    };
+  }, [reduceMotion]);
+
+  // --- Secondary button autoplay sweep (staggered from primary) ---
+  useEffect(() => {
+    const btn = secondaryBtnRef.current;
+    if (!btn || reduceMotion) return;
+
+    const doSweep = () => {
+      if (secondaryUserInteractedRef.current) return;
+      btn.classList.add("is-sweeping");
+      secondarySweepActiveRef.current = true;
+      setTimeout(() => {
+        btn.classList.remove("is-sweeping");
+        secondarySweepActiveRef.current = false;
+      }, 900);
+    };
+
+    // Offset start (1900ms vs primary's 600ms) so they never sweep in sync
+    const initialDelay = setTimeout(() => {
+      doSweep();
+      secondarySweepTimerRef.current = setInterval(() => {
+        if (!secondaryUserInteractedRef.current) doSweep();
+      }, 2600);
+    }, 1900);
+
+    const stopAutoplay = () => {
+      if (secondaryUserInteractedRef.current) return;
+      secondaryUserInteractedRef.current = true;
+      if (secondarySweepTimerRef.current) {
+        clearInterval(secondarySweepTimerRef.current);
+        secondarySweepTimerRef.current = null;
+      }
+      if (secondarySweepActiveRef.current) {
+        btn.classList.remove("is-sweeping");
+        secondarySweepActiveRef.current = false;
+      }
+    };
+
+    btn.addEventListener("pointerenter", stopAutoplay, { once: true });
+    btn.addEventListener("pointerdown", stopAutoplay, { once: true });
+    btn.addEventListener("focus", stopAutoplay, { once: true });
+    btn.addEventListener("keydown", stopAutoplay, { once: true });
+
+    return () => {
+      clearTimeout(initialDelay);
+      if (secondarySweepTimerRef.current) clearInterval(secondarySweepTimerRef.current);
       btn.removeEventListener("pointerenter", stopAutoplay);
       btn.removeEventListener("pointerdown", stopAutoplay);
       btn.removeEventListener("focus", stopAutoplay);
@@ -256,10 +311,11 @@ export default function SteaCodeUnlockModal({ product, onClose, onPurchased }) {
             <span>or</span>
           </div>
 
-          {/* Secondary CTA — gold outline */}
+          {/* Secondary CTA — glossy cyan-blue gradient */}
           <button
+            ref={secondaryBtnRef}
             type="button"
-            className="sc-unlock-btn sc-unlock-btn--secondary"
+            className="sc-unlock-modal__secondary"
             onClick={handleBuyPro}
             disabled={isLoading}
           >
