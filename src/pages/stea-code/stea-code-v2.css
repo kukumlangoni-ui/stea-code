@@ -15753,3 +15753,206 @@ header,
 .sc-unlock-dismiss:hover:not(:disabled) {
   color: rgba(255, 255, 255, 0.75);
 }
+
+/* ==========================================================
+   Premium unlock modal — rebuild v2
+   ========================================================== */
+
+/* Z-index: must be ABOVE the product modal (2147483000) */
+.sc-unlock-modal {
+  z-index: 2147483646 !important;
+}
+
+/* Brand row: logo + wordmark */
+.sc-unlock-brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+.sc-unlock-brand-word {
+  font-family: "Inter", system-ui, -apple-system, sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: -0.02em;
+}
+
+/* Title — more prominent */
+.sc-unlock-title {
+  text-align: center;
+  font-size: 24px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 8px;
+  letter-spacing: -0.02em;
+}
+
+/* Body copy */
+.sc-unlock-body {
+  text-align: center;
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.55);
+  margin: 0 auto 22px;
+  max-width: 360px;
+  line-height: 1.5;
+}
+
+/* "You get" checklist */
+.sc-unlock-perks {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 26px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.sc-unlock-perks li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.65);
+  line-height: 1.4;
+}
+.sc-unlock-check {
+  flex-shrink: 0;
+  color: #34d399;
+}
+
+/* Subcopy under CTAs */
+.sc-unlock-subcopy {
+  text-align: center;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.5);
+  margin: 10px 0 0;
+  line-height: 1.4;
+}
+.sc-unlock-subcopy--muted {
+  color: rgba(255, 255, 255, 0.38);
+}
+
+/* Divider with "or" */
+.sc-unlock-divider {
+  display: flex;
+  align-items: center;
+  margin: 24px 0;
+}
+.sc-unlock-divider::before,
+.sc-unlock-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.1);
+}
+.sc-unlock-divider span {
+  padding: 0 14px;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.35);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* Secondary button — gold outline */
+.sc-unlock-btn--secondary {
+  width: 100%;
+  border: 1.5px solid #f09f33;
+  background: transparent;
+  color: #f09f33;
+}
+.sc-unlock-btn--secondary:hover:not(:disabled) {
+  background: rgba(240, 159, 51, 0.08);
+  color: #ffb84d;
+}
+
+/* ==========================================================
+   Prismatic Unlock Button (primary CTA)
+   ========================================================== */
+
+.sc-unlock-modal__primary {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.1em 1rem;
+  cursor: pointer;
+  gap: 0.5rem;
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #fff;
+  border: none;
+  border-radius: 30px;
+  text-shadow: 2px 2px 3px rgb(136 0 136 / 50%);
+  background: linear-gradient(
+    15deg,
+    #880088,
+    #aa2068,
+    #cc3f47,
+    #de6f3d,
+    #f09f33,
+    #de6f3d,
+    #cc3f47,
+    #aa2068,
+    #880088
+  ) no-repeat;
+  background-size: 300%;
+  background-position: left center;
+  box-shadow: 0 30px 10px -20px rgba(0, 0, 0, 0.35);
+  transition: background-size 0.3s ease, background-position 0.3s ease, transform 0.15s ease;
+}
+
+.sc-unlock-modal__primary:focus-visible {
+  outline: 2px solid #f09f33;
+  outline-offset: 3px;
+}
+
+.sc-unlock-modal__primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.sc-unlock-modal__primary svg {
+  width: 22px;
+  height: auto;
+  fill: #f09f33;
+  transition: fill 0.3s ease;
+  flex-shrink: 0;
+  pointer-events: none;
+}
+
+.sc-unlock-modal__primary:hover:not(:disabled) {
+  background-size: 320%;
+  background-position: right center;
+}
+
+.sc-unlock-modal__primary:hover:not(:disabled) svg {
+  fill: #fff;
+}
+
+/* Autoplay sweep — same visual as hover, driven by class toggle */
+.sc-unlock-modal__primary.is-sweeping {
+  background-size: 320%;
+  background-position: right center;
+}
+.sc-unlock-modal__primary.is-sweeping svg {
+  fill: #fff;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sc-unlock-modal__primary,
+  .sc-unlock-modal__primary svg {
+    transition: none !important;
+  }
+  .sc-unlock-modal__primary:hover:not(:disabled),
+  .sc-unlock-modal__primary.is-sweeping {
+    background-size: 300%;
+    background-position: left center;
+  }
+  .sc-unlock-modal__primary:hover:not(:disabled) svg,
+  .sc-unlock-modal__primary.is-sweeping svg {
+    fill: #f09f33;
+  }
+}
