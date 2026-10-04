@@ -16117,3 +16117,57 @@ header,
     background-position: left top;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   Header CTA gradient — forced override.
+   DIAGNOSIS: three earlier rules (lines 14190, 15307, 15313) use
+   !important on background/border/box-shadow/color. The previous
+   override at line 16038 had zero !important, so it lost on every
+   property. This block:
+     1. Uses doubled class selector (0,2,0 specificity) to beat :hover
+     2. Uses !important on every contested property to match the originals
+   ═══════════════════════════════════════════════════════════════════ */
+.sc-go-unlimited-btn.sc-go-unlimited-btn {
+  --btn-bg-1: hsla(194 100% 69% / 1);
+  --btn-bg-2: hsla(217 100% 56% / 1);
+
+  color: #fff !important;
+  border: none !important;
+  background-image: linear-gradient(
+    325deg,
+    var(--btn-bg-2) 0%,
+    var(--btn-bg-1) 55%,
+    var(--btn-bg-2) 90%
+  ) !important;
+  background-size: 280% auto !important;
+  background-position: left top !important;
+  background-repeat: no-repeat !important;
+  box-shadow:
+    0px 0px 14px rgba(71, 184, 255, 0.35),
+    0px 3px 3px -1px rgba(58, 125, 233, 0.2),
+    inset 3px 3px 6px rgba(175, 230, 255, 0.4),
+    inset -3px -3px 6px rgba(19, 95, 216, 0.28) !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.15px !important;
+}
+
+.sc-go-unlimited-btn.sc-go-unlimited-btn:hover:not(:disabled),
+.sc-go-unlimited-btn.sc-go-unlimited-btn.is-sweeping {
+  background-position: right top !important;
+}
+
+.sc-go-unlimited-btn.sc-go-unlimited-btn:is(:focus-visible, :active):not(:disabled) {
+  box-shadow:
+    0 0 0 2px #fff,
+    0 0 0 4px hsla(217 100% 56% / 1),
+    0px 0px 14px rgba(71, 184, 255, 0.35),
+    inset 3px 3px 6px rgba(175, 230, 255, 0.4),
+    inset -3px -3px 6px rgba(19, 95, 216, 0.28) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sc-go-unlimited-btn.sc-go-unlimited-btn:hover:not(:disabled),
+  .sc-go-unlimited-btn.sc-go-unlimited-btn.is-sweeping {
+    background-position: left top !important;
+  }
+}
