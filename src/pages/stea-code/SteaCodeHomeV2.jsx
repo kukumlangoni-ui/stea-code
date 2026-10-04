@@ -4618,37 +4618,47 @@ ${file.content}`
             <div className="sc-product-action-box is-premium">
               <div className="sc-product-action-copy">
                 <span className="sc-product-action-icon">
-                  <Lock size={18} />
+                  {hasAccess ? <Check size={18} /> : <Lock size={18} />}
                 </span>
 
                 <div>
                   <strong>
-                    {tLocal({
-                      en: "Premium source code",
-                      zhCN: "高级源代码" })}
+                    {hasAccess
+                      ? tLocal({
+                          en: "Premium source code — unlocked",
+                          zhCN: "高级源代码 — 已解锁" })
+                      : tLocal({
+                          en: "Premium source code",
+                          zhCN: "高级源代码" })}
                   </strong>
 
                   <small>
-                    {tLocal({
-                      en: "Unlock the complete code package after purchase.",
-                      zhCN: "购买后解锁完整代码包。" })}
+                    {hasAccess
+                      ? tLocal({
+                          en: "You own this product. Copy or download below.",
+                          zhCN: "您已拥有此产品。在下方复制或下载。" })
+                      : tLocal({
+                          en: "Unlock the complete code package after purchase.",
+                          zhCN: "购买后解锁完整代码包。" })}
                   </small>
                 </div>
               </div>
 
-              <button
-                type="button"
-                className="sc-product-main-action"
-                onClick={handlePremiumBuy}
-              >
-                <span>
-                  {tLocal({
-                    en: `Unlock for ${formatPrice(product)}`,
-                    zhCN: `以 ${formatPrice(product)} 解锁`,
-                  })}
-                </span>
-                <span aria-hidden="true">→</span>
-              </button>
+              {!hasAccess && (
+                <button
+                  type="button"
+                  className="sc-product-main-action"
+                  onClick={handlePremiumBuy}
+                >
+                  <span>
+                    {tLocal({
+                      en: `Unlock for ${formatPrice(product)}`,
+                      zhCN: `以 ${formatPrice(product)} 解锁`,
+                    })}
+                  </span>
+                  <span aria-hidden="true">→</span>
+                </button>
+              )}
 
               <p className="sc-product-action-microcopy">
                 {tLocal(COPY.oneTime)}
@@ -4714,8 +4724,8 @@ ${file.content}`
           {/* ===== ACTION BUTTONS — Copy Prompt / Copy Code / Download ===== */}
           <div className="sc-detail-actions">
 
-            {/* Copy AI Prompt */}
-            {product?.aiPrompt && (
+            {/* Copy AI Prompt — hidden for premium products until user has access */}
+            {product?.aiPrompt && (!isPremium || hasAccess) && (
               <button
                 type="button"
                 className={`sc-detail-action sc-detail-action--prompt ${copiedPrompt ? 'is-copied' : ''}`}
@@ -4741,8 +4751,8 @@ ${file.content}`
               </button>
             )}
 
-            {/* Copy Source Code */}
-            {hasFreeSource && (
+            {/* Copy Source Code — hidden for premium products until user has access */}
+            {hasFreeSource && (!isPremium || hasAccess) && (
               <button
                 type="button"
                 className={`sc-detail-action sc-detail-action--code ${copiedCode ? 'is-copied' : ''}`}
@@ -4768,8 +4778,8 @@ ${file.content}`
               </button>
             )}
 
-            {/* Download ZIP */}
-            {canDownload && product?.package?.storageKey && (
+            {/* Download ZIP — hidden for premium products until user has access */}
+            {canDownload && product?.package?.storageKey && (!isPremium || hasAccess) && (
               <button
                 type="button"
                 className={`sc-detail-action sc-detail-action--download ${downloading ? 'is-loading' : ''}`}
