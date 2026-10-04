@@ -3422,7 +3422,7 @@ function ProductDetail({
   }, [product?.tags, product?.frameworks]);
 
   const handlePremiumBuy = () => {
-    onUnlockPremium?.(product);
+    onOpenUnlockModal?.();
   };
 
   const premiumFiles = premiumAccess.files || [];
@@ -4069,7 +4069,7 @@ ${file.content}`
             {description}
           </p>
 
-          {craftNote && (
+          {craftNote && (!isPremium || hasAccess) && (
             <div className="sc-product-craft-note">
               <span className="sc-craft-note-label">CRAFT NOTE</span>
               <p>{craftNote}</p>
@@ -4761,37 +4761,39 @@ ${file.content}`
 
           </div>
 
-          <div className="sc-product-detail-section">
-            <div className="sc-product-detail-heading">
-              <span>
-                {tLocal({
-                  en: "How to use",
-                  zhCN: "如何使用" })}
-              </span>
+          {(!isPremium || hasAccess) && (
+            <div className="sc-product-detail-section">
+              <div className="sc-product-detail-heading">
+                <span>
+                  {tLocal({
+                    en: "How to use",
+                    zhCN: "如何使用" })}
+                </span>
 
-              <small>
-                {tLocal({
-                  en: "Simple setup. No unnecessary documentation.",
-                  zhCN: "简单设置，无需冗长文档。" })}
-              </small>
-            </div>
+                <small>
+                  {tLocal({
+                    en: "Simple setup. No unnecessary documentation.",
+                    zhCN: "简单设置，无需冗长文档。" })}
+                </small>
+              </div>
 
-            <div className="sc-product-usage-steps">
-              {(usageSteps.length
-                ? usageSteps
-                : [
-                    tLocal({
-                      en: "Add the component to your project.",
-                      zhCN: "将组件添加到你的项目。" }),
-                  ]
-              ).map((step, index) => (
-                <div key={`${index}-${step}`}>
-                  <span>{index + 1}</span>
-                  <p>{step}</p>
-                </div>
-              ))}
+              <div className="sc-product-usage-steps">
+                {(usageSteps.length
+                  ? usageSteps
+                  : [
+                      tLocal({
+                        en: "Add the component to your project.",
+                        zhCN: "将组件添加到你的项目。" }),
+                    ]
+                ).map((step, index) => (
+                  <div key={`${index}-${step}`}>
+                    <span>{index + 1}</span>
+                    <p>{step}</p>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </motion.section>
 
