@@ -2556,7 +2556,7 @@ function getPreviewPosterUrl(product) {
 }
 
 // Autoplay concurrency limit — max 3 videos autoplaying at once for CPU/battery
-const MAX_CONCURRENT_AUTOPLAY = 3;
+const MAX_CONCURRENT_AUTOPLAY = 4;
 let activeAutoplayCount = 0;
 
 // Detects whether the device supports hover (desktop/laptop). Touch devices return false.
@@ -2682,6 +2682,30 @@ function ProductVideoPreview({ videoUrl, posterUrl, title, playing, autoPlayWhen
     videoEl.addEventListener("play", onPlay);
 
     observer.observe(videoEl);
+
+    // If the element is already in view on mount, kick off autoplay immediately
+    // instead of waiting for the next IntersectionObserver tick.
+    try {
+      const rect = videoEl.getBoundingClientRect();
+      const vh = window.innerHeight || document.documentElement.clientHeight;
+      const vw = window.innerWidth || document.documentElement.clientWidth;
+      const isInViewport =
+        rect.top < vh && rect.bottom > 0 && rect.left < vw && rect.right > 0;
+      const visibleRatio =
+        Math.min(rect.bottom, vh) - Math.max(rect.top, 0) > rect.height * 0.5;
+      if (isInViewport && visibleRatio && activeAutoplayCount < MAX_CONCURRENT_AUTOPLAY) {
+        activeAutoplayCount += 1;
+        videoEl.play().then(() => {
+          setIsAutoPlaying(true);
+        }).catch(() => {
+          activeAutoplayCount = Math.max(0, activeAutoplayCount - 1);
+          setIsAutoPlaying(false);
+        });
+      }
+    } catch {
+      // getBoundingClientRect can throw in edge cases — observer will handle it
+    }
+
     return () => {
       observer.disconnect();
       videoEl.removeEventListener("play", onPlay);
@@ -2694,10 +2718,12 @@ function ProductVideoPreview({ videoUrl, posterUrl, title, playing, autoPlayWhen
     };
   }, [autoPlayWhenVisible, videoUrl, loadError]);
 
-  // Combined visible state: video is shown when either hover-playing or autoplaying
-  const videoVisible = playing || isAutoPlaying;
+  // Poster is shown only as a fallback: when video errors, or when
+  // reduced-motion / saveData prevent autoplay (poster-first experience).
+  // For everyone else — video is the default state.
+  const showPoster = loadError || noMotion || noData;
 
-  if (loadError) return null;
+  if (loadError && !posterUrl) return null;
 
   return (
     <div
@@ -2726,7 +2752,7 @@ function ProductVideoPreview({ videoUrl, posterUrl, title, playing, autoPlayWhen
             height: "100%",
             objectFit: "cover",
             pointerEvents: "none",
-            opacity: videoVisible ? 0 : 1,
+            opacity: showPoster ? 1 : 0,
             transition: "opacity 0.25s ease",
             zIndex: 1,
           }}
@@ -2755,7 +2781,7 @@ function ProductVideoPreview({ videoUrl, posterUrl, title, playing, autoPlayWhen
           objectFit: "cover",
           background: "#000",
           pointerEvents: "none",
-          opacity: videoVisible ? 1 : 0,
+          opacity: showPoster ? 0 : 1,
           transition: "opacity 0.25s ease",
           zIndex: 2,
         }}
@@ -3849,7 +3875,9 @@ ${file.content}`
           <div className="sc-modal-media-header">
             <div className="sc-modal-media-header-left">
 
-              {hasVideo && hasLiveDemo && (
+              {/* Tab switcher hidden for video products — video is the primary view.
+                  Only shown for products with a live demo but no video. */}
+              {!hasVideo && hasLiveDemo && (
                 <div
                   className="sc-detail-media-switcher"
                   style={{
@@ -3973,7 +4001,7 @@ ${file.content}`
             }}
           >
             <PreviewErrorBoundary>
-              {hasVideo && detailMediaMode === "video" ? (
+              {hasVideo ? (
                 <div
                   className="sc-product-detail-video-player"
                   style={{
@@ -4025,7 +4053,7 @@ ${file.content}`
 
           <div className="sc-product-preview-caption">
             <span>
-              {hasVideo && detailMediaMode === "video"
+              {hasVideo
                 ? tLocal({ en: "Preview Video", zhCN: "视频预览" })
                 : tLocal({ en: "Interactive preview", zhCN: "交互预览" })}
             </span>
