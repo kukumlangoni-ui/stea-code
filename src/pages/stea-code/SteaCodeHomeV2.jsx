@@ -4762,8 +4762,8 @@ ${file.content}`
               </button>
             )}
 
-            {/* Download ZIP — free products always, premium when buyer has access */}
-            {((isFree && product?.package?.storageKey) || (isPremium && hasAccess)) && (
+            {/* Download ZIP — shows when package exists AND user has access */}
+            {product?.package?.storageKey && (isFree || (isPremium && hasAccess)) && (
               <button
                 type="button"
                 className={`sc-detail-action sc-detail-action--download ${downloading ? 'is-loading' : ''}`}
