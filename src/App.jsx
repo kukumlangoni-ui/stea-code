@@ -18,6 +18,7 @@ const SteaCodeHomeV2 = lazy(() => import("./pages/stea-code/SteaCodeHomeV2.jsx")
 const SteaCodeAdminApp = lazy(() => import("./admin-v2/SteaCodeAdminApp.jsx"));
 const SteaCodeNotFoundPage = lazy(() => import("./pages/stea-code/SteaCodeNotFoundPage.jsx"));
 const SteaCodeCheckoutSuccessPage = lazy(() => import("./pages/stea-code/SteaCodeCheckoutSuccessPage.jsx"));
+const SteaCodeUpgradePage = lazy(() => import("./pages/stea-code/SteaCodeUpgradePage.jsx"));
 
 // Shared
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy.jsx"));
@@ -191,6 +192,7 @@ export default function App() {
 
                   {/* Checkout */}
                   <Route path="/checkout/success" element={<SteaCodeCheckoutSuccessPage />} />
+                  <Route path="/upgrade" element={<SteaCodeUpgradePage />} />
 
                   {/* Legal */}
                   <Route path="/privacy" element={<PrivacyPolicy />} />

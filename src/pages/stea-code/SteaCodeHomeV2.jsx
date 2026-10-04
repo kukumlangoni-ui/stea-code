@@ -891,32 +891,9 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
 
   const handleGoUnlimited = async (e) => {
     if (e) { e.preventDefault(); e.stopPropagation(); }
-    if (goUnlimitedPulse) return; // ignore mid-animation clicks
-
-    const auth = getFirebaseAuth();
-    if (!auth?.currentUser) {
-      window.dispatchEvent(new Event("open-auth"));
-      return;
-    }
-
-    setGoUnlimitedPulse(true);
-    try {
-      const token = await auth.currentUser.getIdToken();
-      const res = await fetch("/api/stea-code/checkout", {
-        method: "POST",
-        headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
-        body: "{}",
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Checkout failed");
-      window.location.href = data.url;
-    } catch (err) {
-      setGoUnlimitedToast(true);
-      setTimeout(() => setGoUnlimitedToast(false), 2600);
-      alert(err.message || "Checkout failed");
-    } finally {
-      setTimeout(() => setGoUnlimitedPulse(false), 1200);
-    }
+    // Navigate to the upgrade info page — pre-purchase marketing
+    // before the user reaches Stripe checkout
+    navigate("/upgrade");
   };
 
   const handleSignOut = async (e) => {

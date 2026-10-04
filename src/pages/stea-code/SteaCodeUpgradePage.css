@@ -1,0 +1,224 @@
+/* =============================================================
+ * steacode — Upgrade / Lifetime Access page
+ * Pre-purchase marketing page before Stripe checkout
+ * ============================================================= */
+
+.sc-upgrade-page {
+  min-height: 100vh;
+  color: #e6e6e6;
+  background: #0a0a0b;
+}
+
+/* --- Hero --- */
+.sc-upgrade-hero {
+  position: relative;
+  padding: 100px 24px 80px;
+  text-align: center;
+  overflow: hidden;
+}
+
+.sc-upgrade-hero-glow {
+  position: absolute;
+  top: -40%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 800px;
+  height: 800px;
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.18) 0%, rgba(99, 102, 241, 0) 60%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.sc-upgrade-hero-inner {
+  position: relative;
+  z-index: 1;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.sc-upgrade-eyebrow {
+  display: inline-block;
+  padding: 6px 14px;
+  margin-bottom: 24px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #a5b4fc;
+  background: rgba(99, 102, 241, 0.1);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  border-radius: 999px;
+  letter-spacing: 0.02em;
+}
+
+.sc-upgrade-heading {
+  margin: 0 0 16px;
+  font-size: clamp(36px, 6vw, 64px);
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.sc-upgrade-subheading {
+  margin: 0 0 36px;
+  font-size: clamp(16px, 2vw, 20px);
+  line-height: 1.5;
+  color: #9ca3af;
+  max-width: 580px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.sc-upgrade-cta-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 32px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #ffffff;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%);
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 8px 32px rgba(99, 102, 241, 0.35);
+  text-decoration: none;
+  position: relative;
+  overflow: hidden;
+}
+
+.sc-upgrade-cta-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px rgba(99, 102, 241, 0.5);
+}
+
+.sc-upgrade-cta-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.sc-upgrade-cta-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.sc-upgrade-cta-btn svg {
+  transition: transform 0.2s ease;
+}
+
+.sc-upgrade-cta-btn:hover:not(:disabled) svg {
+  transform: translateX(3px);
+}
+
+.sc-upgrade-cta-sub {
+  margin-top: 14px;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+/* --- What you get --- */
+.sc-upgrade-features {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 60px 24px;
+}
+
+.sc-upgrade-section-title {
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #6b7280;
+  margin-bottom: 32px;
+}
+
+.sc-upgrade-features-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 640px) {
+  .sc-upgrade-features-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.sc-upgrade-feature {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px 20px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+}
+
+.sc-upgrade-feature-icon {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  color: #34d399;
+  margin-top: 1px;
+}
+
+.sc-upgrade-feature-text {
+  font-size: 15px;
+  line-height: 1.4;
+  color: #d1d5db;
+}
+
+/* --- FAQ --- */
+.sc-upgrade-faq {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 60px 24px;
+}
+
+.sc-upgrade-faq-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.sc-upgrade-faq-item {
+  padding: 24px 28px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 14px;
+}
+
+.sc-upgrade-faq-q {
+  margin: 0 0 8px;
+  font-size: 17px;
+  font-weight: 600;
+  color: #f3f4f6;
+}
+
+.sc-upgrade-faq-a {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: #9ca3af;
+}
+
+/* --- Bottom CTA --- */
+.sc-upgrade-bottom-cta {
+  text-align: center;
+  padding: 80px 24px 100px;
+}
+
+.sc-upgrade-bottom-cta p {
+  margin: 0 0 24px;
+  font-size: 18px;
+  color: #d1d5db;
+}
+
+/* --- Divider --- */
+.sc-upgrade-divider {
+  max-width: 600px;
+  margin: 0 auto;
+  border: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
