@@ -643,6 +643,10 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
   const [avatarSpin, setAvatarSpin] = useState("idle"); // 'idle' | 'left' | 'right'
   const [goUnlimitedPulse, setGoUnlimitedPulse] = useState(false);
   const [goUnlimitedToast, setGoUnlimitedToast] = useState(false);
+  const goUnlimitedBtnRef = useRef(null);
+  const goUnlimitedSweepTimerRef = useRef(null);
+  const goUnlimitedSweepActiveRef = useRef(false);
+  const goUnlimitedUserInteractedRef = useRef(false);
   const [localAuthUser, setLocalAuthUser] = useState(() => user || getFirebaseAuth()?.currentUser || null);
 
   useEffect(() => {
@@ -658,6 +662,63 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
       setLocalAuthUser(u || null);
     });
     return () => unsub();
+  }, []);
+
+  // Header CTA autoplay sweep — glossy gradient animation
+  // Starts at 3000ms to stay out of phase with modal sweeps (600ms / 1900ms)
+  useEffect(() => {
+    const btn = goUnlimitedBtnRef.current;
+    if (!btn) return undefined;
+
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduceMotion) return undefined;
+
+    const doSweep = () => {
+      if (goUnlimitedUserInteractedRef.current) return;
+      btn.classList.add("is-sweeping");
+      goUnlimitedSweepActiveRef.current = true;
+      setTimeout(() => {
+        btn.classList.remove("is-sweeping");
+        goUnlimitedSweepActiveRef.current = false;
+      }, 900);
+    };
+
+    const initialDelay = setTimeout(() => {
+      doSweep();
+      goUnlimitedSweepTimerRef.current = setInterval(() => {
+        if (!goUnlimitedUserInteractedRef.current) doSweep();
+      }, 2600);
+    }, 3000);
+
+    const stopAutoplay = () => {
+      if (goUnlimitedUserInteractedRef.current) return;
+      goUnlimitedUserInteractedRef.current = true;
+      if (goUnlimitedSweepTimerRef.current) {
+        clearInterval(goUnlimitedSweepTimerRef.current);
+        goUnlimitedSweepTimerRef.current = null;
+      }
+      if (goUnlimitedSweepActiveRef.current) {
+        btn.classList.remove("is-sweeping");
+        goUnlimitedSweepActiveRef.current = false;
+      }
+    };
+
+    btn.addEventListener("pointerenter", stopAutoplay, { once: true });
+    btn.addEventListener("pointerdown", stopAutoplay, { once: true });
+    btn.addEventListener("focus", stopAutoplay, { once: true });
+    btn.addEventListener("keydown", stopAutoplay, { once: true });
+
+    return () => {
+      clearTimeout(initialDelay);
+      if (goUnlimitedSweepTimerRef.current) {
+        clearInterval(goUnlimitedSweepTimerRef.current);
+        goUnlimitedSweepTimerRef.current = null;
+      }
+      btn.removeEventListener("pointerenter", stopAutoplay);
+      btn.removeEventListener("pointerdown", stopAutoplay);
+      btn.removeEventListener("focus", stopAutoplay);
+      btn.removeEventListener("keydown", stopAutoplay);
+    };
   }, []);
 
   // Start/stop user activity tracking along with auth state
@@ -1444,6 +1505,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
 
           <div className="sc-go-unlimited-wrap">
             <button
+              ref={goUnlimitedBtnRef}
               type="button"
               className={`sc-go-unlimited-btn ${goUnlimitedPulse ? "is-pulsing" : ""}`}
               onClick={handleGoUnlimited}
