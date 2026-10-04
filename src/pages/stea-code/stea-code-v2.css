@@ -16225,3 +16225,49 @@ header,
     gap: 14px !important;
   }
 }
+
+/* =============================================================
+ * Explore page — fix v2 card preview rendering
+ *
+ * BUG: Legacy `#explore .sc-product-preview { aspect-ratio: 16/9 }`
+ * has higher specificity (ID + class = 110) than the v2 card rule
+ * `.sc-code-card__preview .sc-product-preview` (two classes = 20).
+ * This forces the preview area to 16:9 instead of filling the card,
+ * causing black/empty areas and distorted proportions.
+ *
+ * FIX: Override with higher-specificity selectors that match the
+ * v2 card's expected behavior (fill container, auto aspect ratio).
+ * ============================================================= */
+
+/* 1. Reset preview element to fill its v2 card container (match homepage) */
+#explore .sc-code-card__preview .sc-product-preview {
+  width: 100% !important;
+  height: 100% !important;
+  aspect-ratio: auto !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  background-image: none !important;
+  display: block !important;
+  position: relative !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* 2. Reset v2 card sizing in explore grid (match homepage card behavior) */
+#explore .sc-code-card.sc-code-card--v2 {
+  height: auto !important;
+}
+
+/* 3. Ensure preview wrap honors the product's design aspect ratio */
+#explore .sc-code-card--v2 .sc-code-card__preview-wrap {
+  aspect-ratio: unset !important;
+  /* inline style from the component sets the real ratio; this removes the legacy override */
+}
+
+/* 4. Ensure the preview art fills edge-to-edge in v2 cards */
+#explore .sc-code-card__preview .sc-product-preview-art {
+  position: absolute !important;
+  inset: 0 !important;
+  display: block !important;
+  padding: 0 !important;
+}
