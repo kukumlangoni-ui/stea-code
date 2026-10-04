@@ -16171,3 +16171,57 @@ header,
     background-position: left top !important;
   }
 }
+
+/* =============================================================
+ * Explore Code page — match homepage card design
+ *
+ * The Explore view (#explore.sc-market-section) had legacy CSS
+ * from an older card design that made cards look different from
+ * the homepage. These overrides ensure the explore grid uses the
+ * same card visuals, spacing, and sizing as the homepage's
+ * "Latest & Featured" section.
+ * ============================================================= */
+
+/* Remove outer border around the explore grid — homepage sections don't have this */
+.sc-market-section#explore {
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+}
+
+/* Match homepage grid layout — auto-fill with 360px min, 22px gap */
+#explore .sc-product-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)) !important;
+  gap: 22px !important;
+  margin-top: 0 !important;
+}
+
+/* Ensure the v2 card preview keeps its design-ratio aspect ratio (not forced 16:9) */
+#explore .sc-code-card__preview-wrap {
+  aspect-ratio: var(--card-aspect, 640 / 480) !important;
+}
+
+/* Remove legacy explore card-body rules — v2 uses __caption not card-body */
+#explore .sc-code-card-body,
+#explore .sc-code-tags,
+#explore .sc-code-card-foot {
+  display: none;
+}
+
+/* Responsive: match homepage breakpoints */
+@media (max-width: 768px) {
+  #explore .sc-product-grid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)) !important;
+    gap: 16px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  #explore .sc-product-grid {
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+  }
+}
