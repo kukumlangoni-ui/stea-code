@@ -73,6 +73,7 @@ import {
 // preview for up to 5 minutes after the admin clicks Save, which reads
 // as "my edit didn't take."
 import { invalidateSteaCodeProductPreviewCache } from "../services/steaCodeCommerce.js";
+import { auth } from "../firebase.js";
 import {
   CODE_PRODUCT_CATEGORIES,
   CODE_PRODUCT_TECH,
@@ -1012,8 +1013,11 @@ export function ProductStudio({ product, onClose, onSaved, onCreated, onPublishe
   // XHR upload with real progress events — fetch() hangs without progress
   // callbacks, which caused the "stuck at 0%" state. Matches the existing
   // Worker contract: POST /api/stea-code/media/upload with productId + file.
-  const uploadFileWithProgress = (file, productId, onProgress) =>
-    new Promise((resolve, reject) => {
+  const uploadFileWithProgress = async (file, productId, onProgress) => {
+    // Get Firebase ID token for auth on the upload endpoint
+    const token = await auth?.currentUser?.getIdToken().catch(() => null);
+
+    return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
       const fd = new FormData();
       fd.append("productId", productId);
@@ -1041,8 +1045,12 @@ export function ProductStudio({ product, onClose, onSaved, onCreated, onPublishe
       xhr.addEventListener("abort", () => reject(new Error("Upload cancelled.")));
 
       xhr.open("POST", "/api/stea-code/media/upload", true);
+      if (token) {
+        xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+      }
       xhr.send(fd);
     });
+  };
 
   const uploadVideoFile = async (file) => {
     if (!file) return;

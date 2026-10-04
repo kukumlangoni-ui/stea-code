@@ -13,6 +13,10 @@
  */
 
 import { corsHeaders } from "../cors.js";
+import { verifyFirebaseToken, extractBearerToken } from "../auth.js";
+import type { WorkerEnv } from "../index.js";
+
+const ADMIN_EMAILS = new Set(["stea.africa@gmail.com", "kukumlangoni@gmail.com"]);
 
 export async function handleMedia(req: Request, env: any, key: string): Promise<Response> {
   const method = req.method;
@@ -153,7 +157,7 @@ function parseRangeHeader(range: string | null): { offset: number; length?: numb
  * Accepts multipart form data with `productId` + `file` (video or image),
  * streams it to R2 bucket `STEA_BUCKET`, returns the storage key.
  */
-export async function handleMediaUpload(req: Request, env: any): Promise<Response> {
+export async function handleMediaUpload(req: Request, env: WorkerEnv): Promise<Response> {
   const origin = req.headers.get("origin");
 
   if (req.method === "OPTIONS") {
@@ -174,6 +178,42 @@ export async function handleMediaUpload(req: Request, env: any): Promise<Respons
       headers: { "Content-Type": "application/json", ...corsHeaders(origin) },
     });
   }
+
+  // --- Auth: require valid Firebase ID token + admin email ---
+  const token = extractBearerToken(req);
+  if (!token) {
+    return new Response(
+      JSON.stringify({ error: "Unauthorized" }),
+      {
+        status: 401,
+        headers: { "Content-Type": "application/json", ...corsHeaders(origin) },
+      }
+    );
+  }
+
+  let decoded;
+  try {
+    decoded = await verifyFirebaseToken(env, token);
+  } catch {
+    return new Response(
+      JSON.stringify({ error: "Unauthorized" }),
+      {
+        status: 401,
+        headers: { "Content-Type": "application/json", ...corsHeaders(origin) },
+      }
+    );
+  }
+
+  if (!decoded.email || !ADMIN_EMAILS.has(decoded.email)) {
+    return new Response(
+      JSON.stringify({ error: "Forbidden" }),
+      {
+        status: 403,
+        headers: { "Content-Type": "application/json", ...corsHeaders(origin) },
+      }
+    );
+  }
+  // --- End auth check ---
 
   try {
     const form = await req.formData();

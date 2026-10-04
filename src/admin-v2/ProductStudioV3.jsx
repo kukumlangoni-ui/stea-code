@@ -559,8 +559,11 @@ export function ProductStudioV3({
   // XHR upload with real progress — fetch() cannot report upload progress,
   // which is why uploads sat at 0%. Same contract as uploadSteaCodePreviewAssets:
   // POST /api/stea-code/media/upload with productId + file → { ok, key, url }
-  const uploadFileWithProgress = (file, productId, onProgress) =>
-    new Promise((resolve, reject) => {
+  const uploadFileWithProgress = async (file, productId, onProgress) => {
+    // Get Firebase ID token for auth on the upload endpoint
+    const token = await auth?.currentUser?.getIdToken().catch(() => null);
+
+    return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
       const fd = new FormData();
       fd.append("productId", productId);
@@ -590,8 +593,12 @@ export function ProductStudioV3({
       xhr.addEventListener("abort", () => reject(new Error("Upload cancelled.")));
 
       xhr.open("POST", "/api/stea-code/media/upload", true);
+      if (token) {
+        xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+      }
       xhr.send(fd);
     });
+  };
 
   const uploadPoster = async (file) => {
     if (!file) return;
