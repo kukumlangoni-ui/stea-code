@@ -1,6 +1,6 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowRight, Check, Home, Shield, Zap, RefreshCcw } from "lucide-react";
+import { ArrowRight, Check, Shield, Zap, RefreshCcw } from "lucide-react";
 import { getSteaCodePublicUrl } from "../../utils/subdomains.js";
 import { getFirebaseAuth } from "../../firebase.js";
 import { getSteaCodeCatalog } from "../../services/steaCodeCommerce.js";
@@ -18,6 +18,61 @@ export default function SteaCodeUpgradePage() {
   // Live catalog data
   const [products, setProducts] = useState([]);
   const [catalogLoading, setCatalogLoading] = useState(true);
+
+  // Hero CTA ref for autoplay morph animation
+  const heroCtaRef = useRef(null);
+
+  // Autoplay the CTA morph effect every 2.6s.
+  // Stops on first user interaction (pointerenter, pointerdown, focus, keydown, touchstart).
+  // Respects prefers-reduced-motion.
+  useEffect(() => {
+    const btn = heroCtaRef.current;
+    if (!btn) return;
+
+    const mql = window.matchMedia("(prefers-reduced-motion: reduce)");
+    if (mql.matches) return;
+
+    let stopped = false;
+    let playTimer = null;
+    let gapTimer = null;
+
+    const playMorph = () => {
+      if (stopped) return;
+      btn.classList.add("is-autoplay");
+      playTimer = setTimeout(() => {
+        btn.classList.remove("is-autoplay");
+        if (!stopped) {
+          // Gap between plays: 2600ms total cycle - 900ms play = 1700ms gap
+          gapTimer = setTimeout(playMorph, 1700);
+        }
+      }, 900);
+    };
+
+    const stopAutoplay = () => {
+      if (stopped) return;
+      stopped = true;
+      if (playTimer) { clearTimeout(playTimer); playTimer = null; }
+      if (gapTimer) { clearTimeout(gapTimer); gapTimer = null; }
+      btn.classList.remove("is-autoplay");
+    };
+
+    // Start after a short delay so the page can settle
+    gapTimer = setTimeout(playMorph, 1400);
+
+    const stopEvents = ["pointerenter", "pointerdown", "focus", "keydown", "touchstart"];
+    stopEvents.forEach((evt) => {
+      btn.addEventListener(evt, stopAutoplay, { once: true, passive: true });
+    });
+
+    return () => {
+      stopped = true;
+      if (playTimer) clearTimeout(playTimer);
+      if (gapTimer) clearTimeout(gapTimer);
+      stopEvents.forEach((evt) => {
+        btn.removeEventListener(evt, stopAutoplay);
+      });
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -149,15 +204,13 @@ export default function SteaCodeUpgradePage() {
         </nav>
 
         <div className="sc-topbar-actions">
-          <button
-            type="button"
-            className="sc-topbar-icon-btn"
-            aria-label="Back to components"
-            onClick={() => navigate(homeUrl)}
-            title="Back to components"
-          >
-            <Home size={17} />
-          </button>
+          <Link to={homeUrl} className="sc-upgrade-back-link">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <line x1="19" y1="12" x2="5" y2="12"></line>
+              <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
+            Back to components
+          </Link>
         </div>
       </header>
 
@@ -178,12 +231,20 @@ export default function SteaCodeUpgradePage() {
           </p>
           <button
             type="button"
-            className="sc-upgrade-cta-btn"
+            className="sc-cta-morph"
             onClick={handleUpgradeClick}
             disabled={checkoutLoading}
+            ref={heroCtaRef}
           >
-            <span>{checkoutLoading ? "Preparing checkout…" : "Get lifetime access — €29"}</span>
-            <ArrowRight size={16} />
+            <span className="sc-cta-morph__text">
+              {checkoutLoading ? "Preparing checkout…" : "Get lifetime access — €29"}
+            </span>
+            <span className="sc-cta-morph__icon" aria-hidden="true">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22" focusable="false">
+                <path d="M0 0h24v24H0z" fill="none"></path>
+                <path d="M16.172 11l-5.364-5.364 1.414-1.414L20 12l-7.778 7.778-1.414-1.414L16.172 13H4v-2z" fill="currentColor"></path>
+              </svg>
+            </span>
           </button>
           {error && (
             <p style={{ marginTop: 12, color: "#f87171", fontSize: 14 }}>
@@ -290,12 +351,19 @@ export default function SteaCodeUpgradePage() {
         </p>
         <button
           type="button"
-          className="sc-upgrade-cta-btn"
+          className="sc-cta-morph"
           onClick={handleUpgradeClick}
           disabled={checkoutLoading}
         >
-          <span>{checkoutLoading ? "Preparing checkout…" : "Get lifetime access — €29"}</span>
-          <ArrowRight size={16} />
+          <span className="sc-cta-morph__text">
+            {checkoutLoading ? "Preparing checkout…" : "Get lifetime access — €29"}
+          </span>
+          <span className="sc-cta-morph__icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22" focusable="false">
+              <path d="M0 0h24v24H0z" fill="none"></path>
+              <path d="M16.172 11l-5.364-5.364 1.414-1.414L20 12l-7.778 7.778-1.414-1.414L16.172 13H4v-2z" fill="currentColor"></path>
+            </svg>
+          </span>
         </button>
       </section>
 
@@ -385,19 +453,19 @@ export default function SteaCodeUpgradePage() {
             viewBox="0 0 900 200"
             preserveAspectRatio="xMidYMid meet"
             role="img"
-            aria-label="STEA CODE"
+            aria-label="steacode"
           >
             <text
               x="450"
-              y="155"
+              y="150"
               textAnchor="middle"
-              fontFamily="'Instrument Serif', Georgia, serif"
-              fontWeight="700"
-              fontSize="200"
+              fontFamily="'Inter', -apple-system, BlinkMacSystemFont, sans-serif"
+              fontWeight="800"
+              fontSize="140"
               fill="currentColor"
-              letterSpacing="-6"
+              letterSpacing="-2"
             >
-              STEA CODE
+              steacode
             </text>
           </svg>
         </div>

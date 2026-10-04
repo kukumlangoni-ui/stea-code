@@ -428,3 +428,183 @@
 .sc-upgrade-preview-badge {
   display: none !important;
 }
+
+/* =============================================================
+ * Upgrade page — premium header, morph CTA, wordmark, edge fixes
+ * ============================================================= */
+
+/* --- TASK 1: Premium back link (replaces emoji home icon) --- */
+.sc-upgrade-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #9ca3af;
+  text-decoration: none;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.02);
+  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+
+.sc-upgrade-back-link:hover {
+  color: #f3f4f6;
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.sc-upgrade-back-link svg {
+  display: block;
+  color: #6b7280;
+  transition: transform 0.15s ease, color 0.15s ease;
+}
+
+.sc-upgrade-back-link:hover svg {
+  color: #f3f4f6;
+  transform: translateX(-1px);
+}
+
+/* --- TASK 2: Footer wordmark — lowercase, no overlap, matches brand --- */
+/* Override stea-code-v2.css defaults for this page's footer wordmark */
+.sc-footer-wordmark-svg text {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+  font-weight: 800 !important;
+}
+
+/* Ensure wordmark doesn't bleed off edges */
+.sc-footer-wordmark {
+  overflow: hidden !important;
+}
+
+.sc-footer-wordmark-svg {
+  aspect-ratio: 900 / 200 !important;
+}
+
+/* --- TASK 3: Purple Morphing Arrow CTA --- */
+.sc-cta-morph {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  height: 2.8em;
+  padding: 0.35em 3.6em 0.35em 1.2em;
+  border: none;
+  border-radius: 0.9em;
+  background: #a370f0;
+  color: #ffffff;
+  font-size: 17px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  box-shadow:
+    inset 0 0 1.6em -0.6em #714da6,
+    0 4px 16px rgba(163, 112, 240, 0.3);
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+  font-family: inherit;
+}
+
+.sc-cta-morph__text {
+  position: relative;
+  z-index: 1;
+  white-space: nowrap;
+}
+
+.sc-cta-morph__icon {
+  position: absolute;
+  right: 0.3em;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 2.2em;
+  height: 2.2em;
+  border-radius: 0.7em;
+  background: #ffffff;
+  color: #7b52b9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0.1em 0.1em 0.6em 0.2em #7b52b9;
+  transition:
+    width 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.1s ease;
+}
+
+.sc-cta-morph__icon svg {
+  transition: transform 0.25s ease;
+}
+
+/* Hover / autoplay: icon box morphs to fill the button */
+.sc-cta-morph:hover:not(:disabled) .sc-cta-morph__icon,
+.sc-cta-morph.is-autoplay .sc-cta-morph__icon {
+  width: calc(100% - 0.6em);
+}
+
+.sc-cta-morph:hover:not(:disabled) .sc-cta-morph__icon svg {
+  transform: translateX(0.1em);
+}
+
+/* Active: slight scale down */
+.sc-cta-morph:active:not(:disabled) .sc-cta-morph__icon {
+  transform: translateY(-50%) scale(0.95);
+}
+
+/* Focus */
+.sc-cta-morph:focus-visible {
+  outline: 2px solid #714da6;
+  outline-offset: 3px;
+}
+
+/* Disabled */
+.sc-cta-morph:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.sc-cta-morph:disabled .sc-cta-morph__icon {
+  box-shadow: none;
+}
+
+/* Reduced motion: disable morph, icon stays static */
+@media (prefers-reduced-motion: reduce) {
+  .sc-cta-morph,
+  .sc-cta-morph__icon,
+  .sc-cta-morph__icon svg {
+    transition: none !important;
+  }
+  .sc-cta-morph.is-autoplay .sc-cta-morph__icon {
+    width: 2.2em !important;
+  }
+  .sc-cta-morph:hover:not(:disabled) .sc-cta-morph__icon {
+    width: 2.2em !important;
+  }
+  .sc-cta-morph:hover:not(:disabled) .sc-cta-morph__icon svg {
+    transform: none;
+  }
+}
+
+/* --- TASK 4: Page edge fixes --- */
+/* Prevent horizontal overflow from hero glow, wordmark, etc. */
+.sc-upgrade-page {
+  overflow-x: hidden;
+}
+
+/* Ensure all sections have consistent horizontal padding */
+.sc-upgrade-hero,
+.sc-upgrade-section,
+.sc-upgrade-final {
+  padding-left: 24px;
+  padding-right: 24px;
+}
+
+/* Final CTA content should have the same max-width feel as other sections */
+.sc-upgrade-final {
+  max-width: 640px;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+/* Footer stays full-width but wordmark is contained */
+.sc-footer {
+  position: relative;
+}
