@@ -9,8 +9,6 @@ import "./stea-code.css";
 import "./stea-code-v2.css";
 import "./SteaCodeUpgradePage.css";
 
-const GRADIENT_VARIANTS = ["gradient-1", "gradient-2", "gradient-3", "gradient-4", "gradient-5", "gradient-6"];
-
 export default function SteaCodeUpgradePage() {
   const navigate = useNavigate();
   const homeUrl = getSteaCodePublicUrl();
@@ -39,19 +37,6 @@ export default function SteaCodeUpgradePage() {
     })();
     return () => { cancelled = true; };
   }, []);
-
-  // Preview grid: premium first, then free, up to 6 total
-  const { previewProducts, premiumCount } = useMemo(() => {
-    if (!Array.isArray(products)) return { previewProducts: [], premiumCount: 0 };
-    const premium = products.filter(
-      (p) => String(p?.pricingType || "").toLowerCase() === "premium"
-    );
-    const free = products.filter(
-      (p) => String(p?.pricingType || "").toLowerCase() !== "premium"
-    );
-    const picked = [...premium, ...free].slice(0, 6);
-    return { previewProducts: picked, premiumCount: premium.length };
-  }, [products]);
 
   const totalCount = Array.isArray(products) ? products.length : 0;
 
@@ -220,75 +205,6 @@ export default function SteaCodeUpgradePage() {
             </span>
           </div>
         </div>
-      </section>
-
-      {/* Preview grid */}
-      <section className="sc-upgrade-section">
-        <span className="sc-upgrade-section-label">Here's what you unlock</span>
-        <h2 className="sc-upgrade-section-title">Every component. One price.</h2>
-        {catalogLoading ? (
-          <div className="sc-upgrade-preview-grid">
-            {[0, 1, 2, 3, 4, 5].map((i) => (
-              <div
-                key={i}
-                className={`sc-upgrade-preview-card ${GRADIENT_VARIANTS[i]}`}
-                style={{ opacity: 0.4 }}
-              >
-                <div className="sc-upgrade-preview-card-art">
-                  <span className="sc-upgrade-preview-card-title">&nbsp;</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : previewProducts.length > 0 ? (
-          <>
-            <div className="sc-upgrade-preview-grid">
-              {previewProducts.map((product, idx) => {
-                const isPremium =
-                  String(product?.pricingType || "").toLowerCase() === "premium";
-                const title = product.titleEn || product.title || "Untitled";
-                const gradientClass =
-                  GRADIENT_VARIANTS[idx % GRADIENT_VARIANTS.length];
-                return (
-                  <div
-                    key={product.id || product.slug || idx}
-                    className={`sc-upgrade-preview-card ${gradientClass}`}
-                  >
-                    <span
-                      className={`sc-upgrade-preview-badge ${
-                        isPremium ? "is-premium" : "is-free"
-                      }`}
-                    >
-                      {isPremium ? "Premium" : "Free"}
-                    </span>
-                    <div className="sc-upgrade-preview-card-art">
-                      <span className="sc-upgrade-preview-card-title">
-                        {title}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            {premiumCount === 0 && products.length > 0 && (
-              <p
-                style={{
-                  textAlign: "center",
-                  marginTop: 20,
-                  fontSize: 13,
-                  color: "#6b7280",
-                  fontStyle: "italic",
-                }}
-              >
-                Premium components launching soon — lifetime access gets you early access.
-              </p>
-            )}
-          </>
-        ) : (
-          <p style={{ textAlign: "center", color: "#6b7280", fontSize: 14 }}>
-            Loading components…
-          </p>
-        )}
       </section>
 
       {showValueMath && (

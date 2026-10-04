@@ -416,3 +416,15 @@
   border: none;
   border-top: 1px solid rgba(255, 255, 255, 0.05);
 }
+
+/* =============================================================
+ * Preview grid removed — hide legacy selectors
+ * The grid was removed from SteaCodeUpgradePage.jsx.
+ * These overrides ensure no leftover layout if the markup
+ * is ever reintroduced without removing these classes.
+ * ============================================================= */
+.sc-upgrade-preview-grid,
+.sc-upgrade-preview-card,
+.sc-upgrade-preview-badge {
+  display: none !important;
+}
