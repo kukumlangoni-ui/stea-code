@@ -3815,13 +3815,20 @@ ${file.content}`
     }
   }, [sourceCodeHtml, safeCopyToClipboard, handleCopySourceSuccess]);
 
-  const executeDownload = useCallback((pid) => {
+  const executeDownload = useCallback(async (pid) => {
     const cleanId = pid || getProductIdentity(product);
     setDownloading(true);
-    window.location.href = `/api/stea-code/products/${encodeURIComponent(cleanId)}/download`;
-    handleDownloadSuccess(cleanId);
-    setTimeout(() => setDownloading(false), 1500);
-  }, [product, handleDownloadSuccess]);
+    try {
+      await downloadSteaCodeSource(cleanId);
+      handleDownloadSuccess(cleanId);
+    } catch (err) {
+      console.error("[download] failed:", err);
+      setToast({ type: "error", message: err?.message || "Download failed" });
+      setTimeout(() => setToast(null), 2600);
+    } finally {
+      setTimeout(() => setDownloading(false), 1500);
+    }
+  }, [product, handleDownloadSuccess, setToast]);
 
   // Gate click handler — saves pending action and opens auth without tracking
   const handleGateAction = useCallback((actionType) => {
@@ -4728,8 +4735,8 @@ ${file.content}`
               </button>
             )}
 
-            {/* Copy Source Code — hidden for premium products until user has access */}
-            {hasFreeSource && (!isPremium || hasAccess) && (
+            {/* Copy Source Code — free products always, premium when buyer has access */}
+            {sourceCodeHtml && (isFree || (isPremium && hasAccess)) && (
               <button
                 type="button"
                 className={`sc-detail-action sc-detail-action--code ${copiedCode ? 'is-copied' : ''}`}
@@ -4755,8 +4762,8 @@ ${file.content}`
               </button>
             )}
 
-            {/* Download ZIP — hidden for premium products until user has access */}
-            {canDownload && product?.package?.storageKey && (!isPremium || hasAccess) && (
+            {/* Download ZIP — free products always, premium when buyer has access */}
+            {((isFree && product?.package?.storageKey) || (isPremium && hasAccess)) && (
               <button
                 type="button"
                 className={`sc-detail-action sc-detail-action--download ${downloading ? 'is-loading' : ''}`}
