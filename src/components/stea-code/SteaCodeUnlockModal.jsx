@@ -153,7 +153,21 @@ export default function SteaCodeUnlockModal({ product, onClose, onPurchased }) {
     try {
       const auth = getFirebaseAuth();
       const user = auth.currentUser;
-      if (!user) throw new Error("Not signed in");
+      if (!user) {
+        // Edge case: user reached modal while signed out.
+        // Save intent, close modal, open sign-in instead of showing error.
+        try {
+          sessionStorage.setItem("stea_pending_action", JSON.stringify({
+            type: "unlock",
+            productId,
+          }));
+        } catch {
+          // sessionStorage may be unavailable in private browsing
+        }
+        onClose?.();
+        window.dispatchEvent(new Event("open-auth"));
+        return;
+      }
       const token = await user.getIdToken(true);
 
       const res = await fetch("/api/stea-code/checkout-product", {
@@ -176,7 +190,7 @@ export default function SteaCodeUnlockModal({ product, onClose, onPurchased }) {
       setError(err?.message || "Something went wrong. Please try again.");
       setLoading(null);
     }
-  }, [productId]);
+  }, [productId, onClose]);
 
   const handleBuyPro = useCallback(async () => {
     setError("");

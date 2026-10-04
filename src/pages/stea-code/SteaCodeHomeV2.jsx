@@ -3510,6 +3510,10 @@ function ProductDetail({
   }, [product?.tags, product?.frameworks]);
 
   const handlePremiumBuy = () => {
+    if (!isSignedIn) {
+      handleGateAction("unlock");
+      return;
+    }
     onOpenUnlockModal?.();
   };
 
@@ -3896,12 +3900,17 @@ ${file.content}`
           executeCopyPrompt();
         } else if (pending.type === "download") {
           executeDownload(currentPid);
+        } else if (pending.type === "unlock") {
+          // Small delay so the sign-in modal closes before the unlock modal opens
+          setTimeout(() => {
+            onOpenUnlockModal?.();
+          }, 180);
         }
       }
     } catch (err) {
       console.warn("Failed resuming pending action in ProductDetail:", err);
     }
-  }, [currentUser, product, executeCopySource, executeCopyPrompt, executeDownload]);
+  }, [currentUser, product, executeCopySource, executeCopyPrompt, executeDownload, onOpenUnlockModal]);
 
   const reduceMotion = useReducedMotion();
 
