@@ -2555,6 +2555,10 @@ function getPreviewPosterUrl(product) {
   return product?.posterImageUrl || null;
 }
 
+// Autoplay concurrency limit — max 3 videos autoplaying at once for CPU/battery
+const MAX_CONCURRENT_AUTOPLAY = 3;
+let activeAutoplayCount = 0;
+
 // Detects whether the device supports hover (desktop/laptop). Touch devices return false.
 function useCanHover() {
   const [canHover, setCanHover] = useState(false);
@@ -2573,10 +2577,11 @@ function useCanHover() {
   return canHover;
 }
 
-function ProductVideoPreview({ videoUrl, posterUrl, title, playing, onVideoError }) {
+function ProductVideoPreview({ videoUrl, posterUrl, title, playing, autoPlayWhenVisible = false, onVideoError }) {
   const videoRef = useRef(null);
   const containerRef = useRef(null);
   const [loadError, setLoadError] = useState(false);
+  const [isAutoPlaying, setIsAutoPlaying] = useState(false);
 
   // Accessibility: never play for reduced-motion users.
   const noMotion = useMemo(() => {
@@ -2620,6 +2625,78 @@ function ProductVideoPreview({ videoUrl, posterUrl, title, playing, onVideoError
     return () => document.removeEventListener("visibilitychange", onVis);
   }, [playing, noMotion, noData]);
 
+  // Autoplay-when-visible: play when the card scrolls into the viewport,
+  // pause when it scrolls out. Respects reduced-motion, saveData, and
+  // touch devices. Capped at MAX_CONCURRENT_AUTOPLAY for CPU/battery.
+  useEffect(() => {
+    if (!autoPlayWhenVisible) return;
+    if (typeof window === "undefined") return;
+
+    const videoEl = videoRef.current;
+    if (!videoEl || loadError) return;
+
+    // Respect user preferences — same guards as hover play
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (prefersReducedMotion) return;
+
+    const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+    if (connection?.saveData) return;
+
+    // Touch devices: don't autoplay (poster stays)
+    const canHover = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+    if (!canHover) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            if (activeAutoplayCount < MAX_CONCURRENT_AUTOPLAY) {
+              activeAutoplayCount += 1;
+              videoEl.play().then(() => {
+                setIsAutoPlaying(true);
+              }).catch(() => {
+                // Autoplay failed (browser policy, decode error) — release slot
+                activeAutoplayCount = Math.max(0, activeAutoplayCount - 1);
+                setIsAutoPlaying(false);
+              });
+            }
+          } else {
+            if (videoEl.dataset.autoplayActive === "1") {
+              videoEl.pause();
+              videoEl.dataset.autoplayActive = "";
+              activeAutoplayCount = Math.max(0, activeAutoplayCount - 1);
+              setIsAutoPlaying(false);
+            }
+          }
+        }
+      },
+      { threshold: 0.5 }
+    );
+
+    // Mark when autoplay starts (after successful play)
+    const onPlay = () => {
+      if (videoEl.dataset.autoplayActive !== "1") {
+        videoEl.dataset.autoplayActive = "1";
+      }
+    };
+    videoEl.addEventListener("play", onPlay);
+
+    observer.observe(videoEl);
+    return () => {
+      observer.disconnect();
+      videoEl.removeEventListener("play", onPlay);
+      if (videoEl.dataset.autoplayActive === "1") {
+        videoEl.pause();
+        videoEl.dataset.autoplayActive = "";
+        activeAutoplayCount = Math.max(0, activeAutoplayCount - 1);
+        setIsAutoPlaying(false);
+      }
+    };
+  }, [autoPlayWhenVisible, videoUrl, loadError]);
+
+  // Combined visible state: video is shown when either hover-playing or autoplaying
+  const videoVisible = playing || isAutoPlaying;
+
   if (loadError) return null;
 
   return (
@@ -2649,7 +2726,7 @@ function ProductVideoPreview({ videoUrl, posterUrl, title, playing, onVideoError
             height: "100%",
             objectFit: "cover",
             pointerEvents: "none",
-            opacity: playing ? 0 : 1,
+            opacity: videoVisible ? 0 : 1,
             transition: "opacity 0.25s ease",
             zIndex: 1,
           }}
@@ -2678,7 +2755,7 @@ function ProductVideoPreview({ videoUrl, posterUrl, title, playing, onVideoError
           objectFit: "cover",
           background: "#000",
           pointerEvents: "none",
-          opacity: playing ? 1 : 0,
+          opacity: videoVisible ? 1 : 0,
           transition: "opacity 0.25s ease",
           zIndex: 2,
         }}
@@ -2765,6 +2842,7 @@ const ProductPreview = forwardRef(function ProductPreview({
             posterUrl={posterUrl}
             title={product?.titleEn || product?.titleZh || ""}
             playing={canHover && isHovering}
+            autoPlayWhenVisible={true}
             onVideoError={() => setCardVideoFailed(true)}
           />
         </div>
@@ -2988,7 +3066,9 @@ function ProductDetail({
   const [freeRemoteError, setFreeRemoteError] = useState("");
   const [aiPromptCopied, setAiPromptCopied] = useState(false);
   const [toast, setToast] = useState(null);
-  const [detailMediaMode, setDetailMediaMode] = useState("demo");
+  const [detailMediaMode, setDetailMediaMode] = useState(
+    getPreviewVideoUrl(product) ? "video" : "demo"
+  );
   const [sourceMenuOpen, setSourceMenuOpen] = useState(false);
   const sourceMenuRef = useRef(null);
 
@@ -3015,12 +3095,11 @@ function ProductDetail({
   const detailVideoUrl = getPreviewVideoUrl(product);
   const hasVideo = Boolean(detailVideoUrl);
 
-  // Always default to the interactive live demo — users should touch and
-  // feel the running code, not watch a recorded video. Video remains an
-  // optional secondary tab for products that ship one.
+  // Default to video tab when product has a video, otherwise live demo.
+  // Reset when the product changes (user clicks a different card).
   useEffect(() => {
-    setDetailMediaMode("demo");
-  }, [product?.id, product?.slug]);
+    setDetailMediaMode(detailVideoUrl ? "video" : "demo");
+  }, [product?.id, product?.slug, detailVideoUrl]);
 
   useEffect(() => {
     let active = true;
