@@ -502,6 +502,22 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
   const [unlockModalProduct, setUnlockModalProduct] = useState(null);
   const viewedProductsRef = useRef(new Set());
 
+  // Open unlock modal when the sign-in resume flow detects a premium product
+  // the user doesn't have access to (fired from SteaCodeMemberGate resume logic).
+  // The event fires after sign-in inside an already-open product modal,
+  // so we use the currently selected product.
+  useEffect(() => {
+    const handler = (e) => {
+      const productId = e.detail?.productId;
+      if (!productId) return;
+      if (selected && getProductIdentity(selected) === productId) {
+        setUnlockModalProduct(selected);
+      }
+    };
+    window.addEventListener("stea:open-unlock", handler);
+    return () => window.removeEventListener("stea:open-unlock", handler);
+  }, [selected]);
+
   // Category/filter cross-fade: fade out → swap → fade in
   useEffect(() => {
     const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;

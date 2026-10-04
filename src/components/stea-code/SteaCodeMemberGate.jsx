@@ -25,6 +25,7 @@ import {
 } from "../../services/steaCodeResumeAction.js";
 import { trackUserEvent } from "../../services/analytics.js";
 import { getSteaCodeProduct, getSteaCodeProductPreview } from "../../services/steaCodeCommerce.js";
+import { fetchEntitlements } from "../../services/steaCodeEntitlements.js";
 
 const I18N = {
   en: {
@@ -264,15 +265,38 @@ export default function SteaCodeMemberGate({
         } else if (pending.type === "copy-source" || pending.type === "copy-prompt") {
           void (async () => {
             try {
+              // Fetch the product to check if it's premium
+              const prod = await getSteaCodeProduct(pending.productId);
+              const isPremium = String(prod?.pricingType || "").toLowerCase() === "premium";
+
+              // For premium products, verify the user has access before copying
+              if (isPremium) {
+                const entitlements = await fetchEntitlements();
+                const hasProLifetime = entitlements?.hasProLifetime === true;
+                const ownsProduct = entitlements?.productIds?.has?.(pending.productId) === true;
+                if (!hasProLifetime && !ownsProduct) {
+                  // No access — open the unlock modal instead of copying
+                  try {
+                    sessionStorage.removeItem("stea_pending_action");
+                  } catch {
+                    /* sessionStorage may be unavailable */
+                  }
+                  window.dispatchEvent(
+                    new CustomEvent("stea:open-unlock", {
+                      detail: { productId: pending.productId },
+                    })
+                  );
+                  return;
+                }
+              }
+
               let text = "";
               if (pending.type === "copy-prompt") {
-                const prod = await getSteaCodeProduct(pending.productId);
                 text = String(prod?.aiPrompt || "");
               } else {
                 const preview = await getSteaCodeProductPreview(pending.productId);
                 text = String(preview?.sourceCodeHtml || preview?.preview || "");
                 if (!text) {
-                  const prod = await getSteaCodeProduct(pending.productId);
                   text = String(prod?.sourceCode || "");
                 }
               }
