@@ -1,9 +1,9 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowRight, Check, Home, Shield, Zap, RefreshCcw } from "lucide-react";
 import { getSteaCodePublicUrl } from "../../utils/subdomains.js";
 import { getFirebaseAuth } from "../../firebase.js";
-import { STEA_CODE_SERVER_PRODUCTS } from "../../data/stea-code/codeProductsServer.js";
+import { getSteaCodeCatalog } from "../../services/steaCodeCommerce.js";
 import SEO from "../../components/SEO.jsx";
 import "./stea-code.css";
 import "./stea-code-v2.css";
@@ -14,34 +14,56 @@ const GRADIENT_VARIANTS = ["gradient-1", "gradient-2", "gradient-3", "gradient-4
 export default function SteaCodeUpgradePage() {
   const navigate = useNavigate();
   const homeUrl = getSteaCodePublicUrl();
-  const [loading, setLoading] = useState(false);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Pick up to 6 products for the preview grid — mix of premium and free.
-  // Prioritize premium products, then fill with free to reach 6.
-  const previewProducts = useMemo(() => {
-    const all = Array.isArray(STEA_CODE_SERVER_PRODUCTS) ? STEA_CODE_SERVER_PRODUCTS : [];
-    const premium = all.filter((p) => p.pricingType === "premium");
-    const free = all.filter((p) => p.pricingType === "free");
-    const picked = [];
-    // Take up to 4 premium first
-    for (let i = 0; i < Math.min(4, premium.length) && picked.length < 6; i++) {
-      picked.push(premium[i]);
-    }
-    // Fill remaining with free
-    for (let i = 0; i < free.length && picked.length < 6; i++) {
-      picked.push(free[i]);
-    }
-    return picked;
+  // Live catalog data
+  const [products, setProducts] = useState([]);
+  const [catalogLoading, setCatalogLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const result = await getSteaCodeCatalog();
+        if (!cancelled) {
+          const list = Array.isArray(result?.products) ? result.products : [];
+          setProducts(list);
+        }
+      } catch (err) {
+        console.warn("[upgrade] catalog fetch failed:", err);
+        if (!cancelled) setProducts([]);
+      } finally {
+        if (!cancelled) setCatalogLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
   }, []);
 
-  const totalComponents = Array.isArray(STEA_CODE_SERVER_PRODUCTS)
-    ? STEA_CODE_SERVER_PRODUCTS.length
-    : 122;
+  // Preview grid: premium first, then free, up to 6 total
+  const { previewProducts, premiumCount } = useMemo(() => {
+    if (!Array.isArray(products)) return { previewProducts: [], premiumCount: 0 };
+    const premium = products.filter(
+      (p) => String(p?.pricingType || "").toLowerCase() === "premium"
+    );
+    const free = products.filter(
+      (p) => String(p?.pricingType || "").toLowerCase() !== "premium"
+    );
+    const picked = [...premium, ...free].slice(0, 6);
+    return { previewProducts: picked, premiumCount: premium.length };
+  }, [products]);
 
-  // Rough price estimate for "buying individually" math
-  const avgPrice = 2; // $2 per component estimate
-  const individualTotal = totalComponents * avgPrice;
+  const totalCount = Array.isArray(products) ? products.length : 0;
+
+  // Value math — only shown when there are enough products to be meaningful
+  const showValueMath = useMemo(() => {
+    if (catalogLoading || totalCount < 20) return false;
+    const avgPrice = 2; // $2 per component estimate
+    const individualTotal = totalCount * avgPrice;
+    return individualTotal >= 60;
+  }, [catalogLoading, totalCount]);
+
+  const individualTotal = totalCount * 2; // $2 each
   const lifetimePrice = 29; // €29
   const savings = individualTotal - lifetimePrice;
 
@@ -62,7 +84,7 @@ export default function SteaCodeUpgradePage() {
       return;
     }
 
-    setLoading(true);
+    setCheckoutLoading(true);
     try {
       const token = await currentUser.getIdToken();
       const res = await fetch("/api/stea-code/checkout", {
@@ -78,12 +100,12 @@ export default function SteaCodeUpgradePage() {
       window.location.href = data.url;
     } catch (err) {
       setError(err.message || "Something went wrong. Please try again.");
-      setLoading(false);
+      setCheckoutLoading(false);
     }
   };
 
   const features = [
-    { label: "All components", detail: `— ${totalComponents}+, instant access` },
+    { label: "All components", detail: `— ${totalCount || "every"} component, instant access` },
     { label: "Future components", detail: "— every new one, free forever" },
     { label: "Full source code", detail: "— HTML, CSS, JavaScript" },
     { label: "AI prompts", detail: "— prompts to rebuild each component" },
@@ -114,7 +136,7 @@ export default function SteaCodeUpgradePage() {
     <div className="sc-upgrade-page stea-code-app sc-v2 sc-market-home sc-v2-home">
       <SEO
         title="Lifetime Access — steacode"
-        description={`Get all ${totalComponents}+ components on steacode — current and future — for one payment of €29. Full source code, AI prompts, commercial license.`}
+        description={`Get every component on steacode — current and future — for one payment of €29. Full source code, AI prompts, commercial license.`}
       />
 
       {/* Top Header */}
@@ -173,9 +195,9 @@ export default function SteaCodeUpgradePage() {
             type="button"
             className="sc-upgrade-cta-btn"
             onClick={handleUpgradeClick}
-            disabled={loading}
+            disabled={checkoutLoading}
           >
-            <span>{loading ? "Preparing checkout…" : "Get lifetime access — €29"}</span>
+            <span>{checkoutLoading ? "Preparing checkout…" : "Get lifetime access — €29"}</span>
             <ArrowRight size={16} />
           </button>
           {error && (
@@ -203,61 +225,112 @@ export default function SteaCodeUpgradePage() {
       {/* Preview grid */}
       <section className="sc-upgrade-section">
         <span className="sc-upgrade-section-label">Here's what you unlock</span>
-        <h2 className="sc-upgrade-section-title">Every component. All premium.</h2>
-        <div className="sc-upgrade-preview-grid">
-          {previewProducts.map((product, idx) => {
-            const isPremium = product.pricingType === "premium";
-            const title = product.titleEn || product.title || "Untitled";
-            const gradientClass = GRADIENT_VARIANTS[idx % GRADIENT_VARIANTS.length];
-            return (
+        <h2 className="sc-upgrade-section-title">Every component. One price.</h2>
+        {catalogLoading ? (
+          <div className="sc-upgrade-preview-grid">
+            {[0, 1, 2, 3, 4, 5].map((i) => (
               <div
-                key={product.id || product.slug || idx}
-                className={`sc-upgrade-preview-card ${gradientClass}`}
+                key={i}
+                className={`sc-upgrade-preview-card ${GRADIENT_VARIANTS[i]}`}
+                style={{ opacity: 0.4 }}
               >
-                <span className={`sc-upgrade-preview-badge ${isPremium ? "is-premium" : "is-free"}`}>
-                  {isPremium ? "Premium" : "Free"}
-                </span>
                 <div className="sc-upgrade-preview-card-art">
-                  <span className="sc-upgrade-preview-card-title">{title}</span>
+                  <span className="sc-upgrade-preview-card-title">&nbsp;</span>
                 </div>
               </div>
-            );
-          })}
-        </div>
+            ))}
+          </div>
+        ) : previewProducts.length > 0 ? (
+          <>
+            <div className="sc-upgrade-preview-grid">
+              {previewProducts.map((product, idx) => {
+                const isPremium =
+                  String(product?.pricingType || "").toLowerCase() === "premium";
+                const title = product.titleEn || product.title || "Untitled";
+                const gradientClass =
+                  GRADIENT_VARIANTS[idx % GRADIENT_VARIANTS.length];
+                return (
+                  <div
+                    key={product.id || product.slug || idx}
+                    className={`sc-upgrade-preview-card ${gradientClass}`}
+                  >
+                    <span
+                      className={`sc-upgrade-preview-badge ${
+                        isPremium ? "is-premium" : "is-free"
+                      }`}
+                    >
+                      {isPremium ? "Premium" : "Free"}
+                    </span>
+                    <div className="sc-upgrade-preview-card-art">
+                      <span className="sc-upgrade-preview-card-title">
+                        {title}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            {premiumCount === 0 && products.length > 0 && (
+              <p
+                style={{
+                  textAlign: "center",
+                  marginTop: 20,
+                  fontSize: 13,
+                  color: "#6b7280",
+                  fontStyle: "italic",
+                }}
+              >
+                Premium components launching soon — lifetime access gets you early access.
+              </p>
+            )}
+          </>
+        ) : (
+          <p style={{ textAlign: "center", color: "#6b7280", fontSize: 14 }}>
+            Loading components…
+          </p>
+        )}
       </section>
 
-      <hr className="sc-upgrade-divider" />
+      {showValueMath && (
+        <>
+          <hr className="sc-upgrade-divider" />
 
-      {/* Value math */}
-      <section className="sc-upgrade-section">
-        <span className="sc-upgrade-section-label">The math</span>
-        <h2 className="sc-upgrade-section-title">Why lifetime is the deal</h2>
-        <div className="sc-upgrade-math">
-          <div className="sc-upgrade-math-row">
-            <span>Buying individually</span>
-            <span className="value">{totalComponents} × $2 = ${individualTotal}</span>
-          </div>
-          <div className="sc-upgrade-math-row total">
-            <span>Lifetime access</span>
-            <span className="value">€{lifetimePrice}</span>
-          </div>
-          <div className="sc-upgrade-math-row savings">
-            <span>You save</span>
-            <span className="value">${savings}+</span>
-          </div>
-          <div className="sc-upgrade-math-cta">
-            <button
-              type="button"
-              className="sc-upgrade-cta-btn"
-              onClick={handleUpgradeClick}
-              disabled={loading}
-            >
-              <span>{loading ? "Preparing checkout…" : "Unlock everything"}</span>
-              <ArrowRight size={16} />
-            </button>
-          </div>
-        </div>
-      </section>
+          {/* Value math */}
+          <section className="sc-upgrade-section">
+            <span className="sc-upgrade-section-label">The math</span>
+            <h2 className="sc-upgrade-section-title">Why lifetime is the deal</h2>
+            <div className="sc-upgrade-math">
+              <div className="sc-upgrade-math-row">
+                <span>Buying individually</span>
+                <span className="value">
+                  {totalCount} × $2 = ${individualTotal}
+                </span>
+              </div>
+              <div className="sc-upgrade-math-row total">
+                <span>Lifetime access</span>
+                <span className="value">€{lifetimePrice}</span>
+              </div>
+              <div className="sc-upgrade-math-row savings">
+                <span>You save</span>
+                <span className="value">${savings}+</span>
+              </div>
+              <div className="sc-upgrade-math-cta">
+                <button
+                  type="button"
+                  className="sc-upgrade-cta-btn"
+                  onClick={handleUpgradeClick}
+                  disabled={checkoutLoading}
+                >
+                  <span>
+                    {checkoutLoading ? "Preparing checkout…" : "Unlock everything"}
+                  </span>
+                  <ArrowRight size={16} />
+                </button>
+              </div>
+            </div>
+          </section>
+        </>
+      )}
 
       <hr className="sc-upgrade-divider" />
 
@@ -297,15 +370,15 @@ export default function SteaCodeUpgradePage() {
       <section className="sc-upgrade-final">
         <h2 className="sc-upgrade-final-title">Ready to build faster?</h2>
         <p className="sc-upgrade-final-sub">
-          One payment. {totalComponents}+ components. Lifetime access.
+          One payment. {totalCount ? `${totalCount}+ components` : "Every component"}. Lifetime access.
         </p>
         <button
           type="button"
           className="sc-upgrade-cta-btn"
           onClick={handleUpgradeClick}
-          disabled={loading}
+          disabled={checkoutLoading}
         >
-          <span>{loading ? "Preparing checkout…" : "Get lifetime access — €29"}</span>
+          <span>{checkoutLoading ? "Preparing checkout…" : "Get lifetime access — €29"}</span>
           <ArrowRight size={16} />
         </button>
       </section>
