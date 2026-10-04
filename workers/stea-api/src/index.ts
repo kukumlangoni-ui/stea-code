@@ -13,6 +13,8 @@ import { corsHeaders, isPreflight, preflightResponse } from "./cors";
 import { handleCatalog, handleProduct } from "./routes/catalog";
 import { handlePreview, handleFreeContent, handleContent } from "./routes/content";
 import { handleCheckout } from "./routes/checkout";
+import { handleCheckoutProduct } from "./routes/checkout-product";
+import { handleEntitlementsMe } from "./routes/entitlements";
 import { handleDownload } from "./routes/download";
 import { handleMedia, handleMediaUpload } from "./routes/media";
 import { handleStripeWebhook } from "./routes/stripe-webhook";
@@ -170,6 +172,16 @@ export default {
       // Stripe checkout (auth required)
       if (apiPath === "/stea-code/checkout" && method === "POST") {
         return handleCheckout(request, env);
+      }
+
+      // Per-product Stripe checkout (auth required)
+      if (apiPath === "/stea-code/checkout-product" && method === "POST") {
+        return handleCheckoutProduct(request, env);
+      }
+
+      // Entitlements for current user (auth required)
+      if (apiPath === "/stea-code/entitlements/me" && method === "GET") {
+        return handleEntitlementsMe(request, env);
       }
 
       // Stripe webhook

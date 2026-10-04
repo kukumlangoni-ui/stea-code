@@ -33,6 +33,7 @@ import { useSteaCodeI18n } from "../../components/stea-code/useSteaCodeI18n.js";
 import { createPortal } from "react-dom";
 import { onAuthStateChanged, signOut, sendEmailVerification } from "firebase/auth";
 import SteaCodeMemberGate from "../../components/stea-code/SteaCodeMemberGate.jsx";
+import SteaCodeUnlockModal from "../../components/stea-code/SteaCodeUnlockModal.jsx";
 import SteaCodeProductLivePreview from "../../components/stea-code/SteaCodeProductLivePreview.jsx";
 import SteaCodeProductSkeleton from "../../components/stea-code/SteaCodeProductSkeleton.jsx";
 import PreviewErrorBoundary from "../../components/stea-code/PreviewErrorBoundary.jsx";
@@ -50,6 +51,7 @@ import {
   setSteaCodePendingAction } from "../../services/steaCodeResumeAction.js";
 import { getFirebaseAuth } from "../../firebase.js";
 import { startActivityTracking } from "../../services/userActivity.js";
+import { fetchEntitlements } from "../../services/steaCodeEntitlements.js";
 import {
   downloadSteaCodeSource,
   getSteaCodeCatalog,
@@ -497,6 +499,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
   }, [location.pathname, viewParam, viewMode]);
 
   const [selected, setSelected] = useState(null);
+  const [unlockModalProduct, setUnlockModalProduct] = useState(null);
   const viewedProductsRef = useRef(new Set());
 
   // Category/filter cross-fade: fade out → swap → fade in
@@ -668,6 +671,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
   const signedInEmail = (effectiveUser?.email || "").trim();
   const ADMIN_EMAILS = ["stea.africa@gmail.com", "kukumlangoni@gmail.com"];
   const isAdmin = ADMIN_EMAILS.map((e) => e.toLowerCase()).includes(signedInEmail.toLowerCase());
+  const [entitlements, setEntitlements] = useState({ hasProLifetime: false, productIds: new Set() });
   const [pageToast, setPageToast] = useState(null);
   const pageToastTimerRef = useRef(null);
   const accountMenuRef = useRef(null);
@@ -692,6 +696,20 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
 
     return () => { cancelled = true; clearTimeout(t); };
   }, []);
+
+  // Fetch entitlements when the signed-in user changes
+  useEffect(() => {
+    let cancelled = false;
+    if (!effectiveUser) {
+      setEntitlements({ hasProLifetime: false, productIds: new Set() });
+      return;
+    }
+    fetchEntitlements().then((data) => {
+      if (!cancelled) setEntitlements(data);
+    });
+    return () => { cancelled = true; };
+  }, [effectiveUser?.uid]);
+
   const [visibleProductCount, setVisibleProductCount] = useState(24);
 
   /* -------- Auth resume flow — Member Gate (premium / free code) -------- */
@@ -2063,23 +2081,8 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
             tLocal={tLocal}
             isFavorited={favorites.has(getProductIdentity(selected))}
             onToggleFavorite={handleToggleFavorite}
-            onUnlockPremium={(product) => {
-              const productId = String(
-                product?.id || product?.slug || ""
-              ).trim();
-
-              if (!productId) return;
-
-              const user = getFirebaseAuth()?.currentUser;
-
-              if (!user) {
-                closeProduct();
-                requestAuthForCheckout(productId);
-                return;
-              }
-              closeProduct();
-              goToCheckout(productId);
-            }}
+            entitlements={entitlements}
+            onOpenUnlockModal={() => setUnlockModalProduct(selected)}
           />
         )}
       </AnimatePresence>
@@ -2090,6 +2093,18 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
         onClose={handleMemberGateClose}
         onAuthenticated={handleMemberGateAuthenticated}
       />
+
+      {/* Unlock premium modal */}
+      {unlockModalProduct && (
+        <SteaCodeUnlockModal
+          product={unlockModalProduct}
+          onClose={() => setUnlockModalProduct(null)}
+          onPurchased={() => {
+            fetchEntitlements().then((data) => setEntitlements(data));
+            setUnlockModalProduct(null);
+          }}
+        />
+      )}
 
       {/* Page-level toast */}
       {pageToast && (
@@ -2944,9 +2959,10 @@ function ProductDetail({
   product,
   onClose,
   tLocal,
-  onUnlockPremium,
   isFavorited,
   onToggleFavorite,
+  entitlements,
+  onOpenUnlockModal,
 }) {
   const previewRef = useRef(null);
   const [copied, setCopied] = useState(false);
@@ -3541,6 +3557,12 @@ ${file.content}`
 
   const isSignedIn = Boolean(currentUser);
 
+  // Premium access gating (entitlements)
+  const productPrice = Number(product?.price || 0);
+  const hasProLifetime = entitlements?.hasProLifetime === true;
+  const ownsThisProduct = entitlements?.productIds?.has?.(product?.id) === true;
+  const hasAccess = !isPremium || hasProLifetime || ownsThisProduct;
+
   // Shared copy-to-clipboard helper with fallback
   const safeCopyToClipboard = useCallback(async (text) => {
     if (!text || !text.trim()) {
@@ -3658,8 +3680,12 @@ ${file.content}`
       handleGateAction("copy-prompt");
       return;
     }
+    if (!hasAccess) {
+      onOpenUnlockModal?.();
+      return;
+    }
     executeCopyPrompt();
-  }, [isSignedIn, handleGateAction, executeCopyPrompt]);
+  }, [isSignedIn, hasAccess, handleGateAction, onOpenUnlockModal, executeCopyPrompt]);
 
   const handleCopySourceClick = useCallback((e) => {
     e.stopPropagation();
@@ -3667,8 +3693,12 @@ ${file.content}`
       handleGateAction("copy-source");
       return;
     }
+    if (!hasAccess) {
+      onOpenUnlockModal?.();
+      return;
+    }
     executeCopySource();
-  }, [isSignedIn, handleGateAction, executeCopySource]);
+  }, [isSignedIn, hasAccess, handleGateAction, onOpenUnlockModal, executeCopySource]);
 
   const handleDownloadClick = useCallback((e) => {
     e.stopPropagation();
@@ -3676,8 +3706,12 @@ ${file.content}`
       handleGateAction("download");
       return;
     }
+    if (!hasAccess) {
+      onOpenUnlockModal?.();
+      return;
+    }
     executeDownload();
-  }, [isSignedIn, handleGateAction, executeDownload]);
+  }, [isSignedIn, hasAccess, handleGateAction, onOpenUnlockModal, executeDownload]);
 
   // Resume pending action on mount or when user authenticates
   useEffect(() => {
@@ -4494,7 +4528,7 @@ ${file.content}`
                 onClick={handleCopyPromptClick}
               >
                 <span className="sc-detail-action-icon" aria-hidden="true">
-                  {!isSignedIn ? (
+                  {(!isSignedIn || !hasAccess) ? (
                     <Lock size={18} />
                   ) : copiedPrompt ? (
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -4508,7 +4542,7 @@ ${file.content}`
                   )}
                 </span>
                 <span className="sc-detail-action-label">
-                  {!isSignedIn ? 'Sign in to copy' : copiedPrompt ? 'Prompt Copied' : 'Copy AI Prompt'}
+                  {!isSignedIn ? 'Sign in to copy' : !hasAccess ? `Unlock for $${productPrice.toFixed(2)}` : copiedPrompt ? 'Prompt Copied' : 'Copy AI Prompt'}
                 </span>
               </button>
             )}
@@ -4521,7 +4555,7 @@ ${file.content}`
                 onClick={handleCopySourceClick}
               >
                 <span className="sc-detail-action-icon" aria-hidden="true">
-                  {!isSignedIn ? (
+                  {(!isSignedIn || !hasAccess) ? (
                     <Lock size={18} />
                   ) : copiedCode ? (
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -4535,7 +4569,7 @@ ${file.content}`
                   )}
                 </span>
                 <span className="sc-detail-action-label">
-                  {!isSignedIn ? 'Sign in to copy' : copiedCode ? 'Code Copied' : 'Copy Source Code'}
+                  {!isSignedIn ? 'Sign in to copy' : !hasAccess ? `Unlock for $${productPrice.toFixed(2)}` : copiedCode ? 'Code Copied' : 'Copy Source Code'}
                 </span>
               </button>
             )}
@@ -4549,7 +4583,7 @@ ${file.content}`
                 onClick={handleDownloadClick}
               >
                 <span className="sc-detail-action-icon" aria-hidden="true">
-                  {!isSignedIn ? (
+                  {(!isSignedIn || !hasAccess) ? (
                     <Lock size={18} />
                   ) : (
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -4562,6 +4596,8 @@ ${file.content}`
                 <span className="sc-detail-action-label">
                   {!isSignedIn
                     ? 'Sign in to download'
+                    : !hasAccess
+                    ? `Unlock for $${productPrice.toFixed(2)}`
                     : downloading
                     ? 'Preparing download…'
                     : 'Download Source Code'}

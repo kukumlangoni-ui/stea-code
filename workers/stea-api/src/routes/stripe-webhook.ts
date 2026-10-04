@@ -122,6 +122,8 @@ export async function handleStripeWebhook(req: Request, env: WorkerEnv): Promise
 
       const uid = session.metadata?.firebaseUid || "";
       const email = session.metadata?.firebaseEmail || "";
+      const purchaseType = session.metadata?.purchaseType || "pro";
+      const productId = session.metadata?.productId || "pro-lifetime";
       const sessionId = session.id;
       const amountTotal = session.amount_total ?? 0;
       const currency = session.currency || "";
@@ -140,10 +142,10 @@ export async function handleStripeWebhook(req: Request, env: WorkerEnv): Promise
           .bind(
             sessionId,            // id
             uid,                  // userId
-            "pro-lifetime",       // productId
+            productId,            // productId
             "purchase",           // source
             sessionId,            // orderId
-            "lifetime",           // licenseType
+            purchaseType === "product" ? "single" : "lifetime",  // licenseType
             now,                  // grantedAt (ISO string)
             entitlementExtra      // extraData
           )
@@ -160,7 +162,7 @@ export async function handleStripeWebhook(req: Request, env: WorkerEnv): Promise
           .bind(
             sessionId,            // id
             uid,                  // userId
-            "pro-lifetime",       // productId
+            productId,            // productId
             amountTotal / 100,    // amount (convert cents to dollars for REAL column)
             currency,             // currency
             "paid",               // status
@@ -171,7 +173,7 @@ export async function handleStripeWebhook(req: Request, env: WorkerEnv): Promise
           )
           .run();
 
-        console.log(`[stripe-webhook] Granted pro-lifetime to ${email} (${uid})`);
+        console.log(`[stripe-webhook] Granted ${productId} (${purchaseType === "product" ? "single" : "lifetime"}) to ${email} (${uid})`);
       } catch (dbErr: any) {
         console.error("[stripe-webhook] DB insert failed:", dbErr?.message || dbErr);
         return new Response(
