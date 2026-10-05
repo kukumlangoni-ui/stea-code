@@ -57,6 +57,28 @@ export async function handlePreview(req: Request, env: Env, productId: string): 
         },
       });
     }
+    // Final fallback: use products.sourceCode as fullDocument preview.
+    // Some products have their code in sourceCode but no separate previews doc.
+    const sourceCode = productDoc?.data?.sourceCode;
+    if (sourceCode && typeof sourceCode === "string" && sourceCode.length > 100) {
+      const fallbackPreview = {
+        fullDocument: sourceCode,
+        runtime: productPreview.runtime || "full-html",
+        width: productPreview.width || productDoc?.data?.designWidth || 1600,
+        height: productPreview.height || productDoc?.data?.designHeight || 1100,
+        enabled: productPreview.enabled !== false,
+        viewportMode: productPreview.viewportMode,
+        scaleMode: productPreview.scaleMode,
+      };
+      return new Response(JSON.stringify({ preview: fallbackPreview }), {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+          "Cache-Control": "public, max-age=0, s-maxage=10, stale-while-revalidate=30, must-revalidate",
+          ...corsHeaders(req.headers.get("origin")),
+        },
+      });
+    }
     return new Response(JSON.stringify({ preview: null }), {
       status: 200,
       headers: {
@@ -266,6 +288,26 @@ export async function handleProductPreviewCard(req: Request, env: Env, productId
       previewData = { ...previewDoc.data, ...productPreview };
     } else if (productPreview && Object.keys(productPreview).length > 0) {
       previewData = { ...productPreview };
+    }
+
+    // Fallback: if previews collection has no real content, use products.sourceCode
+    // as fullDocument. Some products have code only in sourceCode, not in a
+    // separate previews doc.
+    const hasPreviewContent = Boolean(
+      (previewData.fullDocument && typeof previewData.fullDocument === "string" && previewData.fullDocument.length > 100) ||
+      (previewData.html && typeof previewData.html === "string" && previewData.html.length > 50) ||
+      (previewData.css && typeof previewData.css === "string" && previewData.css.length > 50) ||
+      (previewData.javascript && typeof previewData.javascript === "string" && previewData.javascript.length > 50)
+    );
+    if (!hasPreviewContent) {
+      const sourceCode = product.data?.sourceCode;
+      if (sourceCode && typeof sourceCode === "string" && sourceCode.length > 100) {
+        previewData = {
+          ...previewData,
+          fullDocument: sourceCode,
+          runtime: previewData.runtime || "full-html",
+        };
+      }
     }
 
     // 2. Determine access level
