@@ -469,6 +469,88 @@ export function invalidateSteaCodeProductPreviewCache(productId) {
   if (cleanId) previewCache.delete(cleanId);
 }
 
+// ─── Card Preview (sanitized, lazy-loaded per card in Explore grid) ───
+//
+// Returns a lightweight preview suitable for card rendering:
+//   - Free products: full preview (HTML + CSS + JS)
+//   - Premium, buyer: full preview
+//   - Premium, non-buyer: sanitized (HTML + CSS only, no JS — shows the design)
+//
+// Has its own cache (separate from the full preview cache) since the data
+// shape and access model differ.
+
+const CARD_PREVIEW_CACHE_TTL = 5 * 60 * 1000; // 5 min
+const cardPreviewCache = new Map(); // id -> { data, expiresAt, inFlight }
+
+export async function getSteaCodeProductCardPreview(productId, options = {}) {
+  const cleanId = String(productId || "").trim();
+
+  // 1. Return fresh cached entry if available.
+  if (cleanId && !options?.forceFresh) {
+    const hit = cardPreviewCache.get(cleanId);
+    if (hit && hit.data && hit.expiresAt > Date.now()) {
+      return hit.data;
+    }
+    if (hit && hit.inFlight) {
+      return hit.inFlight;
+    }
+  }
+
+  // 2. Build headers — include auth token if user is signed in
+  const headers = { Accept: "application/json" };
+  const auth = getFirebaseAuth();
+  if (auth?.currentUser) {
+    try {
+      const token = await auth.currentUser.getIdToken(/* forceRefresh */ false);
+      headers.Authorization = `Bearer ${token}`;
+    } catch {
+      // Token retrieval failed — proceed without auth (gets sanitized preview)
+    }
+  }
+
+  const fetchPromise = fetch(
+    `${API_BASE}/api/stea-code/products/${encodeURIComponent(cleanId)}/preview-card?_t=${Date.now()}`,
+    {
+      cache: "no-cache",
+      headers,
+      signal: options?.signal,
+    }
+  )
+    .then(parseResponse)
+    .then((data) => {
+      if (cleanId) {
+        cardPreviewCache.set(cleanId, {
+          data,
+          expiresAt: Date.now() + CARD_PREVIEW_CACHE_TTL,
+          inFlight: null,
+        });
+      }
+      return data;
+    })
+    .catch((err) => {
+      if (cleanId) {
+        const slot = cardPreviewCache.get(cleanId);
+        if (slot && slot.inFlight === fetchPromise) {
+          slot.inFlight = null;
+        }
+      }
+      throw err;
+    });
+
+  if (cleanId) {
+    const slot = cardPreviewCache.get(cleanId) || { data: null, expiresAt: 0, inFlight: null };
+    slot.inFlight = fetchPromise;
+    cardPreviewCache.set(cleanId, slot);
+  }
+
+  return fetchPromise;
+}
+
+export function invalidateSteaCodeProductCardPreviewCache(productId) {
+  const cleanId = String(productId || "").trim();
+  if (cleanId) cardPreviewCache.delete(cleanId);
+}
+
 export async function getSteaCodeFreeProductContent(productId) {
   const headers = await authHeaders();
 

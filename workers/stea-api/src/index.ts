@@ -11,7 +11,7 @@
 
 import { corsHeaders, isPreflight, preflightResponse } from "./cors";
 import { handleCatalog, handleProduct } from "./routes/catalog";
-import { handlePreview, handleFreeContent, handleContent } from "./routes/content";
+import { handlePreview, handleFreeContent, handleContent, handleProductPreviewCard } from "./routes/content";
 import { handleCheckout } from "./routes/checkout";
 import { handleCheckoutProduct } from "./routes/checkout-product";
 import { handleEntitlementsMe } from "./routes/entitlements";
@@ -120,6 +120,11 @@ export default {
       const previewMatch = apiPath.match(/^\/stea-code\/products\/([^/]+)\/preview$/);
       if (previewMatch && method === "GET") {
         return handlePreview(request, env, previewMatch[1]);
+      }
+
+      const previewCardMatch = apiPath.match(/^\/stea-code\/products\/([^/]+)\/preview-card$/);
+      if (previewCardMatch && method === "GET") {
+        return handleProductPreviewCard(request, env, previewCardMatch[1]);
       }
 
       const freeContentMatch = apiPath.match(/^\/stea-code\/products\/([^/]+)\/free-content$/);

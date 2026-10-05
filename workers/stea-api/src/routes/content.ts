@@ -1,11 +1,12 @@
 /**
  * Product preview + content routes.
  * - GET /products/:id/preview → live preview source (HTML/CSS/JS or full doc)
+ * - GET /products/:id/preview-card → sanitized card preview (HTML+CSS, no JS for non-buyers)
  * - GET /products/:id/free-content → free source files
  * - GET /products/:id/content → premium source files (auth + entitlement)
  */
 
-import { Env, getDoc } from "../firestore";
+import { Env, getDoc, listDocs } from "../firestore";
 import { corsHeaders } from "../cors";
 import { extractBearerToken, verifyFirebaseToken } from "../auth";
 
@@ -222,5 +223,156 @@ export async function handleContent(req: Request, env: Env, productId: string): 
       status: 500,
       headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) },
     });
+  }
+}
+
+/**
+ * Card preview endpoint — returns a sanitized preview for grid cards.
+ *
+ * Security model:
+ *   - Free products: full preview (HTML + CSS + JS)
+ *   - Premium products, authenticated user with entitlement: full preview
+ *   - Premium products, no auth or no entitlement: sanitized (HTML + CSS only, no JS/JSX/TSX)
+ *
+ * This lets non-buyers see the component design in cards without exposing
+ * the paid JavaScript logic.
+ */
+export async function handleProductPreviewCard(req: Request, env: Env, productId: string): Promise<Response> {
+  try {
+    // 1. Load product doc + preview source (same merge logic as handlePreview)
+    const productDoc = await getDoc(env, PRODUCTS_COLLECTION, productId, {});
+
+    // Fallback: slug lookup
+    let product = productDoc;
+    if (!product) {
+      const all = await listDocs(env, PRODUCTS_COLLECTION, {});
+      product = all.find((d) => d.data.slug === productId) || null;
+    }
+
+    if (!product) {
+      return new Response(JSON.stringify({ error: "Product not found" }), {
+        status: 404,
+        headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) },
+      });
+    }
+
+    const productPreview = product.data?.preview || {};
+    const previewDoc = await getDoc(env, PREVIEWS_COLLECTION, product.id, {});
+
+    // Merge preview source (from previews collection) with preview settings
+    // (from product doc). Same logic as handlePreview.
+    let previewData: any = {};
+    if (previewDoc) {
+      previewData = { ...previewDoc.data, ...productPreview };
+    } else if (productPreview && Object.keys(productPreview).length > 0) {
+      previewData = { ...productPreview };
+    }
+
+    // 2. Determine access level
+    const isFree = product.data.pricingType === "free";
+    let hasFullAccess = isFree;
+
+    if (!isFree) {
+      // Check auth — Authorization header is optional for this endpoint
+      const token = extractBearerToken(req);
+      if (token) {
+        try {
+          const decoded = await verifyFirebaseToken(env, token);
+          const uid = decoded.uid;
+
+          // Check D1 entitlements: pro-lifetime OR per-product entitlement
+          const result = await env.DB.prepare(
+            "SELECT productId FROM entitlements WHERE userId = ? AND (productId = ? OR productId = 'pro-lifetime') LIMIT 1"
+          )
+            .bind(uid, product.id)
+            .all();
+
+          const rows = result.results || [];
+          hasFullAccess = rows.length > 0;
+        } catch {
+          // Token invalid or verification failed — treat as unauthenticated
+          hasFullAccess = false;
+        }
+      }
+    }
+
+    // 3. Build the response
+    const runtime = String(previewData.runtime || "full-html");
+    const width = Number(previewData.width || product.data.designWidth || 1600);
+    const height = Number(previewData.height || product.data.designHeight || 1100);
+
+    let responsePreview: any = {
+      runtime,
+      width,
+      height,
+      enabled: previewData.enabled !== false,
+    };
+
+    // Always include HTML and CSS (these are the visual parts)
+    if (previewData.fullDocument && typeof previewData.fullDocument === "string") {
+      responsePreview.fullDocument = previewData.fullDocument;
+    }
+    if (previewData.html && typeof previewData.html === "string") {
+      responsePreview.html = previewData.html;
+    }
+    if (previewData.css && typeof previewData.css === "string") {
+      responsePreview.css = previewData.css;
+    }
+
+    // Include metadata fields that the card renderer uses
+    if (previewData.viewportMode) responsePreview.viewportMode = previewData.viewportMode;
+    if (previewData.scaleMode) responsePreview.scaleMode = previewData.scaleMode;
+
+    if (hasFullAccess) {
+      // Full access: include JS/JSX/TSX
+      if (previewData.javascript && typeof previewData.javascript === "string") {
+        responsePreview.javascript = previewData.javascript;
+      }
+      if (previewData.jsx && typeof previewData.jsx === "string") {
+        responsePreview.jsx = previewData.jsx;
+      }
+      if (previewData.tsx && typeof previewData.tsx === "string") {
+        responsePreview.tsx = previewData.tsx;
+      }
+      responsePreview.sanitized = false;
+      responsePreview.static = false;
+    } else {
+      // Sanitized: strip JS/JSX/TSX — show the design but not the logic
+      responsePreview.sanitized = true;
+      // If there's no HTML/CSS but there IS JS, it's a JS-only component
+      // (e.g. Three.js). Mark as static so the card can show a fallback.
+      const hasVisualContent = Boolean(
+        responsePreview.html || responsePreview.css || responsePreview.fullDocument
+      );
+      const hasOnlyJs = !hasVisualContent && Boolean(
+        previewData.javascript || previewData.jsx || previewData.tsx
+      );
+      responsePreview.static = hasOnlyJs;
+    }
+
+    // Cache: 60s browser, 2min edge, 10min stale-while-revalidate
+    // (same as catalog — card previews are public content)
+    return new Response(
+      JSON.stringify({
+        id: product.id,
+        preview: responsePreview,
+      }),
+      {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+          "Cache-Control": "public, max-age=60, s-maxage=120, stale-while-revalidate=600",
+          ...corsHeaders(req.headers.get("origin")),
+        },
+      }
+    );
+  } catch (e: any) {
+    return new Response(
+      JSON.stringify({ error: e?.message || "Card preview fetch failed" }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) },
+      }
+    );
   }
 }

@@ -2523,7 +2523,7 @@ function CodeProductCard({ product, tLocal, onOpen, isFavorited, onToggleFavorit
       >
         <div className="sc-code-card__preview">
           <div className="sc-product-preview-art">
-            <ProductPreview product={product} fillMode="cover" cardZoom={product.cardZoom || "full"} offsetX={product.cardOffsetX || 0} offsetY={product.cardOffsetY || 0} interactive={false} preferVideo={true} />
+            <ProductPreview product={product} fillMode="cover" cardZoom={product.cardZoom || "full"} offsetX={product.cardOffsetX || 0} offsetY={product.cardOffsetY || 0} interactive={false} preferVideo={true} cardPreview={true} />
           </div>
         </div>
 
@@ -2859,6 +2859,7 @@ const ProductPreview = forwardRef(function ProductPreview({
   hideToolbar = false,
   lazy = false,
   rootMargin = "0px",
+  cardPreview = false,
 }, ref) {
   const productId = getProductIdentity(product);
   const designW = Number(product?.designWidth) || 0;
@@ -2989,6 +2990,7 @@ const ProductPreview = forwardRef(function ProductPreview({
             hideToolbar={hideToolbar}
             rootMargin={rootMargin}
             placeholder={null}
+            cardPreview={cardPreview}
           />
         </div>
       </div>
@@ -3054,6 +3056,7 @@ const ProductPreview = forwardRef(function ProductPreview({
             hideToolbar={hideToolbar}
             rootMargin={rootMargin}
             placeholder={null}
+            cardPreview={cardPreview}
           />
         ) : product?.posterImageUrl ? (
           <img

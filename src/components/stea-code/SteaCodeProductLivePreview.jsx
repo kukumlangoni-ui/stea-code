@@ -1,6 +1,6 @@
 import React, { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState, useCallback } from "react";
 import { AlertTriangle, Loader2, Maximize2, Minimize2, RotateCw, Play } from "lucide-react";
-import { getSteaCodeProductPreview } from "../../services/steaCodeCommerce.js";
+import { getSteaCodeProductPreview, getSteaCodeProductCardPreview } from "../../services/steaCodeCommerce.js";
 import { getSteaCodeServerProduct } from "../../data/stea-code/codeProductsServer.js";
 import {
   buildHtmlCssJsDoc,
@@ -269,6 +269,7 @@ export default forwardRef(function SteaCodeProductLivePreview({
   videoUrl = "",
   posterUrl = "",
   debug = false,
+  cardPreview = false,
 }, ref) {
   const containerRef = useRef(null);
   const iframeRef = useRef(null);
@@ -439,7 +440,10 @@ export default forwardRef(function SteaCodeProductLivePreview({
     setError("");
     setPreview(null);
     setPreviewProductId("");
-    getSteaCodeProductPreview(requestProductId, { signal: controller.signal })
+    const previewFetcher = cardPreview
+      ? getSteaCodeProductCardPreview
+      : getSteaCodeProductPreview;
+    previewFetcher(requestProductId, { signal: controller.signal })
       .then((result) => {
         if (controller.signal.aborted) return;
         if (requestProductId !== currentProductIdRef.current) return;
@@ -472,7 +476,7 @@ export default forwardRef(function SteaCodeProductLivePreview({
     return () => {
       controller.abort();
     };
-  }, [nearViewport, productId, reloadKey, srcDocProp]);
+  }, [nearViewport, productId, reloadKey, srcDocProp, cardPreview]);
 
   const activeProductId = String(productId || "").trim();
   const previewBelongsToCurrentProduct =
