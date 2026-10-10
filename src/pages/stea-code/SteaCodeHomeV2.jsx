@@ -1701,7 +1701,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
                 </span>
               </div>
             )}
-            {isLoading ? (
+            {(isLoading || isGridSwitching) ? (
               <div className={`sc-product-grid ${isGridSwitching ? "is-switching" : ""}`}>
                 {Array.from({ length: 6 }).map((_, i) => (
                   <SteaCodeProductSkeleton key={i} />
@@ -1939,7 +1939,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
                 </div>
               )}
 
-              {isLoading ? (
+              {(isLoading || isGridSwitching) ? (
                 <div className={`sc-product-grid ${isGridSwitching ? "is-switching" : ""}`}>
                   {Array.from({ length: 6 }).map((_, i) => (
                     <SteaCodeProductSkeleton key={i} />
