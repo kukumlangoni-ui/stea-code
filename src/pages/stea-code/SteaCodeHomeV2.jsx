@@ -2064,12 +2064,12 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
           {/* EXPLORE COLUMN */}
           <div className="sc-footer-column">
             <h4>Explore</h4>
-            <a href="/code" onClick={(e) => { e.preventDefault(); setViewMode("explore"); setCategory("All"); setPricing("All"); }}>All Components</a>
-            <a href="/code" onClick={(e) => { e.preventDefault(); setViewMode("explore"); setCategory("Buttons"); setPricing("All"); }}>Buttons</a>
-            <a href="/code" onClick={(e) => { e.preventDefault(); setViewMode("explore"); setCategory("Cards"); setPricing("All"); }}>Cards</a>
-            <a href="/code" onClick={(e) => { e.preventDefault(); setViewMode("explore"); setCategory("Forms"); setPricing("All"); }}>Forms</a>
-            <a href="/code" onClick={(e) => { e.preventDefault(); setViewMode("explore"); setCategory("Loaders"); setPricing("All"); }}>Loaders</a>
-            <a href="/code" onClick={(e) => { e.preventDefault(); setViewMode("explore"); setCategory("Navigation"); setPricing("All"); }}>Navigation</a>
+            <a href="/code" onClick={(e) => { e.preventDefault(); setCategory("All"); setPricing("All"); }}>All Components</a>
+            <a href="/code" onClick={(e) => { e.preventDefault(); setCategory("Buttons"); setPricing("All"); }}>Buttons</a>
+            <a href="/code" onClick={(e) => { e.preventDefault(); setCategory("Cards"); setPricing("All"); }}>Cards</a>
+            <a href="/code" onClick={(e) => { e.preventDefault(); setCategory("Forms"); setPricing("All"); }}>Forms</a>
+            <a href="/code" onClick={(e) => { e.preventDefault(); setCategory("Loaders"); setPricing("All"); }}>Loaders</a>
+            <a href="/code" onClick={(e) => { e.preventDefault(); setCategory("Navigation"); setPricing("All"); }}>Navigation</a>
           </div>
 
           {/* RESOURCES COLUMN */}
