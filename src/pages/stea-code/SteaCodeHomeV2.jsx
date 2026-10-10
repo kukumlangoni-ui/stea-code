@@ -1835,7 +1835,6 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
                   onClick={() => {
                     setPricing("Free");
                     setCategory("All");
-                    setViewMode("explore");
                   }}
                 >
                   {tLocal(COPY.browseFree)} <ArrowRight size={16} />
@@ -1846,7 +1845,6 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
                   onClick={() => {
                     setPricing("Premium");
                     setCategory("All");
-                    setViewMode("explore");
                   }}
                 >
                   {tLocal(COPY.browsePremium)}
