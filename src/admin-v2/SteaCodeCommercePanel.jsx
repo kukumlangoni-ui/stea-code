@@ -4303,7 +4303,7 @@ export default function SteaCodeCommercePanel({ isSuperAdmin, initialTab = "prod
 
       {error && <div className="sc-admin-error">{error}</div>}
 
-      {!embedded && (
+      {(
         <div className="sc-admin-commerce-tabs">
           {[
             ["products", "Products"],
