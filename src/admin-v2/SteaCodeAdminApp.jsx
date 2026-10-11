@@ -62,12 +62,6 @@ const DEV_ADMIN_LOG = import.meta.env.DEV
  */
 const CODE_ADMIN_NAV = [
   { id: "products", label: "Products", icon: Package, path: "/admin/products" },
-  { id: "categories", label: "Categories", icon: ListTree, path: "/admin/categories" },
-  { id: "orders", label: "Orders", icon: CreditCard, path: "/admin/orders" },
-  { id: "payments", label: "Payments", icon: DollarSign, path: "/admin/payments" },
-  { id: "users", label: "Users", icon: Users, path: "/admin/users" },
-  { id: "activity", label: "Activity", icon: Activity, path: "/admin/activity" },
-  { id: "entitlements", label: "Entitlements", icon: KeyRound, path: "/admin/entitlements" },
 ];
 
 /**
