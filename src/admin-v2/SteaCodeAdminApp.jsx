@@ -60,9 +60,7 @@ const DEV_ADMIN_LOG = import.meta.env.DEV
  *
  * Do NOT copy CRUD logic. Do NOT show unrelated STEA ecosystem admin modules.
  */
-const CODE_ADMIN_NAV = [
-  { id: "products", label: "Products", icon: Package, path: "/admin/products" },
-];
+const CODE_ADMIN_NAV = [];
 
 /**
  * Top-level map for the dedicated Code Admin shell.
