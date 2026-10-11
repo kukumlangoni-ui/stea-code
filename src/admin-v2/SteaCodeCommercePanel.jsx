@@ -4307,10 +4307,6 @@ export default function SteaCodeCommercePanel({ isSuperAdmin, initialTab = "prod
         <div className="sc-admin-commerce-tabs">
           {[
             ["products", "Products"],
-            ["orders", "Orders"],
-            ["payments", "Payments"],
-            ["users", "Users"],
-            ["entitlements", "Entitlements"],
           ].map(([id, label]) => (
             <button
               key={id}
