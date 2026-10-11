@@ -492,3 +492,116 @@ export async function handleAdminPutPreview(req: Request, env: Env, productId: s
     return admin500(req, e, "PREVIEW_SAVE_FAILED", "Failed to save preview");
   }
 }
+
+// ============================================================
+// Admin list endpoints — added for admin panel Orders/Users/Entitlements/Stats
+// ============================================================
+
+export async function handleAdminOrders(req: Request, env: Env): Promise<Response> {
+  const admin = await requireAdmin(req, env);
+  if (!admin) {
+    return new Response(JSON.stringify({ error: "Admin access required" }), {
+      status: 403,
+      headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) },
+    });
+  }
+  try {
+    const result = await env.DB.prepare(
+      `SELECT * FROM orders ORDER BY createdAt DESC LIMIT 500`
+    ).all();
+    return new Response(JSON.stringify({ ok: true, orders: result.results || [] }), {
+      status: 200,
+      headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) },
+    });
+  } catch (e: any) {
+    return new Response(JSON.stringify({ error: e?.message || "Failed to list orders" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) },
+    });
+  }
+}
+
+export async function handleAdminEntitlements(req: Request, env: Env): Promise<Response> {
+  const admin = await requireAdmin(req, env);
+  if (!admin) {
+    return new Response(JSON.stringify({ error: "Admin access required" }), {
+      status: 403,
+      headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) },
+    });
+  }
+  try {
+    const result = await env.DB.prepare(
+      `SELECT * FROM entitlements ORDER BY grantedAt DESC LIMIT 500`
+    ).all();
+    return new Response(JSON.stringify({ ok: true, entitlements: result.results || [] }), {
+      status: 200,
+      headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) },
+    });
+  } catch (e: any) {
+    return new Response(JSON.stringify({ error: e?.message || "Failed to list entitlements" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) },
+    });
+  }
+}
+
+export async function handleAdminUsers(req: Request, env: Env): Promise<Response> {
+  const admin = await requireAdmin(req, env);
+  if (!admin) {
+    return new Response(JSON.stringify({ error: "Admin access required" }), {
+      status: 403,
+      headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) },
+    });
+  }
+  try {
+    const result = await env.DB.prepare(
+      `SELECT * FROM users ORDER BY createdAt DESC LIMIT 500`
+    ).all();
+    return new Response(JSON.stringify({ ok: true, users: result.results || [] }), {
+      status: 200,
+      headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) },
+    });
+  } catch (e: any) {
+    return new Response(JSON.stringify({ error: e?.message || "Failed to list users" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) },
+    });
+  }
+}
+
+export async function handleAdminStats(req: Request, env: Env): Promise<Response> {
+  const admin = await requireAdmin(req, env);
+  if (!admin) {
+    return new Response(JSON.stringify({ error: "Admin access required" }), {
+      status: 403,
+      headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) },
+    });
+  }
+  try {
+    const ordersCount = await env.DB.prepare(`SELECT COUNT(*) as n FROM orders`).first();
+    const entitlementsCount = await env.DB.prepare(`SELECT COUNT(*) as n FROM entitlements`).first();
+    const usersCount = await env.DB.prepare(`SELECT COUNT(*) as n FROM users`).first();
+    const productsCount = await env.DB.prepare(`SELECT COUNT(*) as n FROM products`).first();
+    const revenueRow = await env.DB.prepare(
+      `SELECT COALESCE(SUM(amount), 0) as total FROM orders WHERE status IN ('paid','complete','succeeded')`
+    ).first();
+    return new Response(JSON.stringify({
+      ok: true,
+      stats: {
+        orders: ordersCount?.n || 0,
+        entitlements: entitlementsCount?.n || 0,
+        users: usersCount?.n || 0,
+        products: productsCount?.n || 0,
+        revenue: revenueRow?.total || 0,
+      },
+    }), {
+      status: 200,
+      headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) },
+    });
+  } catch (e: any) {
+    return new Response(JSON.stringify({ error: e?.message || "Failed to load stats" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) },
+    });
+  }
+}

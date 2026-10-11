@@ -38,6 +38,10 @@ import {
   handleAdminGetPreview,
   handleAdminPackageUpload,
   handleAdminPreviewUpload,
+  handleAdminOrders,
+  handleAdminEntitlements,
+  handleAdminUsers,
+  handleAdminStats,
 } from "./routes/admin";
 
 export interface WorkerEnv {
@@ -211,6 +215,22 @@ export default {
       // ============ Admin routes ============
       if (apiPath === "/admin/stea-code/products" && method === "GET") {
         return handleAdminProducts(request, env);
+      }
+
+      if (apiPath === "/admin/stea-code/orders" && method === "GET") {
+        return handleAdminOrders(request, env);
+      }
+
+      if (apiPath === "/admin/stea-code/entitlements" && method === "GET") {
+        return handleAdminEntitlements(request, env);
+      }
+
+      if (apiPath === "/admin/stea-code/users" && method === "GET") {
+        return handleAdminUsers(request, env);
+      }
+
+      if (apiPath === "/admin/stea-code/stats" && method === "GET") {
+        return handleAdminStats(request, env);
       }
       if (apiPath === "/admin/stea-code/products" && method === "POST") {
         return handleAdminCreateProduct(request, env);
