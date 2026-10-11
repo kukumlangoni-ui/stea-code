@@ -329,26 +329,6 @@ export default function SteaCodeAdminApp(props) {
       case "":
       case "products":
         return "products";
-      case "categories":
-        return "categories";
-      case "orders":
-        return "orders";
-      case "payments":
-        return "payments";
-      case "users":
-        return "users";
-      case "activity":
-        return "activity";
-      case "entitlements":
-        return "entitlements";
-      case "resources":
-        return "directory";
-      case "hosting":
-        return "hosting";
-      case "inspiration":
-        return "inspiration";
-      case "legacy":
-        return "legacy";
       default:
         return "products";
     }
