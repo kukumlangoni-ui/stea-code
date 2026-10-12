@@ -45,10 +45,25 @@ const PROTECTED_METADATA_FIELDS = new Set([
   "protectedFiles",
   "publicFiles",
   "fileNames",
-  "preview",
   "previewMode",
   "designWidth",
   "designHeight",
+]);
+
+/**
+ * Source keys inside the `preview` object that must NEVER be written by a
+ * metadata PATCH. Preview SOURCE is owned by PUT /preview (the dedicated
+ * previews collection). Preview SETTINGS (enabled, runtime, viewportMode,
+ * width, height, scaleMode, videoKey, posterKey, baseUrl, externalUrl)
+ * ARE allowed through a metadata PATCH.
+ */
+const PROTECTED_PREVIEW_SOURCE_KEYS = new Set([
+  "html",
+  "css",
+  "javascript",
+  "jsx",
+  "tsx",
+  "fullDocument",
 ]);
 
 function stripProtectedMetadataFields(
@@ -57,6 +72,21 @@ function stripProtectedMetadataFields(
   const out: Record<string, any> = {};
   for (const [key, value] of Object.entries(data)) {
     if (PROTECTED_METADATA_FIELDS.has(key)) continue;
+
+    // `preview` is special: keep SETTINGS, drop SOURCE.
+    if (key === "preview" && value && typeof value === "object" && !Array.isArray(value)) {
+      const settings: Record<string, any> = {};
+      for (const [pk, pv] of Object.entries(value)) {
+        if (PROTECTED_PREVIEW_SOURCE_KEYS.has(pk)) continue;
+        settings[pk] = pv;
+      }
+      // Only include preview if there are settings left to write.
+      if (Object.keys(settings).length > 0) {
+        out.preview = settings;
+      }
+      continue;
+    }
+
     out[key] = value;
   }
   return out;

@@ -277,7 +277,8 @@ function stripProtectedMetadataFields(product) {
   // `preview` is special: the metadata PATCH may carry preview SETTINGS
   // (enabled, runtime, viewportMode, …) but never the source payload
   // (html, css, javascript, jsx, tsx, fullDocument). Strip the source keys
-  // and keep the settings.
+  // and keep the settings. If nothing but source keys were present, drop
+  // `preview` entirely so we don't send an empty object.
   if (out.preview && typeof out.preview === "object") {
     const {
       html,
@@ -288,7 +289,11 @@ function stripProtectedMetadataFields(product) {
       fullDocument,
       ...previewSettings
     } = out.preview;
-    out.preview = previewSettings;
+    if (Object.keys(previewSettings).length > 0) {
+      out.preview = previewSettings;
+    } else {
+      delete out.preview;
+    }
   }
   return out;
 }
