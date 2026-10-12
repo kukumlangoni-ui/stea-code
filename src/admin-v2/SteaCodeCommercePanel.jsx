@@ -22,6 +22,7 @@ import {
   Fullscreen,
   Home,
   KeyRound,
+  LayoutDashboard,
   Loader2,
   Mail,
   Maximize2,
@@ -4332,6 +4333,7 @@ export default function SteaCodeCommercePanel({ isSuperAdmin, initialTab = "prod
       {(
         <div className="sc-admin-commerce-tabs">
           {[
+            ["dashboard", "Dashboard"],
             ["products", "Products"],
             ["orders", "Orders"],
             ["payments", "Payments"],
@@ -4353,6 +4355,16 @@ export default function SteaCodeCommercePanel({ isSuperAdmin, initialTab = "prod
             </button>
           ))}
         </div>
+      )}
+
+      {/* DASHBOARD TAB */}
+      {tab === "dashboard" && (
+        <DashboardTab
+          products={products}
+          orders={orders}
+          entitlements={entitlements}
+          users={users}
+        />
       )}
 
       {/* PRODUCTS TAB */}
@@ -4962,6 +4974,494 @@ export default function SteaCodeCommercePanel({ isSuperAdmin, initialTab = "prod
           </div>
         </Modal>
       )}
+    </div>
+  );
+}
+
+/* =========================================================
+   DASHBOARD TAB — realtime KPI overview
+   ========================================================= */
+function DashboardTab({ products = [], orders = [], entitlements = [], users = [] }) {
+  const PAID_STATUSES = new Set(["paid", "complete", "succeeded"]);
+
+  // ---- KPI: total revenue (paid orders only) ----
+  const totalRevenue = useMemo(() => {
+    let sum = 0;
+    for (const o of orders) {
+      if (!PAID_STATUSES.has(String(o.status || "").toLowerCase())) continue;
+      const amt =
+        typeof o.amountMinor === "number"
+          ? o.amountMinor / 100
+          : typeof o.amount === "number"
+          ? o.amount
+          : 0;
+      sum += amt;
+    }
+    return sum;
+  }, [orders]);
+
+  // ---- Revenue by day (last 30 days) ----
+  const revenueByDay = useMemo(() => {
+    const days = 30;
+    const buckets = [];
+    const now = new Date();
+    for (let i = days - 1; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      d.setHours(0, 0, 0, 0);
+      buckets.push({
+        key: d.toISOString().split("T")[0],
+        label: d.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+        amount: 0,
+      });
+    }
+    const index = new Map(buckets.map((b, i) => [b.key, i]));
+    for (const o of orders) {
+      if (!PAID_STATUSES.has(String(o.status || "").toLowerCase())) continue;
+      const raw = o.createdAt || o.created;
+      if (!raw) continue;
+      const d = new Date(raw);
+      if (Number.isNaN(d.getTime())) continue;
+      const key = d.toISOString().split("T")[0];
+      const i = index.get(key);
+      if (i === undefined) continue;
+      const amt =
+        typeof o.amountMinor === "number"
+          ? o.amountMinor / 100
+          : typeof o.amount === "number"
+          ? o.amount
+          : 0;
+      buckets[i].amount += amt;
+    }
+    return buckets;
+  }, [orders]);
+
+  const maxDayRevenue = useMemo(
+    () => Math.max(...revenueByDay.map((b) => b.amount), 1),
+    [revenueByDay]
+  );
+
+  // ---- Orders by status ----
+  const ordersByStatus = useMemo(() => {
+    const counts = { pending: 0, paid: 0, failed: 0, refunded: 0 };
+    for (const o of orders) {
+      const s = String(o.status || "pending").toLowerCase();
+      if (s === "complete" || s === "succeeded") counts.paid += 1;
+      else if (s in counts) counts[s] += 1;
+      else counts.pending += 1;
+    }
+    return counts;
+  }, [orders]);
+
+  // ---- Recent orders (5) ----
+  const recentOrders = useMemo(() => {
+    return [...orders]
+      .sort((a, b) => {
+        const da = new Date(a.createdAt || a.created || 0).getTime() || 0;
+        const db = new Date(b.createdAt || b.created || 0).getTime() || 0;
+        return db - da;
+      })
+      .slice(0, 5);
+  }, [orders]);
+
+  // ---- Recent users (5) ----
+  const recentUsers = useMemo(() => {
+    return [...users]
+      .sort((a, b) => {
+        const da = new Date(a.joinedDate || 0).getTime() || 0;
+        const db = new Date(b.joinedDate || 0).getTime() || 0;
+        return db - da;
+      })
+      .slice(0, 5);
+  }, [users]);
+
+  // ---- Top products (5) by purchase count ----
+  const topProducts = useMemo(() => {
+    const byId = new Map();
+    for (const o of orders) {
+      if (!PAID_STATUSES.has(String(o.status || "").toLowerCase())) continue;
+      const pid = String(o.productId || "").trim();
+      if (!pid) continue;
+      const amt =
+        typeof o.amountMinor === "number"
+          ? o.amountMinor / 100
+          : typeof o.amount === "number"
+          ? o.amount
+          : 0;
+      const rec = byId.get(pid) || { productId: pid, count: 0, revenue: 0 };
+      rec.count += 1;
+      rec.revenue += amt;
+      byId.set(pid, rec);
+    }
+    const productById = new Map(products.map((p) => [String(p.id), p]));
+    return Array.from(byId.values())
+      .map((rec) => ({
+        ...rec,
+        title:
+          productById.get(rec.productId)?.titleEn ||
+          productById.get(rec.productId)?.titleZh ||
+          rec.productId,
+      }))
+      .sort((a, b) => b.count - a.count || b.revenue - a.revenue)
+      .slice(0, 5);
+  }, [orders, products]);
+
+  const formatMoney = (amount, currency = "USD") => {
+    const symbol = String(currency).toUpperCase() === "EUR" ? "€" : "$";
+    return `${symbol}${Number(amount || 0).toFixed(2)}`;
+  };
+
+  const cardStyle = {
+    background: "#0d0d12",
+    border: "1px solid rgba(255,255,255,0.08)",
+    borderRadius: 12,
+    padding: "18px 20px",
+    transition: "border-color 0.18s ease, transform 0.18s ease",
+  };
+
+  const kpiLabelStyle = {
+    fontSize: 12,
+    textTransform: "uppercase",
+    letterSpacing: "0.08em",
+    color: "rgba(255,255,255,0.45)",
+    fontWeight: 700,
+  };
+
+  const kpiValueStyle = {
+    fontSize: 34,
+    fontWeight: 800,
+    color: "#ffffff",
+    lineHeight: 1.1,
+    marginTop: 8,
+  };
+
+  const kpiSubStyle = {
+    fontSize: 12,
+    color: "rgba(255,255,255,0.4)",
+    marginTop: 4,
+  };
+
+  const sectionTitleStyle = {
+    fontSize: 13,
+    fontWeight: 800,
+    color: "#ffffff",
+    textTransform: "uppercase",
+    letterSpacing: "0.06em",
+    marginBottom: 14,
+  };
+
+  const listRowStyle = {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10,
+    padding: "9px 0",
+    borderBottom: "1px solid rgba(255,255,255,0.05)",
+    fontSize: 12,
+  };
+
+  const kpis = [
+    {
+      label: "Total Products",
+      value: products.length,
+      sub: "in live catalog",
+      icon: Package,
+    },
+    {
+      label: "Total Orders",
+      value: orders.length,
+      sub: "all time",
+      icon: ShoppingCart,
+    },
+    {
+      label: "Total Revenue",
+      value: formatMoney(totalRevenue),
+      sub: "lifetime",
+      icon: DollarSign,
+    },
+    {
+      label: "Total Users",
+      value: users.length,
+      sub: "registered",
+      icon: Users,
+    },
+  ];
+
+  return (
+    <div style={{ display: "grid", gap: 20 }}>
+      {/* ROW 1 — KPI CARDS */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+          gap: 14,
+        }}
+      >
+        {kpis.map((kpi) => {
+          const Icon = kpi.icon;
+          return (
+            <div
+              key={kpi.label}
+              style={cardStyle}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = "rgba(245,166,35,0.35)";
+                e.currentTarget.style.transform = "translateY(-2px)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)";
+                e.currentTarget.style.transform = "translateY(0)";
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <span style={kpiLabelStyle}>{kpi.label}</span>
+                <span
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: 34,
+                    height: 34,
+                    borderRadius: 10,
+                    background: "rgba(245,166,35,0.12)",
+                    color: "#f5a623",
+                  }}
+                >
+                  <Icon size={17} />
+                </span>
+              </div>
+              <div style={kpiValueStyle}>{kpi.value}</div>
+              <div style={kpiSubStyle}>{kpi.sub}</div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* ROW 2 — CHARTS */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "minmax(0, 3fr) minmax(0, 2fr)",
+          gap: 14,
+        }}
+      >
+        {/* Revenue bar chart */}
+        <div style={cardStyle}>
+          <div style={sectionTitleStyle}>Revenue (last 30 days)</div>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "flex-end",
+              gap: 3,
+              height: 160,
+              paddingTop: 8,
+            }}
+          >
+            {revenueByDay.map((day) => {
+              const pct = (day.amount / maxDayRevenue) * 100;
+              return (
+                <div
+                  key={day.key}
+                  title={`${day.label}: ${formatMoney(day.amount)}`}
+                  style={{
+                    flex: 1,
+                    height: "100%",
+                    display: "flex",
+                    alignItems: "flex-end",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: "100%",
+                      height: `${Math.max(pct, day.amount > 0 ? 4 : 1)}%`,
+                      background:
+                        day.amount > 0
+                          ? "linear-gradient(180deg, #f5a623, rgba(245,166,35,0.35))"
+                          : "rgba(255,255,255,0.05)",
+                      borderRadius: 3,
+                      transition: "height 0.3s ease",
+                    }}
+                  />
+                </div>
+              );
+            })}
+          </div>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              marginTop: 8,
+              fontSize: 10,
+              color: "rgba(255,255,255,0.35)",
+            }}
+          >
+            <span>{revenueByDay[0]?.label}</span>
+            <span>{revenueByDay[Math.floor(revenueByDay.length / 2)]?.label}</span>
+            <span>{revenueByDay[revenueByDay.length - 1]?.label}</span>
+          </div>
+        </div>
+
+        {/* Orders by status */}
+        <div style={cardStyle}>
+          <div style={sectionTitleStyle}>Orders by status</div>
+          <div style={{ display: "grid", gap: 2 }}>
+            {[
+              ["pending", "Pending", "#f5a623"],
+              ["paid", "Paid", "#63dba9"],
+              ["failed", "Failed", "#ff8787"],
+              ["refunded", "Refunded", "#a78bfa"],
+            ].map(([key, label, color]) => (
+              <div key={key} style={listRowStyle}>
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+                  <span
+                    style={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: "50%",
+                      background: color,
+                      display: "inline-block",
+                    }}
+                  />
+                  <span style={{ color: "rgba(255,255,255,0.75)" }}>{label}</span>
+                </span>
+                <strong style={{ color: "#ffffff", fontSize: 14 }}>
+                  {ordersByStatus[key]}
+                </strong>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ROW 3 — LISTS */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+          gap: 14,
+        }}
+      >
+        {/* Recent Orders */}
+        <div style={cardStyle}>
+          <div style={sectionTitleStyle}>Recent Orders</div>
+          {recentOrders.length === 0 ? (
+            <div style={{ fontSize: 12, color: "rgba(255,255,255,0.35)" }}>
+              No orders yet.
+            </div>
+          ) : (
+            recentOrders.map((o) => (
+              <div key={o.id} style={listRowStyle}>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div
+                    style={{
+                      color: "#ffffff",
+                      fontWeight: 600,
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
+                    {o.userEmail || o.email || o.userId || "—"}
+                  </div>
+                  <div
+                    style={{
+                      color: "rgba(255,255,255,0.4)",
+                      fontSize: 11,
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
+                    {o.productTitle || o.productId || "—"}
+                  </div>
+                </div>
+                <div style={{ textAlign: "right", flexShrink: 0 }}>
+                  <div style={{ color: "#f5a623", fontWeight: 700 }}>
+                    {money(o)}
+                  </div>
+                  <div style={{ color: "rgba(255,255,255,0.35)", fontSize: 10 }}>
+                    {formatDate(o.createdAt || o.created)}
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Recent Users */}
+        <div style={cardStyle}>
+          <div style={sectionTitleStyle}>Recent Users</div>
+          {recentUsers.length === 0 ? (
+            <div style={{ fontSize: 12, color: "rgba(255,255,255,0.35)" }}>
+              No users yet.
+            </div>
+          ) : (
+            recentUsers.map((u) => (
+              <div key={u.id || u.email} style={listRowStyle}>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div
+                    style={{
+                      color: "#ffffff",
+                      fontWeight: 600,
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
+                    {u.email}
+                  </div>
+                  <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 11 }}>
+                    Joined {formatDate(u.joinedDate)}
+                  </div>
+                </div>
+                <div style={{ textAlign: "right", flexShrink: 0 }}>
+                  <div style={{ color: "#ffffff", fontWeight: 700 }}>
+                    {u.purchasesCount}
+                  </div>
+                  <div style={{ color: "rgba(255,255,255,0.35)", fontSize: 10 }}>
+                    purchases
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Top Products */}
+        <div style={cardStyle}>
+          <div style={sectionTitleStyle}>Top Products</div>
+          {topProducts.length === 0 ? (
+            <div style={{ fontSize: 12, color: "rgba(255,255,255,0.35)" }}>
+              No sales yet.
+            </div>
+          ) : (
+            topProducts.map((p) => (
+              <div key={p.productId} style={listRowStyle}>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div
+                    style={{
+                      color: "#ffffff",
+                      fontWeight: 600,
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
+                    {p.title}
+                  </div>
+                  <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 11 }}>
+                    {p.count} {p.count === 1 ? "sale" : "sales"}
+                  </div>
+                </div>
+                <div style={{ textAlign: "right", flexShrink: 0 }}>
+                  <div style={{ color: "#f5a623", fontWeight: 700 }}>
+                    {formatMoney(p.revenue)}
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
     </div>
   );
 }
