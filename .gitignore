@@ -177,8 +177,6 @@ tests/site-e2e-test.mjs
 # Unused root files
 testRules.js
 capacitor.config.ts
-capacitor.config.ts
-capacitor.config.ts
 .gitignore.bak
 
 # Firebase service account keys — NEVER commit
@@ -188,5 +186,4 @@ serviceAccount*.json
 # Firebase env files (contain API keys)
 .env.sites
 .env.code
-.env.local
 .aider*
