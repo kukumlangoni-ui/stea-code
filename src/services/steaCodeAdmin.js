@@ -251,12 +251,55 @@ export function createAdminSteaCodeProduct(product) {
   });
 }
 
+/**
+ * Fields owned by dedicated endpoints. A metadata PATCH must never carry
+ * these — they are managed by saveAdminSteaCodeSource() and
+ * saveAdminSteaCodePreview(). Stripping them here is a client-side guard
+ * that mirrors the server-side strip in admin.ts.
+ */
+const PROTECTED_METADATA_FIELDS = [
+  "sourceCode",
+  "sourceFiles",
+  "protectedFiles",
+  "publicFiles",
+  "fileNames",
+  "previewMode",
+  "designWidth",
+  "designHeight",
+];
+
+function stripProtectedMetadataFields(product) {
+  if (!product || typeof product !== "object") return product;
+  const out = { ...product };
+  for (const key of PROTECTED_METADATA_FIELDS) {
+    delete out[key];
+  }
+  // `preview` is special: the metadata PATCH may carry preview SETTINGS
+  // (enabled, runtime, viewportMode, …) but never the source payload
+  // (html, css, javascript, jsx, tsx, fullDocument). Strip the source keys
+  // and keep the settings.
+  if (out.preview && typeof out.preview === "object") {
+    const {
+      html,
+      css,
+      javascript,
+      jsx,
+      tsx,
+      fullDocument,
+      ...previewSettings
+    } = out.preview;
+    out.preview = previewSettings;
+  }
+  return out;
+}
+
 export function updateAdminSteaCodeProduct(productId, product) {
+  const safeProduct = stripProtectedMetadataFields(product);
   return request(
     `/api/admin/stea-code/products/${encodeURIComponent(productId)}`,
     {
       method: "PATCH",
-      body: JSON.stringify(product),
+      body: JSON.stringify(safeProduct),
     }
   );
 }

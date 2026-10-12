@@ -1441,22 +1441,48 @@ export function ProductStudio({ product, onClose, onSaved, onCreated, onPublishe
           ? true
           : Boolean(form?.homepageVisible);
 
+    // Explicit whitelist — NEVER spread the whole form.
+    //
+    // Spreading `...form` used to leak source-owned fields (sourceCode,
+    // sourceFiles, protectedFiles, publicFiles, fileNames, preview,
+    // previewMode, designWidth, designHeight) into the metadata PATCH.
+    // Combined with the old INSERT OR REPLACE in firestore.ts, that wiped
+    // the product's source code on every metadata save.
+    //
+    // Only metadata fields belong here. Source files go through
+    // saveAdminSteaCodeSource(); preview source goes through
+    // saveAdminSteaCodePreview().
     const payload = {
-      ...form,
-      ...extraOverrides,
       id,
       slug: form.slug || id,
+      titleEn: form.titleEn || "",
+      titleZh: form.titleZh || "",
+      shortDescriptionEn: form.shortDescriptionEn || "",
+      shortDescriptionZh: form.shortDescriptionZh || "",
+      craftNoteEn: form.craftNoteEn || "",
+      productType: form.productType || "Code Product",
+      category: form.category || "Components",
       tags: splitList(form.tags),
       frameworks: splitList(form.frameworks),
       languages: splitList(form.languages),
+      pricingType: form.pricingType || "free",
+      price: Number(form.price) || 0,
+      currency: form.currency || "USD",
+      posterImageUrl: form.posterImageUrl || "",
+      previewVideoUrl: form.previewVideoUrl || "",
       included: String(form.included || "")
         .split("\n")
         .map((s) => s.trim())
         .filter(Boolean),
-      // Settings only — never send large source in the metadata payload.
-      preview: previewSettings,
+      usageGuideEn: form.usageGuideEn || "",
       aiPrompt: String(form.aiPrompt || "").trim(),
+      featured: Boolean(form.featured),
       homepageVisible: nextHomepageVisible,
+      status: form.status || "draft",
+      // Preview SETTINGS only (no source). Source lives in the dedicated
+      // previews collection via saveAdminSteaCodePreview().
+      preview: previewSettings,
+      ...extraOverrides,
     };
     if (publishAction === "publish" || publishAction === "publish_homepage") {
       payload.status = "published";

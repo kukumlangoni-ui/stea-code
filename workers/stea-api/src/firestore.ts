@@ -313,8 +313,27 @@ export async function setDoc(
   }
 
   const { columns, values } = prepareRow(finalData, docId, schema);
+
+  // CRITICAL: never use INSERT OR REPLACE here.
+  //
+  // INSERT OR REPLACE deletes the existing row and inserts a brand-new one,
+  // which NULLs out every column not present in this patch. That silently
+  // wiped sourceCode / sourceFiles / protectedFiles / publicFiles /
+  // fileNames / preview / previewMode / designWidth / designHeight whenever
+  // the admin saved metadata (title, price, pricingType).
+  //
+  // ON CONFLICT(pk) DO UPDATE SET only touches the columns we actually
+  // provide, leaving every other column on the row untouched.
   const placeholders = columns.map(() => "?").join(", ");
-  const sql = `INSERT OR REPLACE INTO ${tableName} (${columns.join(", ")}) VALUES (${placeholders})`;
+  const updateAssignments = columns
+    .filter((c) => c !== pk)
+    .map((c) => `${c} = excluded.${c}`)
+    .join(", ");
+
+  const sql =
+    updateAssignments.length > 0
+      ? `INSERT INTO ${tableName} (${columns.join(", ")}) VALUES (${placeholders}) ON CONFLICT(${pk}) DO UPDATE SET ${updateAssignments}`
+      : `INSERT INTO ${tableName} (${columns.join(", ")}) VALUES (${placeholders}) ON CONFLICT(${pk}) DO NOTHING`;
 
   await env.DB.prepare(sql).bind(...values).run();
 }

@@ -26,6 +26,43 @@ const SOURCES_COLLECTION = "stea_code_product_sources";
 const PREVIEWS_COLLECTION = "stea_code_product_previews";
 
 /**
+ * Fields that must NEVER be overwritten by a metadata patch.
+ *
+ * These are owned by dedicated endpoints:
+ *   - sourceCode / sourceFiles / protectedFiles / publicFiles / fileNames
+ *       → PUT /admin/stea-code/products/:id/source
+ *   - preview / previewMode / designWidth / designHeight
+ *       → PUT /admin/stea-code/products/:id/preview
+ *
+ * If a metadata save (title, price, pricingType, status, …) accidentally
+ * includes any of these, we drop them so the dedicated endpoints remain
+ * the single source of truth. This is a belt-and-braces guard on top of
+ * the ON CONFLICT fix in firestore.ts.
+ */
+const PROTECTED_METADATA_FIELDS = new Set([
+  "sourceCode",
+  "sourceFiles",
+  "protectedFiles",
+  "publicFiles",
+  "fileNames",
+  "preview",
+  "previewMode",
+  "designWidth",
+  "designHeight",
+]);
+
+function stripProtectedMetadataFields(
+  data: Record<string, any>
+): Record<string, any> {
+  const out: Record<string, any> = {};
+  for (const [key, value] of Object.entries(data)) {
+    if (PROTECTED_METADATA_FIELDS.has(key)) continue;
+    out[key] = value;
+  }
+  return out;
+}
+
+/**
  * Generate a URL-safe slug from a string (typically a product title).
  * Lowercase, hyphenated, strips special chars.
  */
@@ -366,7 +403,12 @@ export async function handleAdminUpdateProduct(req: Request, env: Env, productId
 
   try {
     const body = (await req.json()) as Record<string, any>;
-    const { id, ...data } = body;
+    const { id, ...rawData } = body;
+
+    // Strip source/preview-owned fields before merging. These are managed
+    // exclusively by the /source and /preview endpoints; a metadata save
+    // must never clobber them.
+    const data = stripProtectedMetadataFields(rawData);
 
     // Fetch existing row first for a proper deep merge
     const existing = await getDoc(env, PRODUCTS_COLLECTION, productId);
