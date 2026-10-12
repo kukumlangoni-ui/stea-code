@@ -449,23 +449,21 @@ export async function handleAdminUpdateProduct(req: Request, env: Env, productId
       });
     }
 
-    // Deep merge: top-level spread + deep merge for known JSON object fields
-    const merged: Record<string, any> = { ...existing.data };
+    // Partial update — do NOT deep-merge with the existing row.
+    //
+    // setDoc() now uses `INSERT ... ON CONFLICT(pk) DO UPDATE SET <cols>`,
+    // which only touches the columns we actually provide and leaves every
+    // other column on the row untouched. That makes a JS-level merge both
+    // redundant AND dangerous: merging `preview` from the existing row
+    // would re-serialize any legacy source keys (html/css/javascript) back
+    // into the preview column on every metadata save.
+    //
+    // We only need to skip `undefined` values so we don't accidentally
+    // NULL a column the caller didn't intend to touch.
+    const merged: Record<string, any> = {};
     for (const [key, value] of Object.entries(data)) {
-      if (value === undefined) continue; // skip undefined fields
-      // Deep merge for plain-object JSON columns (preview, package, etc.)
-      if (
-        value &&
-        typeof value === "object" &&
-        !Array.isArray(value) &&
-        merged[key] &&
-        typeof merged[key] === "object" &&
-        !Array.isArray(merged[key])
-      ) {
-        merged[key] = { ...merged[key], ...value };
-      } else {
-        merged[key] = value;
-      }
+      if (value === undefined) continue;
+      merged[key] = value;
     }
 
     merged.updatedAt = new Date().toISOString();
