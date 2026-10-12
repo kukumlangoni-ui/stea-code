@@ -189,3 +189,4 @@ serviceAccount*.json
 .env.sites
 .env.code
 .env.local
+.aider*
