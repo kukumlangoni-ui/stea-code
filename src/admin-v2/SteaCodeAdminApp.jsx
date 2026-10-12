@@ -67,6 +67,7 @@ const CODE_ADMIN_NAV = [];
  * The default route /admin redirects to /admin/products (Products first).
  */
 const CODE_ADMIN_TITLES = {
+  dashboard: "Dashboard — steacode Admin",
   products: "Products — steacode Admin",
   categories: "Categories — steacode Admin",
   orders: "Orders — steacode Admin",
@@ -325,6 +326,8 @@ export default function SteaCodeAdminApp(props) {
 
     switch (rest) {
       case "":
+      case "dashboard":
+        return "dashboard";
       case "products":
         return "products";
       default:
@@ -424,6 +427,7 @@ export default function SteaCodeAdminApp(props) {
 
   const selectSection = (id) => {
     const segmentMap = {
+      dashboard: "dashboard",
       products: "products",
       categories: "categories",
       orders: "orders",
@@ -528,7 +532,7 @@ export default function SteaCodeAdminApp(props) {
 
         <div className="sca-admin-content">
           <Routes basename={baseRoute.replace(/\/$/, "")}>
-            <Route index element={<Navigate to="products" replace />} />
+            <Route index element={<Navigate to={`${baseRoute.replace(/\/$/, "")}/dashboard`} replace />} />
 
             {/* Full-page Product Studio routes (no modal). */}
             <Route
@@ -563,6 +567,7 @@ export default function SteaCodeAdminApp(props) {
             />
 
             {[
+              "dashboard",
               "products",
               "categories",
               "orders",
@@ -593,8 +598,8 @@ export default function SteaCodeAdminApp(props) {
                 />
               );
             })}
-            {/* Unknown segment under baseRoute → products (never public "/") */}
-            <Route path="*" element={<Navigate to="products" replace />} />
+            {/* Unknown segment under baseRoute → dashboard (never public "/") */}
+            <Route path="*" element={<Navigate to={`${baseRoute.replace(/\/$/, "")}/dashboard`} replace />} />
           </Routes>
         </div>
       </div>

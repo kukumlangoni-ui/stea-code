@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   AlertTriangle,
   Archive,
@@ -3804,6 +3804,7 @@ function PaymentsRevenueChart({ orders = [] }) {
    ========================================================= */
 export default function SteaCodeCommercePanel({ isSuperAdmin, initialTab = "products", embedded = false, devPreview = false, onCountsChange, dedicatedAdmin = false, baseRoute = "/code-admin" }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const [tab, setTab] = useState(initialTab);
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
@@ -3856,6 +3857,20 @@ export default function SteaCodeCommercePanel({ isSuperAdmin, initialTab = "prod
       setTab(initialTab);
     }
   }, [initialTab]);
+
+  // Sync tab state from the URL when running in dedicated admin mode.
+  // This makes browser back/forward work and keeps the tab in sync with
+  // the route segment. It does NOT navigate — it only reads the URL.
+  useEffect(() => {
+    if (!dedicatedAdmin) return;
+    const base = cleanBaseRoute;
+    if (!base) return;
+    const rest = location.pathname.slice(base.length).replace(/^\//, "").split("/")[0];
+    const validTabs = ["dashboard", "products", "orders", "payments", "users", "entitlements"];
+    if (rest && validTabs.includes(rest) && rest !== tab) {
+      setTab(rest);
+    }
+  }, [dedicatedAdmin, cleanBaseRoute, location.pathname, tab]);
 
   // Normalize baseRoute to a clean absolute root path.
   //
@@ -4374,7 +4389,10 @@ export default function SteaCodeCommercePanel({ isSuperAdmin, initialTab = "prod
                   // normalized admin root + tab id. This prevents the URL
                   // from accumulating segments on repeated tab clicks
                   // (e.g. /admin/dashboard/products/products/...).
-                  navigate(`${cleanBaseRoute}/${id}`);
+                  const target = `${cleanBaseRoute}/${id}`;
+                  if (target !== location.pathname) {
+                    navigate(target, { replace: false });
+                  }
                 }
               }}
             >
