@@ -3857,10 +3857,34 @@ export default function SteaCodeCommercePanel({ isSuperAdmin, initialTab = "prod
     }
   }, [initialTab]);
 
+  // Normalize baseRoute to a clean absolute root path.
+  //
+  // baseRoute is the admin root (e.g. "/code-admin"). If it ever contains
+  // extra path segments (e.g. "/admin/dashboard/products"), navigating to
+  // `${base}/${id}` would append to the current URL and accumulate
+  // infinitely: /admin/dashboard/products/products/products/...
+  //
+  // We always resolve to a clean absolute path by taking only the leading
+  // path segments that form the admin root. Since baseRoute is expected to
+  // be a single-segment root like "/code-admin" or "/admin", we strip any
+  // trailing segments beyond the first to guarantee a stable base.
+  const cleanBaseRoute = useMemo(() => {
+    const raw = String(baseRoute || "").trim();
+    if (!raw) return "";
+    // Ensure leading slash, strip trailing slash
+    const withLeading = raw.startsWith("/") ? raw : `/${raw}`;
+    const trimmed = withLeading.replace(/\/+$/, "");
+    // Keep only the first path segment (the admin root).
+    // e.g. "/admin/dashboard/products" -> "/admin"
+    const segments = trimmed.split("/").filter(Boolean);
+    if (segments.length === 0) return "";
+    return `/${segments[0]}`;
+  }, [baseRoute]);
+
   // Dedicated admin: route to full-page Product Studio
   const openEditor = useCallback((product) => {
     if (dedicatedAdmin) {
-      const base = baseRoute.replace(/\/$/, "");
+      const base = cleanBaseRoute;
       if (product && product.id) {
         navigate(`${base}/products/${encodeURIComponent(product.id)}/edit`);
       } else {
@@ -3869,16 +3893,16 @@ export default function SteaCodeCommercePanel({ isSuperAdmin, initialTab = "prod
       return;
     }
     setEditor(product && product.id ? product : {});
-  }, [dedicatedAdmin, navigate, baseRoute]);
+  }, [dedicatedAdmin, navigate, cleanBaseRoute]);
 
   const openPreview = useCallback((product) => {
     if (dedicatedAdmin && product?.id) {
-      const base = baseRoute.replace(/\/$/, "");
+      const base = cleanBaseRoute;
       navigate(`${base}/products/${encodeURIComponent(product.id)}/edit?tab=preview`);
     } else {
       openEditor(product);
     }
-  }, [dedicatedAdmin, navigate, baseRoute, openEditor]);
+  }, [dedicatedAdmin, navigate, cleanBaseRoute, openEditor]);
 
   const refresh = useCallback(async (soft = false, force = false) => {
     if (soft) setRefreshing(true); else setLoading(true);
@@ -4346,8 +4370,11 @@ export default function SteaCodeCommercePanel({ isSuperAdmin, initialTab = "prod
               onClick={() => {
                 setTab(id);
                 if (dedicatedAdmin) {
-                  const base = baseRoute.replace(/\/$/, "");
-                  navigate(`${base}/${id}`);
+                  // Always navigate to a clean absolute path built from the
+                  // normalized admin root + tab id. This prevents the URL
+                  // from accumulating segments on repeated tab clicks
+                  // (e.g. /admin/dashboard/products/products/...).
+                  navigate(`${cleanBaseRoute}/${id}`);
                 }
               }}
             >
