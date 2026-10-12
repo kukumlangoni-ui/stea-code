@@ -3858,20 +3858,6 @@ export default function SteaCodeCommercePanel({ isSuperAdmin, initialTab = "prod
     }
   }, [initialTab]);
 
-  // Sync tab state from the URL when running in dedicated admin mode.
-  // This makes browser back/forward work and keeps the tab in sync with
-  // the route segment. It does NOT navigate — it only reads the URL.
-  useEffect(() => {
-    if (!dedicatedAdmin) return;
-    const base = cleanBaseRoute;
-    if (!base) return;
-    const rest = location.pathname.slice(base.length).replace(/^\//, "").split("/")[0];
-    const validTabs = ["dashboard", "products", "orders", "payments", "users", "entitlements"];
-    if (rest && validTabs.includes(rest) && rest !== tab) {
-      setTab(rest);
-    }
-  }, [dedicatedAdmin, cleanBaseRoute, location.pathname, tab]);
-
   // Normalize baseRoute to a clean absolute root path.
   //
   // baseRoute is the admin root (e.g. "/code-admin"). If it ever contains
@@ -3895,6 +3881,20 @@ export default function SteaCodeCommercePanel({ isSuperAdmin, initialTab = "prod
     if (segments.length === 0) return "";
     return `/${segments[0]}`;
   }, [baseRoute]);
+
+  // Sync tab state from the URL when running in dedicated admin mode.
+  // This makes browser back/forward work and keeps the tab in sync with
+  // the route segment. It does NOT navigate — it only reads the URL.
+  useEffect(() => {
+    if (!dedicatedAdmin) return;
+    const base = cleanBaseRoute;
+    if (!base) return;
+    const rest = location.pathname.slice(base.length).replace(/^\//, "").split("/")[0];
+    const validTabs = ["dashboard", "products", "orders", "payments", "users", "entitlements"];
+    if (rest && validTabs.includes(rest) && rest !== tab) {
+      setTab(rest);
+    }
+  }, [dedicatedAdmin, cleanBaseRoute, location.pathname, tab]);
 
   // Dedicated admin: route to full-page Product Studio
   const openEditor = useCallback((product) => {
