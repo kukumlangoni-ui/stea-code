@@ -3945,61 +3945,7 @@ ${file.content}`
       >
         <div className="sc-product-detail-media">
           <div className="sc-modal-media-header">
-            <div className="sc-modal-media-header-left">
-
-              {/* Tab switcher hidden for video products — video is the primary view.
-                  Only shown for products with a live demo but no video. */}
-              {!hasVideo && hasLiveDemo && (
-                <div
-                  className="sc-detail-media-switcher"
-                  style={{
-                    display: "inline-flex",
-                    gap: "4px",
-                    background: "rgba(255,255,255,0.05)",
-                    padding: "3px",
-                    borderRadius: "10px",
-                    border: "1px solid rgba(255,255,255,0.08)",
-                  }}
-                >
-                  <button
-                    type="button"
-                    className={`sc-media-switch-btn ${detailMediaMode === "video" ? "is-active" : ""}`}
-                    onClick={() => setDetailMediaMode("video")}
-                    style={{
-                      padding: "5px 12px",
-                      borderRadius: "7px",
-                      fontSize: "12px",
-                      fontWeight: 600,
-                      border: "none",
-                      background: detailMediaMode === "video" ? "rgba(245,166,35,0.2)" : "transparent",
-                      color: detailMediaMode === "video" ? "#f5a623" : "rgba(245,247,251,0.6)",
-                      cursor: "pointer",
-                      transition: "all 0.2s ease",
-                    }}
-                  >
-                    {tLocal({ en: "Preview Video", zhCN: "视频预览" })}
-                  </button>
-                  <button
-                    type="button"
-                    className={`sc-media-switch-btn ${detailMediaMode === "demo" ? "is-active" : ""}`}
-                    onClick={() => setDetailMediaMode("demo")}
-                    style={{
-                      padding: "5px 12px",
-                      borderRadius: "7px",
-                      fontSize: "12px",
-                      fontWeight: 600,
-                      border: "none",
-                      background: detailMediaMode === "demo" ? "rgba(245,166,35,0.2)" : "transparent",
-                      color: detailMediaMode === "demo" ? "#f5a623" : "rgba(245,247,251,0.6)",
-                      cursor: "pointer",
-                      transition: "all 0.2s ease",
-                    }}
-                  >
-                    {tLocal({ en: "Live Demo", zhCN: "实时演示" })}
-                  </button>
-                </div>
-              )}
-            </div>
+            <div className="sc-modal-media-header-left" />
 
             <div className="sc-product-modal-actions">
               <button
