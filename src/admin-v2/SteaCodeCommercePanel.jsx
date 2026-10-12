@@ -1740,7 +1740,7 @@ export function ProductStudio({ product, onClose, onSaved, onCreated, onPublishe
               disabled={saving || !canPublish}
               title={!canPublish ? `Missing requirements: ${publishValidation.missing.join(", ")}` : "Publish and place immediately in steacode storefront"}
             >
-              {saving ? <Loader2 size={14} className="sc-spin" /> : <Home size={14} />} Publish & Show on Homepage
+              {saving ? <Loader2 size={14} className="sc-spin" /> : <Home size={14} />} Publish &amp; Show on Homepage
             </button>
           </>
         )}
@@ -2038,7 +2038,7 @@ export function ProductStudio({ product, onClose, onSaved, onCreated, onPublishe
                         </label>
                       </div>
                       <div className="sc-studio-info-box">
-                        <strong>Publishing & Visibility Rules:</strong><br />
+                        <strong>Publishing &amp; Visibility Rules:</strong><br />
                         • <strong>Draft:</strong> Hides everywhere public.<br />
                         • <strong>Published:</strong> Makes the product publicly accessible via direct link or search/catalog.<br />
                         • <strong>Show on Homepage:</strong> Places this product directly in the steacode storefront. Hidden keeps it live only by direct link or catalog search if published.<br />
@@ -3505,7 +3505,7 @@ button { background: linear-gradient(180deg,#f5a623,#d48917); border:0;
                           title={!canPublish ? `Missing: ${publishValidation.missing.join(", ")}` : "Publish and place immediately in steacode storefront"}
                         >
                           {saving ? <Loader2 size={14} className="sc-spin" /> : <Home size={14} />}
-                          Publish & Show on Homepage
+                          Publish &amp; Show on Homepage
                         </button>
                       </>
                     )}
