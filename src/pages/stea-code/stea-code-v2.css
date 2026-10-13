@@ -2633,9 +2633,8 @@ a.sc-v2-card { text-decoration: none; }
   position: relative;
   padding: 28px 24px 36px;
   text-align: center;
-  /* overflow removed so the pendulum can swing outside the hero */
-  /* isolation removed so z-index stacking works across the page */
-  overflow: visible;
+  overflow: hidden;
+  isolation: isolate;
 }
 /* Fix: prevent the hero from intercepting clicks meant for
    elements above it in the visual stack (e.g. the header's
