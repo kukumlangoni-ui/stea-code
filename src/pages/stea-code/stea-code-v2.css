@@ -16502,3 +16502,23 @@ header,
   .sc-hp-rig { transform: none !important; }
   .sc-hp-bob { transform: none !important; }
 }
+
+/* DEBUG: force pendulum visible */
+.sc-hero-pendulum {
+  z-index: 999 !important;
+  border: 3px solid red !important;
+  background: rgba(255, 0, 0, 0.1) !important;
+}
+
+.sc-hp-rig {
+  border: 3px solid yellow !important;
+}
+
+.sc-hp-bob {
+  border: 3px solid lime !important;
+}
+
+.sc-hp-cord {
+  background: red !important;
+  width: 5px !important;
+}
