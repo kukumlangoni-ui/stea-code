@@ -1900,22 +1900,50 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
                 </div>
               </div>
 
-              {/* Category filter pills — own row below heading */}
+              {/* Two-tab navigation (Components / Kits) */}
+              <div className="sc-tabs" style={{ marginBottom: "16px" }}>
+                <button
+                  type="button"
+                  className={`sc-tabs__item ${activeTab === "components" ? "is-active" : ""}`}
+                  onClick={() => {
+                    setActiveTab("components");
+                    setCategory("All");
+                    setPricing("All");
+                    setFramework("All Frameworks");
+                  }}
+                >
+                  Components
+                </button>
+                <button
+                  type="button"
+                  className={`sc-tabs__item ${activeTab === "kits" ? "is-active" : ""}`}
+                  onClick={() => {
+                    setActiveTab("kits");
+                    setCategory("All");
+                    setPricing("All");
+                    setFramework("All Frameworks");
+                  }}
+                >
+                  Kits
+                </button>
+              </div>
+
+              {/* Category filter pills — dynamic based on activeTab */}
               <div className="sc-homepage-pill-row" role="tablist" aria-label="Product categories">
-                {["All", "Buttons", "Cards", "Forms", "Text Animations", "Animations", "Backgrounds", "Loaders", "Navigation", "Portfolio", "Toggle Switches", "Inputs"].map((cat) => (
+                {TABS[activeTab].categories.map((cat) => (
                   <button
-                    key={cat}
+                    key={cat.id}
                     type="button"
                     role="tab"
-                    aria-selected={category === cat}
-                    className={`sc-homepage-pill ${category === cat ? "is-active" : ""}`}
+                    aria-selected={category === cat.id}
+                    className={`sc-homepage-pill ${category === cat.id ? "is-active" : ""}`}
                     onClick={() => {
-                      setCategory(cat);
+                      setCategory(cat.id);
                       setPricing("All");
                       setFramework("All Frameworks");
                     }}
                   >
-                    {tLocal(CATEGORY_LABELS[cat] || { en: cat, zhCN: cat })}
+                    {cat.label}
                   </button>
                 ))}
               </div>
