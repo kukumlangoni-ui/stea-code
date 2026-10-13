@@ -2633,8 +2633,9 @@ a.sc-v2-card { text-decoration: none; }
   position: relative;
   padding: 28px 24px 36px;
   text-align: center;
-  overflow: hidden;
-  isolation: isolate;
+  /* overflow removed so the pendulum can swing outside the hero */
+  /* isolation removed so z-index stacking works across the page */
+  overflow: visible;
 }
 /* Fix: prevent the hero from intercepting clicks meant for
    elements above it in the visual stack (e.g. the header's
@@ -16366,21 +16367,21 @@ header,
 
 
 
-/* ===== Hero Pendulum (Steacode swinging logo) ===== */
+/* ===== Hero Pendulum — POSITIONED ON THE RIGHT SIDE (override) ===== */
 .sc-hero-pendulum {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  overflow: hidden;
-  z-index: 1;
-  --hp-tile-size: clamp(48px, 6.5vh, 84px);
+  overflow: visible !important;
+  z-index: 5 !important;
 }
 
 .sc-hp-rig {
   position: absolute;
-  top: 0;
-  left: 50%;
-  width: 0;
+  top: -20% !important;
+  right: 6% !important;
+  left: auto !important;
+  width: 0 !important;
   height: var(--hp-cord-length, 500px);
   transform-origin: 0 0;
   will-change: transform;
@@ -16393,8 +16394,13 @@ header,
   left: -1.5px;
   width: 3px;
   height: 100%;
-  background: linear-gradient(90deg, rgba(255,255,255,0.06), rgba(255,255,255,0.22) 60%, rgba(255,255,255,0.08));
-  box-shadow: 0 0 12px rgba(79,125,255,0.15);
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.04),
+    rgba(79, 125, 255, 0.42) 60%,
+    rgba(255, 255, 255, 0.08)
+  );
+  box-shadow: 0 0 14px rgba(79, 125, 255, 0.28);
 }
 
 .sc-hp-bob-wrap {
@@ -16430,14 +16436,14 @@ header,
   will-change: transform;
   transition: transform 200ms ease, filter 200ms ease;
   box-shadow:
-    0 6px 18px rgba(79,125,255,0.28),
-    0 2px 6px rgba(0,0,0,0.4);
-  filter: drop-shadow(0 0 20px rgba(79,125,255,0.35));
+    0 8px 24px rgba(79, 125, 255, 0.42),
+    0 3px 8px rgba(0, 0, 0, 0.5);
+  filter: drop-shadow(0 0 24px rgba(79, 125, 255, 0.55));
 }
 
 .sc-hp-bob:hover {
-  filter: drop-shadow(0 0 26px rgba(79,125,255,0.55));
-  transform: scale(1.06) !important;
+  filter: drop-shadow(0 0 32px rgba(79, 125, 255, 0.75));
+  transform: scale(1.08) !important;
 }
 
 .sc-hp-bob:focus-visible {
@@ -16460,14 +16466,14 @@ header,
   border-radius: inherit;
   background: linear-gradient(
     130deg,
-    rgba(255,255,255,0.18),
-    rgba(255,255,255,0) 42%,
-    rgba(255,255,255,0) 65%,
-    rgba(79,125,255,0.15)
+    rgba(255, 255, 255, 0.22),
+    rgba(255, 255, 255, 0) 42%,
+    rgba(255, 255, 255, 0) 65%,
+    rgba(79, 125, 255, 0.2)
   );
   box-shadow:
-    inset 1px 1px 1px rgba(255,255,255,0.25),
-    inset -1px -1px 1px rgba(255,255,255,0.05);
+    inset 1px 1px 1px rgba(255, 255, 255, 0.28),
+    inset -1px -1px 1px rgba(255, 255, 255, 0.06);
   pointer-events: none;
 }
 
@@ -16477,9 +16483,19 @@ header,
   inset: 0;
   background: radial-gradient(
     ellipse at var(--hp-shine, 50%) -20%,
-    rgba(255,255,255,0.15),
+    rgba(255, 255, 255, 0.2),
     transparent 65%
   );
+}
+
+@media (max-width: 900px) {
+  .sc-hp-rig {
+    top: -10% !important;
+    right: 3% !important;
+  }
+  .sc-hero-pendulum {
+    --hp-tile-size: clamp(40px, 5vh, 60px);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
