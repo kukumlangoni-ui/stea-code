@@ -2599,24 +2599,9 @@ function CodeProductCard({ product, tLocal, onOpen, isFavorited, onToggleFavorit
         {isKit && <span className="sc-kit-badge">Kit</span>}
 
         <div className="sc-code-card__preview">
-          {isKit ? (
-            posterUrl ? (
-              <img
-                src={posterUrl}
-                alt={title}
-                className="sc-kit-poster"
-                loading="lazy"
-              />
-            ) : (
-              <div className="sc-kit-placeholder">
-                <span className="sc-kit-placeholder__title">{title}</span>
-              </div>
-            )
-          ) : (
-            <div className="sc-product-preview-art">
-              <ProductPreview product={product} fillMode="cover" cardZoom={product.cardZoom || "full"} offsetX={product.cardOffsetX || 0} offsetY={product.cardOffsetY || 0} interactive={false} preferVideo={true} cardPreview={true} />
-            </div>
-          )}
+          <div className="sc-product-preview-art">
+            <ProductPreview product={product} fillMode="cover" cardZoom={product.cardZoom || "full"} offsetX={product.cardOffsetX || 0} offsetY={product.cardOffsetY || 0} interactive={false} preferVideo={true} cardPreview={true} />
+          </div>
         </div>
 
         {/* Favorite button */}
