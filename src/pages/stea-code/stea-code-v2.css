@@ -16365,3 +16365,124 @@ header,
 }
 
 
+
+/* ===== Hero Pendulum (Steacode swinging logo) ===== */
+.sc-hero-pendulum {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 1;
+  --hp-tile-size: clamp(48px, 6.5vh, 84px);
+}
+
+.sc-hp-rig {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 0;
+  height: var(--hp-cord-length, 500px);
+  transform-origin: 0 0;
+  will-change: transform;
+  pointer-events: none;
+}
+
+.sc-hp-cord {
+  position: absolute;
+  top: 0;
+  left: -1.5px;
+  width: 3px;
+  height: 100%;
+  background: linear-gradient(90deg, rgba(255,255,255,0.06), rgba(255,255,255,0.22) 60%, rgba(255,255,255,0.08));
+  box-shadow: 0 0 12px rgba(79,125,255,0.15);
+}
+
+.sc-hp-bob-wrap {
+  position: absolute;
+  top: 100%;
+  left: calc(var(--hp-tile-size) / -2);
+  width: var(--hp-tile-size);
+  height: var(--hp-tile-size);
+  perspective: 650px;
+  pointer-events: auto;
+}
+
+.sc-hp-attachment {
+  position: absolute;
+  left: calc(50% - 4px);
+  top: -3px;
+  width: 8px;
+  height: 9px;
+  background: linear-gradient(90deg, #343440, #777787, #22222b);
+  border-radius: 3px;
+}
+
+.sc-hp-bob {
+  position: absolute;
+  inset: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 22%;
+  overflow: hidden;
+  background: transparent;
+  cursor: pointer;
+  transform-style: preserve-3d;
+  will-change: transform;
+  transition: transform 200ms ease, filter 200ms ease;
+  box-shadow:
+    0 6px 18px rgba(79,125,255,0.28),
+    0 2px 6px rgba(0,0,0,0.4);
+  filter: drop-shadow(0 0 20px rgba(79,125,255,0.35));
+}
+
+.sc-hp-bob:hover {
+  filter: drop-shadow(0 0 26px rgba(79,125,255,0.55));
+  transform: scale(1.06) !important;
+}
+
+.sc-hp-bob:focus-visible {
+  outline: 2px solid #f5b14c;
+  outline-offset: 4px;
+}
+
+.sc-hp-bob img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.sc-hp-gloss {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    130deg,
+    rgba(255,255,255,0.18),
+    rgba(255,255,255,0) 42%,
+    rgba(255,255,255,0) 65%,
+    rgba(79,125,255,0.15)
+  );
+  box-shadow:
+    inset 1px 1px 1px rgba(255,255,255,0.25),
+    inset -1px -1px 1px rgba(255,255,255,0.05);
+  pointer-events: none;
+}
+
+.sc-hp-gloss::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse at var(--hp-shine, 50%) -20%,
+    rgba(255,255,255,0.15),
+    transparent 65%
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sc-hp-rig { transform: none !important; }
+  .sc-hp-bob { transform: none !important; }
+}

@@ -73,6 +73,7 @@ import {
 import { STEA_CODE_SERVER_PRODUCTS } from "../../data/stea-code/codeProductsServer.js";
 import { V2_WORLDS } from "../../data/stea-code/v2Worlds.js";
 import { TABS, DEFAULT_TAB } from "../../data/stea-code/tabs.js";
+import HeroPendulum from "../../components/stea-code/HeroPendulum.jsx";
 import { useScrollReveal } from "../../hooks/useScrollReveal.js";
 import { useTilt } from "../../hooks/useTilt.js";
 
@@ -1826,6 +1827,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
               </div>
 
               <h1 className="sc-hero-title"><span>Build better.</span><strong>Code faster.</strong></h1>
+              <HeroPendulum />
               <p>{tLocal(COPY.sub)}</p>
               <form className="sc-market-search" onSubmit={submit} role="search">
                 <Search size={18} />
