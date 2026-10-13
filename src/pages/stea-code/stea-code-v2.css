@@ -16367,161 +16367,6 @@ header,
 
 
 
-/* ===== Hero Pendulum — POSITIONED ON THE RIGHT SIDE (override) ===== */
-.sc-hero-pendulum {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  overflow: visible !important;
-  z-index: 5 !important;
-}
-
-.sc-hp-rig {
-  position: absolute;
-  top: -20% !important;
-  right: 6% !important;
-  left: auto !important;
-  width: 0 !important;
-  height: var(--hp-cord-length, 500px);
-  transform-origin: 0 0;
-  will-change: transform;
-  pointer-events: none;
-}
-
-.sc-hp-cord {
-  position: absolute;
-  top: 0;
-  left: -1.5px;
-  width: 3px;
-  height: 100%;
-  background: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0.04),
-    rgba(79, 125, 255, 0.42) 60%,
-    rgba(255, 255, 255, 0.08)
-  );
-  box-shadow: 0 0 14px rgba(79, 125, 255, 0.28);
-}
-
-.sc-hp-bob-wrap {
-  position: absolute;
-  top: 100%;
-  left: calc(var(--hp-tile-size) / -2);
-  width: var(--hp-tile-size);
-  height: var(--hp-tile-size);
-  perspective: 650px;
-  pointer-events: auto;
-}
-
-.sc-hp-attachment {
-  position: absolute;
-  left: calc(50% - 4px);
-  top: -3px;
-  width: 8px;
-  height: 9px;
-  background: linear-gradient(90deg, #343440, #777787, #22222b);
-  border-radius: 3px;
-}
-
-.sc-hp-bob {
-  position: absolute;
-  inset: 0;
-  padding: 0;
-  border: 0;
-  border-radius: 22%;
-  overflow: hidden;
-  background: transparent;
-  cursor: pointer;
-  transform-style: preserve-3d;
-  will-change: transform;
-  transition: transform 200ms ease, filter 200ms ease;
-  box-shadow:
-    0 8px 24px rgba(79, 125, 255, 0.42),
-    0 3px 8px rgba(0, 0, 0, 0.5);
-  filter: drop-shadow(0 0 24px rgba(79, 125, 255, 0.55));
-}
-
-.sc-hp-bob:hover {
-  filter: drop-shadow(0 0 32px rgba(79, 125, 255, 0.75));
-  transform: scale(1.08) !important;
-}
-
-.sc-hp-bob:focus-visible {
-  outline: 2px solid #f5b14c;
-  outline-offset: 4px;
-}
-
-.sc-hp-bob img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  user-select: none;
-  -webkit-user-drag: none;
-}
-
-.sc-hp-gloss {
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: linear-gradient(
-    130deg,
-    rgba(255, 255, 255, 0.22),
-    rgba(255, 255, 255, 0) 42%,
-    rgba(255, 255, 255, 0) 65%,
-    rgba(79, 125, 255, 0.2)
-  );
-  box-shadow:
-    inset 1px 1px 1px rgba(255, 255, 255, 0.28),
-    inset -1px -1px 1px rgba(255, 255, 255, 0.06);
-  pointer-events: none;
-}
-
-.sc-hp-gloss::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(
-    ellipse at var(--hp-shine, 50%) -20%,
-    rgba(255, 255, 255, 0.2),
-    transparent 65%
-  );
-}
-
-@media (max-width: 900px) {
-  .sc-hp-rig {
-    top: -10% !important;
-    right: 3% !important;
-  }
-  .sc-hero-pendulum {
-    --hp-tile-size: clamp(40px, 5vh, 60px);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .sc-hp-rig { transform: none !important; }
-  .sc-hp-bob { transform: none !important; }
-}
-
-/* DEBUG: force pendulum visible */
-.sc-hero-pendulum {
-  z-index: 999 !important;
-  border: 3px solid red !important;
-  background: rgba(255, 0, 0, 0.1) !important;
-}
-
-.sc-hp-rig {
-  border: 3px solid yellow !important;
-}
-
-.sc-hp-bob {
-  border: 3px solid lime !important;
-}
-
-.sc-hp-cord {
-  background: red !important;
-  width: 5px !important;
-}
 
 /* ===== Hero Pendulum (right-side swinging logo) ===== */
 .sc-hero-pendulum {
@@ -16530,16 +16375,16 @@ header,
   pointer-events: none;
   overflow: visible;
   z-index: 10;
-  --hp-tile-size: clamp(80px, 11vh, 160px);
+  --hp-tile-size: clamp(72px, 10vh, 140px);
 }
 
 .sc-hp-rig {
   position: absolute;
-  top: -25%;
-  right: 8%;
+  top: -30%;
+  right: 10%;
   left: auto;
   width: 0;
-  height: var(--hp-cord-length, 700px);
+  height: var(--hp-cord-length, 600px);
   transform-origin: 0 0;
   will-change: transform;
   pointer-events: none;
@@ -16549,14 +16394,14 @@ header,
   position: absolute;
   top: 0;
   left: -1.5px;
-  width: 3px;
+  width: 2.5px;
   height: 100%;
   background: linear-gradient(
     180deg,
-    rgba(79, 125, 255, 0.6),
-    rgba(79, 125, 255, 0.25)
+    rgba(79, 125, 255, 0.55),
+    rgba(79, 125, 255, 0.2)
   );
-  box-shadow: 0 0 12px rgba(79, 125, 255, 0.3);
+  box-shadow: 0 0 10px rgba(79, 125, 255, 0.25);
 }
 
 .sc-hp-bob-wrap {
@@ -16571,12 +16416,12 @@ header,
 
 .sc-hp-attachment {
   position: absolute;
-  left: calc(50% - 4px);
+  left: calc(50% - 3px);
   top: -3px;
-  width: 8px;
-  height: 9px;
+  width: 6px;
+  height: 8px;
   background: linear-gradient(90deg, #343440, #777787, #22222b);
-  border-radius: 3px;
+  border-radius: 2px;
 }
 
 .sc-hp-bob {
@@ -16590,15 +16435,14 @@ header,
   cursor: pointer;
   transform-style: preserve-3d;
   will-change: transform;
-  transition: transform 200ms ease, filter 200ms ease;
+  transition: filter 200ms ease;
   box-shadow:
-    0 10px 30px rgba(79, 125, 255, 0.45),
+    0 10px 30px rgba(79, 125, 255, 0.4),
     0 4px 12px rgba(0, 0, 0, 0.5);
-  filter: drop-shadow(0 0 24px rgba(79, 125, 255, 0.5));
 }
 
 .sc-hp-bob:hover {
-  filter: drop-shadow(0 0 36px rgba(79, 125, 255, 0.75));
+  filter: drop-shadow(0 0 32px rgba(79, 125, 255, 0.7));
 }
 
 .sc-hp-bob img {
@@ -16619,11 +16463,11 @@ header,
     rgba(255, 255, 255, 0.22),
     rgba(255, 255, 255, 0) 42%,
     rgba(255, 255, 255, 0) 65%,
-    rgba(79, 125, 255, 0.18)
+    rgba(79, 125, 255, 0.15)
   );
   box-shadow:
-    inset 1px 1px 1px rgba(255, 255, 255, 0.28),
-    inset -1px -1px 1px rgba(255, 255, 255, 0.06);
+    inset 1px 1px 1px rgba(255, 255, 255, 0.25),
+    inset -1px -1px 1px rgba(255, 255, 255, 0.05);
   pointer-events: none;
 }
 
@@ -16633,18 +16477,147 @@ header,
   inset: 0;
   background: radial-gradient(
     ellipse at var(--hp-shine, 50%) -20%,
-    rgba(255, 255, 255, 0.2),
+    rgba(255, 255, 255, 0.18),
     transparent 65%
   );
 }
 
 @media (max-width: 900px) {
   .sc-hp-rig {
-    top: -15%;
-    right: 4%;
+    top: -18%;
+    right: 5%;
   }
   .sc-hero-pendulum {
-    --hp-tile-size: clamp(60px, 9vh, 110px);
+    --hp-tile-size: clamp(56px, 8vh, 100px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sc-hp-rig { transform: none !important; }
+  .sc-hp-bob { transform: none !important; }
+}
+
+/* ===== Hero Pendulum (right-side swinging logo) ===== */
+.sc-hero-pendulum {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: visible;
+  z-index: 10;
+  --hp-tile-size: clamp(72px, 10vh, 140px);
+}
+
+.sc-hp-rig {
+  position: absolute;
+  top: -30%;
+  right: 10%;
+  left: auto;
+  width: 0;
+  height: var(--hp-cord-length, 600px);
+  transform-origin: 0 0;
+  will-change: transform;
+  pointer-events: none;
+}
+
+.sc-hp-cord {
+  position: absolute;
+  top: 0;
+  left: -1.5px;
+  width: 2.5px;
+  height: 100%;
+  background: linear-gradient(
+    180deg,
+    rgba(79, 125, 255, 0.55),
+    rgba(79, 125, 255, 0.2)
+  );
+  box-shadow: 0 0 10px rgba(79, 125, 255, 0.25);
+}
+
+.sc-hp-bob-wrap {
+  position: absolute;
+  top: 100%;
+  left: calc(var(--hp-tile-size) / -2);
+  width: var(--hp-tile-size);
+  height: var(--hp-tile-size);
+  perspective: 650px;
+  pointer-events: auto;
+}
+
+.sc-hp-attachment {
+  position: absolute;
+  left: calc(50% - 3px);
+  top: -3px;
+  width: 6px;
+  height: 8px;
+  background: linear-gradient(90deg, #343440, #777787, #22222b);
+  border-radius: 2px;
+}
+
+.sc-hp-bob {
+  position: absolute;
+  inset: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 22%;
+  overflow: hidden;
+  background: #05060a;
+  cursor: pointer;
+  transform-style: preserve-3d;
+  will-change: transform;
+  transition: filter 200ms ease;
+  box-shadow:
+    0 10px 30px rgba(79, 125, 255, 0.4),
+    0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+.sc-hp-bob:hover {
+  filter: drop-shadow(0 0 32px rgba(79, 125, 255, 0.7));
+}
+
+.sc-hp-bob img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.sc-hp-gloss {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    130deg,
+    rgba(255, 255, 255, 0.22),
+    rgba(255, 255, 255, 0) 42%,
+    rgba(255, 255, 255, 0) 65%,
+    rgba(79, 125, 255, 0.15)
+  );
+  box-shadow:
+    inset 1px 1px 1px rgba(255, 255, 255, 0.25),
+    inset -1px -1px 1px rgba(255, 255, 255, 0.05);
+  pointer-events: none;
+}
+
+.sc-hp-gloss::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse at var(--hp-shine, 50%) -20%,
+    rgba(255, 255, 255, 0.18),
+    transparent 65%
+  );
+}
+
+@media (max-width: 900px) {
+  .sc-hp-rig {
+    top: -18%;
+    right: 5%;
+  }
+  .sc-hero-pendulum {
+    --hp-tile-size: clamp(56px, 8vh, 100px);
   }
 }
 
