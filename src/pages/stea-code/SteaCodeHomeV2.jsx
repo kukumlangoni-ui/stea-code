@@ -72,6 +72,7 @@ import {
   FALLBACK_CODE_PRODUCTS } from "../../data/stea-code/codeProducts.js";
 import { STEA_CODE_SERVER_PRODUCTS } from "../../data/stea-code/codeProductsServer.js";
 import { V2_WORLDS } from "../../data/stea-code/v2Worlds.js";
+import { TABS, DEFAULT_TAB } from "../../data/stea-code/tabs.js";
 import { useScrollReveal } from "../../hooks/useScrollReveal.js";
 import { useTilt } from "../../hooks/useTilt.js";
 
@@ -481,6 +482,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
   const [viewMode, setViewMode] = useState("home");
   const [q, setQ] = useState("");
   const [category, setCategory] = useState("All");
+  const [activeTab, setActiveTab] = useState(DEFAULT_TAB);
   const [pricing, setPricing] = useState("All");
   const [framework, setFramework] = useState("All Frameworks");
   const [isGridSwitching, setIsGridSwitching] = useState(false);
@@ -525,7 +527,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
     setIsGridSwitching(true);
     const t = setTimeout(() => setIsGridSwitching(false), 150);
     return () => clearTimeout(t);
-  }, [category, pricing, framework]);
+  }, [activeTab, category, pricing, framework]);
 
   // Track product views — fire once per product per session
   useEffect(() => {
@@ -1217,6 +1219,11 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
   const filtered = useMemo(() => {
     const query = q.trim().toLowerCase();
     return products
+      .filter((p) => {
+        if (activeTab === "components") return p.tab === "components" || p.tab === undefined;
+        if (activeTab === "kits") return p.tab === "kits";
+        return true;
+      })
       .filter((p) => category === "All" || p.category === category)
       .filter((p) => pricing === "All" || p.pricingType === pricing.toLowerCase())
       .filter((p) => framework === "All Frameworks" || (p.frameworks || []).includes(framework))
@@ -1229,7 +1236,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
         return hay.includes(query);
       })
       .sort((a, b) => Number(Boolean(b.featured)) - Number(Boolean(a.featured)) || String(b.createdAt).localeCompare(String(a.createdAt)));
-  }, [products, category, pricing, framework, q]);
+  }, [products, activeTab, category, pricing, framework, q]);
 
   const trendingProducts = useMemo(() => {
     const list = Array.isArray(products) ? [...products] : [];
@@ -1278,7 +1285,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
 
   useEffect(() => {
     setVisibleProductCount(24);
-  }, [category, pricing, framework, q]);
+  }, [activeTab, category, pricing, framework, q]);
 
   const submit = (event) => {
     event?.preventDefault?.();
@@ -1667,6 +1674,8 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
             <ProductControls
               tLocal={tLocal}
               uiLocale={uiLocale}
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
               category={category}
               setCategory={setCategory}
               pricing={pricing}
@@ -2370,7 +2379,7 @@ function SectionHead({ title, sub, action }) {
   );
 }
 
-function ProductControls({ tLocal, uiLocale = "en", category, setCategory, pricing, setPricing, framework, setFramework }) {
+function ProductControls({ tLocal, uiLocale = "en", activeTab, setActiveTab, category, setCategory, pricing, setPricing, framework, setFramework }) {
   return (
     <div className="sc-market-controls">
       <div
@@ -2397,7 +2406,40 @@ function ProductControls({ tLocal, uiLocale = "en", category, setCategory, prici
         >
           {uiLocale === "zhCN" ? "分类" : "Categories"}
         </span>
-        <div className="sc-market-tabs">{CODE_PRODUCT_CATEGORIES.map((cat) => <button key={cat} type="button" className={category === cat ? "is-active" : ""} onClick={() => setCategory(cat)}>{tLocal(CATEGORY_LABELS[cat] || { en: cat, zhCN: cat })}</button>)}</div>
+        <div className="sc-tabs">
+          <button
+            type="button"
+            className={`sc-tabs__item ${activeTab === "components" ? "is-active" : ""}`}
+            onClick={() => {
+              setActiveTab("components");
+              setCategory("All");
+            }}
+          >
+            Components
+          </button>
+          <button
+            type="button"
+            className={`sc-tabs__item ${activeTab === "kits" ? "is-active" : ""}`}
+            onClick={() => {
+              setActiveTab("kits");
+              setCategory("All");
+            }}
+          >
+            Kits
+          </button>
+        </div>
+        <div className="sc-market-tabs">
+          {TABS[activeTab].categories.map((cat) => (
+            <button
+              key={cat.id}
+              type="button"
+              className={category === cat.id ? "is-active" : ""}
+              onClick={() => setCategory(cat.id)}
+            >
+              {cat.label}
+            </button>
+          ))}
+        </div>
       </div>
       <div
         className="sc-market-filter-row"

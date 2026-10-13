@@ -16271,3 +16271,44 @@ header,
   display: block !important;
   padding: 0 !important;
 }
+
+/* ===== Two-tab navigation (Components / Kits) ===== */
+.sc-tabs {
+  display: inline-flex;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  padding: 6px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  margin-bottom: 20px;
+}
+
+.sc-tabs__item {
+  padding: 10px 24px;
+  height: 44px;
+  font-size: 15px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.55);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 180ms ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sc-tabs__item:hover:not(.is-active) {
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.sc-tabs__item.is-active {
+  color: #f5b14c;
+  background: rgba(245, 177, 76, 0.08);
+  border-color: rgba(245, 177, 76, 0.25);
+  font-weight: 600;
+  box-shadow: 0 0 0 1px rgba(245, 177, 76, 0.1) inset;
+}
+
