@@ -12872,7 +12872,7 @@ iframe::-webkit-scrollbar-corner {
 .sc-code-card__preview-wrap {
   position: relative !important;
   width: 100% !important;
-  aspect-ratio: 640 / 480 !important;
+  aspect-ratio: var(--card-aspect, var(--preview-aspect, 640 / 480)) !important;
   border-radius: 16px !important;
   overflow: hidden !important;
   background: #0d0d12 !important;
@@ -15321,7 +15321,7 @@ header,
    CARD PREVIEW — enforce consistent aspect ratio across all cards
    ============================================================ */
 .sc-code-card__preview-wrap {
-  aspect-ratio: 4 / 3 !important;
+  aspect-ratio: var(--card-aspect, var(--preview-aspect, 4 / 3)) !important;
 }
 /* Ensure all card bodies have consistent height for a clean grid */
 .sc-code-card {
@@ -16201,7 +16201,7 @@ header,
 
 /* Ensure the v2 card preview keeps its design-ratio aspect ratio (not forced 16:9) */
 #explore .sc-code-card__preview-wrap {
-  aspect-ratio: var(--card-aspect, 640 / 480) !important;
+  aspect-ratio: var(--card-aspect, var(--preview-aspect, 640 / 480)) !important;
 }
 
 /* Remove legacy explore card-body rules — v2 uses __caption not card-body */
@@ -16260,8 +16260,7 @@ header,
 
 /* 3. Ensure preview wrap honors the product's design aspect ratio */
 #explore .sc-code-card--v2 .sc-code-card__preview-wrap {
-  aspect-ratio: unset !important;
-  /* inline style from the component sets the real ratio; this removes the legacy override */
+  aspect-ratio: var(--card-aspect, var(--preview-aspect, 640 / 480)) !important;
 }
 
 /* 4. Ensure the preview art fills edge-to-edge in v2 cards */
@@ -16311,4 +16310,58 @@ header,
   font-weight: 600;
   box-shadow: 0 0 0 1px rgba(245, 177, 76, 0.1) inset;
 }
+
+/* ===== Kit Card Styles (Poster, Placeholder & Badge) ===== */
+.sc-kit-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 5;
+  background: #f5b14c;
+  color: #11141a;
+  padding: 3px 7px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  line-height: 1.2;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+}
+
+.sc-kit-poster {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.sc-kit-placeholder {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at 50% 40%, rgba(245, 177, 76, 0.12), rgba(10, 13, 20, 0.95)), #080b11;
+  padding: 24px;
+  text-align: center;
+}
+
+.sc-kit-placeholder__title {
+  font-size: 16px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.9);
+  letter-spacing: -0.01em;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
 

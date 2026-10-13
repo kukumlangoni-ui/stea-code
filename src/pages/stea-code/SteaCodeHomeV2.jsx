@@ -2510,6 +2510,7 @@ function ProductControls({ tLocal, uiLocale = "en", activeTab, setActiveTab, cat
 function CodeProductCard({ product, tLocal, onOpen, isFavorited, onToggleFavorite }) {
   const isFree = product.pricingType === "free";
   const productId = getProductIdentity(product);
+  const isKit = product?.tab === "kits";
   const title = tLocal({
     en: product.titleEn || product.title || "Untitled",
     zhCN: product.titleZh || product.titleEn || product.title || "未命名" });
@@ -2520,11 +2521,12 @@ function CodeProductCard({ product, tLocal, onOpen, isFavorited, onToggleFavorit
   const categoryLabel =
     CATEGORY_LABELS[product?.category]?.en || product?.category || "Code";
   const price = formatPrice(product);
+  const posterUrl = product?.posterImageUrl || getPreviewPosterUrl(product);
 
   // Dynamic aspect ratio from admin-configured design canvas dimensions.
-  // Falls back to 640×480 (4:3 — steacode standard card canvas) if not set.
-  const designW = Number(product?.designWidth)  || 640;
-  const designH = Number(product?.designHeight) || 480;
+  // Falls back to 1600×1100 for kits, 640×480 for components.
+  const designW = Number(product?.designWidth || product?.preview?.width)  || (isKit ? 1600 : 640);
+  const designH = Number(product?.designHeight || product?.preview?.height) || (isKit ? 1100 : 480);
   const previewAspect = `${designW} / ${designH}`;
 
   // --- Motion: subtle lift on hover, press scale. Honors prefers-reduced-motion. ---
@@ -2559,12 +2561,34 @@ function CodeProductCard({ product, tLocal, onOpen, isFavorited, onToggleFavorit
           Falls back to 640:480 (4:3) if admin dimensions aren't set. Edge-to-edge, no internal scroll. */}
       <div
         className="sc-code-card__preview-wrap"
-        style={{ aspectRatio: previewAspect }}
+        style={{
+          aspectRatio: previewAspect,
+          '--card-aspect': previewAspect,
+          '--preview-aspect': previewAspect,
+        }}
       >
+        {/* Kit badge on top-left corner */}
+        {isKit && <span className="sc-kit-badge">Kit</span>}
+
         <div className="sc-code-card__preview">
-          <div className="sc-product-preview-art">
-            <ProductPreview product={product} fillMode="cover" cardZoom={product.cardZoom || "full"} offsetX={product.cardOffsetX || 0} offsetY={product.cardOffsetY || 0} interactive={false} preferVideo={true} cardPreview={true} />
-          </div>
+          {isKit ? (
+            posterUrl ? (
+              <img
+                src={posterUrl}
+                alt={title}
+                className="sc-kit-poster"
+                loading="lazy"
+              />
+            ) : (
+              <div className="sc-kit-placeholder">
+                <span className="sc-kit-placeholder__title">{title}</span>
+              </div>
+            )
+          ) : (
+            <div className="sc-product-preview-art">
+              <ProductPreview product={product} fillMode="cover" cardZoom={product.cardZoom || "full"} offsetX={product.cardOffsetX || 0} offsetY={product.cardOffsetY || 0} interactive={false} preferVideo={true} cardPreview={true} />
+            </div>
+          )}
         </div>
 
         {/* Favorite button */}
@@ -2902,8 +2926,8 @@ const ProductPreview = forwardRef(function ProductPreview({
   cardPreview = false,
 }, ref) {
   const productId = getProductIdentity(product);
-  const designW = Number(product?.designWidth) || 0;
-  const designH = Number(product?.designHeight) || 0;
+  const designW = Number(product?.designWidth || product?.preview?.width) || (product?.tab === "kits" ? 1600 : 0);
+  const designH = Number(product?.designHeight || product?.preview?.height) || (product?.tab === "kits" ? 1100 : 0);
   const categoryLabel =
     CATEGORY_LABELS[product?.category]?.en || product?.category || "Code preview";
   const NativePreview = NATIVE_PRODUCT_PREVIEWS[productId];
@@ -4057,7 +4081,7 @@ ${file.content}`
           <div
             className="sc-product-detail-preview-shell"
             style={{
-              '--preview-aspect': `${product.designWidth || 640} / ${product.designHeight || 480}`,
+              '--preview-aspect': `${product.designWidth || product.preview?.width || (product.tab === "kits" ? 1600 : 640)} / ${product.designHeight || product.preview?.height || (product.tab === "kits" ? 1100 : 480)}`,
             }}
           >
             <PreviewErrorBoundary>
@@ -4082,8 +4106,8 @@ ${file.content}`
                     lazy={false}
                     fillMode="scale"
                     modalZoom={product.modalZoom || 1}
-                    designWidth={Number(product.designWidth) || 0}
-                    designHeight={Number(product.designHeight) || 0}
+                    designWidth={Number(product.designWidth || product.preview?.width) || (product.tab === "kits" ? 1600 : 0)}
+                    designHeight={Number(product.designHeight || product.preview?.height) || (product.tab === "kits" ? 1100 : 0)}
                     offsetX={product.modalOffsetX || 0}
                     offsetY={product.modalOffsetY || 0}
                     showControls={false}
