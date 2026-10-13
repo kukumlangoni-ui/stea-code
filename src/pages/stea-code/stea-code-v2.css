@@ -16522,3 +16522,133 @@ header,
   background: red !important;
   width: 5px !important;
 }
+
+/* ===== Hero Pendulum (right-side swinging logo) ===== */
+.sc-hero-pendulum {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: visible;
+  z-index: 10;
+  --hp-tile-size: clamp(80px, 11vh, 160px);
+}
+
+.sc-hp-rig {
+  position: absolute;
+  top: -25%;
+  right: 8%;
+  left: auto;
+  width: 0;
+  height: var(--hp-cord-length, 700px);
+  transform-origin: 0 0;
+  will-change: transform;
+  pointer-events: none;
+}
+
+.sc-hp-cord {
+  position: absolute;
+  top: 0;
+  left: -1.5px;
+  width: 3px;
+  height: 100%;
+  background: linear-gradient(
+    180deg,
+    rgba(79, 125, 255, 0.6),
+    rgba(79, 125, 255, 0.25)
+  );
+  box-shadow: 0 0 12px rgba(79, 125, 255, 0.3);
+}
+
+.sc-hp-bob-wrap {
+  position: absolute;
+  top: 100%;
+  left: calc(var(--hp-tile-size) / -2);
+  width: var(--hp-tile-size);
+  height: var(--hp-tile-size);
+  perspective: 650px;
+  pointer-events: auto;
+}
+
+.sc-hp-attachment {
+  position: absolute;
+  left: calc(50% - 4px);
+  top: -3px;
+  width: 8px;
+  height: 9px;
+  background: linear-gradient(90deg, #343440, #777787, #22222b);
+  border-radius: 3px;
+}
+
+.sc-hp-bob {
+  position: absolute;
+  inset: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 22%;
+  overflow: hidden;
+  background: #05060a;
+  cursor: pointer;
+  transform-style: preserve-3d;
+  will-change: transform;
+  transition: transform 200ms ease, filter 200ms ease;
+  box-shadow:
+    0 10px 30px rgba(79, 125, 255, 0.45),
+    0 4px 12px rgba(0, 0, 0, 0.5);
+  filter: drop-shadow(0 0 24px rgba(79, 125, 255, 0.5));
+}
+
+.sc-hp-bob:hover {
+  filter: drop-shadow(0 0 36px rgba(79, 125, 255, 0.75));
+}
+
+.sc-hp-bob img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.sc-hp-gloss {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    130deg,
+    rgba(255, 255, 255, 0.22),
+    rgba(255, 255, 255, 0) 42%,
+    rgba(255, 255, 255, 0) 65%,
+    rgba(79, 125, 255, 0.18)
+  );
+  box-shadow:
+    inset 1px 1px 1px rgba(255, 255, 255, 0.28),
+    inset -1px -1px 1px rgba(255, 255, 255, 0.06);
+  pointer-events: none;
+}
+
+.sc-hp-gloss::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse at var(--hp-shine, 50%) -20%,
+    rgba(255, 255, 255, 0.2),
+    transparent 65%
+  );
+}
+
+@media (max-width: 900px) {
+  .sc-hp-rig {
+    top: -15%;
+    right: 4%;
+  }
+  .sc-hero-pendulum {
+    --hp-tile-size: clamp(60px, 9vh, 110px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sc-hp-rig { transform: none !important; }
+  .sc-hp-bob { transform: none !important; }
+}
