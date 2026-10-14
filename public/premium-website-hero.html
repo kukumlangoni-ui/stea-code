@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Premium Website Hero</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --lavender: #eeebf8;
+    --ink: #292933;
+    --violet: #5140f4;
+  }
+  * { box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; margin: 0; padding: 0; }
+  body {
+    font-family: Montserrat, -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--lavender);
+    color: var(--ink);
+    overflow: hidden;
+  }
+  .stage {
+    position: relative;
+    width: 100%;
+    height: 100svh;
+    min-height: 420px;
+    overflow: hidden;
+    background: var(--lavender);
+    isolation: isolate;
+    --tile-size: clamp(72px, min(15vw, 10vh), 110px);
+  }
+
+  /* Headline */
+  .headline {
+    position: absolute;
+    top: 46%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: max-content;
+    text-align: center;
+    font-size: clamp(34px, min(9vw, 6.2vh), 76px);
+    font-weight: 900;
+    letter-spacing: -0.045em;
+    line-height: 0.97;
+  }
+  .message {
+    padding: 8px 14px 12px;
+    margin: 0;
+    font-size: inherit;
+    font-weight: inherit;
+    line-height: inherit;
+    letter-spacing: inherit;
+    text-shadow: 0 4px 3px rgba(34,30,49,0.08), 0 8px 14px rgba(34,30,49,0.13);
+  }
+  .message-reveal {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    clip-path: polygon(0 0, 0 0, 0 100%, 0 100%);
+    will-change: clip-path;
+  }
+  .message-talk {
+    color: var(--violet);
+    background: var(--lavender);
+    text-shadow: 0 5px 5px rgba(81,64,244,0.13), 0 8px 14px rgba(52,41,104,0.16);
+  }
+
+  /* Pendulum */
+  .pendulum-rig {
+    position: absolute;
+    width: 0;
+    height: var(--cord-length, 100%);
+    top: -45%;
+    left: 50%;
+    transform-origin: 0 0;
+    will-change: transform;
+    pointer-events: none;
+    z-index: 2;
+  }
+  .cord {
+    position: absolute;
+    top: 0;
+    left: -1px;
+    width: 2px;
+    height: 100%;
+    background: linear-gradient(180deg, rgba(41,41,51,0.05), rgba(41,41,51,0.7) 40%, rgba(41,41,51,0.95));
+    box-shadow: 0 0 4px rgba(41,41,51,0.15);
+  }
+  .bob {
+    position: absolute;
+    top: 100%;
+    left: calc(var(--tile-size) / -2);
+    width: var(--tile-size);
+    height: var(--tile-size);
+    perspective: 650px;
+  }
+  .tile {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    border-radius: 25%;
+    overflow: hidden;
+    transform-style: preserve-3d;
+    will-change: transform;
+    background: #090a0e;
+    box-shadow:
+      inset 0 0 0 1px rgba(255,255,255,0.14),
+      0 10px 22px rgba(41,35,62,0.28),
+      0 3px 8px rgba(41,35,62,0.18);
+  }
+  .tile img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    user-select: none;
+    pointer-events: none;
+  }
+  .tile::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(130deg, rgba(255,255,255,0.09), transparent 42%, transparent 65%, rgba(0,106,255,0.05));
+    pointer-events: none;
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px; height: 1px;
+    padding: 0; margin: -1px; overflow: hidden;
+    clip: rect(0,0,0,0); white-space: nowrap; border-width: 0;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition: none !important; }
+  }
+</style>
+</head>
+<body>
+<main class="stage" id="stage" aria-label="Swinging pendulum hero">
+  <div class="headline" id="headline">
+    <h1 class="message message-need">NEED A<br>WEBSITE?</h1>
+    <div class="message-reveal" id="reveal" aria-hidden="true">
+      <div class="message message-talk">LET&rsquo;S<br>TALK!</div>
+    </div>
+  </div>
+  <span class="sr-only">Need a website? Let&rsquo;s talk.</span>
+
+  <div class="pendulum-rig" id="rig" aria-hidden="true">
+    <div class="cord"></div>
+    <div class="bob">
+      <div class="tile" id="tile">
+        <img src="/stea-code-logo.png" alt="" draggable="false">
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+(() => {
+  const PERIOD = 6200;
+  const stage = document.getElementById("stage");
+  const rig = document.getElementById("rig");
+  const tile = document.getElementById("tile");
+  const reveal = document.getElementById("reveal");
+  const headline = document.getElementById("headline");
+
+  const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let elapsed = 0, last = 0, rafId = 0;
+  let width = 0, height = 0, length = 0, amplitude = 0;
+  let textTop = 0, textHeight = 0, textLeft = 0, textWidth = 0;
+
+  const measure = () => {
+    width = stage.clientWidth;
+    height = stage.clientHeight;
+    length = height * 1.02;
+    amplitude = Math.asin(Math.min(width * 0.345, height * 0.31) / length);
+    stage.style.setProperty("--cord-length", length + "px");
+    const box = headline.getBoundingClientRect();
+    const bounds = stage.getBoundingClientRect();
+    textTop = box.top - bounds.top;
+    textLeft = box.left - bounds.left;
+    textHeight = box.height;
+    textWidth = box.width;
+  };
+
+  const animate = (now) => {
+    if (last && !document.hidden) elapsed += Math.min(now - last, 64);
+    last = now;
+
+    const phase = (elapsed / PERIOD) * Math.PI * 2;
+    const angle = amplitude * Math.cos(phase);
+    const degrees = (angle * 180) / Math.PI;
+
+    rig.style.transform = `rotate(${degrees}deg)`;
+    tile.style.transform = `rotateY(${Math.sin(phase) * 12}deg) rotateX(${3 + Math.cos(phase) * 2}deg)`;
+
+    const cordX = width / 2 - (height * 0.45) * Math.tan(angle);
+    const revealFrom = Math.max(0, Math.min(width, cordX));
+    reveal.style.clipPath = `polygon(0 0, ${revealFrom}px 0, ${revealFrom}px 100%, 0 100%)`;
+
+    rafId = requestAnimationFrame(animate);
+  };
+
+  const start = () => {
+    measure();
+    if (reduced) { rig.style.transform = "rotate(0deg)"; return; }
+    last = 0;
+    rafId = requestAnimationFrame(animate);
+  };
+
+  const ro = new ResizeObserver(measure);
+  ro.observe(stage);
+  document.fonts.ready.then(measure);
+  start();
+})();
+</script>
+</body>
+</html>
