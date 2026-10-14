@@ -13,12 +13,48 @@
   html, body { width: 100%; height: 100%; margin: 0; padding: 0; }
   body { font-family: Montserrat, -apple-system, BlinkMacSystemFont, sans-serif; background: var(--lavender); color: var(--ink); overflow: hidden; }
   .stage { position: relative; width: 1600px; height: 1100px; overflow: hidden; background: var(--lavender); --tile-size: 110px; }
-  .headline { position: absolute; top: 46%; left: 50%; transform: translate(-50%, -50%); width: max-content; text-align: center; font-size: 96px; font-weight: 900; letter-spacing: -0.045em; line-height: 0.97; }
-  .message { padding: 8px 14px 12px; margin: 0; font-size: inherit; font-weight: inherit; line-height: inherit; letter-spacing: inherit; text-shadow: 0 4px 3px rgba(34,30,49,0.08), 0 8px 14px rgba(34,30,49,0.13); }
-  .message-reveal { position: absolute; inset: 0; overflow: hidden; clip-path: polygon(0 0, 0 0, 0 100%, 0 100%); will-change: clip-path; background: var(--lavender); }
-  .message-talk { color: var(--violet); text-shadow: 0 5px 5px rgba(81,64,244,0.13), 0 8px 14px rgba(52,41,104,0.16); }
-  #base-message { transition: opacity 200ms ease; }
-  #base-message.is-hidden { opacity: 0; }
+
+  /* Headline gets a FIXED width so both layers share the same box */
+  .headline {
+    position: absolute;
+    top: 46%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 1100px;
+    height: 280px;
+    text-align: center;
+    font-size: 96px;
+    font-weight: 900;
+    letter-spacing: -0.045em;
+    line-height: 0.97;
+  }
+  .message {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    padding: 8px 14px 12px;
+    margin: 0;
+    font-size: inherit;
+    font-weight: inherit;
+    line-height: inherit;
+    letter-spacing: inherit;
+    text-align: center;
+    text-shadow: 0 4px 3px rgba(34,30,49,0.08), 0 8px 14px rgba(34,30,49,0.13);
+  }
+  .message-reveal {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    clip-path: polygon(0 0, 0 0, 0 100%, 0 100%);
+    will-change: clip-path;
+    background: var(--lavender);
+  }
+  .message-talk {
+    color: var(--violet);
+    text-shadow: 0 5px 5px rgba(81,64,244,0.13), 0 8px 14px rgba(52,41,104,0.16);
+  }
+
   .pendulum-rig { position: absolute; width: 0; height: var(--cord-length, 100%); top: -45%; left: 50%; transform-origin: 0 0; will-change: transform; pointer-events: none; z-index: 2; }
   .cord { position: absolute; top: 0; left: -1px; width: 2px; height: 100%; background: linear-gradient(180deg, rgba(41,41,51,0.05), rgba(41,41,51,0.7) 40%, rgba(41,41,51,0.95)); box-shadow: 0 0 4px rgba(41,41,51,0.15); }
   .bob { position: absolute; top: 100%; left: calc(var(--tile-size) / -2); width: var(--tile-size); height: var(--tile-size); }
@@ -30,7 +66,7 @@
 <body>
 <main class="stage" id="stage" aria-label="steacode services">
   <div class="headline" id="headline">
-    <h1 class="message" id="base-message">NEED A<br>WEBSITE?</h1>
+    <div class="message" id="base-message">NEED A<br>WEBSITE?</div>
     <div class="message-reveal" id="reveal" aria-hidden="true">
       <div class="message message-talk">LET&rsquo;S<br>TALK!</div>
     </div>
@@ -56,7 +92,9 @@
   const baseMessage = document.getElementById("base-message");
   const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   let elapsed = 0, last = 0, width = 0, height = 0, length = 0, amplitude = 0;
-  let textLeft = 0, textWidth = 0, serviceIndex = 0, lastHalf = -1;
+  let hLeft = 0, hTop = 0, hWidth = 0, hHeight = 0;
+  let serviceIndex = 0, lastHalf = -1;
+
   const measure = () => {
     width = stage.clientWidth; height = stage.clientHeight;
     length = height * 1.02;
@@ -64,39 +102,50 @@
     stage.style.setProperty("--cord-length", length + "px");
     const box = headline.getBoundingClientRect();
     const bounds = stage.getBoundingClientRect();
-    textLeft = box.left - bounds.left; textWidth = box.width;
+    hLeft = box.left - bounds.left;
+    hTop = box.top - bounds.top;
+    hWidth = box.width;
+    hHeight = box.height;
   };
+
   const showNext = () => {
-    baseMessage.classList.add("is-hidden");
-    setTimeout(() => {
-      serviceIndex = (serviceIndex + 1) % SERVICES.length;
-      baseMessage.innerHTML = SERVICES[serviceIndex];
-      baseMessage.classList.remove("is-hidden");
-    }, 160);
+    serviceIndex = (serviceIndex + 1) % SERVICES.length;
+    baseMessage.innerHTML = SERVICES[serviceIndex];
   };
+
   const animate = (now) => {
     if (last && !document.hidden) elapsed += Math.min(now - last, 64);
     last = now;
+
     const phase = (elapsed / SWING_MS) * Math.PI * 2;
     const angle = amplitude * Math.cos(phase);
     rig.style.transform = `rotate(${(angle * 180) / Math.PI}deg)`;
     tile.style.transform = `rotateY(${Math.sin(phase) * 12}deg) rotateX(${3 + Math.cos(phase) * 2}deg)`;
+
+    // Cord's x-position where it crosses the TOP and BOTTOM of the headline box
+    // (relative to the headline container, so 0..hWidth maps to the clip)
+    const cx = width / 2;
+    const topX = cx - (hTop + height * 0.45) * Math.tan(angle) - hLeft;
+    const bottomX = cx - (hTop + hHeight + height * 0.45) * Math.tan(angle) - hLeft;
+    const a = Math.max(0, Math.min(hWidth, topX));
+    const b = Math.max(0, Math.min(hWidth, bottomX));
+    reveal.style.clipPath = `polygon(0 0, ${a}px 0, ${b}px 100%, 0 100%)`;
+
+    // Message rotates at the LEFT extreme only
     const cosPhase = Math.cos(phase);
-    if (cosPhase > 0) {
-      reveal.style.clipPath = `polygon(0 0, ${textWidth}px 0, ${textWidth}px 100%, 0 100%)`;
-    } else {
-      reveal.style.clipPath = `polygon(0 0, 0 0, 0 100%, 0 100%)`;
-    }
     if (cosPhase < -0.985 && lastHalf !== 1) { lastHalf = 1; showNext(); }
     else if (cosPhase > 0.985 && lastHalf !== 0) { lastHalf = 0; }
+
     requestAnimationFrame(animate);
   };
+
   const start = () => {
     measure();
     if (reduced) { rig.style.transform = "rotate(0deg)"; return; }
     last = 0;
     requestAnimationFrame(animate);
   };
+
   const ro = new ResizeObserver(measure);
   ro.observe(stage);
   document.fonts.ready.then(measure);
