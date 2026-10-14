@@ -25,7 +25,6 @@
     background: var(--lavender);
     --tile-size: 110px;
   }
-
   .headline {
     position: absolute;
     top: 46%;
@@ -59,14 +58,9 @@
     color: var(--violet);
     text-shadow: 0 5px 5px rgba(81,64,244,0.13), 0 8px 14px rgba(52,41,104,0.16);
   }
+  #base-message { transition: opacity 200ms ease; }
+  #base-message.is-hidden { opacity: 0; }
 
-  /* Base message: rotates between services */
-  #base-message {
-    transition: opacity 320ms ease;
-  }
-  #base-message.is-fading { opacity: 0; }
-
-  /* Pendulum */
   .pendulum-rig {
     position: absolute;
     width: 0;
@@ -107,14 +101,6 @@
       0 3px 8px rgba(41,35,62,0.18);
   }
   .tile img { display: block; width: 100%; height: 100%; object-fit: cover; user-select: none; pointer-events: none; }
-  .tile::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    background: linear-gradient(130deg, rgba(255,255,255,0.09), transparent 42%, transparent 65%, rgba(0,106,255,0.05));
-    pointer-events: none;
-  }
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { transition: none !important; animation: none !important; }
   }
@@ -128,7 +114,6 @@
       <div class="message message-talk">LET&rsquo;S<br>TALK!</div>
     </div>
   </div>
-
   <div class="pendulum-rig" id="rig" aria-hidden="true">
     <div class="cord"></div>
     <div class="bob">
@@ -138,12 +123,9 @@
     </div>
   </div>
 </main>
-
 <script>
 (() => {
-  const PERIOD = 6200;
-  const MESSAGE_PERIOD = 4400;   // ms between service changes
-
+  const SWING_MS = 6200;              // one full pendulum cycle
   const SERVICES = [
     "NEED A<br>WEBSITE?",
     "NEED AN<br>APP?",
@@ -162,8 +144,9 @@
   const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   let elapsed = 0, last = 0;
   let width = 0, height = 0, length = 0, amplitude = 0;
-  let textTop = 0, textHeight = 0, textLeft = 0, textWidth = 0;
+  let textLeft = 0, textWidth = 0;
   let serviceIndex = 0;
+  let lastHalf = -1; // -1 unknown, 0 right-going, 1 left-going
 
   const measure = () => {
     width = stage.clientWidth;
@@ -173,57 +156,69 @@
     stage.style.setProperty("--cord-length", length + "px");
     const box = headline.getBoundingClientRect();
     const bounds = stage.getBoundingClientRect();
-    textTop = box.top - bounds.top;
     textLeft = box.left - bounds.left;
-    textHeight = box.height;
     textWidth = box.width;
   };
 
-  // Snap reveal: full dark OR full violet based on cord side.
-  // The transition midpoint is at the text's horizontal center.
+  const showNext = () => {
+    baseMessage.classList.add("is-hidden");
+    setTimeout(() => {
+      serviceIndex = (serviceIndex + 1) % SERVICES.length;
+      baseMessage.innerHTML = SERVICES[serviceIndex];
+      baseMessage.classList.remove("is-hidden");
+    }, 160);
+  };
+
   const animate = (now) => {
     if (last && !document.hidden) elapsed += Math.min(now - last, 64);
     last = now;
 
-    const phase = (elapsed / PERIOD) * Math.PI * 2;
-    const angle = amplitude * Math.cos(phase);
+    const phase = (elapsed / SWING_MS) * Math.PI * 2;
+    // angle oscillates: 0 → +max → 0 → -max → 0 (full cycle)
+    // cos(phase) = 1 at t=0, -1 at t=half. So:
+    //  - first half of cycle → cos goes 1 → -1 → pendulum right → left
+    const c = Math.cos(phase);
+    const angle = amplitude * c;
     const degrees = (angle * 180) / Math.PI;
 
     rig.style.transform = `rotate(${degrees}deg)`;
     tile.style.transform = `rotateY(${Math.sin(phase) * 12}deg) rotateX(${3 + Math.cos(phase) * 2}deg)`;
 
-    // Cord x-position at the headline's vertical center
-    const cordX = width / 2 - (height * 0.45) * Math.tan(angle);
-    const textCenterX = textLeft + textWidth / 2;
+    // Half of the swing:
+    //  0 = right extreme (phase 0, cos = 1)   → show LET'S TALK!
+    //  1 = left extreme  (phase π, cos = -1)  → show SERVICE
+    // We snap the reveal when the pendulum passes the vertical (phase = π/2 or 3π/2)
+    // but we time the message change at the LEFT extreme.
+    const cosPhase = Math.cos(phase);
+    const isRight = cosPhase > 0;
 
-    // Snap: reveal fully when cord is left of text center, hide when right
-    // (matches the reference "sweep" feel without partial letters)
-    const revealed = cordX < textCenterX ? textWidth : 0;
-    reveal.style.clipPath = `polygon(0 0, ${revealed}px 0, ${revealed}px 100%, 0 100%)`;
+    // snap reveal
+    if (isRight) {
+      // Full reveal: LET'S TALK! visible
+      reveal.style.clipPath = `polygon(0 0, ${textWidth}px 0, ${textWidth}px 100%, 0 100%)`;
+    } else {
+      // Full base: current SERVICE visible
+      reveal.style.clipPath = `polygon(0 0, 0 0, 0 100%, 0 100%)`;
+    }
+
+    // detect when we cross into the LEFT extreme
+    // left extreme is around cos(phase) = -1 (phase ≈ π, 3π, 5π, ...)
+    // We use crossing from cos > -0.98 to cos < -0.98 on the way down:
+    if (cosPhase < -0.985 && lastHalf !== 1) {
+      lastHalf = 1;
+      showNext();
+    } else if (cosPhase > 0.985 && lastHalf !== 0) {
+      lastHalf = 0;
+    }
 
     requestAnimationFrame(animate);
-  };
-
-  // Rotate the service message
-  const rotateService = () => {
-    if (reduced) return;
-    baseMessage.classList.add("is-fading");
-    setTimeout(() => {
-      serviceIndex = (serviceIndex + 1) % SERVICES.length;
-      baseMessage.innerHTML = SERVICES[serviceIndex];
-      baseMessage.classList.remove("is-fading");
-    }, 320);
   };
 
   const start = () => {
     measure();
-    if (reduced) {
-      rig.style.transform = "rotate(0deg)";
-      return;
-    }
+    if (reduced) { rig.style.transform = "rotate(0deg)"; return; }
     last = 0;
     requestAnimationFrame(animate);
-    setInterval(rotateService, MESSAGE_PERIOD);
   };
 
   const ro = new ResizeObserver(measure);
