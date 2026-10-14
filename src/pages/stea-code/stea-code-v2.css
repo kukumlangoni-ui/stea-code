@@ -16721,3 +16721,9 @@ header,
   box-shadow: 0 0 14px rgba(245,166,35,0.25);
 }
 /* ===== end logo pill ===== */
+
+/* left-align logo badge */
+.sc-code-card__caption-main .sc-code-card__logo-badge {
+  margin-top: 6px;
+  align-self: flex-start;
+}
