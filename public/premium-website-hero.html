@@ -197,9 +197,11 @@
     rig.style.transform = `rotate(${degrees}deg)`;
     tile.style.transform = `rotateY(${Math.sin(phase) * 12}deg) rotateX(${3 + Math.cos(phase) * 2}deg)`;
 
-    const cordX = width / 2 - (height * 0.45) * Math.tan(angle);
-    const revealFrom = Math.max(0, Math.min(width, cordX));
-    reveal.style.clipPath = `polygon(0 0, ${revealFrom}px 0, ${revealFrom}px 100%, 0 100%)`;
+    const topX = width / 2 - (textTop + height * 0.45) * Math.tan(angle) - textLeft;
+    const bottomX = width / 2 - (textTop + textHeight + height * 0.45) * Math.tan(angle) - textLeft;
+    const a = Math.max(0, Math.min(textWidth, topX));
+    const b = Math.max(0, Math.min(textWidth, bottomX));
+    reveal.style.clipPath = `polygon(0 0, ${a}px 0, ${b}px 100%, 0 100%)`;
 
     rafId = requestAnimationFrame(animate);
   };
