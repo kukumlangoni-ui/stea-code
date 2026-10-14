@@ -12,14 +12,14 @@
   * { box-sizing: border-box; }
   html, body { width: 100%; height: 100%; margin: 0; padding: 0; }
   body { font-family: Montserrat, -apple-system, BlinkMacSystemFont, sans-serif; background: var(--lavender); color: var(--ink); overflow: hidden; }
-  .stage { position: relative; width: 1600px; height: 1100px; overflow: hidden; background: var(--lavender); --tile-size: 110px; }
-  .headline { position: absolute; top: 46%; left: 50%; transform: translate(-50%, -50%); width: max-content; text-align: center; font-size: 96px; font-weight: 900; letter-spacing: -0.045em; line-height: 0.97; }
+  .stage { position: relative; width: 1600px; height: 1100px; overflow: hidden; background: var(--lavender); --tile-size: 130px; }
+  .headline { position: absolute; top: 43%; left: 50%; transform: translate(-50%, -50%); width: max-content; text-align: center; font-size: 96px; font-weight: 900; letter-spacing: -0.045em; line-height: 0.97; }
   .message { padding: 8px 14px 12px; margin: 0; font-size: inherit; font-weight: inherit; line-height: inherit; letter-spacing: inherit; text-shadow: 0 4px 3px rgba(34,30,49,0.08), 0 8px 14px rgba(34,30,49,0.13); }
   .message-reveal { position: absolute; inset: 0; overflow: hidden; clip-path: polygon(0 0, 0 0, 0 100%, 0 100%); will-change: clip-path; background: var(--lavender); }
   .message-talk { color: var(--violet); text-shadow: 0 5px 5px rgba(81,64,244,0.13), 0 8px 14px rgba(52,41,104,0.16); }
   .pendulum-rig { position: absolute; width: 0; height: var(--cord-length, 100%); top: -45%; left: 50%; transform-origin: 0 0; will-change: transform; pointer-events: none; z-index: 2; }
   .cord { position: absolute; top: 0; left: -1px; width: 2px; height: 100%; background: linear-gradient(180deg, rgba(41,41,51,0.05), rgba(41,41,51,0.7) 40%, rgba(41,41,51,0.95)); box-shadow: 0 0 4px rgba(41,41,51,0.15); }
-  .bob { position: absolute; top: 100%; left: calc(var(--tile-size) / -2); width: var(--tile-size); height: var(--tile-size); }
+  .bob { position: absolute; top: 100%; left: calc(var(--tile-size) / -2); width: var(--tile-size); height: var(--tile-size); z-index: 3; }
   .tile { position: relative; width: 100%; height: 100%; border-radius: 25%; overflow: hidden; background: #090a0e; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.14), 0 10px 22px rgba(41,35,62,0.28), 0 3px 8px rgba(41,35,62,0.18); }
   .tile img { display: block; width: 100%; height: 100%; object-fit: cover; user-select: none; pointer-events: none; }
   @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }
