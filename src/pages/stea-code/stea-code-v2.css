@@ -16690,3 +16690,16 @@ header,
   box-shadow: 0 0 14px rgba(245,166,35,0.25);
 }
 /* ===== end CTA badge ===== */
+
+
+/* ===== steacode services card — brand mark instead of category ===== */
+.sc-code-card__brand-mark {
+  display: block;
+  height: 22px;
+  width: auto;
+  margin-top: 4px;
+  object-fit: contain;
+  user-select: none;
+  pointer-events: none;
+}
+/* ===== end brand mark ===== */

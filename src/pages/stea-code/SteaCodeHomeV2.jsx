@@ -2643,7 +2643,16 @@ function CodeProductCard({ product, tLocal, onOpen, isFavorited, onToggleFavorit
       <div className="sc-code-card__caption">
         <div className="sc-code-card__caption-main">
           <h3 className="sc-code-card__title">{title}</h3>
-          <p className="sc-code-card__category">{categoryLabel}</p>
+          {externalUrl ? (
+            <img
+              src="/stea-code-logo.png"
+              alt="steacode"
+              className="sc-code-card__brand-mark"
+              draggable={false}
+            />
+          ) : (
+            <p className="sc-code-card__category">{categoryLabel}</p>
+          )}
         </div>
         {externalUrl ? (
           <span className="sc-code-card__price-badge sc-code-card__cta-badge">
