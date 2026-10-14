@@ -3,16 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Premium Website Hero</title>
+<title>steacode services</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800;900&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --lavender: #eeebf8;
-    --ink: #292933;
-    --violet: #5140f4;
-  }
+  :root { --lavender: #eeebf8; --ink: #292933; --violet: #5140f4; }
   * { box-sizing: border-box; }
   html, body { width: 100%; height: 100%; margin: 0; padding: 0; }
   body {
@@ -27,11 +23,9 @@
     height: 1100px;
     overflow: hidden;
     background: var(--lavender);
-    isolation: isolate;
     --tile-size: 110px;
   }
 
-  /* Headline */
   .headline {
     position: absolute;
     top: 46%;
@@ -66,6 +60,12 @@
     text-shadow: 0 5px 5px rgba(81,64,244,0.13), 0 8px 14px rgba(52,41,104,0.16);
   }
 
+  /* Base message: rotates between services */
+  #base-message {
+    transition: opacity 320ms ease;
+  }
+  #base-message.is-fading { opacity: 0; }
+
   /* Pendulum */
   .pendulum-rig {
     position: absolute;
@@ -93,7 +93,6 @@
     left: calc(var(--tile-size) / -2);
     width: var(--tile-size);
     height: var(--tile-size);
-    perspective: 650px;
   }
   .tile {
     position: relative;
@@ -101,22 +100,13 @@
     height: 100%;
     border-radius: 25%;
     overflow: hidden;
-    transform-style: preserve-3d;
-    will-change: transform;
     background: #090a0e;
     box-shadow:
       inset 0 0 0 1px rgba(255,255,255,0.14),
       0 10px 22px rgba(41,35,62,0.28),
       0 3px 8px rgba(41,35,62,0.18);
   }
-  .tile img {
-    display: block;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    user-select: none;
-    pointer-events: none;
-  }
+  .tile img { display: block; width: 100%; height: 100%; object-fit: cover; user-select: none; pointer-events: none; }
   .tile::after {
     content: '';
     position: absolute;
@@ -125,27 +115,19 @@
     background: linear-gradient(130deg, rgba(255,255,255,0.09), transparent 42%, transparent 65%, rgba(0,106,255,0.05));
     pointer-events: none;
   }
-
-  .sr-only {
-    position: absolute;
-    width: 1px; height: 1px;
-    padding: 0; margin: -1px; overflow: hidden;
-    clip: rect(0,0,0,0); white-space: nowrap; border-width: 0;
-  }
   @media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after { transition: none !important; }
+    *, *::before, *::after { transition: none !important; animation: none !important; }
   }
 </style>
 </head>
 <body>
-<main class="stage" id="stage" aria-label="Swinging pendulum hero">
+<main class="stage" id="stage" aria-label="steacode services">
   <div class="headline" id="headline">
-    <h1 class="message message-need">NEED A<br>WEBSITE?</h1>
+    <h1 class="message" id="base-message">NEED A<br>WEBSITE?</h1>
     <div class="message-reveal" id="reveal" aria-hidden="true">
       <div class="message message-talk">LET&rsquo;S<br>TALK!</div>
     </div>
   </div>
-  <span class="sr-only">Need a website? Let&rsquo;s talk.</span>
 
   <div class="pendulum-rig" id="rig" aria-hidden="true">
     <div class="cord"></div>
@@ -160,16 +142,28 @@
 <script>
 (() => {
   const PERIOD = 6200;
+  const MESSAGE_PERIOD = 4400;   // ms between service changes
+
+  const SERVICES = [
+    "NEED A<br>WEBSITE?",
+    "NEED AN<br>APP?",
+    "NEED A<br>PARTNER?",
+    "NEED A<br>FIX?",
+    "NEED<br>HELP?",
+  ];
+
   const stage = document.getElementById("stage");
   const rig = document.getElementById("rig");
   const tile = document.getElementById("tile");
   const reveal = document.getElementById("reveal");
   const headline = document.getElementById("headline");
+  const baseMessage = document.getElementById("base-message");
 
   const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  let elapsed = 0, last = 0, rafId = 0;
+  let elapsed = 0, last = 0;
   let width = 0, height = 0, length = 0, amplitude = 0;
   let textTop = 0, textHeight = 0, textLeft = 0, textWidth = 0;
+  let serviceIndex = 0;
 
   const measure = () => {
     width = stage.clientWidth;
@@ -185,6 +179,8 @@
     textWidth = box.width;
   };
 
+  // Snap reveal: full dark OR full violet based on cord side.
+  // The transition midpoint is at the text's horizontal center.
   const animate = (now) => {
     if (last && !document.hidden) elapsed += Math.min(now - last, 64);
     last = now;
@@ -196,20 +192,38 @@
     rig.style.transform = `rotate(${degrees}deg)`;
     tile.style.transform = `rotateY(${Math.sin(phase) * 12}deg) rotateX(${3 + Math.cos(phase) * 2}deg)`;
 
-    const topX = width / 2 - (textTop + height * 0.45) * Math.tan(angle) - textLeft;
-    const bottomX = width / 2 - (textTop + textHeight + height * 0.45) * Math.tan(angle) - textLeft;
-    const a = Math.max(0, Math.min(textWidth, topX));
-    const b = Math.max(0, Math.min(textWidth, bottomX));
-    reveal.style.clipPath = `polygon(0 0, ${a}px 0, ${b}px 100%, 0 100%)`;
+    // Cord x-position at the headline's vertical center
+    const cordX = width / 2 - (height * 0.45) * Math.tan(angle);
+    const textCenterX = textLeft + textWidth / 2;
 
-    rafId = requestAnimationFrame(animate);
+    // Snap: reveal fully when cord is left of text center, hide when right
+    // (matches the reference "sweep" feel without partial letters)
+    const revealed = cordX < textCenterX ? textWidth : 0;
+    reveal.style.clipPath = `polygon(0 0, ${revealed}px 0, ${revealed}px 100%, 0 100%)`;
+
+    requestAnimationFrame(animate);
+  };
+
+  // Rotate the service message
+  const rotateService = () => {
+    if (reduced) return;
+    baseMessage.classList.add("is-fading");
+    setTimeout(() => {
+      serviceIndex = (serviceIndex + 1) % SERVICES.length;
+      baseMessage.innerHTML = SERVICES[serviceIndex];
+      baseMessage.classList.remove("is-fading");
+    }, 320);
   };
 
   const start = () => {
     measure();
-    if (reduced) { rig.style.transform = "rotate(0deg)"; return; }
+    if (reduced) {
+      rig.style.transform = "rotate(0deg)";
+      return;
+    }
     last = 0;
-    rafId = requestAnimationFrame(animate);
+    requestAnimationFrame(animate);
+    setInterval(rotateService, MESSAGE_PERIOD);
   };
 
   const ro = new ResizeObserver(measure);
