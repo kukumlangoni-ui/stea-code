@@ -2643,20 +2643,15 @@ function CodeProductCard({ product, tLocal, onOpen, isFavorited, onToggleFavorit
       <div className="sc-code-card__caption">
         <div className="sc-code-card__caption-main">
           <h3 className="sc-code-card__title">{title}</h3>
-          {externalUrl ? (
+          <p className="sc-code-card__category">{categoryLabel}</p>
+        </div>
+        {externalUrl ? (
+          <span className="sc-code-card__price-badge sc-code-card__cta-badge sc-code-card__logo-badge">
             <img
               src="/stea-code-logo.png"
               alt="steacode"
-              className="sc-code-card__brand-mark"
               draggable={false}
             />
-          ) : (
-            <p className="sc-code-card__category">{categoryLabel}</p>
-          )}
-        </div>
-        {externalUrl ? (
-          <span className="sc-code-card__price-badge sc-code-card__cta-badge">
-            {tLocal({ en: "Book a Call", zhCN: "预约通话" })}
           </span>
         ) : (
           <span className={`sc-code-card__price-badge ${isFree ? "is-free" : "is-premium"}`}>

@@ -16692,14 +16692,32 @@ header,
 /* ===== end CTA badge ===== */
 
 
-/* ===== steacode services card — brand mark instead of category ===== */
-.sc-code-card__brand-mark {
+
+
+
+/* ===== steacode services card — logo pill matches Free/Book a Call badge ===== */
+.sc-code-card__logo-badge {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 12px !important;
+  min-width: auto !important;
+  background: linear-gradient(135deg, rgba(245,166,35,0.18), rgba(245,166,35,0.08)) !important;
+  border: 1px solid rgba(245,166,35,0.45) !important;
+  border-radius: 999px !important;
+}
+.sc-code-card__logo-badge img {
   display: block;
-  height: 22px;
+  height: 16px;
   width: auto;
-  margin-top: 4px;
   object-fit: contain;
   user-select: none;
   pointer-events: none;
+  filter: brightness(1.05);
 }
-/* ===== end brand mark ===== */
+.sc-code-card[data-slug="premium-website-hero"]:hover .sc-code-card__logo-badge {
+  background: linear-gradient(135deg, rgba(245,166,35,0.32), rgba(245,166,35,0.16)) !important;
+  border-color: rgba(245,166,35,0.75) !important;
+  box-shadow: 0 0 14px rgba(245,166,35,0.25);
+}
+/* ===== end logo pill ===== */
