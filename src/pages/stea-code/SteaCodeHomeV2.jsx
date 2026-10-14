@@ -2645,9 +2645,15 @@ function CodeProductCard({ product, tLocal, onOpen, isFavorited, onToggleFavorit
           <h3 className="sc-code-card__title">{title}</h3>
           <p className="sc-code-card__category">{categoryLabel}</p>
         </div>
-        <span className={`sc-code-card__price-badge ${isFree ? "is-free" : "is-premium"}`}>
-          {isFree ? tLocal({ en: "Free", zhCN: "免费" }) : price}
-        </span>
+        {externalUrl ? (
+          <span className="sc-code-card__price-badge sc-code-card__cta-badge">
+            {tLocal({ en: "Book a Call", zhCN: "预约通话" })}
+          </span>
+        ) : (
+          <span className={`sc-code-card__price-badge ${isFree ? "is-free" : "is-premium"}`}>
+            {isFree ? tLocal({ en: "Free", zhCN: "免费" }) : price}
+          </span>
+        )}
       </div>
     </motion.button>
   );
