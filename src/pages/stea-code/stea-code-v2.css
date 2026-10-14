@@ -16624,3 +16624,53 @@ header,
   .sc-hp-rig { transform: none !important; }
   .sc-hp-bob { transform: none !important; }
 }
+
+
+/* ===== Premium Website Hero glow ===== */
+@property --sc-premium-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+.sc-code-card[data-slug="premium-website-hero"] {
+  position: relative;
+  isolation: isolate;
+}
+.sc-code-card[data-slug="premium-website-hero"]::after {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  padding: 2px;
+  background: conic-gradient(
+    from var(--sc-premium-angle, 0deg),
+    rgba(245,166,35,0)    0deg,
+    rgba(245,166,35,0)   20deg,
+    rgba(245,166,35,0.9) 60deg,
+    rgba(255,204,85,1)   80deg,
+    rgba(245,166,35,0.9) 100deg,
+    rgba(245,166,35,0)   140deg,
+    rgba(245,166,35,0)   360deg
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  animation: sc-premium-spin 3.2s linear infinite;
+  pointer-events: none;
+  z-index: 3;
+}
+.sc-code-card[data-slug="premium-website-hero"]:hover::after {
+  animation-duration: 1.6s;
+  filter: drop-shadow(0 0 8px rgba(245,166,35,0.55));
+}
+@keyframes sc-premium-spin {
+  to { --sc-premium-angle: 360deg; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sc-code-card[data-slug="premium-website-hero"]::after {
+    animation: none;
+  }
+}
+/* ===== end Premium Website Hero glow ===== */

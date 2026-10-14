@@ -2567,10 +2567,18 @@ function CodeProductCard({ product, tLocal, onOpen, isFavorited, onToggleFavorit
     ? {}
     : { scale: 0.985, transition: { duration: 0.12 } };
 
+  const EXTERNAL_REDIRECTS = {
+    "premium-website-hero": "https://isayamasika.stea.africa/contact/",
+  };
+  const externalUrl = EXTERNAL_REDIRECTS[product.slug] || EXTERNAL_REDIRECTS[productId];
+
   const openModal = useCallback(() => {
-    console.log("[steacode] Card clicked, opening modal for:", productId);
+    if (externalUrl) {
+      window.open(externalUrl, "_blank", "noopener,noreferrer");
+      return;
+    }
     if (typeof onOpen === "function") onOpen();
-  }, [onOpen, productId]);
+  }, [onOpen, productId, externalUrl]);
 
   return (
     <motion.button
@@ -2584,6 +2592,7 @@ function CodeProductCard({ product, tLocal, onOpen, isFavorited, onToggleFavorit
       whileTap={cardTap}
       aria-label={title}
       data-preview-product={productId}
+      data-slug={product.slug || productId}
     >
       {/* Preview area — aspect ratio driven by product design canvas (designWidth / designHeight).
           Falls back to 640:480 (4:3) if admin dimensions aren't set. Edge-to-edge, no internal scroll. */}
