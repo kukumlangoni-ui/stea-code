@@ -11,99 +11,20 @@
   :root { --lavender: #eeebf8; --ink: #292933; --violet: #5140f4; }
   * { box-sizing: border-box; }
   html, body { width: 100%; height: 100%; margin: 0; padding: 0; }
-  body {
-    font-family: Montserrat, -apple-system, BlinkMacSystemFont, sans-serif;
-    background: var(--lavender);
-    color: var(--ink);
-    overflow: hidden;
-  }
-  .stage {
-    position: relative;
-    width: 1600px;
-    height: 1100px;
-    overflow: hidden;
-    background: var(--lavender);
-    --tile-size: 110px;
-  }
-  .headline {
-    position: absolute;
-    top: 46%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: max-content;
-    text-align: center;
-    font-size: 96px;
-    font-weight: 900;
-    letter-spacing: -0.045em;
-    line-height: 0.97;
-  }
-  .message {
-    padding: 8px 14px 12px;
-    margin: 0;
-    font-size: inherit;
-    font-weight: inherit;
-    line-height: inherit;
-    letter-spacing: inherit;
-    text-shadow: 0 4px 3px rgba(34,30,49,0.08), 0 8px 14px rgba(34,30,49,0.13);
-  }
-  .message-reveal {
-    position: absolute;
-    inset: 0;
-    overflow: hidden;
-    clip-path: polygon(0 0, 0 0, 0 100%, 0 100%);
-    will-change: clip-path;
-    background: var(--lavender);
-  }
-  .message-talk {
-    color: var(--violet);
-    text-shadow: 0 5px 5px rgba(81,64,244,0.13), 0 8px 14px rgba(52,41,104,0.16);
-  }
+  body { font-family: Montserrat, -apple-system, BlinkMacSystemFont, sans-serif; background: var(--lavender); color: var(--ink); overflow: hidden; }
+  .stage { position: relative; width: 1600px; height: 1100px; overflow: hidden; background: var(--lavender); --tile-size: 110px; }
+  .headline { position: absolute; top: 46%; left: 50%; transform: translate(-50%, -50%); width: max-content; text-align: center; font-size: 96px; font-weight: 900; letter-spacing: -0.045em; line-height: 0.97; }
+  .message { padding: 8px 14px 12px; margin: 0; font-size: inherit; font-weight: inherit; line-height: inherit; letter-spacing: inherit; text-shadow: 0 4px 3px rgba(34,30,49,0.08), 0 8px 14px rgba(34,30,49,0.13); }
+  .message-reveal { position: absolute; inset: 0; overflow: hidden; clip-path: polygon(0 0, 0 0, 0 100%, 0 100%); will-change: clip-path; background: var(--lavender); }
+  .message-talk { color: var(--violet); text-shadow: 0 5px 5px rgba(81,64,244,0.13), 0 8px 14px rgba(52,41,104,0.16); }
   #base-message { transition: opacity 200ms ease; }
   #base-message.is-hidden { opacity: 0; }
-
-  .pendulum-rig {
-    position: absolute;
-    width: 0;
-    height: var(--cord-length, 100%);
-    top: -45%;
-    left: 50%;
-    transform-origin: 0 0;
-    will-change: transform;
-    pointer-events: none;
-    z-index: 2;
-  }
-  .cord {
-    position: absolute;
-    top: 0;
-    left: -1px;
-    width: 2px;
-    height: 100%;
-    background: linear-gradient(180deg, rgba(41,41,51,0.05), rgba(41,41,51,0.7) 40%, rgba(41,41,51,0.95));
-    box-shadow: 0 0 4px rgba(41,41,51,0.15);
-  }
-  .bob {
-    position: absolute;
-    top: 100%;
-    left: calc(var(--tile-size) / -2);
-    width: var(--tile-size);
-    height: var(--tile-size);
-  }
-  .tile {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    border-radius: 25%;
-    overflow: hidden;
-    background: #090a0e;
-    box-shadow:
-      inset 0 0 0 1px rgba(255,255,255,0.14),
-      0 10px 22px rgba(41,35,62,0.28),
-      0 3px 8px rgba(41,35,62,0.18);
-  }
+  .pendulum-rig { position: absolute; width: 0; height: var(--cord-length, 100%); top: -45%; left: 50%; transform-origin: 0 0; will-change: transform; pointer-events: none; z-index: 2; }
+  .cord { position: absolute; top: 0; left: -1px; width: 2px; height: 100%; background: linear-gradient(180deg, rgba(41,41,51,0.05), rgba(41,41,51,0.7) 40%, rgba(41,41,51,0.95)); box-shadow: 0 0 4px rgba(41,41,51,0.15); }
+  .bob { position: absolute; top: 100%; left: calc(var(--tile-size) / -2); width: var(--tile-size); height: var(--tile-size); }
+  .tile { position: relative; width: 100%; height: 100%; border-radius: 25%; overflow: hidden; background: #090a0e; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.14), 0 10px 22px rgba(41,35,62,0.28), 0 3px 8px rgba(41,35,62,0.18); }
   .tile img { display: block; width: 100%; height: 100%; object-fit: cover; user-select: none; pointer-events: none; }
-  @media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after { transition: none !important; animation: none !important; }
-  }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }
 </style>
 </head>
 <body>
@@ -125,41 +46,26 @@
 </main>
 <script>
 (() => {
-  const SWING_MS = 6200;              // one full pendulum cycle
-  const SERVICES = [
-    "NEED A<br>WEBSITE?",
-    "NEED AN<br>APP?",
-    "NEED A<br>PARTNER?",
-    "NEED A<br>FIX?",
-    "NEED<br>HELP?",
-  ];
-
+  const SWING_MS = 6200;
+  const SERVICES = ["NEED A<br>WEBSITE?","NEED AN<br>APP?","NEED A<br>PARTNER?","NEED A<br>FIX?","NEED<br>HELP?"];
   const stage = document.getElementById("stage");
   const rig = document.getElementById("rig");
   const tile = document.getElementById("tile");
   const reveal = document.getElementById("reveal");
   const headline = document.getElementById("headline");
   const baseMessage = document.getElementById("base-message");
-
   const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  let elapsed = 0, last = 0;
-  let width = 0, height = 0, length = 0, amplitude = 0;
-  let textLeft = 0, textWidth = 0;
-  let serviceIndex = 0;
-  let lastHalf = -1; // -1 unknown, 0 right-going, 1 left-going
-
+  let elapsed = 0, last = 0, width = 0, height = 0, length = 0, amplitude = 0;
+  let textLeft = 0, textWidth = 0, serviceIndex = 0, lastHalf = -1;
   const measure = () => {
-    width = stage.clientWidth;
-    height = stage.clientHeight;
+    width = stage.clientWidth; height = stage.clientHeight;
     length = height * 1.02;
     amplitude = Math.asin(Math.min(width * 0.345, height * 0.31) / length);
     stage.style.setProperty("--cord-length", length + "px");
     const box = headline.getBoundingClientRect();
     const bounds = stage.getBoundingClientRect();
-    textLeft = box.left - bounds.left;
-    textWidth = box.width;
+    textLeft = box.left - bounds.left; textWidth = box.width;
   };
-
   const showNext = () => {
     baseMessage.classList.add("is-hidden");
     setTimeout(() => {
@@ -168,59 +74,29 @@
       baseMessage.classList.remove("is-hidden");
     }, 160);
   };
-
   const animate = (now) => {
     if (last && !document.hidden) elapsed += Math.min(now - last, 64);
     last = now;
-
     const phase = (elapsed / SWING_MS) * Math.PI * 2;
-    // angle oscillates: 0 → +max → 0 → -max → 0 (full cycle)
-    // cos(phase) = 1 at t=0, -1 at t=half. So:
-    //  - first half of cycle → cos goes 1 → -1 → pendulum right → left
-    const c = Math.cos(phase);
-    const angle = amplitude * c;
-    const degrees = (angle * 180) / Math.PI;
-
-    rig.style.transform = `rotate(${degrees}deg)`;
+    const angle = amplitude * Math.cos(phase);
+    rig.style.transform = `rotate(${(angle * 180) / Math.PI}deg)`;
     tile.style.transform = `rotateY(${Math.sin(phase) * 12}deg) rotateX(${3 + Math.cos(phase) * 2}deg)`;
-
-    // Half of the swing:
-    //  0 = right extreme (phase 0, cos = 1)   → show LET'S TALK!
-    //  1 = left extreme  (phase π, cos = -1)  → show SERVICE
-    // We snap the reveal when the pendulum passes the vertical (phase = π/2 or 3π/2)
-    // but we time the message change at the LEFT extreme.
     const cosPhase = Math.cos(phase);
-    const isRight = cosPhase > 0;
-
-    // snap reveal
-    if (isRight) {
-      // Full reveal: LET'S TALK! visible
+    if (cosPhase > 0) {
       reveal.style.clipPath = `polygon(0 0, ${textWidth}px 0, ${textWidth}px 100%, 0 100%)`;
     } else {
-      // Full base: current SERVICE visible
       reveal.style.clipPath = `polygon(0 0, 0 0, 0 100%, 0 100%)`;
     }
-
-    // detect when we cross into the LEFT extreme
-    // left extreme is around cos(phase) = -1 (phase ≈ π, 3π, 5π, ...)
-    // We use crossing from cos > -0.98 to cos < -0.98 on the way down:
-    if (cosPhase < -0.985 && lastHalf !== 1) {
-      lastHalf = 1;
-      showNext();
-    } else if (cosPhase > 0.985 && lastHalf !== 0) {
-      lastHalf = 0;
-    }
-
+    if (cosPhase < -0.985 && lastHalf !== 1) { lastHalf = 1; showNext(); }
+    else if (cosPhase > 0.985 && lastHalf !== 0) { lastHalf = 0; }
     requestAnimationFrame(animate);
   };
-
   const start = () => {
     measure();
     if (reduced) { rig.style.transform = "rotate(0deg)"; return; }
     last = 0;
     requestAnimationFrame(animate);
   };
-
   const ro = new ResizeObserver(measure);
   ro.observe(stage);
   document.fonts.ready.then(measure);
