@@ -26,7 +26,6 @@ import SearchPaletteV2 from "../../components/stea-code/SearchPaletteV2.jsx";
 import SteaCodeHomeV2 from "./SteaCodeHomeV2.jsx";
 import V2Views from "./V2Views.jsx";
 import SteaCodeCheckoutPage from "./SteaCodeCheckoutPage.jsx";
-import SteaCodePaymentReturnPage from "./SteaCodePaymentReturnPage.jsx";
 import SteaCodePurchasesPage from "./SteaCodePurchasesPage.jsx";
 import { useSteaCodeI18n } from "../../components/stea-code/useSteaCodeI18n.js";
 import SteaCodeMemberGate from "../../components/stea-code/SteaCodeMemberGate.jsx";
@@ -34,7 +33,6 @@ import {
   STEA_CODE_ACTION_TYPES,
   clearSteaCodePendingAction,
   getSteaCodePendingAction,
-  makePaymentReturnAction,
   makePremiumCheckoutAction,
   makePurchasesAction,
   setSteaCodePendingAction,
@@ -97,10 +95,6 @@ const SEO_TITLES = {
     en: "Checkout · steacode",
     zhCN: "结账 · steacode",
   },
-  "payment-return": {
-    en: "Payment Status · steacode",
-    zhCN: "付款状态 · steacode",
-  },
   purchases: {
     en: "My Purchases · steacode",
     zhCN: "我的购买 · steacode",
@@ -146,13 +140,12 @@ export default function SteaCodeShellV2() {
     }
   }, [wasLegacy, normalizedWorld, location.pathname, location.search, location.hash, navigate]);
 
-  // Commerce views (checkout / payment-return / purchases) are not part of the 7-world router.
-  const COMMERCE_VIEWS = ["checkout", "payment-return", "purchases"];
+  // Commerce views (checkout / purchases) are not part of the 7-world router.
+  const COMMERCE_VIEWS = ["checkout", "purchases"];
   const commerceView = COMMERCE_VIEWS.includes(rawView) ? rawView : null;
 
   // Commerce query params must exist before auth-gate effects.
   const checkoutProductId = (commerceView === "checkout") ? (params.get("product") || "").trim() : "";
-  const orderId = (commerceView === "payment-return") ? (params.get("order") || "").trim() : "";
 
   const currentWorld = commerceView ? null : normalizedWorld; // null = homepage (or commerce view rendering handled below)
 
@@ -349,9 +342,6 @@ export default function SteaCodeShellV2() {
       case STEA_CODE_ACTION_TYPES.PURCHASES:
         goToView("purchases");
         break;
-      case STEA_CODE_ACTION_TYPES.PAYMENT_RETURN:
-        if (a.orderId) goToView("payment-return", { order: a.orderId });
-        break;
       default: break;
     }
   };
@@ -404,10 +394,8 @@ export default function SteaCodeShellV2() {
       requireAuth(makePurchasesAction());
     } else if (commerceView === "checkout" && checkoutProductId) {
       requireAuth(makePremiumCheckoutAction(checkoutProductId));
-    } else if (commerceView === "payment-return" && orderId) {
-      requireAuth(makePaymentReturnAction(orderId));
     }
-  }, [commerceView, checkoutProductId, orderId]);
+  }, [commerceView, checkoutProductId]);
 
   const isHome = currentWorld == null && commerceView == null;
   const isCommerce = commerceView != null;
@@ -479,38 +467,6 @@ export default function SteaCodeShellV2() {
                 locale={uiLocale}
                 onBack={() => setWorld(null)}
                 onRequireAuth={(pid) => requireAuth(makePremiumCheckoutAction(pid || checkoutProductId))}
-              />
-            </motion.div>
-          ) : commerceView === "payment-return" ? (
-            <motion.div
-              key="commerce-payment-return"
-              {...motionPreset}
-              transition={reduceMotion ? {} : { duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
-              style={{ minHeight: "100vh", width: "100%" }}
-            >
-              <SteaCodePaymentReturnPage
-                orderId={orderId}
-                locale={uiLocale}
-                onBack={() => setWorld(null)}
-                onRequireAuth={(oid) => requireAuth(makePaymentReturnAction(oid || orderId))}
-                onGoPurchases={() => {
-                  const sp = new URLSearchParams(location.search);
-                  sp.set("view", "purchases");
-                  sp.delete("order");
-                  navigate(`${location.pathname}?${sp.toString()}`, { replace: false });
-                }}
-                onGoProduct={(productId) => {
-                  const sp = new URLSearchParams(location.search);
-                  sp.delete("view");
-                  sp.delete("order");
-                  sp.delete("payment_intent");
-                  sp.delete("payment_intent_client_secret");
-                  sp.delete("redirect_status");
-                  sp.set("product", String(productId || ""));
-                  navigate(`${location.pathname}?${sp.toString()}`, {
-                    replace: false,
-                  });
-                }}
               />
             </motion.div>
           ) : commerceView === "purchases" ? (

@@ -1,4 +1,3 @@
-import { jsPDF } from "jspdf";
 import React, { forwardRef, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence, useMotionValue, useSpring, useTransform, useReducedMotion } from "framer-motion";
@@ -39,13 +38,11 @@ import SteaCodeProductSkeleton from "../../components/stea-code/SteaCodeProductS
 import PreviewErrorBoundary from "../../components/stea-code/PreviewErrorBoundary.jsx";
 import SteaCodeCheckoutPage from "./SteaCodeCheckoutPage.jsx";
 import SteaCodePurchasesPage from "./SteaCodePurchasesPage.jsx";
-import SteaCodePaymentReturnPage from "./SteaCodePaymentReturnPage.jsx";
 import {
   STEA_CODE_ACTION_TYPES,
   clearSteaCodePendingAction,
   getSteaCodePendingAction,
   makeFreeCodeAction,
-  makePaymentReturnAction,
   makePremiumCheckoutAction,
   makePurchasesAction,
   setSteaCodePendingAction } from "../../services/steaCodeResumeAction.js";
@@ -486,14 +483,13 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
   const location = useLocation();
   const searchParams = useMemo(() => new URLSearchParams(location.search), [location.search]);
   const viewParam = searchParams.get("view");
-  const orderParam = searchParams.get("order");
   const checkoutProductId = searchParams.get("product");
 
   const effectiveView = useMemo(() => {
     if (location.pathname === "/library") return "purchases";
     if (viewParam === "purchases" || viewParam === "library") return "purchases";
     if (viewParam === "checkout") return "checkout";
-    if (viewParam === "payment-return") return "payment-return";
+    // payment-return (old purchased-workspace code-view) removed — users see the product page with copy buttons instead
     return viewMode;
   }, [location.pathname, viewParam, viewMode]);
 
@@ -1589,41 +1585,6 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
             }}
             onRequireAuth={(pid) => {
               setMemberGateAction({ type: "checkout", productId: pid || checkoutProductId });
-              setMemberGateOpen(true);
-            }}
-          />
-        ) : effectiveView === "payment-return" ? (
-          <SteaCodePaymentReturnPage
-            orderId={orderParam}
-            locale={uiLocale}
-            onBack={() => {
-              const sp = new URLSearchParams(location.search);
-              sp.delete("view");
-              sp.delete("order");
-              sp.delete("payment_intent");
-              sp.delete("payment_intent_client_secret");
-              sp.delete("redirect_status");
-              navigate(`${location.pathname}${sp.toString() ? `?${sp.toString()}` : ""}`);
-            }}
-            onGoPurchases={() => {
-              const sp = new URLSearchParams(location.search);
-              sp.set("view", "purchases");
-              sp.delete("order");
-              navigate(`${location.pathname}?${sp.toString()}`);
-            }}
-            onGoProduct={(pid) => {
-              const p = fullCatalog.find((item) => item.id === pid || item.slug === pid);
-              if (p) {
-                openProduct(p);
-              } else {
-                const sp = new URLSearchParams(location.search);
-                sp.delete("view");
-                sp.delete("order");
-                navigate(`${location.pathname}${sp.toString() ? `?${sp.toString()}` : ""}`);
-              }
-            }}
-            onRequireAuth={() => {
-              setMemberGateAction({ type: "purchases" });
               setMemberGateOpen(true);
             }}
           />
@@ -3283,10 +3244,6 @@ function ProductDetail({
     files: [],
     error: "",
   });
-  const [activePremiumFile, setActivePremiumFile] = useState(0);
-  const [premiumCopied, setPremiumCopied] = useState("");
-  const [packageDownloading, setPackageDownloading] = useState(false);
-  const [packageError, setPackageError] = useState("");
   const [freeRemoteFiles, setFreeRemoteFiles] = useState([]);
   const [freeRemoteLoading, setFreeRemoteLoading] = useState(false);
   const [freeRemoteError, setFreeRemoteError] = useState("");
@@ -3353,9 +3310,6 @@ function ProductDetail({
           files: [],
           error: "",
         });
-
-        setActivePremiumFile(0);
-        setPremiumCopied("");
       }
 
       if (!product || product.pricingType !== "premium" || !productId) {
@@ -3393,8 +3347,6 @@ function ProductDetail({
             : [],
           error: "",
         });
-
-        setActivePremiumFile(0);
       } catch (error) {
         if (!active) return;
 
@@ -3655,203 +3607,6 @@ function ProductDetail({
     onOpenUnlockModal?.();
   };
 
-  const premiumFiles = premiumAccess.files || [];
-  const selectedPremiumFile =
-    premiumFiles[activePremiumFile] || premiumFiles[0] || null;
-
-  const copyPremiumFile = async (file) => {
-    if (!file?.content) return;
-
-    try {
-      await navigator.clipboard.writeText(file.content);
-      setPremiumCopied(file.path || "file");
-      window.setTimeout(() => setPremiumCopied(""), 1500);
-    } catch (error) {
-      console.error("Premium file copy failed", error);
-    }
-  };
-
-  const copyAllPremiumCode = async () => {
-    if (!premiumFiles.length) return;
-
-    const combined = premiumFiles
-      .map(
-        (file) =>
-          `/* ==========================================
-   ${file.path}
-   ========================================== */
-
-${file.content}`
-      )
-      .join("\n\n");
-
-    try {
-      await navigator.clipboard.writeText(combined);
-      setPremiumCopied("__all__");
-      window.setTimeout(() => setPremiumCopied(""), 1600);
-    } catch (error) {
-      console.error("Copy all premium code failed", error);
-    }
-  };
-
-  const downloadPremiumPdf = () => {
-    if (!premiumFiles.length) return;
-
-    const doc = new jsPDF({
-      unit: "pt",
-      format: "a4",
-    });
-
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-    const margin = 48;
-    const contentWidth = pageWidth - margin * 2;
-
-    let y = 54;
-
-    const ensureSpace = (needed = 80) => {
-      if (y + needed > pageHeight - 50) {
-        doc.addPage();
-        y = 54;
-      }
-    };
-
-    const heading = (text, size = 16) => {
-      ensureSpace(50);
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(size);
-      doc.text(String(text), margin, y);
-      y += size + 10;
-    };
-
-    const paragraph = (text, size = 10) => {
-      const lines = doc.splitTextToSize(
-        String(text || ""),
-        contentWidth
-      );
-
-      ensureSpace(lines.length * (size + 4) + 18);
-
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(size);
-      doc.text(lines, margin, y);
-      y += lines.length * (size + 4) + 10;
-    };
-
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(12);
-    doc.text("steacode", margin, y);
-    y += 36;
-
-    doc.setFontSize(24);
-    doc.text(title, margin, y);
-    y += 28;
-
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(10);
-    doc.text(
-      `${
-        premiumAccess.licenseType === "commercial"
-          ? "Commercial"
-          : "Personal"
-      } License`,
-      margin,
-      y
-    );
-
-    y += 38;
-
-    heading("What you purchased", 15);
-    paragraph(description);
-
-    heading("Requirements", 15);
-    paragraph(
-      frameworks.length
-        ? frameworks.join(" • ")
-        : "Use the included files in your web project."
-    );
-
-    heading("How to use", 15);
-
-    const pdfSteps = usageSteps.length
-      ? usageSteps
-      : [
-          "Add the included files to your project.",
-          "Import the component and its styles.",
-          "Render the component where you need it.",
-          "Customize text, colors, timing and layout for your project.",
-        ];
-
-    pdfSteps.forEach((step, index) => {
-      paragraph(`${index + 1}. ${step}`);
-    });
-
-    heading("Project files", 15);
-
-    premiumFiles.forEach((file) => {
-      ensureSpace(100);
-
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(12);
-      doc.text(file.path || "Code file", margin, y);
-      y += 18;
-
-      doc.setFont("courier", "normal");
-      doc.setFontSize(8);
-
-      const lines = doc.splitTextToSize(
-        String(file.content || ""),
-        contentWidth
-      );
-
-      for (const line of lines) {
-        ensureSpace(14);
-        doc.text(line, margin, y);
-        y += 11;
-      }
-
-      y += 18;
-    });
-
-    heading("Need more help?", 15);
-    paragraph(
-      "Visit steacode Developer Guides for free tutorials, setup help and developer resources."
-    );
-
-    heading("License", 15);
-    paragraph(
-      premiumAccess.licenseType === "commercial"
-        ? "Commercial license. Use according to the license included with this purchase."
-        : "Personal license. Redistribution of this code as a standalone product is not permitted."
-    );
-
-    const safeTitle = String(
-      product?.slug || product?.id || "premium-code"
-    )
-      .replace(/[^a-z0-9-_]+/gi, "-")
-      .toLowerCase();
-
-    doc.save(`stea-code-${safeTitle}-complete-guide.pdf`);
-  };
-
-  // Download the full product package from R2 (signed URL, 5-min expiry).
-  const downloadPackage = async () => {
-    const productId = String(product?.id || product?.slug || "").trim();
-    if (!productId || packageDownloading) return;
-    setPackageDownloading(true);
-    setPackageError("");
-    try {
-      await downloadSteaCodeSource(productId);
-      void trackUserEvent("download", {
-        productId,
-        productSlug: product?.slug || "",
-      });
-    } catch (err) {
-      setPackageError(err?.message || "Download failed. Please try again.");
-    } finally {
-      setPackageDownloading(false);
-    }
-  };
 
   const [currentUser, setCurrentUser] = useState(() => getFirebaseAuth()?.currentUser || null);
 
@@ -4290,403 +4045,6 @@ ${file.content}`
                       zhCN: "正在安全验证所有权，然后才会加载受保护的源代码。",
                     })}
                   </small>
-                </div>
-              </div>
-            ) : isPremium && premiumAccess.allowed ? (
-              <div className="sc-owned-workspace">
-                <div className="sc-owned-banner">
-                  <div>
-                    <span className="sc-owned-badge">
-                      ✓ {tLocal({
-                        en: "PURCHASED · FULL ACCESS",
-                        zhCN: "已购买 · 完整访问",
-                      })}
-                    </span>
-
-                    <strong>
-                      {tLocal({
-                        en: "Your complete developer package is unlocked",
-                        zhCN: "你的完整开发者代码包已解锁",
-                      })}
-                    </strong>
-
-                    <small>
-                      {premiumAccess.licenseType === "commercial"
-                        ? tLocal({
-                            en: "Commercial License",
-                            zhCN: "商业许可",
-                          })
-                        : tLocal({
-                            en: "Personal License",
-                            zhCN: "个人许可",
-                          })}
-                    </small>
-                  </div>
-                </div>
-
-                <div className="sc-owned-main-actions">
-                  <button
-                    type="button"
-                    className="sc-owned-primary"
-                    onClick={() => {
-                      document
-                        .querySelector(".sc-owned-files")
-                        ?.scrollIntoView({
-                          behavior: "smooth",
-                          block: "start",
-                        });
-                    }}
-                  >
-                    <span>
-                      {tLocal({
-                        en: "Access Full Code",
-                        zhCN: "访问完整代码",
-                      })}
-                    </span>
-                    <span aria-hidden="true">→</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    className="sc-owned-secondary"
-                    onClick={downloadPremiumPdf}
-                  >
-                    <span>
-                      {tLocal({
-                        en: "Download Complete PDF",
-                        zhCN: "下载完整 PDF",
-                      })}
-                    </span>
-                    <small>
-                      {tLocal({
-                        en: "Code + setup instructions",
-                        zhCN: "代码 + 设置说明",
-                      })}
-                    </small>
-                  </button>
-
-                  {product?.package?.storageKey && (
-                    <button
-                      type="button"
-                      className="sc-owned-secondary"
-                      onClick={downloadPackage}
-                      disabled={packageDownloading}
-                    >
-                      <span>
-                        {packageDownloading
-                          ? tLocal({ en: "Preparing download…", zhCN: "准备下载…" })
-                          : tLocal({ en: "Download Package (.zip)", zhCN: "下载压缩包" })}
-                      </span>
-                      <small>
-                        {packageError
-                          ? packageError
-                          : tLocal({ en: "Full project archive", zhCN: "完整项目压缩包" })}
-                      </small>
-                    </button>
-                  )}
-                </div>
-
-                <div className="sc-owned-code-workspace">
-                  <aside className="sc-owned-project-panel">
-                    <div className="sc-owned-project-head">
-                      <div>
-                        <strong>
-                          {tLocal({
-                            en: "Project Files",
-                            zhCN: "项目文件",
-                          })}
-                        </strong>
-
-                        <span>
-                          {premiumFiles.length}{" "}
-                          {premiumFiles.length === 1
-                            ? tLocal({ en: "file", zhCN: "个文件" })
-                            : tLocal({ en: "files", zhCN: "个文件" })}
-                        </span>
-                      </div>
-
-                      <button
-                        type="button"
-                        className="sc-owned-copy-all-icon"
-                        onClick={copyAllPremiumCode}
-                        title={
-                          premiumCopied === "__all__"
-                            ? "Copied"
-                            : "Copy all code"
-                        }
-                      >
-                        {premiumCopied === "__all__" ? "✓" : "⧉"}
-                      </button>
-                    </div>
-
-                    <div className="sc-owned-project-tree">
-                      <div className="sc-owned-tree-folder is-open">
-                        <span className="sc-owned-tree-chevron">⌄</span>
-                        <span className="sc-owned-tree-folder-icon">▰</span>
-                        <strong>source</strong>
-                      </div>
-
-                      <div className="sc-owned-tree-files">
-                        {premiumFiles.map((file, index) => (
-                          <button
-                            type="button"
-                            key={`${file.path}-${index}`}
-                            className={
-                              "sc-owned-tree-file" +
-                              (index === activePremiumFile
-                                ? " is-active"
-                                : "")
-                            }
-                            onClick={() =>
-                              setActivePremiumFile(index)
-                            }
-                          >
-                            <span
-                              className={
-                                "sc-owned-file-type-dot is-" +
-                                String(
-                                  file.language || "text"
-                                ).toLowerCase()
-                              }
-                            >
-                              {String(
-                                file.language || "txt"
-                              )
-                                .slice(0, 2)
-                                .toUpperCase()}
-                            </span>
-
-                            <span className="sc-owned-tree-file-info">
-                              <strong>{file.path}</strong>
-                              <small>{file.language}</small>
-                            </span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="sc-owned-project-footer">
-                      <button
-                        type="button"
-                        onClick={copyAllPremiumCode}
-                      >
-                        <span>⧉</span>
-                        {premiumCopied === "__all__"
-                          ? tLocal({
-                              en: "All code copied",
-                              zhCN: "全部代码已复制",
-                            })
-                          : tLocal({
-                              en: "Copy All Code",
-                              zhCN: "复制全部代码",
-                            })}
-                      </button>
-                    </div>
-                  </aside>
-
-                  <section className="sc-owned-editor-panel">
-                    {selectedPremiumFile ? (
-                      <>
-                        <header className="sc-owned-editor-head">
-                          <div className="sc-owned-editor-file">
-                            <span
-                              className={
-                                "sc-owned-file-type-dot is-" +
-                                String(
-                                  selectedPremiumFile.language ||
-                                    "text"
-                                ).toLowerCase()
-                              }
-                            >
-                              {String(
-                                selectedPremiumFile.language ||
-                                  "txt"
-                              )
-                                .slice(0, 2)
-                                .toUpperCase()}
-                            </span>
-
-                            <div>
-                              <strong>
-                                {selectedPremiumFile.path}
-                              </strong>
-
-                              <small>
-                                {String(
-                                  selectedPremiumFile.language ||
-                                    "text"
-                                ).toUpperCase()}
-                              </small>
-                            </div>
-                          </div>
-
-                          <button
-                            type="button"
-                            className="sc-owned-editor-copy"
-                            onClick={() =>
-                              copyPremiumFile(
-                                selectedPremiumFile
-                              )
-                            }
-                          >
-                            <span>⧉</span>
-
-                            {premiumCopied ===
-                            selectedPremiumFile.path
-                              ? tLocal({
-                                  en: "Copied",
-                                  zhCN: "已复制",
-                                })
-                              : tLocal({
-                                  en: "Copy",
-                                  zhCN: "复制",
-                                })}
-                          </button>
-                        </header>
-
-                        <div className="sc-owned-editor-tabs">
-                          <span className="is-active">
-                            {selectedPremiumFile.path}
-                          </span>
-                        </div>
-
-                        <div className="sc-owned-editor-scroll">
-                          <pre className="sc-owned-editor-code">
-                            {String(
-                              selectedPremiumFile.content ||
-                                ""
-                            )
-                              .split("\\n")
-                              .map((line, index) => (
-                                <span
-                                  className="sc-owned-code-line"
-                                  key={`${index}-${line.slice(
-                                    0,
-                                    15
-                                  )}`}
-                                >
-                                  <span className="sc-owned-line-number">
-                                    {index + 1}
-                                  </span>
-
-                                  <code>
-                                    {line || " "}
-                                  </code>
-                                </span>
-                              ))}
-                          </pre>
-                        </div>
-
-                        <footer className="sc-owned-editor-status">
-                          <div>
-                            <span>
-                              Ln{" "}
-                              {String(
-                                selectedPremiumFile.content ||
-                                  ""
-                              ).split("\\n").length}
-                            </span>
-                            <span>UTF-8</span>
-                            <span>LF</span>
-                          </div>
-
-                          <strong>
-                            ✓{" "}
-                            {tLocal({
-                              en: "Source ready",
-                              zhCN: "源代码已准备好",
-                            })}
-                          </strong>
-                        </footer>
-                      </>
-                    ) : (
-                      <div className="sc-owned-editor-empty">
-                        <span>{"</>"}</span>
-
-                        <strong>
-                          {tLocal({
-                            en: "No source file selected",
-                            zhCN: "未选择源文件",
-                          })}
-                        </strong>
-                      </div>
-                    )}
-                  </section>
-                </div>
-
-                <div className="sc-owned-guide">
-                  <div>
-                    <span>
-                      {tLocal({
-                        en: "HOW TO USE",
-                        zhCN: "使用方法",
-                      })}
-                    </span>
-
-                    <strong>
-                      {tLocal({
-                        en: "Turn the purchased code into a working project",
-                        zhCN: "将购买的代码应用到实际项目",
-                      })}
-                    </strong>
-                  </div>
-
-                  <div className="sc-owned-guide-steps">
-                    {(usageSteps.length
-                      ? usageSteps
-                      : [
-                          tLocal({
-                            en: "Add the provided files to your project.",
-                            zhCN: "将提供的文件添加到你的项目。",
-                          }),
-                          tLocal({
-                            en: "Import the component and styles.",
-                            zhCN: "导入组件和样式。",
-                          }),
-                          tLocal({
-                            en: "Render it where you want the effect.",
-                            zhCN: "在需要效果的位置渲染它。",
-                          }),
-                          tLocal({
-                            en: "Customize colors, timing and content.",
-                            zhCN: "自定义颜色、时间和内容。",
-                          }),
-                        ]
-                    )
-                      .slice(0, 5)
-                      .map((step, index) => (
-                        <div key={`${index}-${step}`}>
-                          <span>{index + 1}</span>
-                          <p>{step}</p>
-                        </div>
-                      ))}
-                  </div>
-                </div>
-
-                <div className="sc-owned-help">
-                  <div>
-                    <small>
-                      {tLocal({
-                        en: "Not sure how to use it?",
-                        zhCN: "不确定如何使用？",
-                      })}
-                    </small>
-
-                    <strong>
-                      {tLocal({
-                        en: "Developer Guides are completely free",
-                        zhCN: "开发者指南完全免费",
-                      })}
-                    </strong>
-                  </div>
-
-                  <a href="/code?view=learn">
-                    {tLocal({
-                      en: "Developer Guides",
-                      zhCN: "开发者指南",
-                    })}
-                    <span aria-hidden="true">→</span>
-                  </a>
                 </div>
               </div>
             ) : isPremium ? (
