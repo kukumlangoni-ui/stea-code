@@ -1520,10 +1520,10 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
               type="button"
               className={`sc-go-unlimited-btn ${goUnlimitedPulse ? "is-pulsing" : ""}`}
               onClick={handleGoUnlimited}
-              aria-label="Get Lifetime Access — €29"
+              aria-label="Get Lifetime Access — $29"
             >
               <span className="sc-go-unlimited-shine" aria-hidden="true" />
-              <span className="sc-go-unlimited-label">Get Lifetime Access — €29</span>
+              <span className="sc-go-unlimited-label">Get Lifetime Access — $29</span>
             </button>
             {goUnlimitedToast && (
               <div className="sc-go-unlimited-toast" role="status">
@@ -2321,8 +2321,8 @@ function MobileMenu({
           onClick={() => { onClose(); onGoUnlimited?.(); }}
         >
           <span className="sc-drawer-unlimited-shine" aria-hidden="true" />
-          <span className="sc-drawer-unlimited-label">Get Lifetime Access — €29</span>
-          <span className="sc-drawer-unlimited-badge">€29</span>
+          <span className="sc-drawer-unlimited-label">Get Lifetime Access — $29</span>
+          <span className="sc-drawer-unlimited-badge">$29</span>
         </button>
 
         {/* ---- Main navigation ---- */}

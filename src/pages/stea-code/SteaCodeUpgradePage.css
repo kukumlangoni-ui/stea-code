@@ -509,6 +509,7 @@
   position: relative;
   z-index: 1;
   white-space: nowrap;
+  transition: opacity 0.25s ease, transform 0.25s ease;
 }
 
 .sc-cta-morph__icon {
@@ -526,7 +527,7 @@
   justify-content: center;
   box-shadow: 0.1em 0.1em 0.6em 0.2em #7b52b9;
   transition:
-    width 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+    width 0.4s cubic-bezier(0.4, 0, 0.2, 1),
     transform 0.1s ease;
 }
 
@@ -534,13 +535,21 @@
   transition: transform 0.25s ease;
 }
 
-/* Hover / autoplay: icon box morphs to fill the button */
+/* Hover / autoplay: arrow box morphs to fill the button, text fades out
+   cleanly so the arrow is the single focus (no overlapping/transparent text) */
+.sc-cta-morph:hover:not(:disabled) .sc-cta-morph__text,
+.sc-cta-morph.is-autoplay .sc-cta-morph__text {
+  opacity: 0;
+  transform: translateX(-0.4em);
+}
+
 .sc-cta-morph:hover:not(:disabled) .sc-cta-morph__icon,
 .sc-cta-morph.is-autoplay .sc-cta-morph__icon {
   width: calc(100% - 0.6em);
 }
 
-.sc-cta-morph:hover:not(:disabled) .sc-cta-morph__icon svg {
+.sc-cta-morph:hover:not(:disabled) .sc-cta-morph__icon svg,
+.sc-cta-morph.is-autoplay .sc-cta-morph__icon svg {
   transform: translateX(0.1em);
 }
 

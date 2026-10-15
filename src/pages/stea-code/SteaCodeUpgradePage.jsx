@@ -5,6 +5,7 @@ import { getSteaCodePublicUrl } from "../../utils/subdomains.js";
 import { getFirebaseAuth } from "../../firebase.js";
 import { getSteaCodeCatalog } from "../../services/steaCodeCommerce.js";
 import SEO from "../../components/SEO.jsx";
+import SteaCodeMemberGate from "../../components/stea-code/SteaCodeMemberGate.jsx";
 import "./stea-code.css";
 import "./stea-code-v2.css";
 import "./SteaCodeUpgradePage.css";
@@ -104,8 +105,12 @@ export default function SteaCodeUpgradePage() {
   }, [catalogLoading, totalCount]);
 
   const individualTotal = totalCount * 2; // $2 each
-  const lifetimePrice = 29; // €29
+  const lifetimePrice = 29; // $29
   const savings = individualTotal - lifetimePrice;
+
+  // Auth gate state — reused SteaCodeMemberGate so the checkout works even
+  // when the user is not signed in yet.
+  const [memberGateOpen, setMemberGateOpen] = useState(false);
 
   const handleUpgradeClick = async () => {
     setError("");
@@ -113,14 +118,14 @@ export default function SteaCodeUpgradePage() {
     const currentUser = auth?.currentUser;
 
     if (!currentUser) {
-      // Not signed in — save intent, open auth modal.
-      // User stays on this page; after sign-in they click again.
+      // Not signed in — open the member auth gate. After sign-in the pending
+      // action ("upgrade") is resumed and checkout continues.
       try {
         sessionStorage.setItem("stea_pending_action", JSON.stringify({ type: "upgrade" }));
       } catch {
         /* sessionStorage may be unavailable in private browsing */
       }
-      window.dispatchEvent(new Event("open-auth"));
+      setMemberGateOpen(true);
       return;
     }
 
@@ -144,6 +149,11 @@ export default function SteaCodeUpgradePage() {
     }
   };
 
+  const handleMemberGateAuthenticated = () => {
+    setMemberGateOpen(false);
+    handleUpgradeClick();
+  };
+
   const features = [
     { label: "All components", detail: `— ${totalCount || "every"} component, instant access` },
     { label: "Future components", detail: "— every new one, free forever" },
@@ -156,7 +166,7 @@ export default function SteaCodeUpgradePage() {
   const faqs = [
     {
       q: "Is this really one payment?",
-      a: "Yes. €29 once. No subscription, no renewals, no hidden fees.",
+      a: "Yes. $29 once. No subscription, no renewals, no hidden fees.",
     },
     {
       q: "What if I already bought individual components?",
@@ -176,7 +186,7 @@ export default function SteaCodeUpgradePage() {
     <div className="sc-upgrade-page stea-code-app sc-v2 sc-market-home sc-v2-home">
       <SEO
         title="Lifetime Access — steacode"
-        description={`Get every component on steacode — current and future — for one payment of €29. Full source code, AI prompts, commercial license.`}
+        description={`Get every component on steacode — current and future — for one payment of $29. Full source code, AI prompts, commercial license.`}
       />
 
       {/* Top Header */}
@@ -227,7 +237,7 @@ export default function SteaCodeUpgradePage() {
             Every component on steacode — current and future. Yours forever.
           </p>
           <p className="sc-upgrade-price-line">
-            <strong>€29</strong> · one time · never expires
+            <strong>$29</strong> · one time · never expires
           </p>
           <button
             type="button"
@@ -237,7 +247,7 @@ export default function SteaCodeUpgradePage() {
             ref={heroCtaRef}
           >
             <span className="sc-cta-morph__text">
-              {checkoutLoading ? "Preparing checkout…" : "Get lifetime access — €29"}
+              {checkoutLoading ? "Preparing checkout…" : "Get lifetime access — $29"}
             </span>
             <span className="sc-cta-morph__icon" aria-hidden="true">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22" focusable="false">
@@ -285,7 +295,7 @@ export default function SteaCodeUpgradePage() {
               </div>
               <div className="sc-upgrade-math-row total">
                 <span>Lifetime access</span>
-                <span className="value">€{lifetimePrice}</span>
+                <span className="value">${lifetimePrice}</span>
               </div>
               <div className="sc-upgrade-math-row savings">
                 <span>You save</span>
@@ -356,7 +366,7 @@ export default function SteaCodeUpgradePage() {
           disabled={checkoutLoading}
         >
           <span className="sc-cta-morph__text">
-            {checkoutLoading ? "Preparing checkout…" : "Get lifetime access — €29"}
+            {checkoutLoading ? "Preparing checkout…" : "Get lifetime access — $29"}
           </span>
           <span className="sc-cta-morph__icon" aria-hidden="true">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22" focusable="false">
@@ -470,6 +480,15 @@ export default function SteaCodeUpgradePage() {
           </svg>
         </div>
       </footer>
+
+      {/* Auth gate for checkout when not signed in */}
+      <SteaCodeMemberGate
+        open={memberGateOpen}
+        pendingAction={{ type: "upgrade" }}
+        locale="en"
+        onClose={() => setMemberGateOpen(false)}
+        onAuthenticated={handleMemberGateAuthenticated}
+      />
     </div>
   );
 }
