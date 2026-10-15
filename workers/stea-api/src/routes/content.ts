@@ -202,11 +202,15 @@ export async function handleContent(req: Request, env: Env, productId: string): 
 
     const isFree = productDoc.data.pricingType === "free";
 
+    let entitlementRow: any = null;
     if (!isFree) {
-      // Check entitlement
-      const entitlementId = `${decoded.uid}_${productDoc.id}`;
-      const entitlementDoc = await getDoc(env, ENTITLEMENTS_COLLECTION, entitlementId);
-      if (!entitlementDoc) {
+      // Check entitlement: per-product OR pro-lifetime (D1, keyed by userId)
+      entitlementRow = await env.DB.prepare(
+        "SELECT orderId, licenseType FROM entitlements WHERE userId = ? AND (productId = ? OR productId = 'pro-lifetime') LIMIT 1"
+      )
+        .bind(decoded.uid, productDoc.id)
+        .first();
+      if (!entitlementRow) {
         return new Response(JSON.stringify({ error: "Premium access required", code: "ACCESS_DENIED" }), {
           status: 403,
           headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) },
@@ -230,8 +234,8 @@ export async function handleContent(req: Request, env: Env, productId: string): 
         entitlement: isFree
           ? { orderId: "free", licenseType: "free", status: "active" }
           : {
-              orderId: (await getDoc(env, ENTITLEMENTS_COLLECTION, `${decoded.uid}_${productDoc.id}`))?.data?.orderId,
-              licenseType: (await getDoc(env, ENTITLEMENTS_COLLECTION, `${decoded.uid}_${productDoc.id}`))?.data?.licenseType,
+              orderId: entitlementRow?.orderId || null,
+              licenseType: entitlementRow?.licenseType || null,
               status: "active",
             },
       }),

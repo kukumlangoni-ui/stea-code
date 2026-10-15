@@ -34,9 +34,12 @@ export async function handleDownload(req: Request, env: WorkerEnv, productId: st
         });
       }
       const decoded = await verifyFirebaseToken(env, token);
-      const entitlementId = `${decoded.uid}_${productDoc.id}`;
-      const entitlementDoc = await getDoc(env, ENTITLEMENTS_COLLECTION, entitlementId);
-      if (!entitlementDoc) {
+      const entitlementRow = await env.DB.prepare(
+        "SELECT 1 FROM entitlements WHERE userId = ? AND (productId = ? OR productId = 'pro-lifetime') LIMIT 1"
+      )
+        .bind(decoded.uid, productDoc.id)
+        .first();
+      if (!entitlementRow) {
         return new Response(JSON.stringify({ error: "Premium access required", code: "ACCESS_DENIED" }), {
           status: 403,
           headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) },

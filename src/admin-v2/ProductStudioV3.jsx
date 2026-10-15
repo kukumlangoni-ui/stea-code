@@ -1445,7 +1445,7 @@ export function ProductStudioV3({
               </Section>
             )}
 
-            {previewMode === "poster" && (
+            {(previewMode === "poster" || previewMode === "live" || previewMode === "iframe") && (
               <Section title="Poster Preview" subtitle="Static image shown on the product card">
                 <div className="psv3-grid">
                   <Field label="Cover Image" hint="Poster / thumbnail shown on the card" full>

@@ -14,7 +14,7 @@ import { handleCatalog, handleProduct } from "./routes/catalog";
 import { handlePreview, handleFreeContent, handleContent, handleProductPreviewCard } from "./routes/content";
 import { handleCheckout } from "./routes/checkout";
 import { handleCheckoutProduct } from "./routes/checkout-product";
-import { handleEntitlementsMe } from "./routes/entitlements";
+import { handleEntitlementsMe, handlePurchases, handleProductAccess } from "./routes/entitlements";
 import { handleDownload } from "./routes/download";
 import { handleMedia, handleMediaUpload } from "./routes/media";
 import { handleStripeWebhook } from "./routes/stripe-webhook";
@@ -191,6 +191,17 @@ export default {
       // Entitlements for current user (auth required)
       if (apiPath === "/stea-code/entitlements/me" && method === "GET") {
         return handleEntitlementsMe(request, env);
+      }
+
+      // Purchases / My Library (auth required)
+      if (apiPath === "/stea-code/purchases" && method === "GET") {
+        return handlePurchases(request, env);
+      }
+
+      // Per-product access check (auth required)
+      const accessMatch = apiPath.match(/^\/stea-code\/products\/([^/]+)\/access$/);
+      if (accessMatch && method === "GET") {
+        return handleProductAccess(request, env, accessMatch[1]);
       }
 
       // Stripe webhook

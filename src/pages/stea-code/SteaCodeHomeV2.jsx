@@ -795,8 +795,19 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
   const [pendingFreeCodeProductId, setPendingFreeCodeProductId] = useState(null);
 
   const goToCheckout = (productId) => {
+    // Find the product in the live catalog and open the Unlock modal, which
+    // drives the working Stripe Checkout redirect flow (/checkout-product).
+    // Avoids the legacy embedded PaymentElement checkout page (dead /orders route).
+    const match = (Array.isArray(liveCatalog) ? liveCatalog : []).find(
+      (p) => p && String(p.id || p.slug || "") === String(productId)
+    );
+    if (match) {
+      setUnlockModalProduct(match);
+      return;
+    }
+    // Fallback: still navigate to the product detail so the user can tap Unlock.
     const sp = new URLSearchParams(window.location.search);
-    sp.set("view", "checkout");
+    sp.set("view", "product");
     sp.set("product", String(productId));
     navigate(`${window.location.pathname}?${sp.toString()}`);
   };
