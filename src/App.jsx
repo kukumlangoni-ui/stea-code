@@ -192,6 +192,7 @@ export default function App() {
 
                   {/* Checkout */}
                   <Route path="/checkout/success" element={<SteaCodeCheckoutSuccessPage />} />
+                  <Route path="/checkout/cancel" element={<Navigate to="/" replace />} />
                   <Route path="/upgrade" element={<SteaCodeUpgradePage />} />
 
                   {/* Legal */}

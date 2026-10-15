@@ -137,7 +137,7 @@ export async function handleCheckoutProduct(req: Request, env: WorkerEnv): Promi
     params.append("line_items[0][price_data][unit_amount]", String(Math.round(price * 100)));
     params.append("line_items[0][quantity]", "1");
     params.append("success_url", `${siteUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}&type=single&product=${encodeURIComponent(productId)}`);
-    params.append("cancel_url", `${siteUrl}/checkout/cancel`);
+    params.append("cancel_url", `${siteUrl}/`);
     if (email) {
       params.append("customer_email", email);
     }
