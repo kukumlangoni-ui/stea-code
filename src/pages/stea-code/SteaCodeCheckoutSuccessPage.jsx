@@ -1,5 +1,5 @@
-import React from "react";
-import { Link, useNavigate } from "react-router-dom";
+import React, { useEffect, useRef } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowRight, Check, Home } from "lucide-react";
 import { getSteaCodePublicUrl } from "../../utils/subdomains.js";
 import SEO from "../../components/SEO.jsx";
@@ -9,13 +9,51 @@ import "./SteaCodeCheckoutSuccessPage.css";
 
 export default function SteaCodeCheckoutSuccessPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const homeUrl = getSteaCodePublicUrl();
+
+  // Distinguish single-product vs lifetime purchase from the success_url params.
+  const purchaseType = searchParams.get("type") === "single" ? "single" : "lifetime";
+  const productRef = searchParams.get("product") || "";
+
+  const redirectedRef = useRef(false);
+
+  // Brief transparent success, then continue browsing:
+  //   • single product → back to that product's detail (so they SEE what they bought)
+  //   • lifetime       → back to the catalogue
+  useEffect(() => {
+    if (redirectedRef.current) return;
+    redirectedRef.current = true;
+
+    const timer = window.setTimeout(() => {
+      if (purchaseType === "single" && productRef) {
+        const sp = new URLSearchParams(window.location.search);
+        sp.set("view", "product");
+        sp.set("product", productRef);
+        navigate(`${homeUrl}?${sp.toString()}`, { replace: true });
+      } else {
+        navigate(homeUrl, { replace: true });
+      }
+    }, 2800); // ~2.8s success flash, then continue
+
+    return () => window.clearTimeout(timer);
+  }, [purchaseType, productRef, homeUrl, navigate]);
+
+  const heading = purchaseType === "single" ? "Purchase complete" : "Payment received";
+  const subheading =
+    purchaseType === "single"
+      ? "This product is now unlocked in your library."
+      : "Your steacode Pro lifetime access is now active.";
+  const desc =
+    purchaseType === "single"
+      ? "You can copy the source code, download the zip, and use the AI prompt right now."
+      : "You can now access every component on steacode. Continuing back to the catalogue…";
 
   return (
     <div className="sc-checkout-success-page stea-code-app sc-v2 sc-market-home sc-v2-home">
       <SEO
-        title="Payment received — steacode"
-        description="Your steacode Pro lifetime access is now active."
+        title={purchaseType === "single" ? "Purchase complete — steacode" : "Payment received — steacode"}
+        description={subheading}
       />
 
       {/* Top Header */}
@@ -57,8 +95,8 @@ export default function SteaCodeCheckoutSuccessPage() {
         </div>
       </header>
 
-      {/* Success Hero Stage */}
-      <main className="sc-success-hero">
+      {/* Success Hero Stage — brief transparent success */}
+      <main className="sc-success-hero sc-success-hero--overlay">
         {/* Ambient green glow */}
         <div className="sc-success-ambient-glow" aria-hidden="true" />
 
@@ -69,21 +107,26 @@ export default function SteaCodeCheckoutSuccessPage() {
             <Check size={36} strokeWidth={3} className="sc-success-icon-check" aria-hidden="true" />
           </div>
 
-          <h1 className="sc-success-heading">Payment received</h1>
-          <p className="sc-success-subheading">
-            Your steacode Pro lifetime access is now active.
-          </p>
-          <p className="sc-success-desc">
-            You can now access every component on steacode. Head back to the catalogue to start browsing.
-          </p>
+          <h1 className="sc-success-heading">{heading}</h1>
+          <p className="sc-success-subheading">{subheading}</p>
+          <p className="sc-success-desc">{desc}</p>
 
           <div className="sc-success-cta-wrap">
             <button
               type="button"
               className="sc-success-cta-btn"
-              onClick={() => navigate(homeUrl)}
+              onClick={() => {
+                if (purchaseType === "single" && productRef) {
+                  const sp = new URLSearchParams(window.location.search);
+                  sp.set("view", "product");
+                  sp.set("product", productRef);
+                  navigate(`${homeUrl}?${sp.toString()}`);
+                } else {
+                  navigate(homeUrl);
+                }
+              }}
             >
-              <span>Browse Components</span>
+              <span>{purchaseType === "single" ? "View My Product" : "Browse Components"}</span>
               <ArrowRight size={16} />
             </button>
           </div>

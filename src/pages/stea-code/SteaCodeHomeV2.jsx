@@ -67,10 +67,7 @@ import { trackUserEvent } from "../../services/analytics.js";
 
 import {
   CODE_PRODUCT_CATEGORIES,
-  CODE_PRODUCT_TECH,
-  FALLBACK_CODE_PACKS,
-  FALLBACK_CODE_PRODUCTS } from "../../data/stea-code/codeProducts.js";
-import { STEA_CODE_SERVER_PRODUCTS } from "../../data/stea-code/codeProductsServer.js";
+  CODE_PRODUCT_TECH } from "../../data/stea-code/codeProducts.js";
 import { V2_WORLDS } from "../../data/stea-code/v2Worlds.js";
 import { TABS, DEFAULT_TAB } from "../../data/stea-code/tabs.js";
 import { useScrollReveal } from "../../hooks/useScrollReveal.js";
@@ -634,6 +631,8 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
   const [liveCatalog, setLiveCatalog] = useState(null);
   const [fullCatalog, setFullCatalog] = useState([]);
   const [isFallbackCatalog, setIsFallbackCatalog] = useState(false);
+  // Incrementing this triggers a fresh catalog load (used by the error-state Retry).
+  const [catalogReloadToken, setCatalogReloadToken] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -956,6 +955,9 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
 
     useEffect(() => {
     let active = true;
+    // A retry wipes the error state and reloads from the live API.
+    setIsFallbackCatalog(false);
+    setIsLoading(true);
 
     async function loadDualCatalogs() {
       // Spec #12: two catalogs loaded in parallel from dedicated routes.
@@ -1019,26 +1021,19 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
         setIsLoading(false);
       } catch (error) {
         console.error(
-          "[steacode] LIVE API LOAD FAILED — FALLING BACK TO SEED DATA!\n" +
+          "[steacode] LIVE API LOAD FAILED — no fallback to seed data.\n" +
           "Error details:",
           error
         );
 
         if (active) {
+          // NEVER fall back to bundled demo/seed products. Showing fake
+          // products when the live D1 API fails looks like a scam and breaks
+          // trust. Instead surface a real error state so the user knows the
+          // live catalog failed to load and can retry.
           setIsFallbackCatalog(true);
-          // API unavailable (no backend deployed yet, network error, etc.).
-          // Fall back to the bundled seed products so the grid is never empty
-          // — a working grid with real seed demos is strictly better for
-          // conversion than a blank page. The admin/Firestore catalog takes
-          // precedence whenever the API responds successfully.
-          const seedPublished = STEA_CODE_SERVER_PRODUCTS.filter(
-            (p) => p?.status === "published"
-          );
-          const seedHomepage = seedPublished.filter(
-            (p) => p?.homepageVisible === true
-          );
-          setLiveCatalog(seedHomepage);
-          setFullCatalog(seedPublished);
+          setLiveCatalog([]);
+          setFullCatalog([]);
           setIsLoading(false);
         }
       }
@@ -1049,7 +1044,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
     return () => {
       active = false;
     };
-  }, []);
+  }, [catalogReloadToken]);
 
     // Explore Code homepage products.
   //
@@ -1700,25 +1695,44 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
                 role="status"
                 style={{
                   margin: "0 0 20px",
-                  padding: "9px 14px",
-                  borderRadius: "10px",
-                  background: "rgba(245, 166, 35, 0.12)",
-                  border: "1px solid rgba(245, 166, 35, 0.35)",
-                  color: "#f5a623",
-                  fontSize: "12px",
+                  padding: "12px 16px",
+                  borderRadius: "12px",
+                  background: "rgba(239, 68, 68, 0.12)",
+                  border: "1px solid rgba(239, 68, 68, 0.35)",
+                  color: "#fca5a5",
+                  fontSize: "13px",
                   fontWeight: 500,
-                  display: "inline-flex",
+                  display: "flex",
                   alignItems: "center",
-                  gap: "8px",
+                  gap: "10px",
+                  flexWrap: "wrap",
                 }}
               >
-                <span style={{ fontSize: "14px" }}>⚡</span>
-                <span>
-                  <strong>{uiLocale === "zhCN" ? "演示/备用数据：" : "Fallback / Demo Catalog:"}</strong>{" "}
+                <span style={{ fontSize: "16px" }}>⚠️</span>
+                <span style={{ flex: "1 1 auto", minWidth: "220px" }}>
+                  <strong>
+                    {uiLocale === "zhCN" ? "产品加载失败：" : "Live catalog failed to load:"}
+                  </strong>{" "}
                   {uiLocale === "zhCN"
-                    ? "实时 API 暂不可达，当前正在展示内置种子产品。"
-                    : "Live API unreachable or returned non-JSON. Showing bundled seed products."}
+                    ? "无法连接到实时数据库。请重试。"
+                    : "Could not connect to the live product database. Please try again."}
                 </span>
+                <button
+                  type="button"
+                  onClick={() => setCatalogReloadToken((t) => t + 1)}
+                  style={{
+                    background: "rgba(239, 68, 68, 0.9)",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: "8px",
+                    padding: "6px 14px",
+                    fontSize: "13px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
+                  {uiLocale === "zhCN" ? "重试" : "Retry"}
+                </button>
               </div>
             )}
             {(isLoading || isGridSwitching) ? (
@@ -1965,25 +1979,44 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
                   role="status"
                   style={{
                     margin: "0 0 20px",
-                    padding: "9px 14px",
-                    borderRadius: "10px",
-                    background: "rgba(245, 166, 35, 0.12)",
-                    border: "1px solid rgba(245, 166, 35, 0.35)",
-                    color: "#f5a623",
-                    fontSize: "12px",
+                    padding: "12px 16px",
+                    borderRadius: "12px",
+                    background: "rgba(239, 68, 68, 0.12)",
+                    border: "1px solid rgba(239, 68, 68, 0.35)",
+                    color: "#fca5a5",
+                    fontSize: "13px",
                     fontWeight: 500,
-                    display: "inline-flex",
+                    display: "flex",
                     alignItems: "center",
-                    gap: "8px",
+                    gap: "10px",
+                    flexWrap: "wrap",
                   }}
                 >
-                  <span style={{ fontSize: "14px" }}>⚡</span>
-                  <span>
-                    <strong>{uiLocale === "zhCN" ? "演示/备用数据：" : "Fallback / Demo Catalog:"}</strong>{" "}
+                  <span style={{ fontSize: "16px" }}>⚠️</span>
+                  <span style={{ flex: "1 1 auto", minWidth: "220px" }}>
+                    <strong>
+                      {uiLocale === "zhCN" ? "产品加载失败：" : "Live catalog failed to load:"}
+                    </strong>{" "}
                     {uiLocale === "zhCN"
-                      ? "实时 API 暂不可达，当前正在展示内置种子产品。"
-                      : "Live API unreachable or returned non-JSON. Showing bundled seed products."}
+                      ? "无法连接到实时数据库。请重试。"
+                      : "Could not connect to the live product database. Please try again."}
                   </span>
+                  <button
+                    type="button"
+                    onClick={() => setCatalogReloadToken((t) => t + 1)}
+                    style={{
+                      background: "rgba(239, 68, 68, 0.9)",
+                      color: "#fff",
+                      border: "none",
+                      borderRadius: "8px",
+                      padding: "6px 14px",
+                      fontSize: "13px",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                    }}
+                  >
+                    {uiLocale === "zhCN" ? "重试" : "Retry"}
+                  </button>
                 </div>
               )}
 
@@ -4788,7 +4821,7 @@ ${file.content}`
                   )}
                 </span>
                 <span className="sc-detail-action-label">
-                  {!isSignedIn ? 'Sign in to copy' : !hasAccess ? `Unlock for $${productPrice.toFixed(2)}` : copiedPrompt ? 'Prompt Copied' : 'Copy AI Prompt'}
+                  {!isSignedIn ? 'Sign in to copy AI prompt' : !hasAccess ? `Unlock for $${productPrice.toFixed(2)}` : copiedPrompt ? 'Prompt Copied' : 'Copy AI Prompt'}
                 </span>
               </button>
             )}
@@ -4815,7 +4848,7 @@ ${file.content}`
                   )}
                 </span>
                 <span className="sc-detail-action-label">
-                  {!isSignedIn ? 'Sign in to copy' : !hasAccess ? `Unlock for $${productPrice.toFixed(2)}` : copiedCode ? 'Code Copied' : 'Copy Source Code'}
+                  {!isSignedIn ? 'Sign in to copy source code' : !hasAccess ? `Unlock for $${productPrice.toFixed(2)}` : copiedCode ? 'Code Copied' : 'Copy Source Code'}
                 </span>
               </button>
             )}
@@ -4841,7 +4874,7 @@ ${file.content}`
                 </span>
                 <span className="sc-detail-action-label">
                   {!isSignedIn
-                    ? 'Sign in to download'
+                    ? 'Sign in to download the zip file'
                     : !hasAccess
                     ? `Unlock for $${productPrice.toFixed(2)}`
                     : downloading

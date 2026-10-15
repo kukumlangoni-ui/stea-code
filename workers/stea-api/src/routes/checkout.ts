@@ -61,7 +61,7 @@ export async function handleCheckout(req: Request, env: WorkerEnv): Promise<Resp
     params.append("mode", "payment");
     params.append("line_items[0][price]", priceId);
     params.append("line_items[0][quantity]", "1");
-    params.append("success_url", `${siteUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`);
+    params.append("success_url", `${siteUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}&type=lifetime`);
     params.append("cancel_url", `${siteUrl}/checkout/cancel`);
     if (email) {
       params.append("customer_email", email);

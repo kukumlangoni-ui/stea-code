@@ -341,7 +341,7 @@ export default function SteaCodeUnlockModal({ product, onClose, onPurchased }) {
                 <span>Preparing checkout…</span>
               </>
             ) : (
-              <span>Get everything — €29 lifetime</span>
+              <span>Get everything — $29 lifetime</span>
             )}
           </button>
           <p className="sc-unlock-subcopy sc-unlock-subcopy--muted">
