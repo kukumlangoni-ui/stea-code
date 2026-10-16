@@ -18,6 +18,7 @@ import { Env, getDoc, listDocs, setDoc, deleteDoc } from "../firestore";
 import { corsHeaders } from "../cors";
 import { extractBearerToken, verifyFirebaseToken } from "../auth";
 import { putObject } from "../r2";
+import { requireStaff, StaffContext } from "../staff-auth/middleware";
 
 const ADMIN_EMAILS = new Set(["stea.africa@gmail.com", "kukumlangoni@gmail.com"]);
 
@@ -155,6 +156,31 @@ async function requireAdmin(req: Request, env: Env): Promise<{ uid: string; emai
     console.error("[stea-api] requireAdmin: token verification failed:", e?.message || e);
     return null;
   }
+}
+
+/**
+ * Resolve the writer of a product write. Supports BOTH:
+ *  - Staff auth (Bearer staff token) → returns staff context
+ *  - Legacy Firebase admin (admin whitelist) → returns firebase admin uid
+ *
+ * Returns null if neither is valid. This lets the same product write
+ * endpoints serve staff members (with createdByStaff tracking + editor
+ * publish restrictions) while keeping the legacy owner admin flow intact.
+ */
+type Writer =
+  | { kind: "staff"; ctx: StaffContext }
+  | { kind: "admin"; uid: string };
+
+async function resolveWriter(req: Request, env: Env): Promise<Writer | null> {
+  // Try staff auth first (returns Response on failure — treat as not staff)
+  const staffRes = await requireStaff(req, env);
+  if (staffRes && !(staffRes instanceof Response)) {
+    return { kind: "staff", ctx: staffRes };
+  }
+  // Fall back to Firebase admin
+  const admin = await requireAdmin(req, env);
+  if (admin) return { kind: "admin", uid: admin.uid };
+  return null;
 }
 
 export async function handleAdminProducts(req: Request, env: Env): Promise<Response> {
@@ -389,8 +415,8 @@ function admin500(req: Request, e: any, code: string, fallback: string): Respons
 }
 
 export async function handleAdminCreateProduct(req: Request, env: Env): Promise<Response> {
-  const admin = await requireAdmin(req, env);
-  if (!admin) return admin403(req);
+  const writer = await resolveWriter(req, env);
+  if (!writer) return admin403(req);
 
   try {
     const body = (await req.json()) as Record<string, any>;
@@ -414,7 +440,18 @@ export async function handleAdminCreateProduct(req: Request, env: Env): Promise<
     data.status = data.status || "draft";
     data.createdAt = new Date().toISOString();
     data.updatedAt = data.createdAt;
-    data.createdBy = admin.uid;
+
+    if (writer.kind === "staff") {
+      // Staff-created products always track the uploader.
+      data.createdByStaff = writer.ctx.staff.id;
+      data.createdBy = writer.ctx.staff.id;
+      // Editors cannot publish directly — force draft; they submit later.
+      if (writer.ctx.staff.role === "editor") {
+        data.status = "draft";
+      }
+    } else {
+      data.createdBy = writer.uid;
+    }
 
     await setDoc(env, PRODUCTS_COLLECTION, productId, data, false);
 
@@ -428,8 +465,8 @@ export async function handleAdminCreateProduct(req: Request, env: Env): Promise<
 }
 
 export async function handleAdminUpdateProduct(req: Request, env: Env, productId: string): Promise<Response> {
-  const admin = await requireAdmin(req, env);
-  if (!admin) return admin403(req);
+  const writer = await resolveWriter(req, env);
+  if (!writer) return admin403(req);
 
   try {
     const body = (await req.json()) as Record<string, any>;
@@ -449,17 +486,29 @@ export async function handleAdminUpdateProduct(req: Request, env: Env, productId
       });
     }
 
+    // ── Staff scoping + publish restriction ──────────────────
+    if (writer.kind === "staff") {
+      // Editors can only edit their own products.
+      if (
+        writer.ctx.staff.role === "editor" &&
+        existing.data.createdByStaff !== writer.ctx.staff.id
+      ) {
+        return new Response(
+          JSON.stringify({ error: "Editors can only edit their own products" }),
+          { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) } }
+        );
+      }
+      // Editors cannot publish directly — only move to 'pending'.
+      if (writer.ctx.staff.role === "editor" && data.status === "published") {
+        return new Response(
+          JSON.stringify({ error: "Editors cannot publish directly; submit for approval instead" }),
+          { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) } }
+        );
+      }
+      data.createdByStaff = existing.data.createdByStaff || writer.ctx.staff.id;
+    }
+
     // Partial update — do NOT deep-merge with the existing row.
-    //
-    // setDoc() now uses `INSERT ... ON CONFLICT(pk) DO UPDATE SET <cols>`,
-    // which only touches the columns we actually provide and leaves every
-    // other column on the row untouched. That makes a JS-level merge both
-    // redundant AND dangerous: merging `preview` from the existing row
-    // would re-serialize any legacy source keys (html/css/javascript) back
-    // into the preview column on every metadata save.
-    //
-    // We only need to skip `undefined` values so we don't accidentally
-    // NULL a column the caller didn't intend to touch.
     const merged: Record<string, any> = {};
     for (const [key, value] of Object.entries(data)) {
       if (value === undefined) continue;
@@ -467,7 +516,7 @@ export async function handleAdminUpdateProduct(req: Request, env: Env, productId
     }
 
     merged.updatedAt = new Date().toISOString();
-    merged.updatedBy = admin.uid;
+    merged.updatedBy = writer.kind === "staff" ? writer.ctx.staff.id : writer.uid;
 
     // Slug safety: if slug was included in the update, validate it.
     // If it's empty/whitespace, fall back to existing slug or productId.

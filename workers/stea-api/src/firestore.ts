@@ -13,6 +13,9 @@
 export interface Env {
   DB: D1Database;
   FIREBASE_PROJECT_ID: string;
+  // Staff auth bootstrap (optional — only used when staff_users is empty)
+  STAFF_BOOTSTRAP_EMAIL?: string;
+  STAFF_BOOTSTRAP_PASSWORD?: string;
 }
 
 export interface FirestoreDoc {
@@ -54,7 +57,9 @@ const SCHEMAS: Record<string, TableSchema> = {
       "posterImageUrl", "previewMode", "preview", "designWidth", "designHeight",
       "publicFiles", "protectedFiles",
       "sourceFiles", "sourceCode", "fileNames", "package",
-      "createdAt", "updatedAt", "createdBy", "updatedBy", "extraData",
+      "createdAt", "updatedAt", "createdBy", "updatedBy",
+      "createdByStaff", "approvedByStaff", "approvedAt", "rejectionReason",
+      "extraData",
     ],
     jsonColumns: new Set([
       "tags", "frameworks", "languages", "preview", "publicFiles",

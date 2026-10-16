@@ -43,12 +43,30 @@ import {
   handleAdminUsers,
   handleAdminStats,
 } from "./routes/admin";
+import {
+  handleStaffLogin,
+  handleStaffLogout,
+  handleStaffMe,
+  handleListStaff,
+  handleCreateStaff,
+  handleUpdateStaff,
+  handleDeleteStaff,
+  handleResetStaffPassword,
+  handleForceLogout,
+  handleStaffProducts,
+  handleStaffAudit,
+  handleStaffApprovals,
+  handleStaffApprove,
+} from "./routes/staff";
 
 export interface WorkerEnv {
   // D1
   DB: D1Database;
   // Firebase Auth (project ID only — no service account needed)
   FIREBASE_PROJECT_ID: string;
+  // Staff auth bootstrap (optional — only used when staff_users is empty)
+  STAFF_BOOTSTRAP_EMAIL?: string;
+  STAFF_BOOTSTRAP_PASSWORD?: string;
   // R2
   R2_ACCOUNT_ID: string;
   R2_ACCESS_KEY_ID: string;
@@ -279,6 +297,60 @@ export default {
       }
       if (adminProductMatch && method === "DELETE") {
         return handleAdminDeleteProduct(request, env, adminProductMatch[1]);
+      }
+
+      // ============ Staff auth routes ============
+      // POST /api/stea-code/staff/login
+      if (apiPath === "/stea-code/staff/login" && method === "POST") {
+        return handleStaffLogin(request, env);
+      }
+      // POST /api/stea-code/staff/logout
+      if (apiPath === "/stea-code/staff/logout" && method === "POST") {
+        return handleStaffLogout(request, env);
+      }
+      // GET /api/stea-code/staff/me
+      if (apiPath === "/stea-code/staff/me" && method === "GET") {
+        return handleStaffMe(request, env);
+      }
+      // Staff users collection
+      if (apiPath === "/stea-code/staff/users" && method === "GET") {
+        return handleListStaff(request, env);
+      }
+      if (apiPath === "/stea-code/staff/users" && method === "POST") {
+        return handleCreateStaff(request, env);
+      }
+      // Per-user sub-actions (reset-password, force-logout) — match before :id
+      const staffResetPwMatch = apiPath.match(/^\/stea-code\/staff\/users\/([^/]+)\/reset-password$/);
+      if (staffResetPwMatch && method === "POST") {
+        return handleResetStaffPassword(request, env, staffResetPwMatch[1]);
+      }
+      const staffForceLogoutMatch = apiPath.match(/^\/stea-code\/staff\/users\/([^/]+)\/force-logout$/);
+      if (staffForceLogoutMatch && method === "POST") {
+        return handleForceLogout(request, env, staffForceLogoutMatch[1]);
+      }
+      const staffUserMatch = apiPath.match(/^\/stea-code\/staff\/users\/([^/]+)$/);
+      if (staffUserMatch && (method === "PATCH" || method === "PUT")) {
+        return handleUpdateStaff(request, env, staffUserMatch[1]);
+      }
+      if (staffUserMatch && method === "DELETE") {
+        return handleDeleteStaff(request, env, staffUserMatch[1]);
+      }
+      // Staff products
+      if (apiPath === "/stea-code/staff/products" && method === "GET") {
+        return handleStaffProducts(request, env);
+      }
+      // Staff product approval
+      const staffApproveMatch = apiPath.match(/^\/stea-code\/staff\/products\/([^/]+)\/approve$/);
+      if (staffApproveMatch && method === "POST") {
+        return handleStaffApprove(request, env, staffApproveMatch[1]);
+      }
+      // Staff audit log
+      if (apiPath === "/stea-code/staff/audit" && method === "GET") {
+        return handleStaffAudit(request, env);
+      }
+      // Pending approvals
+      if (apiPath === "/stea-code/staff/approvals" && method === "GET") {
+        return handleStaffApprovals(request, env);
       }
 
       // ============ 404 ============
