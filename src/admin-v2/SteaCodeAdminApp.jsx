@@ -579,6 +579,7 @@ export default function SteaCodeAdminApp(props) {
               element={
                 <SteaCodeProductStudioPage
                   isSuperAdmin={isSuperAdmin}
+                  role={staffMode ? staff.role : (isOwner ? "owner" : "admin")}
                   devPreview={devPreview}
                   baseRoute={baseRoute}
                 />
@@ -589,6 +590,7 @@ export default function SteaCodeAdminApp(props) {
               element={
                 <SteaCodeProductStudioPage
                   isSuperAdmin={isSuperAdmin}
+                  role={staffMode ? staff.role : (isOwner ? "owner" : "admin")}
                   devPreview={devPreview}
                   baseRoute={baseRoute}
                 />

@@ -2087,14 +2087,25 @@ export function ProductStudioV3({
                   <Save size={16} />
                   Save Draft
                 </button>
-                <button
-                  className="psv3-btn psv3-btn--primary"
-                  onClick={() => save("publish")}
-                  disabled={saving || devPreview || !canPublish}
-                >
-                  {form.status === "published" ? "Save & Keep Published" : "Publish"}
-                </button>
-                {form.status === "published" && (
+                {isEditor ? (
+                  <button
+                    className="psv3-btn psv3-btn--primary"
+                    onClick={handleSubmitReview}
+                    disabled={saving || devPreview || !canPublish}
+                  >
+                    <Send size={16} />
+                    Submit for Review
+                  </button>
+                ) : (
+                  <button
+                    className="psv3-btn psv3-btn--primary"
+                    onClick={() => save("publish")}
+                    disabled={saving || devPreview || !canPublish}
+                  >
+                    {form.status === "published" ? "Save & Keep Published" : "Publish"}
+                  </button>
+                )}
+                {!isEditor && form.status === "published" && (
                   <button
                     className="psv3-btn psv3-btn--danger"
                     onClick={() => save("unpublish")}
@@ -2104,7 +2115,7 @@ export function ProductStudioV3({
                   </button>
                 )}
               </div>
-              {editing && (
+              {editing && !isEditor && (
                 <div style={{ marginTop: 20, paddingTop: 16, borderTop: "1px solid var(--psv3-border)" }}>
                   <div style={{ fontSize: 12, color: "var(--psv3-text-muted)", marginBottom: 8 }}>
                     Danger zone
@@ -2145,7 +2156,14 @@ export function ProductStudioV3({
               )}
               {!canPublish && (
                 <p style={{ fontSize: 12, color: "var(--psv3-text-muted)", marginTop: 12 }}>
-                  To publish: fill in title, description, and category. Premium products need a price.
+                  {isEditor
+                    ? "To submit for review: fill in title, description, and category. Premium products need a price."
+                    : "To publish: fill in title, description, and category. Premium products need a price."}
+                </p>
+              )}
+              {isEditor && (
+                <p style={{ fontSize: 12, color: "var(--psv3-text-muted)", marginTop: 12 }}>
+                  Your changes won't go live until an approver publishes them.
                 </p>
               )}
             </Section>

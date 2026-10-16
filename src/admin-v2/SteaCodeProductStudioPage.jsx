@@ -26,6 +26,7 @@ import { DEV_PREVIEW_PRODUCTS } from "./steaCodeDevPreviewData.js";
  */
 export default function SteaCodeProductStudioPage({
   isSuperAdmin,
+  role,
   devPreview = false,
   baseRoute = "/code-admin",
 }) {
@@ -200,6 +201,7 @@ export default function SteaCodeProductStudioPage({
       onCreated={handleCreated}
       onPublished={handlePublished}
       isSuperAdmin={isSuperAdmin}
+      role={role}
       devPreview={devPreview}
       initialTab={initialTab}
       baseRoute={baseRoute}

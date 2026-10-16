@@ -88,6 +88,7 @@ import { DEV_PREVIEW_PRODUCTS } from "./steaCodeDevPreviewData.js";
 import SteaCodeProductLivePreview from "../components/stea-code/SteaCodeProductLivePreview.jsx";
 import { useStaff } from "./StaffContext.jsx";
 import TeamPanel from "./TeamPanel.jsx";
+import { SUBCATEGORIES } from "../data/stea-code/tabs.js";
 
 // Shared single-source-of-truth category list. Drop the UI-only pseudo-category "All"
 // because Admin saves real product categories.
@@ -3817,6 +3818,14 @@ export default function SteaCodeCommercePanel({ isSuperAdmin, initialTab = "prod
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [filter, setFilter] = useState("all");
+  // Category + Layout-subcategory filters for the product list.
+  const [activeCategory, setActiveCategory] = useState("All");
+  const [activeSubcategory, setActiveSubcategory] = useState("All");
+
+  // Subcategory pills reset to "All" whenever the top-level category changes.
+  useEffect(() => {
+    setActiveSubcategory("All");
+  }, [activeCategory]);
   const [editor, setEditor] = useState(null);
   const [sourceProduct, setSourceProduct] = useState(null);
   const [deleting, setDeleting] = useState(null);
@@ -4016,13 +4025,28 @@ export default function SteaCodeCommercePanel({ isSuperAdmin, initialTab = "prod
       if (filter === "free" && p.pricingType !== "free") return false;
       if (filter === "featured" && !p.featured) return false;
       if (filter === "archived" && p.status !== "archived") return false;
+      if (activeCategory !== "All" && p.category !== activeCategory) return false;
+      if (activeSubcategory !== "All" && (p.subcategory || "") !== activeSubcategory) return false;
       if (!needle) return true;
-      return [p.id, p.slug, p.titleEn, p.titleZh, p.category]
+      return [p.id, p.slug, p.titleEn, p.titleZh, p.category, p.subcategory]
         .join(" ")
         .toLowerCase()
         .includes(needle);
     });
-  }, [products, debouncedQuery, filter]);
+  }, [products, debouncedQuery, filter, activeCategory, activeSubcategory]);
+
+  // Per-subcategory product counts (admin filter pills), from the loaded list.
+  const layoutSubcategoryCounts = useMemo(() => {
+    const counts = {
+      All: products.filter((p) => p.category === "Layout").length,
+    };
+    for (const sub of SUBCATEGORIES.Layout || []) {
+      counts[sub] = products.filter(
+        (p) => p.category === "Layout" && (p.subcategory || "") === sub
+      ).length;
+    }
+    return counts;
+  }, [products]);
 
   // Aggregated Users List
   const users = useMemo(() => {
@@ -4447,6 +4471,35 @@ export default function SteaCodeCommercePanel({ isSuperAdmin, initialTab = "prod
                 </button>
               ))}
             </div>
+
+            {/* Category filter row */}
+            <div className="sc-admin-filter-row">
+              {["All", ...PRODUCT_CATEGORIES].map((c) => (
+                <button
+                  key={c}
+                  className={activeCategory === c ? "is-active" : ""}
+                  onClick={() => setActiveCategory(c)}
+                >
+                  {c}
+                </button>
+              ))}
+            </div>
+
+            {/* Layout-only subcategory row — appears only when Layout is active.
+                Counts come from the currently-loaded product list. */}
+            {activeCategory === "Layout" && (
+              <div className="sc-admin-filter-row sc-admin-filter-row--sub">
+                {["All", ...(SUBCATEGORIES.Layout || [])].map((sub) => (
+                  <button
+                    key={sub}
+                    className={activeSubcategory === sub ? "is-active" : ""}
+                    onClick={() => setActiveSubcategory(sub)}
+                  >
+                    {sub} ({layoutSubcategoryCounts[sub] ?? 0})
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           <ProductTable
@@ -5579,7 +5632,15 @@ function ProductTable({
                   <span>{p.id}</span>
                 </div>
               </td>
-              <td>{p.category || "—"}</td>
+              <td>
+                {p.category || "—"}
+                {p.subcategory && (
+                  <span style={{ color: "rgba(255,255,255,0.4)" }}>
+                    {" / "}
+                    {p.subcategory}
+                  </span>
+                )}
+              </td>
               <td>
                 {p.pricingType === "premium" ? (
                   <span className="sc-admin-price">
