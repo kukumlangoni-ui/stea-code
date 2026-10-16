@@ -3911,6 +3911,11 @@ export default function SteaCodeCommercePanel({ isSuperAdmin, initialTab = "prod
   // Sync tab state from the URL when running in dedicated admin mode.
   // This makes browser back/forward work and keeps the tab in sync with
   // the route segment. It does NOT navigate — it only reads the URL.
+  // NOTE: `tab` is intentionally NOT in the dependency array. The Activity
+  // tab is an internal, non-URL tab (we skip navigation for it), so its
+  // setTab() must not re-trigger this effect and snap the tab back to the
+  // current URL segment. The effect should only run when the URL itself
+  // changes (navigation / browser back-forward).
   useEffect(() => {
     if (!dedicatedAdmin) return;
     const base = cleanBaseRoute;
@@ -3920,7 +3925,7 @@ export default function SteaCodeCommercePanel({ isSuperAdmin, initialTab = "prod
     if (rest && validTabs.includes(rest) && rest !== tab) {
       setTab(rest);
     }
-  }, [dedicatedAdmin, cleanBaseRoute, location.pathname, tab]);
+  }, [dedicatedAdmin, cleanBaseRoute, location.pathname]);
 
   // Dedicated admin: route to full-page Product Studio
   const openEditor = useCallback((product) => {
