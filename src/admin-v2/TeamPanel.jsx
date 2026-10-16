@@ -215,7 +215,7 @@ export default function TeamPanel({ staff, isOwner }) {
           <button type="button" className="team-btn-ghost" onClick={load} title="Refresh">
             <RefreshCw size={15} /> Refresh
           </button>
-          {isAdmin && (
+          {isAdmin && isOwner && (
             <button type="button" className="team-add-btn" onClick={() => setShowAdd(true)}>
               <Plus size={16} /> Add member
             </button>
@@ -319,9 +319,11 @@ export default function TeamPanel({ staff, isOwner }) {
                         <span className="team-cell-time">{timeAgo(m.createdAt)}</span>
                       </td>
                       <td className="team-actions">
-                        {busy ? (
+                        {!isOwner && null}
+                        {isOwner && busy ? (
                           <Loader2 className="team-spinner" size={18} style={{ color: "#8a8a94" }} />
-                        ) : (
+                        ) : null}
+                        {isOwner && !busy ? (
                           <button
                             type="button"
                             className="team-actions-btn"
@@ -330,9 +332,9 @@ export default function TeamPanel({ staff, isOwner }) {
                           >
                             <MoreVertical size={16} />
                           </button>
-                        )}
+                        ) : null}
 
-                        {openMenuFor === m.id && (
+                        {isOwner && openMenuFor === m.id && (
                           <div className="team-actions-menu">
                             {canReset(m) && (
                               <button type="button" className="team-action-item" onClick={() => { setOpenMenuFor(null); setResetFor(m); }}>
@@ -419,6 +421,7 @@ export default function TeamPanel({ staff, isOwner }) {
                 {busyId === confirmDeleteFor.id ? <Loader2 className="team-spinner" size={16} /> : <Trash2 size={15} />}
                 Delete permanently
               </button>
+            )}
             </div>
           </div>
         </div>

@@ -202,7 +202,7 @@ export async function handleListStaff(req: Request, env: Env): Promise<Response>
 // Create staff (admin or owner)
 // ============================================================
 export async function handleCreateStaff(req: Request, env: Env): Promise<Response> {
-  const ctx = await requireStaff(req, env, "admin");
+  const ctx = await requireStaff(req, env, "owner");
   if (ctx instanceof Response) return ctx;
 
   let body: any = {};
