@@ -28,6 +28,7 @@ import { getFirebaseAuth, signOut } from "../firebase.js";
 import { useAuth } from "../hooks/useAuth.js";
 import { getSteaCodePublicUrl, isSteaCodeHost } from "../utils/subdomains.js";
 import { hasAdminV2Permission } from "./permissions.js";
+import { useStaff } from "./StaffContext.jsx";
 import { ADMIN_V2_PREVIEW_BANNER, ADMIN_V2_PREVIEW_USER } from "./previewData.js";
 import AdminLoadingScreen from "./AdminLoadingScreen.jsx";
 import SitesAdminLogin from "../sites/admin/SitesAdminLogin.jsx";
@@ -300,13 +301,35 @@ export default function SteaCodeAdminApp(props) {
   const navigate = useNavigate();
   const location = useLocation();
   const authFromHook = useAuth();
+  const { staff, signOut: staffSignOut } = useStaff();
 
   const isLocal = typeof window !== "undefined" && ["localhost", "127.0.0.1"].includes(window.location.hostname);
 
+  // ── Staff mode takes priority over Firebase ──────────────────
+  // When a staff member is loaded via StaffAuthGate + StaffProvider, drive the
+  // whole admin panel from the staff record and skip the Firebase gate.
+  const staffMode = !!staff;
+  const staffRoleMap = {
+    owner: "super_admin",
+    admin: "admin",
+    editor: "editor",
+  };
+
   // Derive auth user & loading state:
-  // If user prop is passed explicitly, use it; otherwise read from useAuth()
-  const authUser = userProp !== undefined ? userProp : authFromHook.user;
-  const isAuthLoading = userProp !== undefined ? false : authFromHook.loading;
+  // Staff → build a synthetic user from the staff record.
+  // Otherwise → if user prop is passed explicitly, use it; else read from useAuth()
+  const authUser = staffMode
+    ? {
+        uid: staff.id,
+        email: staff.email,
+        displayName: staff.displayName || "Staff",
+        role: staffRoleMap[staff.role] || "editor",
+        isStaff: true,
+      }
+    : userProp !== undefined
+    ? userProp
+    : authFromHook.user;
+  const isAuthLoading = staffMode ? false : userProp !== undefined ? false : authFromHook.loading;
 
   // Dev mock mode is opt-in only via VITE_STEA_CODE_MOCK=1.
   // On localhost without an explicit mock flag, the admin reads/writes the
@@ -389,12 +412,23 @@ export default function SteaCodeAdminApp(props) {
 
   const isOwner =
     ["stea.africa@gmail.com", "kukumlangoni@gmail.com"].includes(String(effectiveUser?.email || "").trim().toLowerCase());
-  const roleEffective = isOwner ? "super_admin" : (isLocal && (!effectiveUser?.role || effectiveUser?.role === "user") ? "super_admin" : effectiveUser?.role || null);
-  const isSuperAdmin = roleEffective === "super_admin" || isOwner || isLocal;
-  const canCodeView = isSuperAdmin || effectiveUser?.role === "admin" || hasAdminV2Permission(effectiveUser, "code.view") || isLocal;
+  const roleEffective = staffMode
+    ? staff.role === "owner"
+      ? "super_admin"
+      : staffRoleMap[staff.role] || "editor"
+    : isOwner ? "super_admin" : (isLocal && (!effectiveUser?.role || effectiveUser?.role === "user") ? "super_admin" : effectiveUser?.role || null);
+  const isSuperAdmin = staffMode
+    ? staff.role === "owner"
+    : roleEffective === "super_admin" || isOwner || isLocal;
+  // Staff are authorized by the backend — always grant the code admin view.
+  const canCodeView = staffMode
+    ? true
+    : isSuperAdmin || effectiveUser?.role === "admin" || hasAdminV2Permission(effectiveUser, "code.view") || isLocal;
   const profileError = profileStatus?.phase === "error";
 
-  const onLogout = onLogoutProp
+  const onLogout = staffMode
+    ? staffSignOut
+    : onLogoutProp
     ? onLogoutProp
     : async () => {
         try {

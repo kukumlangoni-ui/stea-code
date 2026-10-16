@@ -16,6 +16,8 @@ import { useAuth } from "./hooks/useAuth.js";
 const SteaCodeShellV2 = lazy(() => import("./pages/stea-code/SteaCodeShellV2.jsx"));
 const SteaCodeHomeV2 = lazy(() => import("./pages/stea-code/SteaCodeHomeV2.jsx"));
 const SteaCodeAdminApp = lazy(() => import("./admin-v2/SteaCodeAdminApp.jsx"));
+const StaffAuthGate = lazy(() => import("./admin-v2/StaffAuthGate.jsx"));
+const StaffLoginPage = lazy(() => import("./admin-v2/StaffLoginPage.jsx"));
 const SteaCodeNotFoundPage = lazy(() => import("./pages/stea-code/SteaCodeNotFoundPage.jsx"));
 const SteaCodeCheckoutSuccessPage = lazy(() => import("./pages/stea-code/SteaCodeCheckoutSuccessPage.jsx"));
 const SteaCodeUpgradePage = lazy(() => import("./pages/stea-code/SteaCodeUpgradePage.jsx"));
@@ -162,15 +164,26 @@ export default function App() {
                   <Route path="/developers" element={<Navigate to="/" replace />} />
                   <Route path="/dev" element={<Navigate to="/" replace />} />
 
+                  {/* Staff login (parallel to Firebase, takes priority via StaffAuthGate) */}
+                  <Route path="/staff/login" element={<StaffLoginPage />} />
+
                   {/* Admin */}
                   <Route
                     path="/admin/*"
-                    element={<SteaCodeAdminApp baseRoute="/admin" user={user} authLoading={authLoading} onRequireSignIn={() => window.dispatchEvent(new Event("open-auth"))} />}
+                    element={
+                      <StaffAuthGate>
+                        <SteaCodeAdminApp baseRoute="/admin" user={user} authLoading={authLoading} onRequireSignIn={() => window.dispatchEvent(new Event("open-auth"))} />
+                      </StaffAuthGate>
+                    }
                   />
                   <Route path="/admin" element={<Navigate to="/admin/products" replace />} />
                   <Route
                     path="/code-admin/*"
-                    element={<SteaCodeAdminApp baseRoute="/code-admin" user={user} authLoading={authLoading} onRequireSignIn={() => window.dispatchEvent(new Event("open-auth"))} />}
+                    element={
+                      <StaffAuthGate>
+                        <SteaCodeAdminApp baseRoute="/code-admin" user={user} authLoading={authLoading} onRequireSignIn={() => window.dispatchEvent(new Event("open-auth"))} />
+                      </StaffAuthGate>
+                    }
                   />
                   <Route path="/code-admin" element={<Navigate to="/code-admin/products" replace />} />
 
