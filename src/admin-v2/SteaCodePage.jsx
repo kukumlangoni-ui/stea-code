@@ -707,8 +707,8 @@ export default function SteaCodePage({ isSuperAdmin, devPreview = false, initial
           <span>Resources: <strong>{directoryItems.length}</strong></span>
           <span>Hosting: <strong>{hostingItems.length}</strong></span>
           <span>Inspiration: <strong>{inspirationItems.length}</strong></span>
-          <span>Orders: <strong>{commerceCounts.orders ?? "—"}</strong></span>
-          <span>Entitlements: <strong>{commerceCounts.entitlements ?? "—"}</strong></span>
+          {isSuperAdmin && <span>Orders: <strong>{commerceCounts.orders ?? "—"}</strong></span>}
+          {isSuperAdmin && <span>Entitlements: <strong>{commerceCounts.entitlements ?? "—"}</strong></span>}
         </div>
       )}
 

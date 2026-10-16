@@ -423,6 +423,8 @@ export default function SteaCodeAdminApp(props) {
   const isSuperAdmin = staffMode
     ? staff.role === "owner"
     : roleEffective === "super_admin" || isOwner || isLocal;
+  // Money/buyer surfaces are owner-only. Staff → exact "owner" role; else → Firebase/local owner.
+  const isOwnerRole = staffMode ? staff.role === "owner" : isOwner;
   // Staff are authorized by the backend — always grant the code admin view.
   const canCodeView = staffMode
     ? true
@@ -624,6 +626,39 @@ export default function SteaCodeAdminApp(props) {
               "legacy",
             ].map((segment) => {
               const tabId = segment === "resources" ? "directory" : segment;
+              // Owner-only segments (money/buyer): redirect non-owners to dashboard.
+              const OWNER_ONLY_SEGMENTS = new Set([
+                "orders",
+                "payments",
+                "users",
+                "entitlements",
+                "team",
+              ]);
+              if (OWNER_ONLY_SEGMENTS.has(segment) && !isOwnerRole) {
+                return (
+                  <Route
+                    key={segment}
+                    path={segment}
+                    element={
+                      <Navigate to={`${baseRoute.replace(/\/$/, "")}/dashboard`} replace />
+                    }
+                  />
+                );
+              }
+              // Approver + owner only: editors are redirected from review/activity
+              // surfaces (they submit revisions, they don't review them).
+              const APPROVER_ONLY_SEGMENTS = new Set(["approvals", "activity"]);
+              if (APPROVER_ONLY_SEGMENTS.has(segment) && staffMode && staff.role === "editor") {
+                return (
+                  <Route
+                    key={segment}
+                    path={segment}
+                    element={
+                      <Navigate to={`${baseRoute.replace(/\/$/, "")}/dashboard`} replace />
+                    }
+                  />
+                );
+              }
               return (
                 <Route
                   key={segment}

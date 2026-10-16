@@ -3808,7 +3808,11 @@ function PaymentsRevenueChart({ orders = [] }) {
 export default function SteaCodeCommercePanel({ isSuperAdmin, initialTab = "products", embedded = false, devPreview = false, onCountsChange, dedicatedAdmin = false, baseRoute = "/code-admin" }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { staff, isAdmin: staffIsApprover } = useStaff();
+  const { staff, isOwner } = useStaff();
+  // Money/buyer surfaces (orders, payments, users, entitlements, stats,
+  // pricing column, dashboard revenue) are owner-only. isSuperAdmin covers the
+  // legacy Firebase/local-owner path; isOwner covers the staff-owner path.
+  const canSeeMoney = isSuperAdmin || isOwner;
   const [tab, setTab] = useState(initialTab);
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
@@ -4362,7 +4366,7 @@ export default function SteaCodeCommercePanel({ isSuperAdmin, initialTab = "prod
       <div className="sc-admin-commerce-hero sc-admin-commerce-hero-compact">
         <div className="sc-admin-commerce-hero-text">
           <h2>{tab === "products" ? "Products" : tab === "users" ? "Users" : tab === "payments" ? "Payments Overview" : tab === "orders" ? "Orders" : tab === "entitlements" ? "Entitlements" : tab === "team" ? "Team" : "Commerce"}</h2>
-          <p>{products.length} product{products.length === 1 ? "" : "s"} in live catalog · {orders.length} orders · {users.length} registered users.</p>
+          <p>{products.length} product{products.length === 1 ? "" : "s"} in live catalog{canSeeMoney ? ` · ${orders.length} orders` : ""} · {users.length} registered users.</p>
         </div>
         <div className="sc-admin-commerce-actions">
           <a
@@ -4401,11 +4405,11 @@ export default function SteaCodeCommercePanel({ isSuperAdmin, initialTab = "prod
           {[
             ["dashboard", "Dashboard"],
             ["products", "Products"],
-            ["orders", "Orders"],
-            ["payments", "Payments"],
-            ["users", "Users"],
-            ["entitlements", "Entitlements"],
-            ...(staffIsApprover ? [["team", "Team"]] : []),
+            ...(canSeeMoney ? [["orders", "Orders"]] : []),
+            ...(canSeeMoney ? [["payments", "Payments"]] : []),
+            ...(canSeeMoney ? [["users", "Users"]] : []),
+            ...(canSeeMoney ? [["entitlements", "Entitlements"]] : []),
+            ...(canSeeMoney ? [["team", "Team"]] : []),
           ].map(([id, label]) => (
             <button
               key={id}
@@ -4437,6 +4441,7 @@ export default function SteaCodeCommercePanel({ isSuperAdmin, initialTab = "prod
           orders={orders}
           entitlements={entitlements}
           users={users}
+          canSeeMoney={canSeeMoney}
         />
       )}
 
@@ -4505,6 +4510,7 @@ export default function SteaCodeCommercePanel({ isSuperAdmin, initialTab = "prod
           <ProductTable
             products={visibleProducts}
             isSuperAdmin={isSuperAdmin}
+            canSeeMoney={canSeeMoney}
             onEdit={(p) => openEditor(p)}
             onPreview={(p) => openPreview(p)}
             onSource={(p) => setSourceProduct(p)}
@@ -4518,7 +4524,7 @@ export default function SteaCodeCommercePanel({ isSuperAdmin, initialTab = "prod
       )}
 
       {/* PAYMENTS OVERVIEW TAB */}
-      {tab === "payments" && (
+      {tab === "payments" && canSeeMoney && (
         <>
           <div className="sc-admin-metric-grid">
             <Metric
@@ -4635,7 +4641,7 @@ export default function SteaCodeCommercePanel({ isSuperAdmin, initialTab = "prod
       )}
 
       {/* USERS TAB */}
-      {tab === "users" && (
+      {tab === "users" && canSeeMoney && (
         <div className="sc-admin-panel">
           <div className="sc-admin-product-toolbar">
             <div className="sc-admin-search">
@@ -4753,7 +4759,7 @@ export default function SteaCodeCommercePanel({ isSuperAdmin, initialTab = "prod
       )}
 
       {/* ORDERS TAB */}
-      {tab === "orders" && (
+      {tab === "orders" && canSeeMoney && (
         <div className="sc-admin-panel">
           <div className="sc-admin-panel-head">
             <div>
@@ -4802,7 +4808,7 @@ export default function SteaCodeCommercePanel({ isSuperAdmin, initialTab = "prod
       )}
 
       {/* ENTITLEMENTS TAB */}
-      {tab === "entitlements" && (
+      {tab === "entitlements" && canSeeMoney && (
         <div className="sc-admin-panel">
           <div className="sc-admin-panel-head">
             <div>
@@ -4865,7 +4871,7 @@ export default function SteaCodeCommercePanel({ isSuperAdmin, initialTab = "prod
       )}
 
       {/* TEAM TAB (owner/admin only — staff management) */}
-      {tab === "team" && staffIsApprover && (
+      {tab === "team" && canSeeMoney && (
         <TeamPanel staff={staff} isOwner={staff?.role === "owner"} />
       )}
 
@@ -5088,7 +5094,7 @@ export default function SteaCodeCommercePanel({ isSuperAdmin, initialTab = "prod
 /* =========================================================
    DASHBOARD TAB — realtime KPI overview
    ========================================================= */
-function DashboardTab({ products = [], orders = [], entitlements = [], users = [] }) {
+function DashboardTab({ products = [], orders = [], entitlements = [], users = [], canSeeMoney = true }) {
   const PAID_STATUSES = new Set(["paid", "complete", "succeeded"]);
 
   // ---- KPI: total revenue (paid orders only) ----
@@ -5275,23 +5281,27 @@ function DashboardTab({ products = [], orders = [], entitlements = [], users = [
       icon: Package,
     },
     {
-      label: "Total Orders",
-      value: orders.length,
-      sub: "all time",
-      icon: ShoppingCart,
-    },
-    {
-      label: "Total Revenue",
-      value: formatMoney(totalRevenue),
-      sub: "lifetime",
-      icon: DollarSign,
-    },
-    {
       label: "Total Users",
       value: users.length,
       sub: "registered",
       icon: Users,
     },
+    ...(canSeeMoney
+      ? [
+          {
+            label: "Total Orders",
+            value: orders.length,
+            sub: "all time",
+            icon: ShoppingCart,
+          },
+          {
+            label: "Total Revenue",
+            value: formatMoney(totalRevenue),
+            sub: "lifetime",
+            icon: DollarSign,
+          },
+        ]
+      : []),
   ];
 
   return (
@@ -5343,7 +5353,8 @@ function DashboardTab({ products = [], orders = [], entitlements = [], users = [
         })}
       </div>
 
-      {/* ROW 2 — CHARTS */}
+      {/* ROW 2 — CHARTS (owner-only: revenue + orders-by-status) */}
+      {canSeeMoney && (
       <div
         style={{
           display: "grid",
@@ -5438,8 +5449,10 @@ function DashboardTab({ products = [], orders = [], entitlements = [], users = [
           </div>
         </div>
       </div>
+      )}
 
-      {/* ROW 3 — LISTS */}
+      {/* ROW 3 — LISTS (owner-only: recent orders/users, top products) */}
+      {canSeeMoney && (
       <div
         style={{
           display: "grid",
@@ -5569,6 +5582,7 @@ function DashboardTab({ products = [], orders = [], entitlements = [], users = [
           )}
         </div>
       </div>
+      )}
     </div>
   );
 }
@@ -5595,6 +5609,7 @@ function Status({ value }) {
 function ProductTable({
   products,
   isSuperAdmin,
+  canSeeMoney = true,
   onEdit,
   onPreview,
   onSource,
@@ -5611,7 +5626,7 @@ function ProductTable({
           <tr>
             <th>Product</th>
             <th>Category</th>
-            <th>Pricing</th>
+            {canSeeMoney && <th>Pricing</th>}
             <th>Runtime</th>
             <th>Status</th>
             <th>Homepage</th>
@@ -5641,15 +5656,17 @@ function ProductTable({
                   </span>
                 )}
               </td>
-              <td>
-                {p.pricingType === "premium" ? (
-                  <span className="sc-admin-price">
-                    {p.currency || "USD"} {Number(p.price || 0).toFixed(2)}
-                  </span>
-                ) : (
-                  <span className="sc-admin-free">FREE</span>
-                )}
-              </td>
+              {canSeeMoney && (
+                <td>
+                  {p.pricingType === "premium" ? (
+                    <span className="sc-admin-price">
+                      {p.currency || "USD"} {Number(p.price || 0).toFixed(2)}
+                    </span>
+                  ) : (
+                    <span className="sc-admin-free">FREE</span>
+                  )}
+                </td>
+              )}
               <td>{p.preview?.runtime === "full-html" ? "Full HTML" : p.preview?.runtime === "external" ? "External" : p.preview?.runtime === "react" ? "React" : "HTML/CSS/JS"}</td>
               <td><Status value={p.status || "draft"} /></td>
               <td>

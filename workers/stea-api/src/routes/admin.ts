@@ -180,6 +180,50 @@ async function requireAdmin(req: Request, env: Env): Promise<{ uid: string; emai
 }
 
 /**
+ * Require the OWNER role for money-related endpoints (orders, payments,
+ * entitlements, users, stats). Approvers and editors must never read revenue,
+ * buyer, or purchase data. FireFbase whitelist path unchanged.
+ */
+async function requireOwner(req: Request, env: Env): Promise<{ uid: string; email?: string } | null> {
+  const method = req.method.toUpperCase();
+  const minRole = "owner";
+  try {
+    const staff = await requireStaff(req, env, minRole);
+    if (!(staff instanceof Response)) {
+      return {
+        uid: staff.staff.id,
+        email: staff.staff.email,
+      };
+    }
+  } catch {
+    // fall through to Firebase
+  }
+
+  // ── Firebase path (legacy, kept for backward compatibility) ──
+  const token = extractBearerToken(req);
+  if (!token) {
+    console.warn("[stea-api] requireOwner: no Bearer token");
+    return null;
+  }
+  try {
+    const decoded = await verifyFirebaseToken(env, token);
+    if (!decoded) {
+      console.warn("[stea-api] requireOwner: token verification returned null");
+      return null;
+    }
+    const email = String(decoded.email || "").toLowerCase();
+    if (!email || !ADMIN_EMAILS.has(email)) {
+      console.warn(`[stea-api] requireOwner: email not in admin whitelist: ${email}`);
+      return null;
+    }
+    return { uid: String(decoded.uid || decoded.sub || ""), email };
+  } catch (e: any) {
+    console.error("[stea-api] requireOwner: token verification failed:", e?.message || e);
+    return null;
+  }
+}
+
+/**
  * Resolve the writer of a product write. Supports BOTH:
  *  - Staff auth (Bearer staff token) → returns staff context
  *  - Legacy Firebase admin (admin whitelist) → returns firebase admin uid
@@ -706,9 +750,9 @@ export async function handleAdminPutPreview(req: Request, env: Env, productId: s
 // ============================================================
 
 export async function handleAdminOrders(req: Request, env: Env): Promise<Response> {
-  const admin = await requireAdmin(req, env);
+  const admin = await requireOwner(req, env);
   if (!admin) {
-    return new Response(JSON.stringify({ error: "Admin access required" }), {
+    return new Response(JSON.stringify({ error: "Owner only", code: "OWNER_ONLY" }), {
       status: 403,
       headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) },
     });
@@ -730,9 +774,9 @@ export async function handleAdminOrders(req: Request, env: Env): Promise<Respons
 }
 
 export async function handleAdminEntitlements(req: Request, env: Env): Promise<Response> {
-  const admin = await requireAdmin(req, env);
+  const admin = await requireOwner(req, env);
   if (!admin) {
-    return new Response(JSON.stringify({ error: "Admin access required" }), {
+    return new Response(JSON.stringify({ error: "Owner only", code: "OWNER_ONLY" }), {
       status: 403,
       headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) },
     });
@@ -754,9 +798,9 @@ export async function handleAdminEntitlements(req: Request, env: Env): Promise<R
 }
 
 export async function handleAdminUsers(req: Request, env: Env): Promise<Response> {
-  const admin = await requireAdmin(req, env);
+  const admin = await requireOwner(req, env);
   if (!admin) {
-    return new Response(JSON.stringify({ error: "Admin access required" }), {
+    return new Response(JSON.stringify({ error: "Owner only", code: "OWNER_ONLY" }), {
       status: 403,
       headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) },
     });
@@ -778,9 +822,9 @@ export async function handleAdminUsers(req: Request, env: Env): Promise<Response
 }
 
 export async function handleAdminStats(req: Request, env: Env): Promise<Response> {
-  const admin = await requireAdmin(req, env);
+  const admin = await requireOwner(req, env);
   if (!admin) {
-    return new Response(JSON.stringify({ error: "Admin access required" }), {
+    return new Response(JSON.stringify({ error: "Owner only", code: "OWNER_ONLY" }), {
       status: 403,
       headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) },
     });
