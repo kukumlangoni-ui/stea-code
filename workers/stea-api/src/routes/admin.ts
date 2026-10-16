@@ -248,6 +248,40 @@ async function resolveWriter(req: Request, env: Env): Promise<Writer | null> {
   return null;
 }
 
+/**
+ * Log a product audit event to staff_audit. Best-effort: never lets audit
+ * logging break the underlying write.
+ */
+async function logProductAudit(
+  env: Env,
+  actor: { uid: string; email?: string; role?: string },
+  action: "product_create" | "product_update" | "product_delete",
+  target: string,
+  meta?: Record<string, unknown>
+): Promise<void> {
+  try {
+    await env.DB.prepare(
+      "INSERT INTO staff_audit (staff_id, action, target, meta, created_at) VALUES (?, ?, ?, ?, ?)"
+    ).bind(
+      actor.uid,
+      action,
+      target || null,
+      meta ? JSON.stringify({ ...meta, actorEmail: actor.email }) : JSON.stringify({ actorEmail: actor.email }),
+      new Date().toISOString()
+    ).run();
+  } catch {
+    // never let audit logging break a write
+  }
+}
+
+/** Normalize the actor (staff vs firebase owner) for audit logging. */
+function auditActor(writer: Writer): { uid: string; email?: string; role?: string } {
+  if (writer.kind === "staff") {
+    return { uid: writer.ctx.staff.id, email: writer.ctx.staff.email, role: writer.ctx.staff.role };
+  }
+  return { uid: writer.uid, role: "owner" };
+}
+
 export async function handleAdminProducts(req: Request, env: Env): Promise<Response> {
   const admin = await requireAdmin(req, env);
   if (!admin) {
@@ -523,6 +557,14 @@ export async function handleAdminCreateProduct(req: Request, env: Env): Promise<
 
     await setDoc(env, PRODUCTS_COLLECTION, productId, data, false);
 
+    await logProductAudit(
+      env,
+      auditActor(writer),
+      "product_create",
+      productId,
+      { title: data.titleEn || data.titleZh || "" }
+    );
+
     return new Response(
       JSON.stringify({ success: true, productId, product: { id: productId, ...data } }),
       { status: 201, headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) } }
@@ -668,6 +710,14 @@ export async function handleAdminUpdateProduct(req: Request, env: Env, productId
 
     await setDoc(env, PRODUCTS_COLLECTION, productId, merged, false);
 
+    await logProductAudit(
+      env,
+      auditActor(writer),
+      "product_update",
+      productId,
+      { title: merged.titleEn || merged.titleZh || existing.data?.titleEn || "" }
+    );
+
     // Return the full updated product
     const updated = await getDoc(env, PRODUCTS_COLLECTION, productId);
     return new Response(
@@ -688,6 +738,14 @@ export async function handleAdminDeleteProduct(req: Request, env: Env, productId
     await deleteDoc(env, SOURCES_COLLECTION, productId);
     await deleteDoc(env, PREVIEWS_COLLECTION, productId);
     await deleteDoc(env, PRODUCTS_COLLECTION, productId);
+
+    await logProductAudit(
+      env,
+      { uid: admin.uid, email: admin.email, role: "owner" },
+      "product_delete",
+      productId,
+      {}
+    );
 
     return new Response(
       JSON.stringify({ success: true, productId }),

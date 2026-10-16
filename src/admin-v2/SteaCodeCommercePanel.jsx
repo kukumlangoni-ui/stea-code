@@ -89,6 +89,13 @@ import SteaCodeProductLivePreview from "../components/stea-code/SteaCodeProductL
 import { useStaff } from "./StaffContext.jsx";
 import TeamPanel from "./TeamPanel.jsx";
 import { SUBCATEGORIES } from "../data/stea-code/tabs.js";
+import ActivityPanel, {
+  timeAgo as activityTimeAgo,
+  ACTION_LABELS as ACTIVITY_LABELS,
+  entryActor,
+  entryTime,
+} from "./ActivityPanel.jsx";
+import { listActivity } from "../services/staffAuth.js";
 
 // Shared single-source-of-truth category list. Drop the UI-only pseudo-category "All"
 // because Admin saves real product categories.
@@ -3813,6 +3820,9 @@ export default function SteaCodeCommercePanel({ isSuperAdmin, initialTab = "prod
   // pricing column, dashboard revenue) are owner-only. isSuperAdmin covers the
   // legacy Firebase/local-owner path; isOwner covers the staff-owner path.
   const canSeeMoney = isSuperAdmin || isOwner;
+  // Audit log + activity surfaces are approver+owner (backend /staff/activity
+  // requires at least "approver"; editors cannot see the audit trail).
+  const canSeeAudit = isSuperAdmin || isOwner || (staff && staff.role === "approver");
   const [tab, setTab] = useState(initialTab);
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
@@ -3906,7 +3916,7 @@ export default function SteaCodeCommercePanel({ isSuperAdmin, initialTab = "prod
     const base = cleanBaseRoute;
     if (!base) return;
     const rest = location.pathname.slice(base.length).replace(/^\//, "").split("/")[0];
-    const validTabs = ["dashboard", "products", "orders", "payments", "users", "entitlements", "team"];
+    const validTabs = ["dashboard", "products", "orders", "payments", "users", "entitlements", "team", "activity"];
     if (rest && validTabs.includes(rest) && rest !== tab) {
       setTab(rest);
     }
@@ -4365,7 +4375,7 @@ export default function SteaCodeCommercePanel({ isSuperAdmin, initialTab = "prod
       {/* Hero Header */}
       <div className="sc-admin-commerce-hero sc-admin-commerce-hero-compact">
         <div className="sc-admin-commerce-hero-text">
-          <h2>{tab === "products" ? "Products" : tab === "users" ? "Users" : tab === "payments" ? "Payments Overview" : tab === "orders" ? "Orders" : tab === "entitlements" ? "Entitlements" : tab === "team" ? "Team" : "Commerce"}</h2>
+          <h2>{tab === "products" ? "Products" : tab === "users" ? "Users" : tab === "payments" ? "Payments Overview" : tab === "orders" ? "Orders" : tab === "entitlements" ? "Entitlements" : tab === "team" ? "Team" : tab === "activity" ? "Activity" : "Commerce"}</h2>
           <p>{products.length} product{products.length === 1 ? "" : "s"} in live catalog{canSeeMoney ? ` · ${orders.length} orders` : ""} · {users.length} registered users.</p>
         </div>
         <div className="sc-admin-commerce-actions">
@@ -4410,6 +4420,7 @@ export default function SteaCodeCommercePanel({ isSuperAdmin, initialTab = "prod
             ...(canSeeMoney ? [["users", "Users"]] : []),
             ...(canSeeMoney ? [["entitlements", "Entitlements"]] : []),
             ...(canSeeMoney ? [["team", "Team"]] : []),
+            ...(canSeeAudit ? [["activity", "Activity"]] : []),
           ].map(([id, label]) => (
             <button
               key={id}
@@ -4417,6 +4428,10 @@ export default function SteaCodeCommercePanel({ isSuperAdmin, initialTab = "prod
               onClick={() => {
                 setTab(id);
                 if (dedicatedAdmin) {
+                  // The Activity tab is an internal panel tab: /admin/activity
+                  // is already claimed by the storefront analytics dashboard,
+                  // so render it inline and do NOT navigate to a URL segment.
+                  if (id === "activity") return;
                   // Always navigate to a clean absolute path built from the
                   // normalized admin root + tab id. This prevents the URL
                   // from accumulating segments on repeated tab clicks
@@ -4442,7 +4457,13 @@ export default function SteaCodeCommercePanel({ isSuperAdmin, initialTab = "prod
           entitlements={entitlements}
           users={users}
           canSeeMoney={canSeeMoney}
+          canSeeAudit={canSeeAudit}
         />
+      )}
+
+      {/* ACTIVITY TAB (owner only — staff audit log) */}
+      {tab === "activity" && canSeeAudit && (
+        <ActivityPanel />
       )}
 
       {/* PRODUCTS TAB */}
@@ -5094,7 +5115,7 @@ export default function SteaCodeCommercePanel({ isSuperAdmin, initialTab = "prod
 /* =========================================================
    DASHBOARD TAB — realtime KPI overview
    ========================================================= */
-function DashboardTab({ products = [], orders = [], entitlements = [], users = [], canSeeMoney = true }) {
+function DashboardTab({ products = [], orders = [], entitlements = [], users = [], canSeeMoney = true, canSeeAudit = true }) {
   const PAID_STATUSES = new Set(["paid", "complete", "succeeded"]);
 
   // ---- KPI: total revenue (paid orders only) ----
@@ -5112,6 +5133,26 @@ function DashboardTab({ products = [], orders = [], entitlements = [], users = [
     }
     return sum;
   }, [orders]);
+
+  // ---- Recent activity (owner only) ----
+  const [recentActivity, setRecentActivity] = useState([]);
+  const [activityLoading, setActivityLoading] = useState(false);
+  useEffect(() => {
+    if (!canSeeAudit) return;
+    let cancelled = false;
+    setActivityLoading(true);
+    listActivity({ limit: 6 })
+      .then((d) => {
+        if (!cancelled) setRecentActivity(d.entries || []);
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setActivityLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [canSeeAudit]);
 
   // ---- Revenue by day (last 30 days) ----
   const revenueByDay = useMemo(() => {
@@ -5352,6 +5393,67 @@ function DashboardTab({ products = [], orders = [], entitlements = [], users = [
           );
         })}
       </div>
+
+      {/* Recent Activity (owner only) */}
+      {canSeeAudit && (
+        <div style={cardStyle}>
+          <div style={sectionTitleStyle}>Recent Activity</div>
+          {activityLoading && recentActivity.length === 0 ? (
+            <div style={{ fontSize: 12, color: "rgba(255,255,255,0.35)" }}>
+              Loading activity…
+            </div>
+          ) : recentActivity.length === 0 ? (
+            <div style={{ fontSize: 12, color: "rgba(255,255,255,0.35)" }}>
+              No activity yet.
+            </div>
+          ) : (
+            <div style={{ display: "grid", gap: 0 }}>
+              {recentActivity.slice(0, 5).map((e) => (
+                <div key={e.id} style={listRowStyle}>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div
+                      style={{
+                        color: "#ffffff",
+                        fontWeight: 600,
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                      }}
+                    >
+                      {ACTIVITY_LABELS[e.action] || e.action}
+                      <span style={{ color: "rgba(255,255,255,0.4)", fontWeight: 400 }}>
+                        {" · "}
+                        {entryActor(e)}
+                      </span>
+                    </div>
+                    <div
+                      style={{
+                        color: "rgba(255,255,255,0.4)",
+                        fontSize: 11,
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                      }}
+                    >
+                      {e.target || "—"}
+                    </div>
+                  </div>
+                  <div
+                    style={{
+                      textAlign: "right",
+                      flexShrink: 0,
+                      color: "rgba(255,255,255,0.4)",
+                      fontSize: 11,
+                    }}
+                  >
+                    {activityTimeAgo(entryTime(e))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ROW 2 — CHARTS (owner-only: revenue + orders-by-status) */}
       {canSeeMoney && (

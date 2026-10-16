@@ -185,7 +185,7 @@ function SteaCodeAdminAccessScreen({
   );
 }
 
-function SteaCodeAdminTopbar({ user, isSuperAdmin, devPreview, onLogout, onRequireSignIn }) {
+function SteaCodeAdminTopbar({ user, isSuperAdmin, devPreview, onLogout, onRequireSignIn, showNotifications = false }) {
   const avatarUrl =
     user?.photoURL ||
     `https://ui-avatars.com/api/?name=${encodeURIComponent(
@@ -209,6 +209,7 @@ function SteaCodeAdminTopbar({ user, isSuperAdmin, devPreview, onLogout, onRequi
       </div>
 
       <div className="sca-admin-topbar-right">
+        {showNotifications && <NotificationBell />}
         <a
           className="sca-admin-link"
           href={codePublicUrl}
@@ -536,6 +537,7 @@ export default function SteaCodeAdminApp(props) {
         devPreview={devPreview}
         onRequireSignIn={onRequireSignIn || undefined}
         onLogout={effectiveUser ? onLogout : undefined}
+        showNotifications={staffMode}
       />
 
       <div className="sca-admin-page">

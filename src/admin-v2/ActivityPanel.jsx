@@ -22,6 +22,9 @@ const ACTION_LABELS = {
   revision_submitted: "Submitted",
   revision_approved: "Approved",
   revision_rejected: "Rejected",
+  product_create: "Created product",
+  product_update: "Updated product",
+  product_delete: "Deleted product",
   login: "Login",
   logout: "Logout",
   create_staff: "Created staff",
@@ -47,6 +50,40 @@ const DATE_RANGES = [
   { id: "month", label: "This month" },
 ];
 
+function safeParse(str) {
+  try {
+    return JSON.parse(str);
+  } catch {
+    return null;
+  }
+}
+
+// staff_audit rows come back from the API as raw columns: staff_id, created_at,
+// and meta as a JSON string. Normalize them here so the feed renders correctly
+// whether the API returns raw rows or already-normalized fields.
+function entryMeta(e) {
+  if (e.meta && typeof e.meta === "object") return e.meta;
+  if (typeof e.meta === "string") return safeParse(e.meta);
+  return null;
+}
+
+function entryActor(e) {
+  const meta = entryMeta(e);
+  return e.actorName || e.actorEmail || meta?.actorEmail || e.staff_id || "system";
+}
+
+function entryTime(e) {
+  return e.createdAt || e.created_at;
+}
+
+function formatMeta(meta) {
+  if (!meta) return "—";
+  if (typeof meta !== "object") return String(meta);
+  return Object.entries(meta)
+    .map(([k, v]) => `${k}: ${typeof v === "object" ? JSON.stringify(v) : v}`)
+    .join(", ");
+}
+
 function rangeFrom(id) {
   const now = new Date();
   if (id === "today") {
@@ -65,8 +102,11 @@ function rangeFrom(id) {
 }
 
 /**
- * Activity feed — full staff audit log. Owner/approver only.
+ * Activity feed — full staff audit log. Owner/approver only (matches the
+ * backend /staff/activity endpoint which requires at least the "approver" role).
  */
+export { timeAgo, ACTION_LABELS, entryActor, entryTime, entryMeta, formatMeta };
+
 export default function ActivityPanel() {
   const PAGE = 50;
   const [entries, setEntries] = useState([]);
@@ -109,7 +149,7 @@ export default function ActivityPanel() {
     const q = search.trim().toLowerCase();
     if (!q) return entries;
     return entries.filter((e) => {
-      const actor = `${e.actorName || ""} ${e.actorEmail || ""}`.toLowerCase();
+      const actor = `${entryActor(e)} ${entryMeta(e)?.actorEmail || ""}`.toLowerCase();
       const target = String(e.target || "").toLowerCase();
       return actor.includes(q) || target.includes(q);
     });
@@ -175,11 +215,11 @@ export default function ActivityPanel() {
               <tbody>
                 {visible.map((e) => (
                   <tr key={e.id}>
-                    <td><span className="activity-time">{timeAgo(e.createdAt)}</span></td>
+                    <td><span className="activity-time">{timeAgo(entryTime(e))}</span></td>
                     <td>
                       <div className="activity-actor">
-                        <strong>{e.actorName || e.actorEmail || "system"}</strong>
-                        {e.actorEmail && <span>{e.actorEmail}</span>}
+                        <strong>{entryActor(e)}</strong>
+                        {entryMeta(e)?.actorEmail && <span>{entryMeta(e).actorEmail}</span>}
                       </div>
                     </td>
                     <td>
@@ -190,8 +230,8 @@ export default function ActivityPanel() {
                     </td>
                     <td><span className="activity-target">{e.target || "—"}</span></td>
                     <td>
-                      <span className="activity-detail" title={e.meta ? JSON.stringify(e.meta) : ""}>
-                        {e.meta && typeof e.meta === "object" ? Object.entries(e.meta).map(([k, v]) => `${k}: ${typeof v === "object" ? JSON.stringify(v) : v}`).join(", ") : e.meta || "—"}
+                      <span className="activity-detail" title={entryMeta(e) ? JSON.stringify(entryMeta(e)) : ""}>
+                        {formatMeta(entryMeta(e))}
                       </span>
                     </td>
                   </tr>
