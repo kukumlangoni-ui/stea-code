@@ -456,6 +456,9 @@ export async function handleAdminCreateProduct(req: Request, env: Env): Promise<
     data.slug = await ensureUniqueSlug(env, rawSlugSource || productId);
 
     data.status = data.status || "draft";
+    // Subcategory (Layout only). Empty string = "no subcategory". Accept any
+    // string; the frontend controls the allowed values.
+    data.subcategory = typeof data.subcategory === "string" ? data.subcategory : "";
     data.createdAt = new Date().toISOString();
     data.updatedAt = data.createdAt;
 

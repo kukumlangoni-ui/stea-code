@@ -36,3 +36,17 @@ export const TABS = {
 
 export const DEFAULT_TAB = "components";
 export const DEFAULT_CATEGORY = "All";
+
+// Subcategories per top-level category. Only Layout has entries — every
+// other category falls through to `undefined` and shows no subcategory row.
+export const SUBCATEGORIES = {
+  Layout: [
+    "Pricing Tables",
+    "Hero Sections",
+    "Feature Grids",
+    "Testimonials",
+    "FAQ Blocks",
+    "Footers",
+    "Dashboards",
+  ],
+};

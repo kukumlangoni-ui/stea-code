@@ -66,7 +66,7 @@ import {
   CODE_PRODUCT_CATEGORIES,
   CODE_PRODUCT_TECH } from "../../data/stea-code/codeProducts.js";
 import { V2_WORLDS } from "../../data/stea-code/v2Worlds.js";
-import { TABS, DEFAULT_TAB } from "../../data/stea-code/tabs.js";
+import { TABS, DEFAULT_TAB, SUBCATEGORIES } from "../../data/stea-code/tabs.js";
 import { useScrollReveal } from "../../hooks/useScrollReveal.js";
 import { useTilt } from "../../hooks/useTilt.js";
 
@@ -476,6 +476,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
   const [viewMode, setViewMode] = useState("home");
   const [q, setQ] = useState("");
   const [category, setCategory] = useState("All");
+  const [activeSubcategory, setActiveSubcategory] = useState("All");
   const [activeTab, setActiveTab] = useState(DEFAULT_TAB);
   const [pricing, setPricing] = useState("All");
   const [framework, setFramework] = useState("All Frameworks");
@@ -1227,6 +1228,11 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
         return true;
       })
       .filter((p) => category === "All" || p.category === category)
+      .filter((p) => {
+        // Layout-only subcategory filter. Skipped for every other category.
+        if (activeSubcategory === "All" || !SUBCATEGORIES[category]) return true;
+        return (p.subcategory || "") === activeSubcategory;
+      })
       .filter((p) => pricing === "All" || p.pricingType === pricing.toLowerCase())
       .filter((p) => framework === "All Frameworks" || (p.frameworks || []).includes(framework))
       .filter((p) => {
@@ -1238,7 +1244,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
         return hay.includes(query);
       })
       .sort((a, b) => Number(Boolean(b.featured)) - Number(Boolean(a.featured)) || String(b.createdAt).localeCompare(String(a.createdAt)));
-  }, [products, activeTab, category, pricing, framework, q]);
+  }, [products, activeTab, category, pricing, framework, q, activeSubcategory]);
 
   const trendingProducts = useMemo(() => {
     const list = Array.isArray(products) ? [...products] : [];
@@ -1288,6 +1294,12 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
   useEffect(() => {
     setVisibleProductCount(24);
   }, [activeTab, category, pricing, framework, q]);
+
+  // Subcategory pills reset to "All" whenever the top-level category changes
+  // (e.g. switching Layout → Buttons clears the sub filter).
+  useEffect(() => {
+    setActiveSubcategory("All");
+  }, [category]);
 
   const submit = (event) => {
     event?.preventDefault?.();
@@ -1933,6 +1945,25 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
                   </button>
                 ))}
               </div>
+
+              {/* Layout-only subcategory pill row — shows ONLY when the
+                  active top-level category has subcategories defined. */}
+              {SUBCATEGORIES[category] && (
+                <div className="sc-homepage-pill-row sc-homepage-pill-row--sub" role="tablist" aria-label="Subcategories">
+                  {["All", ...SUBCATEGORIES[category]].map((sub) => (
+                    <button
+                      key={sub}
+                      type="button"
+                      role="tab"
+                      aria-selected={activeSubcategory === sub}
+                      className={`sc-homepage-pill sc-homepage-pill--sub ${activeSubcategory === sub ? "is-active" : ""}`}
+                      onClick={() => setActiveSubcategory(sub)}
+                    >
+                      {sub}
+                    </button>
+                  ))}
+                </div>
+              )}
 
               {isFallbackCatalog && (
                 <div

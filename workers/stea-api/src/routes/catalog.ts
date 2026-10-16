@@ -48,6 +48,7 @@ export async function handleCatalog(req: Request, env: Env): Promise<Response> {
     const url = new URL(req.url);
     const scope = url.searchParams.get("scope") || "";
     const category = url.searchParams.get("category") || "";
+    const subcategory = url.searchParams.get("subcategory") || "";
 
     const docs = await listDocs(env, PRODUCTS_COLLECTION, {});
     let products = docs
@@ -63,6 +64,12 @@ export async function handleCatalog(req: Request, env: Env): Promise<Response> {
     // Category filter (e.g. ?category=Components)
     if (category) {
       products = products.filter((p) => p.category === category);
+    }
+
+    // Subcategory filter (e.g. ?subcategory=Pricing Tables). Only meaningful
+    // for Layout; combines with category when both are present.
+    if (subcategory) {
+      products = products.filter((p) => (p.subcategory || "") === subcategory);
     }
 
     // Cache strategy:

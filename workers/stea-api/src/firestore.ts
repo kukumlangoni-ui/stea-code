@@ -51,7 +51,7 @@ const SCHEMAS: Record<string, TableSchema> = {
     pkColumn: "id",
     columns: [
       "id", "slug", "titleEn", "titleZh", "shortDescriptionEn",
-      "shortDescriptionZh", "price", "pricingType", "category",
+      "shortDescriptionZh", "price", "pricingType", "category", "subcategory",
       "status", "featured", "homepageVisible", "tags", "frameworks",
       "languages", "craftNoteEn", "aiPrompt", "previewVideoUrl",
       "posterImageUrl", "previewMode", "preview", "designWidth", "designHeight",

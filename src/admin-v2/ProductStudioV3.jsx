@@ -41,6 +41,18 @@ import "./ProductStudioV3.css";
 
 const CATEGORIES = CODE_PRODUCT_CATEGORIES.filter((c) => c !== "All");
 
+// Layout-only subcategories. The Subcategory dropdown appears ONLY when
+// form.category === "Layout". Every other category uses "" (None).
+const LAYOUT_SUBCATEGORIES = [
+  "Pricing Tables",
+  "Hero Sections",
+  "Feature Grids",
+  "Testimonials",
+  "FAQ Blocks",
+  "Footers",
+  "Dashboards",
+];
+
 const BASE_PREVIEW = {
   enabled: true,
   runtime: "html-css-js",
@@ -63,6 +75,7 @@ const EMPTY_PRODUCT = {
   shortDescriptionEn: "",
   craftNoteEn: "",
   category: "Components",
+  subcategory: "",
   pricingType: "free",
   price: 0,
   currency: "USD",
@@ -144,7 +157,7 @@ function resolveSourceFields(sourceCode, preview) {
     javascript: srcObj.javascript ?? p.javascript ?? srcObj.js ?? p.js ?? "",
     jsx: srcObj.jsx ?? p.jsx ?? "",
     fullDocument:
-      p.fullDocument ?? (srcStr ? srcStr : "") ?? srcObj.fullDocument ?? "",
+      srcObj.fullDocument ?? p.fullDocument ?? (srcStr ? srcStr : "") ?? "",
   };
 }
 
@@ -994,6 +1007,7 @@ export function ProductStudioV3({
         liveUrl: String(form.liveUrl || "").trim(),
         repoUrl: String(form.repoUrl || "").trim(),
         previewMode: form.previewMode || "live",
+        subcategory: String(form.subcategory || ""),
         designWidth: Number(form.designWidth) || 640,
         designHeight: Number(form.designHeight) || 480,
         craftNoteEn: String(form.craftNoteEn || "").trim(),
@@ -1315,10 +1329,27 @@ export function ProductStudioV3({
                 <Field label="Category" required>
                   <Select
                     value={form.category}
-                    onChange={(v) => updateForm("category", v)}
+                    onChange={(v) => {
+                      updateForm("category", v);
+                      // Subcategories exist only under Layout — clear them
+                      // the moment the user picks any other category.
+                      if (v !== "Layout") updateForm("subcategory", "");
+                    }}
                     options={CATEGORIES.map((c) => ({ value: c, label: c }))}
                   />
                 </Field>
+                {form.category === "Layout" && (
+                  <Field label="Subcategory">
+                    <Select
+                      value={form.subcategory || ""}
+                      onChange={(v) => updateForm("subcategory", v)}
+                      options={[
+                        { value: "", label: "None" },
+                        ...LAYOUT_SUBCATEGORIES.map((sc) => ({ value: sc, label: sc })),
+                      ]}
+                    />
+                  </Field>
+                )}
                 <Field label="Pricing">
                   <RadioGroup
                     value={form.pricingType}
