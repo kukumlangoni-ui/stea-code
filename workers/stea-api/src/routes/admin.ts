@@ -138,10 +138,13 @@ interface RouteEnv extends Env {
 
 async function requireAdmin(req: Request, env: Env): Promise<{ uid: string; email?: string } | null> {
   // ── Staff-token path (new admin panel) ──
-  // Try the staff middleware first. Owners + approvers pass.
-  // Editors are blocked — they can't hit raw admin write endpoints directly.
+  // Reads (GET) accept any staff role — editors must load products to work on them.
+  // Writes (POST/PATCH/PUT/DELETE) require approver or owner — editors submit
+  // revisions through the /revisions endpoints instead.
+  const method = req.method.toUpperCase();
+  const minRole = method === "GET" || method === "HEAD" ? "editor" : "approver";
   try {
-    const staff = await requireStaff(req, env, "approver");
+    const staff = await requireStaff(req, env, minRole);
     if (!(staff instanceof Response)) {
       return {
         uid: staff.staff.id,
