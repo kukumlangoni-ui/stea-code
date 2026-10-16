@@ -79,3 +79,56 @@ export async function staffFetch(path, options = {}) {
   }
   return r;
 }
+
+/* ============================================================
+   Team management — staff_users CRUD via the staff backend
+   ============================================================ */
+
+export async function listStaff() {
+  const r = await staffFetch("/staff/users");
+  if (!r.ok) throw new Error("Failed to load staff");
+  return (await r.json()).users || [];
+}
+
+export async function createStaff({ email, password, displayName, role }) {
+  const r = await staffFetch("/staff/users", {
+    method: "POST",
+    body: JSON.stringify({ email, password, displayName, role }),
+  });
+  const d = await r.json();
+  if (!r.ok) throw new Error(d.error || "Failed to create staff");
+  return d.user;
+}
+
+export async function updateStaff(id, patch) {
+  const r = await staffFetch(`/staff/users/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(patch),
+  });
+  const d = await r.json();
+  if (!r.ok) throw new Error(d.error || "Failed to update staff");
+  return d.user;
+}
+
+export async function deleteStaff(id) {
+  const r = await staffFetch(`/staff/users/${id}`, { method: "DELETE" });
+  if (!r.ok) throw new Error("Failed to delete staff");
+  return true;
+}
+
+export async function resetStaffPassword(id, newPassword) {
+  const r = await staffFetch(`/staff/users/${id}/reset-password`, {
+    method: "POST",
+    body: JSON.stringify({ newPassword }),
+  });
+  const d = await r.json();
+  if (!r.ok) throw new Error(d.error || "Failed to reset password");
+  return true;
+}
+
+export async function forceLogoutStaff(id) {
+  const r = await staffFetch(`/staff/users/${id}/force-logout`, { method: "POST" });
+  const d = await r.json();
+  if (!r.ok) throw new Error(d.error || "Failed to force logout");
+  return true;
+}

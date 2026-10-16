@@ -86,6 +86,8 @@ import {
 } from "../utils/steaCodePreviewBuilders.js";
 import { DEV_PREVIEW_PRODUCTS } from "./steaCodeDevPreviewData.js";
 import SteaCodeProductLivePreview from "../components/stea-code/SteaCodeProductLivePreview.jsx";
+import { useStaff } from "./StaffContext.jsx";
+import TeamPanel from "./TeamPanel.jsx";
 
 // Shared single-source-of-truth category list. Drop the UI-only pseudo-category "All"
 // because Admin saves real product categories.
@@ -3805,6 +3807,7 @@ function PaymentsRevenueChart({ orders = [] }) {
 export default function SteaCodeCommercePanel({ isSuperAdmin, initialTab = "products", embedded = false, devPreview = false, onCountsChange, dedicatedAdmin = false, baseRoute = "/code-admin" }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const { staff, isAdmin: staffIsAdmin } = useStaff();
   const [tab, setTab] = useState(initialTab);
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
@@ -3890,7 +3893,7 @@ export default function SteaCodeCommercePanel({ isSuperAdmin, initialTab = "prod
     const base = cleanBaseRoute;
     if (!base) return;
     const rest = location.pathname.slice(base.length).replace(/^\//, "").split("/")[0];
-    const validTabs = ["dashboard", "products", "orders", "payments", "users", "entitlements"];
+    const validTabs = ["dashboard", "products", "orders", "payments", "users", "entitlements", "team"];
     if (rest && validTabs.includes(rest) && rest !== tab) {
       setTab(rest);
     }
@@ -4334,7 +4337,7 @@ export default function SteaCodeCommercePanel({ isSuperAdmin, initialTab = "prod
       {/* Hero Header */}
       <div className="sc-admin-commerce-hero sc-admin-commerce-hero-compact">
         <div className="sc-admin-commerce-hero-text">
-          <h2>{tab === "products" ? "Products" : tab === "users" ? "Users" : tab === "payments" ? "Payments Overview" : tab === "orders" ? "Orders" : tab === "entitlements" ? "Entitlements" : "Commerce"}</h2>
+          <h2>{tab === "products" ? "Products" : tab === "users" ? "Users" : tab === "payments" ? "Payments Overview" : tab === "orders" ? "Orders" : tab === "entitlements" ? "Entitlements" : tab === "team" ? "Team" : "Commerce"}</h2>
           <p>{products.length} product{products.length === 1 ? "" : "s"} in live catalog · {orders.length} orders · {users.length} registered users.</p>
         </div>
         <div className="sc-admin-commerce-actions">
@@ -4378,6 +4381,7 @@ export default function SteaCodeCommercePanel({ isSuperAdmin, initialTab = "prod
             ["payments", "Payments"],
             ["users", "Users"],
             ["entitlements", "Entitlements"],
+            ...(staffIsAdmin ? [["team", "Team"]] : []),
           ].map(([id, label]) => (
             <button
               key={id}
@@ -4805,6 +4809,11 @@ export default function SteaCodeCommercePanel({ isSuperAdmin, initialTab = "prod
             </table>
           </div>
         </div>
+      )}
+
+      {/* TEAM TAB (owner/admin only — staff management) */}
+      {tab === "team" && staffIsAdmin && (
+        <TeamPanel staff={staff} isOwner={staff?.role === "owner"} />
       )}
 
       {/* MODALS */}

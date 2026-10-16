@@ -712,12 +712,12 @@ export default function SteaCodePage({ isSuperAdmin, devPreview = false, initial
         </div>
       )}
 
-      {["dashboard", "products", "orders", "entitlements", "users", "payments"].includes(activeTab) && (
+      {["dashboard", "products", "orders", "entitlements", "users", "payments", "team"].includes(activeTab) && (
         <SteaCodeCommercePanel key={activeTab} isSuperAdmin={isSuperAdmin} initialTab={activeTab} embedded devPreview={devPreview} onCountsChange={setCommerceCounts} dedicatedAdmin={dedicatedAdmin} baseRoute={baseRoute} />
       )}
 
-      {!["dashboard", "products", "orders", "entitlements", "users", "payments"].includes(activeTab) && loading && <div className="admin-v2-card" style={{ padding: 20, color: "#6B7280" }}>Loading steacode resources...</div>}
-      {!["dashboard", "products", "orders", "entitlements", "users", "payments"].includes(activeTab) && Object.keys(loadErrors).length > 0 && (
+      {!["dashboard", "products", "orders", "entitlements", "users", "payments", "team"].includes(activeTab) && loading && <div className="admin-v2-card" style={{ padding: 20, color: "#6B7280" }}>Loading steacode resources...</div>}
+      {!["dashboard", "products", "orders", "entitlements", "users", "payments", "team"].includes(activeTab) && Object.keys(loadErrors).length > 0 && (
         <div className="admin-v2-error">
           {Object.entries(loadErrors).map(([name, message]) => (
             <div key={name}>Unable to load {name}: {message}</div>

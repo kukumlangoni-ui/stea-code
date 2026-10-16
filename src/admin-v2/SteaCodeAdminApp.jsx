@@ -463,6 +463,7 @@ export default function SteaCodeAdminApp(props) {
     const segmentMap = {
       dashboard: "dashboard",
       products: "products",
+      team: "team",
       categories: "categories",
       orders: "orders",
       payments: "payments",
@@ -608,6 +609,7 @@ export default function SteaCodeAdminApp(props) {
               "payments",
               "users",
               "entitlements",
+              "team",
               "resources",
               "hosting",
               "inspiration",
