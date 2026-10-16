@@ -473,7 +473,6 @@ export default function SteaCodeAdminApp(props) {
       orders: "orders",
       payments: "payments",
       users: "users",
-      activity: "activity",
       entitlements: "entitlements",
       directory: "resources",
       hosting: "hosting",

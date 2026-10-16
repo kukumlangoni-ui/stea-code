@@ -421,7 +421,6 @@ export default function TeamPanel({ staff, isOwner }) {
                 {busyId === confirmDeleteFor.id ? <Loader2 className="team-spinner" size={16} /> : <Trash2 size={15} />}
                 Delete permanently
               </button>
-            )}
             </div>
           </div>
         </div>
