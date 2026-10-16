@@ -15,6 +15,7 @@ export const CODE_PRODUCT_CATEGORIES = [
   "Components",
   "Toggle Switches",
   "Inputs",
+  "Layout",
 ];
 
 export const CODE_PRODUCT_TECH = [

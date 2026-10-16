@@ -1,5 +1,6 @@
 import { onAuthStateChanged } from "firebase/auth";
 import { getFirebaseAuth } from "../firebase.js";
+import { getToken as getStaffToken } from "./staffAuth.js";
 
 const API_BASE = ""; // same-origin — Cloudflare Worker Route handles /api/*
 
@@ -13,6 +14,19 @@ export function invalidateAdminTokenCache() {
 }
 
 async function adminHeaders() {
+  // Staff mode takes priority: when a staff session token exists, attach it.
+  // Admin reads (editor GETs) and writes (approver PATCHes) must carry the
+  // staff token — otherwise the Worker falls through to the Firebase admin
+  // whitelist and rejects non-owner staff with 403 (the source of the
+  // "Admin access required" errors in the editor).
+  const staffToken = getStaffToken();
+  if (staffToken) {
+    return {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${staffToken}`,
+    };
+  }
+
   const auth = getFirebaseAuth();
 
   if (!auth) {
@@ -187,7 +201,11 @@ async function request(url, options = {}) {
   // Worker's verifyFirebaseToken throws "Token expired" which surfaces
   // as 403 (not 401) because requireAdmin catches the error and returns
   // null → 403. Without retrying on 403, saves fail after long sessions.
-  if ((response.status === 401 || response.status === 403) && !options._retried) {
+  // The 401/403 retry only makes sense for a Firebase ID token (it can be
+  // force-refreshed client-side). A staff session token cannot be refreshed
+  // here — leave it to the auth gate to expire it — so skip the retry.
+  const isStaffRequest = !!getStaffToken();
+  if ((response.status === 401 || response.status === 403) && !options._retried && !isStaffRequest) {
     cachedToken = null;
     // Force-refresh the Firebase ID token.
     const auth = getFirebaseAuth();

@@ -10,6 +10,7 @@ import {
   Package,
   Plus,
   Save,
+  Send,
   Sparkles,
   Upload,
   X,
@@ -30,6 +31,7 @@ import {
   invalidateSteaCodeProductPreviewCache,
 } from "../services/steaCodeCommerce.js";
 import { auth } from "../firebase.js";
+import { submitRevision } from "../services/staffAuth.js";
 import { CODE_PRODUCT_CATEGORIES } from "../data/stea-code/codeProducts.js";
 import {
   buildHtmlCssJsDoc,
@@ -475,6 +477,7 @@ export function ProductStudioV3({
   onCreated,
   onPublished,
   isSuperAdmin,
+  role,
   devPreview = false,
   fullPage = false,
   initialTab = "basic",
@@ -482,6 +485,11 @@ export function ProductStudioV3({
 }) {
   const editing = Boolean(product?.id);
   const navigate = useNavigate();
+
+  // Staff role from the panel: "editor" | "approver" | "owner" (may be
+  // undefined for non-staff owners). Editors cannot publish directly — they
+  // submit a revision that an approver/owner publishes.
+  const isEditor = role === "editor";
 
   const [tab, setTab] = useState(
     TABS.some((t) => t.id === initialTab) ? initialTab : "basic"
@@ -1093,6 +1101,114 @@ export function ProductStudioV3({
       setSaving(false);
     }
   };
+
+  /**
+   * Build a full product snapshot for the approval queue. Mirrors what a
+   * save() would write (canonical sourceCode dual-write + preview settings)
+   * but leaves status as-is — approval will force-publish on apply.
+   */
+  const buildRevisionSnapshot = () => {
+    const previewSettings = {
+      enabled: preview.enabled,
+      runtime: preview.runtime,
+      width: Number(preview.width) || 1600,
+      height: Number(preview.height) || 1100,
+      scaleMode: "cover",
+      baseUrl: preview.baseUrl,
+      externalUrl: preview.externalUrl,
+      videoKey: preview.videoKey || "",
+      posterKey: preview.posterKey || "",
+    };
+    const effectiveRuntime = preview.runtime === "full-html" ? "full-html" : "html-css-js";
+    const loadedSource = form.sourceCode ?? product?.sourceCode;
+    const loadedResolved = resolveSourceFields(loadedSource, product?.preview || {});
+    const codeDeltas = buildSourceCodePayload(preview, loadedResolved);
+    let sourceCode;
+    if (effectiveRuntime === "full-html") {
+      const curDoc = String(preview.fullDocument ?? "");
+      const loadedDoc = String(loadedResolved.fullDocument ?? "");
+      let docVal;
+      if (curDoc.trim() === "" && loadedDoc.trim() === "") docVal = undefined;
+      else if (curDoc === loadedDoc) docVal = curDoc.trim() ? curDoc : undefined;
+      else docVal = curDoc;
+      sourceCode = docVal;
+    } else {
+      sourceCode = {
+        ...(loadedSource && typeof loadedSource === "object" && !Array.isArray(loadedSource)
+          ? loadedSource
+          : {}),
+        ...codeDeltas,
+      };
+      if (Object.keys(sourceCode).length === 0) sourceCode = undefined;
+    }
+    return {
+      id: product.id,
+      slug: form.slug || product.id,
+      titleEn: form.titleEn,
+      titleZh: form.titleZh,
+      shortDescriptionEn: form.shortDescriptionEn,
+      shortDescriptionZh: form.shortDescriptionZh,
+      price: form.price,
+      pricingType: form.pricingType,
+      category: form.category,
+      subcategory: String(form.subcategory || ""),
+      status: form.status || "draft",
+      featured: form.featured,
+      homepageVisible: Boolean(form.homepageVisible),
+      tags: splitList(form.tags),
+      frameworks: splitList(form.frameworks),
+      languages: [],
+      craftNoteEn: String(form.craftNoteEn || "").trim(),
+      aiPrompt: String(form.aiPrompt || "").trim(),
+      previewVideoUrl: form.previewVideoUrl,
+      posterImageUrl: form.posterImageUrl,
+      previewMode: form.previewMode || "live",
+      preview: previewSettings,
+      designWidth: Number(form.designWidth) || 640,
+      designHeight: Number(form.designHeight) || 480,
+      publicFiles: form.publicFiles || [],
+      protectedFiles: form.protectedFiles || [],
+      sourceFiles: form.sourceFiles || [],
+      fileNames: form.fileNames || [],
+      sourceCode,
+      liveUrl: String(form.liveUrl || "").trim(),
+      repoUrl: String(form.repoUrl || "").trim(),
+      usageGuideEn: String(form.usageGuideEn || "").trim(),
+      sortOrder: Number(form.sortOrder) || 0,
+    };
+  };
+
+  // Submit the current edit for approval (editors only).
+  const handleSubmitReview = useCallback(async () => {
+    if (devPreview) {
+      setError("DEV PREVIEW ONLY — Sign in as staff to submit for review.");
+      return;
+    }
+    if (!editing || !product?.id) {
+      setError("Save the product first, then submit it for review.");
+      return;
+    }
+    if (saving) return;
+    setError("");
+    setNotice("");
+    setSaving(true);
+    try {
+      const snapshot = buildRevisionSnapshot();
+      const revisionId = await submitRevision({
+        productId: product.id,
+        kind: "edit",
+        snapshot,
+      });
+      setDirty(false);
+      setNotice("Submitted for review ✓");
+      setTimeout(() => setNotice(""), 2500);
+      if (onSaved) onSaved(product);
+    } catch (err) {
+      setError(err?.message || "Failed to submit for review.");
+    } finally {
+      setSaving(false);
+    }
+  }, [devPreview, editing, product, saving, form, preview, onSaved]);
 
   // Cancel and exit
   const handleCancel = useCallback(() => {
