@@ -159,7 +159,7 @@ async function requireAdmin(req: Request, env: Env): Promise<{ uid: string; emai
     return null;
   }
   try {
-    const decoded = await verifyFirebaseToken(token, env);
+    const decoded = await verifyFirebaseToken(env, token);
     if (!decoded) {
       console.warn("[stea-api] requireAdmin: token verification returned null");
       return null;
@@ -504,6 +504,37 @@ export async function handleAdminUpdateProduct(req: Request, env: Env, productId
         headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) },
       });
     }
+
+    // ── Source-wipe safety net ───────────────────────────────
+    // A metadata save must never silently clear the product's working
+    // source. If the incoming write sets sourceCode to empty / null / an
+    // empty object AND the existing row has source content, reject unless
+    // the caller explicitly confirms with { "__clearSource": true }.
+    const existingSrc = existing.data?.sourceCode;
+    const hasExistingSource =
+      existingSrc != null &&
+      !(typeof existingSrc === "string" && existingSrc.trim() === "") &&
+      !(typeof existingSrc === "object" && !Array.isArray(existingSrc) && Object.keys(existingSrc).length === 0);
+    if (hasExistingSource) {
+      const incomingSource = data.sourceCode;
+      const isClear =
+        incomingSource === null ||
+        incomingSource === "" ||
+        (typeof incomingSource === "object" &&
+          !Array.isArray(incomingSource) &&
+          Object.keys(incomingSource).length === 0);
+      if (isClear && data.__clearSource !== true) {
+        return new Response(
+          JSON.stringify({
+            error: "Refusing to clear product source without explicit confirmation. Send { __clearSource: true } to intentionally wipe source.",
+            code: "CLEAR_SOURCE_GUARD",
+          }),
+          { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) } }
+        );
+      }
+    }
+    // Never persist the confirmation flag onto the row.
+    delete data.__clearSource;
 
     // ── Staff scoping + publish restriction ──────────────────
     if (writer.kind === "staff") {

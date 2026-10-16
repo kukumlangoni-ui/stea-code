@@ -169,6 +169,46 @@ function buildSourceCodePayload(preview, loaded) {
   return out;
 }
 
+/**
+ * `?debug=source` diagnostic surface. Shows the effective runtime, where the
+ * source actually lives on the row, byte counts for each code field (current
+ * editor state vs loaded from DB), the sourceCode type, and last-saved time.
+ * Rendered ONLY when the URL carries ?debug=source.
+ */
+function SourceDebug({ preview, product, form }) {
+  const dbgSrc = form.sourceCode ?? product?.sourceCode;
+  const dbgLoaded = resolveSourceFields(product?.sourceCode, product?.preview || {});
+  const dbgRuntime = preview.runtime === "full-html" ? "full-html" : "html-css-js";
+  const dbgType =
+    dbgSrc === null || dbgSrc === undefined ? "null" :
+    typeof dbgSrc === "string" ? "string" : "object";
+  const row = (k, v) => (
+    <div style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "4px 0", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+      <span style={{ color: "#8a8a94" }}>{k}</span>
+      <span style={{ color: "#fff", fontVariantNumeric: "tabular-nums" }}>{v}</span>
+    </div>
+  );
+  return (
+    <div style={{ marginTop: 20, padding: 16, borderRadius: 12, background: "#17171b", border: "1px dashed rgba(245,166,35,0.4)", fontFamily: "ui-monospace, monospace", fontSize: 12 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+        <span style={{ color: "#f5a623", fontWeight: 700 }}>⚙ DEBUG — source hydration</span>
+        <span style={{ color: "#8a8a94" }}>/?debug=source</span>
+      </div>
+      {row("runtime (effective)", dbgRuntime)}
+      {row("sourceCode type", dbgType)}
+      {row("fullDocument bytes (editor)", String(preview.fullDocument || "").length)}
+      {row("html bytes (editor)", String(preview.html || "").length)}
+      {row("css bytes (editor)", String(preview.css || "").length)}
+      {row("js bytes (editor)", String(preview.javascript || "").length)}
+      {row("fullDocument bytes (loaded from DB)", String(dbgLoaded.fullDocument || "").length)}
+      {row("html bytes (loaded from DB)", String(dbgLoaded.html || "").length)}
+      {row("diff doc (loaded→editor)", `${dbgLoaded.fullDocument === preview.fullDocument ? "same" : "changed"}`)}
+      {row("diff html (loaded→editor)", `${dbgLoaded.html === preview.html ? "same" : "changed"}`)}
+      {row("last-saved (product.updatedAt)", product?.updatedAt || "n/a")}
+    </div>
+  );
+}
+
 const TABS = [
   { id: "basic", label: "Basic", icon: FileText },
   { id: "preview", label: "Preview", icon: Eye },
@@ -441,9 +481,35 @@ export function ProductStudioV3({
   const [codeTab, setCodeTab] = useState("html");
   const [deleting, setDeleting] = useState(false);
 
+  // Hidden diagnostic surface — only shows with ?debug=source in the URL.
+  const debugSource =
+    typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).get("debug") === "source";
+
   const [form, setForm] = useState(() => {
     const incomingPreview = product?.preview || {};
     const mergedPreview = { ...BASE_PREVIEW, ...incomingPreview, scaleMode: "cover" };
+    // Hydrate the code fields from every possible source location so the
+    // editor NEVER renders empty for a product that has working source in
+    // D1. sourceCode may be a JSON object, a JSON string, a plain HTML
+    // string, or null — resolveSourceFields handles all of them safely.
+    const resolvedSource = resolveSourceFields(product?.sourceCode, incomingPreview);
+    const hydratedPreview = {
+      ...mergedPreview,
+      html: resolvedSource.html,
+      css: resolvedSource.css,
+      javascript: resolvedSource.javascript,
+      jsx: resolvedSource.jsx,
+      fullDocument: resolvedSource.fullDocument,
+    };
+    // File-bearing arrays: never leave undefined if a previous save stored
+    // them anywhere (top-level on the row, or inside preview).
+    const pickArrays = (topKey, previewKey) =>
+      (Array.isArray(product?.[topKey]) && product[topKey].length)
+        ? product[topKey]
+        : (Array.isArray(incomingPreview?.[previewKey]) && incomingPreview[previewKey].length)
+        ? incomingPreview[previewKey]
+        : [];
     // Derive initial previewMode from existing product data:
     // - If product already has previewMode set, use it
     // - Otherwise, infer from what's present (video URL > live preview > poster)
@@ -463,7 +529,11 @@ export function ProductStudioV3({
       ...EMPTY_PRODUCT,
       ...(product || {}),
       previewMode: initialPreviewMode,
-      preview: mergedPreview,
+      preview: hydratedPreview,
+      protectedFiles: pickArrays("protectedFiles", "protectedFiles"),
+      publicFiles: pickArrays("publicFiles", "publicFiles"),
+      sourceFiles: pickArrays("sourceFiles", "sourceFiles"),
+      fileNames: pickArrays("fileNames", "fileNames"),
       tags: (product?.tags || []).join(", "),
       frameworks: (product?.frameworks || []).join(", "),
       included: (product?.included || []).join("\n"),
@@ -871,14 +941,41 @@ export function ProductStudioV3({
         posterKey: preview.posterKey || "",
       };
 
-      // Source code snapshot (saved alongside product for /free-content fallback)
-      const sourceCode = form.deliverablesSource || {
-        html: String(preview.html || ""),
-        css: String(preview.css || ""),
-        javascript: String(preview.javascript || ""),
-        jsx: String(preview.jsx || ""),
-        fullDocument: String(preview.fullDocument || ""),
-      };
+      // ── Source-code dual-write (canonical + legacy readers) ──────────
+      // The editor's code textareas live on `preview` (state). The canonical
+      // home on the products row is `sourceCode`, which the metadata PATCH
+      // now persists (client strip no longer drops it). We write BOTH so no
+      // reader path is left empty:
+      //   'full-html'   → sourceCode = plain string (fullDocument value)
+      //   'HTML/CSS/JS' → sourceCode = { html, css, javascript, jsx }
+      // buildSourceCodePayload encodes the "never send empty for untouched"
+      // rule — a field empty on load and still empty is omitted (undefined)
+      // so it can never wipe real content in D1.
+      const effectiveRuntime =
+        preview.runtime === "full-html" ? "full-html" : "html-css-js";
+
+      const loadedSource = form.sourceCode ?? product?.sourceCode;
+      const loadedResolved = resolveSourceFields(loadedSource, product?.preview || {});
+      const codeDeltas = buildSourceCodePayload(preview, loadedResolved);
+
+      let sourceCode;
+      if (effectiveRuntime === "full-html") {
+        const curDoc = String(preview.fullDocument ?? "");
+        const loadedDoc = String(loadedResolved.fullDocument ?? "");
+        let docVal;
+        if (curDoc.trim() === "" && loadedDoc.trim() === "") docVal = undefined; // untouched-empty
+        else if (curDoc === loadedDoc) docVal = curDoc.trim() ? curDoc : undefined;
+        else docVal = curDoc; // changed, incl. explicit clear
+        sourceCode = docVal;
+      } else {
+        sourceCode = {
+          ...(loadedSource && typeof loadedSource === "object" && !Array.isArray(loadedSource)
+            ? loadedSource
+            : {}),
+          ...codeDeltas,
+        };
+        if (Object.keys(sourceCode).length === 0) sourceCode = undefined;
+      }
 
       const payload = {
         ...form,
@@ -919,9 +1016,9 @@ export function ProductStudioV3({
 
       const realProductId = result?.product?.id || result?.productId || result?.id || id;
 
-      // Save preview source if live preview (separate previews collection)
-      if (preview.enabled) {
-        try {
+      // Save preview source to the separate previews collection — always,
+      // so any code path reading from `preview` still works (dual-write).
+      try {
           const previewSource = {
             runtime: preview.runtime,
             html: String(preview.html || ""),
@@ -938,7 +1035,6 @@ export function ProductStudioV3({
         } catch (previewErr) {
           console.warn("[PSV3] Preview save warning:", previewErr);
         }
-      }
 
       // Invalidate both catalog (localStorage) and preview (in-memory) caches
       invalidateSteaCodeCatalogCache();
@@ -1424,6 +1520,8 @@ export function ProductStudioV3({
                 </div>
               </Section>
             )}
+
+            {debugSource && <SourceDebug preview={preview} product={product} form={form} />}
 
             {previewMode === "video" && (
               <Section title="Video Preview" subtitle="MP4 or WebM · up to 100 MB">
@@ -1912,3 +2010,29 @@ export function ProductStudioV3({
 }
 
 export default ProductStudioV3;
+
+/* ─────────────────────────────────────────────────────────────────────
+ * PHASE 6 — OPERATOR INSPECTION SQL (read-only; do NOT modify DB here)
+ *
+ * Find products where the editor would have shown empty fields, so you can
+ * see exactly which column holds the real source for each row:
+ *
+ *   -- Find products where the editor would show empty fields
+ *   SELECT slug, previewMode,
+ *          length(sourceCode) AS src_len,
+ *          json_extract(sourceCode, '$.html') IS NOT NULL AS src_has_html,
+ *          json_extract(sourceCode, '$.css')  IS NOT NULL AS src_has_css,
+ *          json_extract(preview, '$.fullDocument') IS NOT NULL AS preview_has_doc,
+ *          json_extract(preview, '$.html')         IS NOT NULL AS preview_has_html
+ *   FROM products
+ *   WHERE status='published';
+ *
+ * Interpretation:
+ *   - previewMode 'HTML/CSS/JS'  → canonical source lives in sourceCode as
+ *     JSON { html, css, javascript }. src_has_html / src_has_css should be 1.
+ *   - previewMode 'full-html'    → canonical lives in preview.fullDocument,
+ *     with a legacy fallback to sourceCode as a plain HTML string.
+ *   - Rows where src_len=0 AND preview_has_doc=0 have NO source anywhere and
+ *     are genuinely empty — those need content added, not a hydration fix.
+ * ─────────────────────────────────────────────────────────────────────
+ */

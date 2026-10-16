@@ -252,17 +252,14 @@ export function createAdminSteaCodeProduct(product) {
 }
 
 /**
- * Fields owned by dedicated endpoints. A metadata PATCH must never carry
- * these — they are managed by saveAdminSteaCodeSource() and
- * saveAdminSteaCodePreview(). Stripping them here is a client-side guard
- * that mirrors the server-side strip in admin.ts.
+ * Only UI-mode flags are stripped client-side (the server drops them too).
+ * sourceCode and the file-bearing fields are now allowed THROUGH the
+ * metadata PATCH: the backend update handler persists them merge-safe, so
+ * an editor save never loses the code it typed. Preview SOURCE keys are
+ * still stripped (they live in the separate previews collection and are
+ * written via saveAdminSteaCodePreview / PUT /preview).
  */
 const PROTECTED_METADATA_FIELDS = [
-  "sourceCode",
-  "sourceFiles",
-  "protectedFiles",
-  "publicFiles",
-  "fileNames",
   "previewMode",
   "designWidth",
   "designHeight",
