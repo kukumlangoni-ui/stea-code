@@ -4,6 +4,8 @@
  */
 
 const STATIC_ALLOWED_ORIGINS = new Set([
+  "https://steacode.com",
+  "https://www.steacode.com",
   "https://code.stea.africa",
   "https://stea.africa",
   "https://www.stea.africa",

@@ -85,6 +85,8 @@ export function isSteaCodeHost(hostname) {
   if (!hostname) return false;
   const host = hostname.toLowerCase();
 
+  if (host === "steacode.com") return true;
+  if (host === "www.steacode.com") return true;
   if (host === "code.stea.africa") return true;
   if (host === "code.localhost") return true;
   if (host.includes("code.stea.africa")) return true;

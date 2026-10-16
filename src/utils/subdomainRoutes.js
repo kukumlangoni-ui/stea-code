@@ -5,6 +5,8 @@ export const SUBDOMAIN_ROUTES = {
   "education.stea.africa": "/education",
   "daily.stea.africa": "/daily",
   "code.stea.africa": "/",
+  "steacode.com": "/",
+  "www.steacode.com": "/",
   "tools.stea.africa": "/digital-tools",
   "jobs.stea.africa": "/jobs",
   "community.stea.africa": "/community"
