@@ -7,10 +7,10 @@ export default function AdminLoadingScreen() {
       <div className="admin-loading-content">
         <div className="admin-loading-logo-wrapper">
           <div className="admin-loading-ring"></div>
-          <img src="/stea-brand/stea-s-logo-transparent-512.png" alt="STEA" className="admin-loading-logo" />
+          <img src="/stea-code-logo.png" alt="steacode" className="admin-loading-logo" />
         </div>
-        <h2 className="admin-loading-title">Loading STEA Admin...</h2>
-        <p className="admin-loading-subtext">Preparing your ecosystem dashboard</p>
+        <h2 className="admin-loading-title">Loading steacode</h2>
+        <p className="admin-loading-subtext">Preparing your studio</p>
         
         <div className="admin-loading-dots">
           <span></span><span></span><span></span>
