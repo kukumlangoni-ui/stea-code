@@ -180,10 +180,12 @@ export async function handleSubmitRevision(req: Request, env: Env): Promise<Resp
 }
 
 // ============================================================
-// List revisions (owner/approver)
+// List revisions (any staff — editors see only their own)
 // ============================================================
 export async function handleListRevisions(req: Request, env: Env): Promise<Response> {
-  const ctx = await requireStaff(req, env, "approver");
+  // Any authenticated staff may list revisions. Editors only ever see their
+  // OWN submissions (so they can track "my pending"); approvers/owners see all.
+  const ctx = await requireStaff(req, env);
   if (ctx instanceof Response) return ctx;
 
   const url = new URL(req.url);
@@ -194,9 +196,13 @@ export async function handleListRevisions(req: Request, env: Env): Promise<Respo
   if (!["pending", "approved", "rejected"].includes(status)) return jsonErr(req, "Invalid status", 400);
 
   try {
+    const editorsOnly = ctx.staff.role === "editor";
+    const whereClause = "r.status = ?" + (editorsOnly ? " AND r.submitted_by = ?" : "");
+    const params: any[] = editorsOnly ? [status, ctx.staff.id] : [status];
+
     const countRow = await env.DB.prepare(
-      "SELECT COUNT(*) as n FROM product_revisions WHERE status = ?"
-    ).bind(status).first<any>();
+      `SELECT COUNT(*) as n FROM product_revisions r WHERE ${whereClause}`
+    ).bind(...params).first<any>();
     const total = Number(countRow?.n || 0);
 
     const result = await env.DB.prepare(
@@ -208,10 +214,10 @@ export async function handleListRevisions(req: Request, env: Env): Promise<Respo
        FROM product_revisions r
        LEFT JOIN staff_users s ON s.id = r.submitted_by
        LEFT JOIN products p ON p.id = r.product_id
-       WHERE r.status = ?
+       WHERE ${whereClause}
        ORDER BY r.created_at DESC
        LIMIT ? OFFSET ?`
-    ).bind(status, limit, offset).all<any>();
+    ).bind(...params, limit, offset).all<any>();
 
     const revisions = (result.results || []).map((r) => ({
       id: r.id,

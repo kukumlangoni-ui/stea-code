@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { CheckCircle2, FileEdit, Inbox, Loader2, RefreshCw, XCircle } from "lucide-react";
 import { listRevisions, getRevision } from "../services/staffAuth.js";
 import ApprovalDetailModal from "./ApprovalDetailModal.jsx";
@@ -37,6 +37,15 @@ export default function ApprovalsPanel() {
     setTimeout(() => setToast(""), 2600);
   }, []);
 
+  const pendingOpenRef = useRef("");
+  useEffect(() => {
+    // Support deep links from notifications: /admin/approvals?revision=<id>.
+    try {
+      const m = new URLSearchParams(window.location.search).get("revision");
+      if (m) pendingOpenRef.current = m;
+    } catch {}
+  }, []);
+
   const load = useCallback(async (status) => {
     setLoading(true);
     setError("");
@@ -44,6 +53,15 @@ export default function ApprovalsPanel() {
       const d = await listRevisions({ status, limit: 50 });
       setRevisions(d.revisions || []);
       setTotal(d.total || 0);
+      // Auto-open the requested revision if present in this batch.
+      const target = pendingOpenRef.current;
+      if (target) {
+        const hit = (d.revisions || []).find((r) => String(r.id) === target);
+        if (hit) {
+          pendingOpenRef.current = "";
+          openRow(hit);
+        }
+      }
     } catch (e) {
       setError(e?.message || "Failed to load revisions.");
     } finally {

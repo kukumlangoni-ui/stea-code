@@ -95,7 +95,8 @@ import ActivityPanel, {
   entryActor,
   entryTime,
 } from "./ActivityPanel.jsx";
-import { listActivity } from "../services/staffAuth.js";
+import ApprovalsPanel from "./ApprovalsPanel.jsx";
+import { listActivity, listRevisions } from "../services/staffAuth.js";
 
 // Shared single-source-of-truth category list. Drop the UI-only pseudo-category "All"
 // because Admin saves real product categories.
@@ -3921,11 +3922,20 @@ export default function SteaCodeCommercePanel({ isSuperAdmin, initialTab = "prod
     const base = cleanBaseRoute;
     if (!base) return;
     const rest = location.pathname.slice(base.length).replace(/^\//, "").split("/")[0];
-    const validTabs = ["dashboard", "products", "orders", "payments", "users", "entitlements", "team", "activity"];
+    const validTabs = ["dashboard", "products", "orders", "payments", "users", "entitlements", "team", "approvals", "activity"];
     if (rest && validTabs.includes(rest) && rest !== tab) {
       setTab(rest);
     }
   }, [dedicatedAdmin, cleanBaseRoute, location.pathname]);
+
+  // Dedicated admin: jump to the Approvals tab (deep-linkable /admin/approvals).
+  const goApprovals = useCallback(() => {
+    if (dedicatedAdmin) {
+      const target = `${cleanBaseRoute}/approvals`;
+      if (target !== location.pathname) navigate(target, { replace: false });
+    }
+    setTab("approvals");
+  }, [dedicatedAdmin, cleanBaseRoute, location.pathname, navigate]);
 
   // Dedicated admin: route to full-page Product Studio
   const openEditor = useCallback((product) => {
@@ -4380,7 +4390,7 @@ export default function SteaCodeCommercePanel({ isSuperAdmin, initialTab = "prod
       {/* Hero Header */}
       <div className="sc-admin-commerce-hero sc-admin-commerce-hero-compact">
         <div className="sc-admin-commerce-hero-text">
-          <h2>{tab === "products" ? "Products" : tab === "users" ? "Users" : tab === "payments" ? "Payments Overview" : tab === "orders" ? "Orders" : tab === "entitlements" ? "Entitlements" : tab === "team" ? "Team" : tab === "activity" ? "Activity" : "Commerce"}</h2>
+          <h2>{tab === "products" ? "Products" : tab === "users" ? "Users" : tab === "payments" ? "Payments Overview" : tab === "orders" ? "Orders" : tab === "entitlements" ? "Entitlements" : tab === "team" ? "Team" : tab === "approvals" ? "Approvals" : tab === "activity" ? "Activity" : "Commerce"}</h2>
           <p>{products.length} product{products.length === 1 ? "" : "s"} in live catalog{canSeeMoney ? ` · ${orders.length} orders` : ""} · {users.length} registered users.</p>
         </div>
         <div className="sc-admin-commerce-actions">
@@ -4425,7 +4435,7 @@ export default function SteaCodeCommercePanel({ isSuperAdmin, initialTab = "prod
             ...(canSeeMoney ? [["users", "Users"]] : []),
             ...(canSeeMoney ? [["entitlements", "Entitlements"]] : []),
             ...(canSeeMoney ? [["team", "Team"]] : []),
-            ...(canSeeAudit ? [["activity", "Activity"]] : []),
+            ...(canSeeAudit ? [["approvals", "Approvals"], ["activity", "Activity"]] : []),
           ].map(([id, label]) => (
             <button
               key={id}
@@ -4463,10 +4473,17 @@ export default function SteaCodeCommercePanel({ isSuperAdmin, initialTab = "prod
           users={users}
           canSeeMoney={canSeeMoney}
           canSeeAudit={canSeeAudit}
+          staff={staff}
+          onGoApprovals={goApprovals}
         />
       )}
 
-      {/* ACTIVITY TAB (owner only — staff audit log) */}
+      {/* APPROVALS TAB (approver+owner — review editor submissions) */}
+      {tab === "approvals" && canSeeAudit && (
+        <ApprovalsPanel />
+      )}
+
+      {/* ACTIVITY TAB (approver+owner — staff audit log) */}
       {tab === "activity" && canSeeAudit && (
         <ActivityPanel />
       )}
@@ -5120,7 +5137,7 @@ export default function SteaCodeCommercePanel({ isSuperAdmin, initialTab = "prod
 /* =========================================================
    DASHBOARD TAB — realtime KPI overview
    ========================================================= */
-function DashboardTab({ products = [], orders = [], entitlements = [], users = [], canSeeMoney = true, canSeeAudit = true }) {
+function DashboardTab({ products = [], orders = [], entitlements = [], users = [], canSeeMoney = true, canSeeAudit = true, staff = null, onGoApprovals }) {
   const PAID_STATUSES = new Set(["paid", "complete", "succeeded"]);
 
   // ---- KPI: total revenue (paid orders only) ----
@@ -5158,6 +5175,28 @@ function DashboardTab({ products = [], orders = [], entitlements = [], users = [
       cancelled = true;
     };
   }, [canSeeAudit]);
+
+  // ---- Pending submissions / review queue (staff) ----
+  // Editors see their OWN pending submissions; approvers/owners see the
+  // pending queue (backend filters editors to their own rows).
+  const [pendingRevs, setPendingRevs] = useState([]);
+  const [pendingLoading, setPendingLoading] = useState(false);
+  useEffect(() => {
+    if (!staff) return;
+    let cancelled = false;
+    setPendingLoading(true);
+    listRevisions({ status: "pending", limit: 50 })
+      .then((d) => {
+        if (!cancelled) setPendingRevs(d.revisions || []);
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setPendingLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [staff]);
 
   // ---- Revenue by day (last 30 days) ----
   const revenueByDay = useMemo(() => {
@@ -5398,6 +5437,90 @@ function DashboardTab({ products = [], orders = [], entitlements = [], users = [
           );
         })}
       </div>
+
+      {/* Pending submissions / review queue (staff) */}
+      {staff && (
+        <div style={cardStyle}>
+          <div style={sectionTitleStyle}>
+            {staff.role === "editor" ? "My Pending Submissions" : "Pending Review Queue"}
+          </div>
+          {pendingLoading ? (
+            <div style={{ fontSize: 12, color: "rgba(255,255,255,0.35)" }}>
+              Loading…
+            </div>
+          ) : pendingRevs.length === 0 ? (
+            <div style={{ fontSize: 12, color: "rgba(255,255,255,0.35)" }}>
+              {staff.role === "editor"
+                ? "Nothing awaiting review."
+                : "No submissions awaiting review."}
+            </div>
+          ) : staff.role === "editor" ? (
+            <div style={{ display: "grid", gap: 0 }}>
+              {pendingRevs.map((r) => (
+                <div key={r.id} style={listRowStyle}>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div
+                      style={{
+                        color: "#ffffff",
+                        fontWeight: 600,
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                      }}
+                    >
+                      {r.productTitle || "Untitled product"}
+                    </div>
+                    <div style={{ color: "rgba(255,255,255,0.4)", fontSize: 11 }}>
+                      {r.kind === "new" ? "New product" : "Edit"} · awaiting review
+                    </div>
+                  </div>
+                  <div
+                    style={{
+                      textAlign: "right",
+                      flexShrink: 0,
+                      color: "rgba(255,255,255,0.4)",
+                      fontSize: 11,
+                    }}
+                  >
+                    {activityTimeAgo(r.createdAt)}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 12,
+                flexWrap: "wrap",
+              }}
+            >
+              <span style={{ color: "rgba(255,255,255,0.75)", fontSize: 13 }}>
+                <strong style={{ color: "#fff" }}>{pendingRevs.length}</strong>
+                {" "}submission(s) awaiting your review
+              </span>
+              <button
+                type="button"
+                onClick={onGoApprovals}
+                style={{
+                  background: "#f5a623",
+                  color: "#0a0a0a",
+                  fontWeight: 700,
+                  border: "none",
+                  borderRadius: 8,
+                  padding: "8px 14px",
+                  cursor: "pointer",
+                  fontSize: 13,
+                }}
+              >
+                Review submissions
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Recent Activity (owner only) */}
       {canSeeAudit && (
