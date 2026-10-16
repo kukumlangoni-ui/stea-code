@@ -58,6 +58,19 @@ import {
   handleStaffApprovals,
   handleStaffApprove,
 } from "./routes/staff";
+import {
+  handleSubmitRevision,
+  handleListRevisions,
+  handleGetRevision,
+  handleApproveRevision,
+  handleRejectRevision,
+} from "./routes/revisions";
+import {
+  handleListNotifications,
+  handleMarkNotificationRead,
+  handleMarkAllNotificationsRead,
+  handleStaffActivity,
+} from "./routes/notifications";
 
 export interface WorkerEnv {
   // D1
@@ -351,6 +364,47 @@ export default {
       // Pending approvals
       if (apiPath === "/stea-code/staff/approvals" && method === "GET") {
         return handleStaffApprovals(request, env);
+      }
+
+      // ---- Revision approval workflow (editor submissions) ----
+      // POST /api/stea-code/staff/revisions/submit
+      if (apiPath === "/stea-code/staff/revisions/submit" && method === "POST") {
+        return handleSubmitRevision(request, env);
+      }
+      // GET /api/stea-code/staff/revisions
+      if (apiPath === "/stea-code/staff/revisions" && method === "GET") {
+        return handleListRevisions(request, env);
+      }
+      // POST /api/stea-code/staff/revisions/:id/approve  |  reject
+      const revApproveMatch = apiPath.match(/^\/stea-code\/staff\/revisions\/([^/]+)\/approve$/);
+      if (revApproveMatch && method === "POST") {
+        return handleApproveRevision(request, env, revApproveMatch[1]);
+      }
+      const revRejectMatch = apiPath.match(/^\/stea-code\/staff\/revisions\/([^/]+)\/reject$/);
+      if (revRejectMatch && method === "POST") {
+        return handleRejectRevision(request, env, revRejectMatch[1]);
+      }
+      // GET /api/stea-code/staff/revisions/:id
+      const revGetMatch = apiPath.match(/^\/stea-code\/staff\/revisions\/([^/]+)$/);
+      if (revGetMatch && method === "GET") {
+        return handleGetRevision(request, env, revGetMatch[1]);
+      }
+
+      // ---- Notifications ----
+      if (apiPath === "/stea-code/staff/notifications" && method === "GET") {
+        return handleListNotifications(request, env);
+      }
+      if (apiPath === "/stea-code/staff/notifications/read-all" && method === "POST") {
+        return handleMarkAllNotificationsRead(request, env);
+      }
+      const notifReadMatch = apiPath.match(/^\/stea-code\/staff\/notifications\/([^/]+)\/read$/);
+      if (notifReadMatch && method === "POST") {
+        return handleMarkNotificationRead(request, env, notifReadMatch[1]);
+      }
+
+      // ---- Activity feed (owner/approver) ----
+      if (apiPath === "/stea-code/staff/activity" && method === "GET") {
+        return handleStaffActivity(request, env);
       }
 
       // ============ 404 ============

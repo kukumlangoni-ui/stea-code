@@ -17,13 +17,13 @@ export interface StaffContext {
     id: string;
     email: string;
     displayName: string | null;
-    role: "owner" | "admin" | "editor";
+    role: "owner" | "approver" | "editor";
     status: "active" | "revoked";
   };
   session: { token: string; expiresAt: string };
 }
 
-const ROLE_ORDER = { editor: 1, admin: 2, owner: 3 } as const;
+const ROLE_ORDER = { editor: 1, approver: 2, owner: 3 } as const;
 export type StaffRole = keyof typeof ROLE_ORDER;
 
 function json(msg: string, status: number): Response {
@@ -76,7 +76,7 @@ export async function requireStaff(
       id: staff.id,
       email: staff.email,
       displayName: staff.display_name || null,
-      role: staff.role as "owner" | "admin" | "editor",
+      role: staff.role as "owner" | "approver" | "editor",
       status: staff.status as "active" | "revoked",
     },
     session: { token, expiresAt: session.expires_at },

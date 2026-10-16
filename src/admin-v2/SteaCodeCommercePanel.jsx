@@ -3807,7 +3807,7 @@ function PaymentsRevenueChart({ orders = [] }) {
 export default function SteaCodeCommercePanel({ isSuperAdmin, initialTab = "products", embedded = false, devPreview = false, onCountsChange, dedicatedAdmin = false, baseRoute = "/code-admin" }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { staff, isAdmin: staffIsAdmin } = useStaff();
+  const { staff, isAdmin: staffIsApprover } = useStaff();
   const [tab, setTab] = useState(initialTab);
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
@@ -4381,7 +4381,7 @@ export default function SteaCodeCommercePanel({ isSuperAdmin, initialTab = "prod
             ["payments", "Payments"],
             ["users", "Users"],
             ["entitlements", "Entitlements"],
-            ...(staffIsAdmin ? [["team", "Team"]] : []),
+            ...(staffIsApprover ? [["team", "Team"]] : []),
           ].map(([id, label]) => (
             <button
               key={id}
@@ -4812,7 +4812,7 @@ export default function SteaCodeCommercePanel({ isSuperAdmin, initialTab = "prod
       )}
 
       {/* TEAM TAB (owner/admin only — staff management) */}
-      {tab === "team" && staffIsAdmin && (
+      {tab === "team" && staffIsApprover && (
         <TeamPanel staff={staff} isOwner={staff?.role === "owner"} />
       )}
 

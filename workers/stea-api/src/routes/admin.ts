@@ -29,23 +29,20 @@ const PREVIEWS_COLLECTION = "stea_code_product_previews";
 /**
  * Fields that must NEVER be overwritten by a metadata patch.
  *
- * These are owned by dedicated endpoints:
- *   - sourceCode / sourceFiles / protectedFiles / publicFiles / fileNames
- *       → PUT /admin/stea-code/products/:id/source
- *   - preview / previewMode / designWidth / designHeight
- *       → PUT /admin/stea-code/products/:id/preview
+ * Only preview-mode flags and the preview-source keys are owned by the
+ * dedicated endpoints. The code-bearing fields (sourceCode, sourceFiles,
+ * protectedFiles, publicFiles, fileNames) are now ALLOWED through so that a
+ * product save from the editor (ProductStudioV3) persists the source code
+ * the author typed — this fixes the "source code disappears on save" bug.
+ * Missing keys are simply not written (see merge-safe handling in the
+ * update handler), so nothing is ever wiped.
  *
- * If a metadata save (title, price, pricingType, status, …) accidentally
- * includes any of these, we drop them so the dedicated endpoints remain
- * the single source of truth. This is a belt-and-braces guard on top of
- * the ON CONFLICT fix in firestore.ts.
+ *   - previewMode / designWidth / designHeight
+ *       → PUT /admin/stea-code/products/:id/preview (UI-mode flags)
+ *   - preview object's SOURCE keys (html/css/js/jsx/tsx/fullDocument)
+ *       → PUT /admin/stea-code/products/:id/preview (previews collection)
  */
 const PROTECTED_METADATA_FIELDS = new Set([
-  "sourceCode",
-  "sourceFiles",
-  "protectedFiles",
-  "publicFiles",
-  "fileNames",
   "previewMode",
   "designWidth",
   "designHeight",
@@ -472,9 +469,10 @@ export async function handleAdminUpdateProduct(req: Request, env: Env, productId
     const body = (await req.json()) as Record<string, any>;
     const { id, ...rawData } = body;
 
-    // Strip source/preview-owned fields before merging. These are managed
-    // exclusively by the /source and /preview endpoints; a metadata save
-    // must never clobber them.
+    // Strip preview-owned fields before merging. The code-bearing fields
+    // (sourceCode, sourceFiles, protectedFiles, publicFiles, fileNames) are
+    // allowed through so an editor save persists what they typed. Missing
+    // keys are simply not written (merge-safe below) — nothing is wiped.
     const data = stripProtectedMetadataFields(rawData);
 
     // Fetch existing row first for a proper deep merge
@@ -488,30 +486,63 @@ export async function handleAdminUpdateProduct(req: Request, env: Env, productId
 
     // ── Staff scoping + publish restriction ──────────────────
     if (writer.kind === "staff") {
+      const role = writer.ctx.staff.role;
+
       // Editors can only edit their own products.
-      if (
-        writer.ctx.staff.role === "editor" &&
-        existing.data.createdByStaff !== writer.ctx.staff.id
-      ) {
+      if (role === "editor" && existing.data.createdByStaff !== writer.ctx.staff.id) {
         return new Response(
           JSON.stringify({ error: "Editors can only edit their own products" }),
           { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) } }
         );
       }
-      // Editors cannot publish directly — only move to 'pending'.
-      if (writer.ctx.staff.role === "editor" && data.status === "published") {
-        return new Response(
-          JSON.stringify({ error: "Editors cannot publish directly; submit for approval instead" }),
-          { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) } }
-        );
+
+      if (role === "editor") {
+        // Editors cannot publish directly — only move to draft/pending.
+        if (data.status === "published") {
+          return new Response(
+            JSON.stringify({ error: "Editors cannot publish directly; submit for approval instead" }),
+            { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) } }
+          );
+        }
+        // Editors cannot change these privileged fields.
+        for (const p of ["featured", "homepageVisible", "approvedByStaff", "approvedAt", "createdByStaff"]) {
+          delete data[p];
+        }
+        // If the product is already live, refuse direct writes — the editor
+        // must submit a revision (409). Only their own drafts can be edited.
+        if (existing.data.status === "published") {
+          return new Response(
+            JSON.stringify({ error: "This product is published. Submit a revision for review instead of editing directly.", code: "PUBLISHED_PRODUCT" }),
+            { status: 409, headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) } }
+          );
+        }
       }
+
       data.createdByStaff = existing.data.createdByStaff || writer.ctx.staff.id;
     }
 
-    // Partial update — do NOT deep-merge with the existing row.
+    // ── Merge-safe partial update ────────────────────────────
+    // Build the write set from ONLY the keys present in the body. Missing
+    // keys (sourceCode, sourceFiles, etc.) are never touched, so nothing is
+    // wiped on a metadata save. preview and extraData are deep-merged with
+    // their existing values instead of being replaced wholesale.
     const merged: Record<string, any> = {};
     for (const [key, value] of Object.entries(data)) {
       if (value === undefined) continue;
+      if (key === "preview" && value && typeof value === "object" && !Array.isArray(value)) {
+        const basePreview = (existing.data?.preview && typeof existing.data.preview === "object" && !Array.isArray(existing.data.preview))
+          ? existing.data.preview
+          : {};
+        merged.preview = { ...basePreview, ...value };
+        continue;
+      }
+      if (key === "extraData" && value && typeof value === "object" && !Array.isArray(value)) {
+        const baseExtra = (existing.data?.extraData && typeof existing.data.extraData === "object" && !Array.isArray(existing.data.extraData))
+          ? existing.data.extraData
+          : {};
+        merged.extraData = { ...baseExtra, ...value };
+        continue;
+      }
       merged[key] = value;
     }
 

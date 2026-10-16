@@ -42,7 +42,7 @@ export function StaffProvider({ staff: initialStaff = null, children }) {
     return {
       staff,
       isOwner: role === "owner",
-      isAdmin: role === "owner" || role === "admin",
+      isApprover: role === "owner" || role === "approver",
       isEditor: role === "editor",
       role,
       signOut,

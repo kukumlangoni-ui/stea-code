@@ -145,15 +145,15 @@ export default function AddStaffModal({ onClose, onCreated }) {
                 <strong>Editor</strong>
                 <p>Can create products. Submits for owner approval before publishing.</p>
               </label>
-              <label className={`team-role-option ${role === "admin" ? "is-active" : ""}`}>
+              <label className={`team-role-option ${role === "approver" ? "is-active" : ""}`}>
                 <input
                   type="radio"
                   name="role"
-                  value="admin"
-                  checked={role === "admin"}
-                  onChange={() => setRole("admin")}
+                  value="approver"
+                  checked={role === "approver"}
+                  onChange={() => setRole("approver")}
                 />
-                <strong>Admin</strong>
+                <strong>Approver</strong>
                 <p>Full product management. Cannot manage staff or billing.</p>
               </label>
             </div>

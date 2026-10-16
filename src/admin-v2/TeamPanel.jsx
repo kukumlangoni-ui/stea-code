@@ -51,7 +51,7 @@ function timeAgo(iso) {
  */
 export default function TeamPanel({ staff, isOwner }) {
   const currentId = staff?.id;
-  const isAdmin = isOwner || staff?.role === "admin";
+  const isAdmin = isOwner || staff?.role === "approver";
 
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -143,7 +143,7 @@ export default function TeamPanel({ staff, isOwner }) {
     return isOwner && member.role === "editor";
   }
   function canDemote(member) {
-    if (!isOwner || member.role !== "admin") return false;
+    if (!isOwner || member.role !== "approver") return false;
     if (member.id === currentId) return false; // can't change your own role
     return true;
   }
@@ -171,7 +171,7 @@ export default function TeamPanel({ staff, isOwner }) {
   }
 
   async function handlePromote(member) {
-    await runAction(member.id, () => updateStaff(member.id, { role: "admin" }), `${member.email} promoted to admin`);
+    await runAction(member.id, () => updateStaff(member.id, { role: "approver" }), `${member.email} promoted to approver`);
   }
   async function handleDemote(member) {
     await runAction(member.id, () => updateStaff(member.id, { role: "editor" }), `${member.email} demoted to editor`);
@@ -191,7 +191,7 @@ export default function TeamPanel({ staff, isOwner }) {
   }
 
   function roleBadgeClass(role) {
-    return role === "owner" ? "team-role-owner" : role === "admin" ? "team-role-admin" : "team-role-editor";
+    return role === "owner" ? "team-role-owner" : role === "approver" ? "team-role-approver" : "team-role-editor";
   }
 
   if (loading) {
@@ -241,7 +241,7 @@ export default function TeamPanel({ staff, isOwner }) {
         >
           <option value="all">All roles</option>
           <option value="owner">Owner</option>
-          <option value="admin">Admin</option>
+          <option value="approver">Approver</option>
           <option value="editor">Editor</option>
         </select>
         <select

@@ -31,6 +31,9 @@ import { hasAdminV2Permission } from "./permissions.js";
 import { useStaff } from "./StaffContext.jsx";
 import { ADMIN_V2_PREVIEW_BANNER, ADMIN_V2_PREVIEW_USER } from "./previewData.js";
 import AdminLoadingScreen from "./AdminLoadingScreen.jsx";
+import ApprovalsPanel from "./ApprovalsPanel.jsx";
+import ActivityPanel from "./ActivityPanel.jsx";
+import NotificationBell from "./NotificationBell.jsx";
 import SitesAdminLogin from "../sites/admin/SitesAdminLogin.jsx";
 import SteaCodePage from "./SteaCodePage.jsx";
 import LocalFirestoreBadge from "./LocalFirestoreBadge.dev-only.jsx";
@@ -464,6 +467,8 @@ export default function SteaCodeAdminApp(props) {
       dashboard: "dashboard",
       products: "products",
       team: "team",
+      approvals: "approvals",
+      activity: "activity",
       categories: "categories",
       orders: "orders",
       payments: "payments",
@@ -610,6 +615,8 @@ export default function SteaCodeAdminApp(props) {
               "users",
               "entitlements",
               "team",
+              "approvals",
+              "activity",
               "resources",
               "hosting",
               "inspiration",

@@ -59,7 +59,7 @@ const SCHEMAS: Record<string, TableSchema> = {
       "sourceFiles", "sourceCode", "fileNames", "package",
       "createdAt", "updatedAt", "createdBy", "updatedBy",
       "createdByStaff", "approvedByStaff", "approvedAt", "rejectionReason",
-      "extraData",
+      "pending_revision_id", "extraData",
     ],
     jsonColumns: new Set([
       "tags", "frameworks", "languages", "preview", "publicFiles",

@@ -132,3 +132,92 @@ export async function forceLogoutStaff(id) {
   if (!r.ok) throw new Error(d.error || "Failed to force logout");
   return true;
 }
+/* ============================================================
+   Revisions — editor submissions & approvals
+   ============================================================ */
+
+export async function submitRevision({ productId, kind, snapshot }) {
+  const r = await staffFetch("/staff/revisions/submit", {
+    method: "POST",
+    body: JSON.stringify({ productId, kind, snapshot }),
+  });
+  const d = await r.json();
+  if (!r.ok) throw new Error(d.error || "Failed to submit revision");
+  return d.revisionId;
+}
+
+export async function listRevisions({ status = "pending", limit, offset } = {}) {
+  const q = new URLSearchParams();
+  q.set("status", status);
+  if (limit) q.set("limit", String(limit));
+  if (offset) q.set("offset", String(offset));
+  const r = await staffFetch(`/staff/revisions?${q.toString()}`);
+  const d = await r.json();
+  if (!r.ok) throw new Error(d.error || "Failed to load revisions");
+  return d;
+}
+
+export async function getRevision(id) {
+  const r = await staffFetch(`/staff/revisions/${id}`);
+  const d = await r.json();
+  if (!r.ok) throw new Error(d.error || "Failed to load revision");
+  return d.revision;
+}
+
+export async function approveRevision(id) {
+  const r = await staffFetch(`/staff/revisions/${id}/approve`, { method: "POST" });
+  const d = await r.json();
+  if (!r.ok) throw new Error(d.error || "Failed to approve revision");
+  return d;
+}
+
+export async function rejectRevision(id, reason) {
+  const r = await staffFetch(`/staff/revisions/${id}/reject`, {
+    method: "POST",
+    body: JSON.stringify({ reason }),
+  });
+  const d = await r.json();
+  if (!r.ok) throw new Error(d.error || "Failed to reject revision");
+  return d;
+}
+
+/* ============================================================
+   Notifications
+   ============================================================ */
+
+export async function listNotifications(limit = 50) {
+  const r = await staffFetch(`/staff/notifications?limit=${limit}`);
+  const d = await r.json();
+  if (!r.ok) throw new Error(d.error || "Failed to load notifications");
+  return d;
+}
+
+export async function markNotificationRead(id) {
+  const r = await staffFetch(`/staff/notifications/${id}/read`, { method: "POST" });
+  if (!r.ok) throw new Error("Failed to mark notification read");
+  return true;
+}
+
+export async function markAllNotificationsRead() {
+  const r = await staffFetch("/staff/notifications/read-all", { method: "POST" });
+  if (!r.ok) throw new Error("Failed to mark notifications read");
+  return true;
+}
+
+/* ============================================================
+   Activity feed
+   ============================================================ */
+
+export async function listActivity({ staffId, action, from, to, limit, offset } = {}) {
+  const q = new URLSearchParams();
+  if (staffId) q.set("staffId", staffId);
+  if (action) q.set("action", action);
+  if (from) q.set("from", from);
+  if (to) q.set("to", to);
+  if (limit) q.set("limit", String(limit));
+  if (offset) q.set("offset", String(offset));
+  const r = await staffFetch(`/staff/activity?${q.toString()}`);
+  const d = await r.json();
+  if (!r.ok) throw new Error(d.error || "Failed to load activity");
+  return d;
+}

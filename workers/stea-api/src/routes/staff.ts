@@ -27,7 +27,7 @@ import { requireStaff, StaffContext, StaffRole } from "../staff-auth/middleware"
 
 const PRODUCTS_COLLECTION = "stea_code_products";
 
-const ROLE_ORDER: Record<StaffRole, number> = { editor: 1, admin: 2, owner: 3 };
+const ROLE_ORDER: Record<StaffRole, number> = { editor: 1, approver: 2, owner: 3 };
 
 const SESSION_HOURS = 12;
 
@@ -182,10 +182,10 @@ export async function handleStaffMe(req: Request, env: Env): Promise<Response> {
 }
 
 // ============================================================
-// List staff (admin or owner)
+// List staff (owner only)
 // ============================================================
 export async function handleListStaff(req: Request, env: Env): Promise<Response> {
-  const ctx = await requireStaff(req, env, "admin");
+  const ctx = await requireStaff(req, env, "owner");
   if (ctx instanceof Response) return ctx;
   try {
     const result = await env.DB.prepare(
@@ -219,7 +219,7 @@ export async function handleCreateStaff(req: Request, env: Env): Promise<Respons
 
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return jsonErr(req, "Invalid email address", 400);
   if (password.length < 8) return jsonErr(req, "Password must be at least 8 characters", 400);
-  if (!["owner", "admin", "editor"].includes(role)) return jsonErr(req, "Invalid role", 400);
+  if (!["owner", "approver", "editor"].includes(role)) return jsonErr(req, "Invalid role", 400);
   if (role === "owner" && ctx.staff.role !== "owner") return jsonErr(req, "Only an owner can create another owner", 403);
 
   try {
@@ -268,7 +268,7 @@ export async function handleUpdateStaff(req: Request, env: Env, id: string): Pro
     const status = body.status !== undefined ? String(body.status) : existing.status;
     const displayName = body.displayName !== undefined ? String(body.displayName) : existing.display_name;
 
-    if (!["owner", "admin", "editor"].includes(role)) return jsonErr(req, "Invalid role", 400);
+    if (!["owner", "approver", "editor"].includes(role)) return jsonErr(req, "Invalid role", 400);
     if (!["active", "revoked"].includes(status)) return jsonErr(req, "Invalid status", 400);
 
     const now = new Date().toISOString();
