@@ -86,6 +86,89 @@ const EMPTY_PRODUCT = {
   preview: BASE_PREVIEW,
 };
 
+/**
+ * ─────────────────────────────────────────────────────────────
+ * SOURCE-CODE HYDRATION — canonical storage (read before editing)
+ *
+ * Two preview runtimes exist. Each has ONE canonical source-of-truth plus a
+ * legacy fallback chain, so the editor NEVER renders empty for a product
+ * that has working source:
+ *
+ *   runtime 'full-html'  (single Full Document textarea)
+ *     canonical : products.preview.fullDocument
+ *     fallback  : products.sourceCode (plain string) → sourceCode.fullDocument
+ *
+ *   runtime 'HTML/CSS/JS'  (HTML / CSS / JS tabs)
+ *     canonical : products.sourceCode.{html, css, javascript}   (JSON object)
+ *     fallback  : products.preview.{html, css, javascript}
+ *                 → sourceCode (plain string, treated as html)
+ *                 → preview.js / sourceCode.js
+ *
+ * Where things live on the products row:
+ *   • products.sourceCode  → the CODE (JSON object {html,css,javascript,jsx,
+ *                            fullDocument} OR a plain HTML string). This is
+ *                            the canonical home for 'HTML/CSS/JS'.
+ *   • products.preview     → preview SETTINGS only (enabled, runtime, width,
+ *                            height, baseUrl, externalUrl, videoKey, posterKey).
+ *                            The editor's code textareas historically read
+ *                            from here, which is WHY they rendered empty.
+ *   • stea_code_product_previews collection → the LIVE buyer-facing source,
+ *                            fetched lazily via getAdminSteaCodePreview().
+ *
+ * Hydration order: sourceCode → preview → (async) separate previews
+ * collection. An empty value must NEVER clobber a populated one.
+ *
+ * `sourceCode` may be a JSON object, a JSON string, a plain HTML string, or
+ * null. This resolver is defensive and never throws.
+ * ─────────────────────────────────────────────────────────────
+ */
+function resolveSourceFields(sourceCode, preview) {
+  let src = sourceCode;
+  if (typeof src === "string" && src.trim()) {
+    try {
+      const parsed = JSON.parse(src);
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) src = parsed;
+    } catch {
+      // not JSON → treat the string as plain HTML below
+    }
+  }
+  if (src && typeof src !== "object") src = null;
+
+  const p = preview && typeof preview === "object" && !Array.isArray(preview) ? preview : {};
+  const srcObj = src && typeof src === "object" && !Array.isArray(src) ? src : {};
+  const srcStr = typeof sourceCode === "string" ? sourceCode.trim() : "";
+
+  return {
+    html: srcObj.html ?? p.html ?? (srcStr ? srcStr : "") ?? "",
+    css: srcObj.css ?? p.css ?? "",
+    javascript: srcObj.javascript ?? p.javascript ?? srcObj.js ?? p.js ?? "",
+    jsx: srcObj.jsx ?? p.jsx ?? "",
+    fullDocument:
+      p.fullDocument ?? (srcStr ? srcStr : "") ?? srcObj.fullDocument ?? "",
+  };
+}
+
+/**
+ * Build the sourceCode payload for a save, honoring the "never send empty
+ * strings for fields the user did not edit" rule. A field that was empty on
+ * load and is still empty is omitted (undefined) so it can't wipe anything;
+ * a field that HAD content and was cleared is sent as "" (explicit clear).
+ */
+function buildSourceCodePayload(preview, loaded) {
+  const out = {};
+  for (const key of ["html", "css", "javascript", "jsx"]) {
+    const cur = String(preview?.[key] ?? "");
+    const loadedVal = String(loaded?.[key] ?? "");
+    if (cur.trim() === "" && loadedVal.trim() === "") continue; // untouched-empty
+    if (cur === loadedVal) {
+      if (cur.trim()) out[key] = cur; // unchanged with content → keep intact
+      continue;
+    }
+    out[key] = cur; // changed, incl. explicit clear → ""
+  }
+  return out;
+}
+
 const TABS = [
   { id: "basic", label: "Basic", icon: FileText },
   { id: "preview", label: "Preview", icon: Eye },

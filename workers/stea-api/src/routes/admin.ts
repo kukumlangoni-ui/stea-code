@@ -137,18 +137,39 @@ interface RouteEnv extends Env {
 }
 
 async function requireAdmin(req: Request, env: Env): Promise<{ uid: string; email?: string } | null> {
+  // ── Staff-token path (new admin panel) ──
+  // Try the staff middleware first. Owners + approvers pass.
+  // Editors are blocked — they can't hit raw admin write endpoints directly.
+  try {
+    const staff = await requireStaff(req, env, "approver");
+    if (!(staff instanceof Response)) {
+      return {
+        uid: staff.staff.id,
+        email: staff.staff.email,
+      };
+    }
+  } catch {
+    // fall through to Firebase
+  }
+
+  // ── Firebase path (legacy, kept for backward compatibility) ──
   const token = extractBearerToken(req);
   if (!token) {
-    console.warn("[stea-api] requireAdmin: no Bearer token in Authorization header");
+    console.warn("[stea-api] requireAdmin: no Bearer token");
     return null;
   }
   try {
-    const decoded = await verifyFirebaseToken(env, token);
-    if (decoded.email && ADMIN_EMAILS.has(decoded.email)) {
-      return { uid: decoded.uid, email: decoded.email };
+    const decoded = await verifyFirebaseToken(token, env);
+    if (!decoded) {
+      console.warn("[stea-api] requireAdmin: token verification returned null");
+      return null;
     }
-    console.warn(`[stea-api] requireAdmin: email not in admin whitelist: ${decoded.email}`);
-    return null;
+    const email = String(decoded.email || "").toLowerCase();
+    if (!email || !ADMIN_EMAILS.has(email)) {
+      console.warn(`[stea-api] requireAdmin: email not in admin whitelist: ${email}`);
+      return null;
+    }
+    return { uid: String(decoded.uid || decoded.sub || ""), email };
   } catch (e: any) {
     console.error("[stea-api] requireAdmin: token verification failed:", e?.message || e);
     return null;
