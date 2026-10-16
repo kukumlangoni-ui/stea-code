@@ -2,8 +2,11 @@ name = "stea-api"
 main = "src/index.ts"
 compatibility_date = "2024-09-01"
 
-# Route the /api/* calls on code.stea.africa to this Worker
+# Route /api/* calls on the live domain (steacode.com) and the legacy
+# code.stea.africa host to this Worker. The frontend uses same-origin API_BASE="",
+# so steacode.com must own /api/* via a Worker Route for catalog/admin to work.
 routes = [
+  { pattern = "steacode.com/api/*", zone_name = "steacode.com" },
   { pattern = "code.stea.africa/api/*", zone_name = "stea.africa" }
 ]
 
