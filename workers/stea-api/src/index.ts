@@ -11,6 +11,7 @@
 
 import { corsHeaders, isPreflight, preflightResponse } from "./cors";
 import { handleCatalog, handleProduct } from "./routes/catalog";
+import { handleAuthBridge } from "./routes/auth-bridge";
 import { handlePreview, handleFreeContent, handleContent, handleProductPreviewCard } from "./routes/content";
 import { handleCheckout } from "./routes/checkout";
 import { handleCheckoutProduct } from "./routes/checkout-product";
@@ -310,6 +311,14 @@ export default {
       }
       if (adminProductMatch && method === "DELETE") {
         return handleAdminDeleteProduct(request, env, adminProductMatch[1]);
+      }
+
+      // ============ Clerk → Firebase auth bridge ============
+      // POST /api/stea-code/auth/bridge — exchange a Clerk session token for a
+      // Firebase custom token. Frontend signs into Firebase afterwards so all
+      // existing Firebase code paths keep working unchanged.
+      if (apiPath === "/stea-code/auth/bridge" && method === "POST") {
+        return handleAuthBridge(request, env);
       }
 
       // ============ Staff auth routes ============

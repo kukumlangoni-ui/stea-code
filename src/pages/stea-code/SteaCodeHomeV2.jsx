@@ -47,6 +47,7 @@ import {
   makePurchasesAction,
   setSteaCodePendingAction } from "../../services/steaCodeResumeAction.js";
 import { getFirebaseAuth } from "../../firebase.js";
+import { useClerk } from "@clerk/clerk-react";
 import { startActivityTracking } from "../../services/userActivity.js";
 import { fetchEntitlements } from "../../services/steaCodeEntitlements.js";
 import {
@@ -470,8 +471,14 @@ function EmailVerificationBanner({ user, tLocal, onToast }) {
   );
 }
 
+const CLERK_ENABLED = Boolean(import.meta.env.VITE_CLERK_PUBLISHABLE_KEY);
+
 export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSearch }) {
   const { tLocal, uiLocale, setUiLocale } = useSteaCodeI18n();
+  // Clerk is the sign-in entry point when configured. useClerk() throws if no
+  // ClerkProvider is mounted, so only call it when the key is present (constant
+  // per build, so hook order is stable). Falls back to the Firebase member gate.
+  const clerk = CLERK_ENABLED ? useClerk() : null;
   const navigate = useNavigate();
   const [viewMode, setViewMode] = useState("home");
   const [q, setQ] = useState("");
@@ -649,7 +656,12 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
   const [memberGateAction, setMemberGateAction] = useState(null);
 
   useEffect(() => {
-    const handleOpenAuth = () => setMemberGateOpen(true);
+    const handleOpenAuth = () => {
+      if (clerk?.openSignIn) {
+        try { clerk.openSignIn(); return; } catch {}
+      }
+      setMemberGateOpen(true);
+    };
     window.addEventListener("open-auth", handleOpenAuth);
     return () => window.removeEventListener("open-auth", handleOpenAuth);
   }, []);
@@ -917,6 +929,10 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
     } catch (err) {
       console.error('[signout] failed', err);
     } finally {
+      // Sign out of Clerk too (the sign-in entry point). Guarded — Clerk may be disabled.
+      if (clerk?.signOut) {
+        try { await clerk.signOut(); } catch {}
+      }
       // Always close the account menu and clear local user state immediately
       setAccountMenuOpen(false);
       setLocalAuthUser(null);
@@ -1505,7 +1521,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
             <button
               type="button"
               className="sc-topbar-cta"
-              onClick={() => setMemberGateOpen(true)}
+              onClick={() => { if (clerk?.openSignIn) { try { clerk.openSignIn(); } catch {} } else { setMemberGateOpen(true); } }}
             >
               Sign in
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
