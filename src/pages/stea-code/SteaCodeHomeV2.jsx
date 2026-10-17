@@ -38,6 +38,7 @@ import SteaCodeProductSkeleton from "../../components/stea-code/SteaCodeProductS
 import PreviewErrorBoundary from "../../components/stea-code/PreviewErrorBoundary.jsx";
 import SteaCodeCheckoutPage from "./SteaCodeCheckoutPage.jsx";
 import SteaCodePurchasesPage from "./SteaCodePurchasesPage.jsx";
+import StartProjectPage from "./StartProjectPage.jsx";
 import {
   STEA_CODE_ACTION_TYPES,
   clearSteaCodePendingAction,
@@ -470,7 +471,7 @@ function EmailVerificationBanner({ user, tLocal, onToast }) {
   );
 }
 
-export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSearch }) {
+export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSearch, startProject }) {
   const { tLocal, uiLocale, setUiLocale } = useSteaCodeI18n();
   const navigate = useNavigate();
   const [viewMode, setViewMode] = useState("home");
@@ -1585,7 +1586,9 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
       {false && <EmailVerificationBanner user={effectiveUser} tLocal={tLocal} onToast={showPageToast} />}
 
       <main>
-        {effectiveView === "checkout" ? (
+        {startProject ? (
+          <StartProjectPage />
+        ) : effectiveView === "checkout" ? (
           <SteaCodeCheckoutPage
             productId={checkoutProductId}
             locale={uiLocale}
@@ -2604,18 +2607,18 @@ function CodeProductCard({ product, tLocal, onOpen, isFavorited, onToggleFavorit
     : { scale: 0.985, transition: { duration: 0.12 } };
 
   const EXTERNAL_REDIRECTS = {
-    "premium-website-hero": "/start-project.html",
+    "premium-website-hero": "/start-project",
   };
   const externalUrl = EXTERNAL_REDIRECTS[product.slug] || EXTERNAL_REDIRECTS[productId];
 
   const openModal = useCallback(() => {
     if (externalUrl) {
-      // internal page — same tab, so "Back to steacode" on the form returns home
-      window.location.href = externalUrl;
+      // internal page — SPA navigation, keeps the shell header/search/nav visible
+      navigate(externalUrl);
       return;
     }
     if (typeof onOpen === "function") onOpen();
-  }, [onOpen, productId, externalUrl]);
+  }, [onOpen, productId, externalUrl, navigate]);
 
   return (
     <motion.button

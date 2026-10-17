@@ -154,6 +154,9 @@ export default function App() {
                   {/* Home */}
                   <Route path="/" element={<SteaCodeHomeV2 user={user} authLoading={authLoading} />} />
 
+                  {/* Start a Project — in-app page, same shell as home */}
+                  <Route path="/start-project" element={<SteaCodeHomeV2 user={user} authLoading={authLoading} startProject />} />
+
                   {/* Code shell */}
                   <Route path="/code" element={<Navigate to={{ pathname: "/", search: location.search }} replace />} />
                   <Route path="/code/products/:slug" element={<SteaCodeHomeV2 user={user} authLoading={authLoading} />} />

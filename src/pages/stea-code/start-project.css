@@ -1,0 +1,484 @@
+/* ======================================================================
+ * Start a Project — in-app page styles (prefixed spp- to avoid collisions)
+ * Ported from public/start-project.html; matches steacode brand tokens.
+ * ====================================================================== */
+
+.spp-hero {
+  text-align: center;
+  padding-top: clamp(1.5rem, 4vw, 3rem);
+}
+
+.spp-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--gold, #f5a623);
+  font-size: clamp(0.72rem, 1.4vw, 0.82rem);
+  font-weight: 700;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+}
+.spp-kicker::before,
+.spp-kicker::after {
+  content: "";
+  height: 1px;
+  width: clamp(24px, 5vw, 48px);
+  background: linear-gradient(90deg, transparent, var(--gold, #f5a623));
+}
+.spp-kicker::after {
+  background: linear-gradient(90deg, var(--gold, #f5a623), transparent);
+}
+
+.spp-hero h1 {
+  font-family: var(--font-display, "Bricolage Grotesque", Georgia, serif);
+  font-weight: 800;
+  font-size: clamp(2.2rem, 6vw, 4rem);
+  line-height: 1.05;
+  letter-spacing: -0.025em;
+  color: var(--ink, #ffffff);
+  margin: clamp(1rem, 2.5vw, 1.6rem) auto;
+  max-width: 15ch;
+}
+
+.spp-hero p {
+  color: var(--muted, #8a8a93);
+  font-size: clamp(1rem, 1.9vw, 1.15rem);
+  max-width: 56ch;
+  margin: 0 auto;
+  font-weight: 400;
+}
+
+/* ---------- Direction cards ---------- */
+.spp-section-label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: clamp(3rem, 6vw, 4.5rem) 0 clamp(1.25rem, 2.5vw, 2rem);
+}
+.spp-section-label .spp-num {
+  color: var(--gold, #f5a623);
+  font-family: var(--font-display, "Bricolage Grotesque", Georgia, serif);
+  font-weight: 700;
+  font-size: clamp(1rem, 2vw, 1.25rem);
+}
+.spp-section-label h2 {
+  font-family: var(--font-display, "Bricolage Grotesque", Georgia, serif);
+  font-weight: 700;
+  font-size: clamp(1.3rem, 3vw, 2rem);
+  letter-spacing: -0.02em;
+  color: var(--ink, #ffffff);
+}
+
+.spp-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: clamp(0.85rem, 1.8vw, 1.35rem);
+}
+
+.spp-choice-card {
+  position: relative;
+  display: block;
+  cursor: pointer;
+}
+
+.spp-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  height: 100%;
+  padding: clamp(1.1rem, 2.2vw, 1.6rem);
+  background: linear-gradient(180deg, var(--panel-2, #17171b), var(--panel, #111113));
+  border: 1px solid var(--line, rgba(255, 255, 255, 0.08));
+  border-radius: 16px;
+  transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.22s ease,
+    box-shadow 0.22s ease,
+    background 0.22s ease;
+}
+
+.spp-card-body:hover {
+  transform: translateY(-3px);
+  border-color: var(--line-strong, rgba(255, 255, 255, 0.14));
+}
+
+.spp-card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.spp-card-icon {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--line, rgba(255, 255, 255, 0.08));
+  color: var(--muted, #8a8a93);
+  transition: color 0.22s ease, background 0.22s ease, border-color 0.22s ease;
+}
+.spp-card-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.spp-card-arrow {
+  color: var(--muted, #8a8a93);
+  transition: transform 0.22s ease, color 0.22s ease;
+}
+.spp-card-arrow svg {
+  width: 18px;
+  height: 18px;
+}
+.spp-card-body:hover .spp-card-arrow {
+  transform: translateX(3px);
+  color: var(--gold, #f5a623);
+}
+
+.spp-card-index {
+  position: absolute;
+  top: 14px;
+  right: 46px;
+  font-family: var(--font-display, "Bricolage Grotesque", Georgia, serif);
+  font-weight: 700;
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  color: rgba(255, 255, 255, 0.28);
+}
+
+.spp-card-body strong {
+  font-weight: 600;
+  font-size: clamp(1rem, 1.9vw, 1.1rem);
+  color: var(--ink, #ffffff);
+}
+.spp-card-body p {
+  font-size: clamp(0.82rem, 1.4vw, 0.9rem);
+  color: var(--muted, #8a8a93);
+  line-height: 1.5;
+}
+
+/* Selected state */
+.spp-choice-card.is-selected .spp-card-body {
+  border-color: var(--gold, #f5a623);
+  background: linear-gradient(180deg, var(--panel-2, #17171b), rgba(245, 166, 35, 0.06));
+  box-shadow: 0 0 0 1px var(--gold-glow, rgba(245, 166, 35, 0.22)),
+    0 0 26px var(--gold-glow, rgba(245, 166, 35, 0.22)),
+    0 24px 60px rgba(0, 0, 0, 0.45);
+}
+.spp-choice-card.is-selected .spp-card-icon {
+  color: var(--gold, #f5a623);
+  background: var(--gold-soft, rgba(245, 166, 35, 0.12));
+  border-color: rgba(245, 166, 35, 0.35);
+}
+.spp-choice-card.is-selected .spp-card-arrow,
+.spp-choice-card.is-selected .spp-card-index {
+  color: var(--gold, #f5a623);
+}
+.spp-choice-card.is-focused .spp-card-body {
+  outline: 2px solid var(--gold, #f5a623);
+  outline-offset: 2px;
+}
+.spp-card-body.spp-pulse {
+  animation: sppPulseGold 0.3s ease;
+}
+@keyframes sppPulseGold {
+  0% { box-shadow: 0 0 0 0 var(--gold-glow, rgba(245, 166, 35, 0.22)); }
+  70% { box-shadow: 0 0 0 10px transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+
+/* ---------- Form ---------- */
+.spp-form-section {
+  margin-top: clamp(3rem, 6vw, 5rem);
+}
+.spp-form-section::before {
+  content: "";
+  display: block;
+  height: 1px;
+  background: var(--line, rgba(255, 255, 255, 0.08));
+  margin-bottom: clamp(2.5rem, 5vw, 4rem);
+}
+
+.spp-form-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: clamp(1.5rem, 3vw, 2.5rem);
+}
+
+.spp-form-side h3 {
+  font-family: var(--font-display, "Bricolage Grotesque", Georgia, serif);
+  font-weight: 700;
+  font-size: clamp(1.4rem, 3.2vw, 2.1rem);
+  letter-spacing: -0.02em;
+  color: var(--ink, #ffffff);
+  margin-bottom: 0.6rem;
+}
+.spp-form-side > p {
+  color: var(--muted, #8a8a93);
+  font-size: clamp(0.9rem, 1.6vw, 1rem);
+  max-width: 40ch;
+}
+
+.spp-form-card {
+  background: linear-gradient(180deg, var(--panel-2, #17171b), var(--panel, #111113));
+  border: 1px solid var(--line, rgba(255, 255, 255, 0.08));
+  border-radius: 20px;
+  padding: clamp(1.4rem, 3vw, 2.2rem);
+}
+
+.spp-field {
+  margin-bottom: clamp(1.1rem, 2vw, 1.5rem);
+}
+.spp-field label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted, #8a8a93);
+  margin-bottom: 0.5rem;
+}
+.spp-field label .spp-req {
+  color: var(--gold, #f5a623);
+}
+.spp-field label .spp-opt {
+  opacity: 0.55;
+  letter-spacing: 0.1em;
+}
+
+.spp-field input[type="text"],
+.spp-field input[type="email"],
+.spp-field textarea,
+.spp-field select {
+  width: 100%;
+  font-family: var(--font-body, "Inter", -apple-system, sans-serif);
+  font-size: 0.98rem;
+  color: var(--ink, #ffffff);
+  background: var(--bg, #0a0a0a);
+  border: 1px solid var(--line, rgba(255, 255, 255, 0.08));
+  border-radius: 12px;
+  padding: 0.8rem 1rem;
+  transition: border-color 0.2s ease;
+}
+.spp-field textarea {
+  min-height: 130px;
+  resize: vertical;
+  line-height: 1.55;
+}
+.spp-field input::placeholder,
+.spp-field textarea::placeholder {
+  color: rgba(138, 138, 147, 0.7);
+}
+
+.spp-field .spp-input-wrap {
+  position: relative;
+}
+.spp-field .spp-input-wrap::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 100%;
+  bottom: 0;
+  height: 2px;
+  background: var(--gold, #f5a623);
+  border-radius: 2px;
+  transition: right 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.spp-field .spp-input-wrap:focus-within::after {
+  right: 0;
+}
+
+.spp-phone-row {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 10px;
+}
+.spp-field select {
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
+  padding-right: 2.2rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238a8a93' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.9rem center;
+}
+.spp-field select option {
+  background: var(--panel, #111113);
+  color: var(--ink, #ffffff);
+}
+
+.spp-field .spp-error-msg {
+  display: none;
+  align-items: center;
+  gap: 6px;
+  margin-top: 0.45rem;
+  font-size: 0.78rem;
+  color: var(--gold, #f5a623);
+  font-weight: 500;
+}
+.spp-field .spp-error-msg::before {
+  content: "!";
+  display: inline-grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--danger-soft, rgba(245, 166, 35, 0.14));
+  color: var(--gold, #f5a623);
+  font-weight: 700;
+  font-size: 0.72rem;
+}
+.spp-field.spp-has-error .spp-error-msg {
+  display: flex;
+}
+
+.spp-direction-error {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 1.2rem;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: rgba(245, 166, 35, 0.10);
+  border: 1px solid rgba(245, 166, 35, 0.3);
+  color: var(--gold, #f5a623);
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+.spp-direction-error.is-visible {
+  display: flex;
+}
+
+/* ---------- Submit ---------- */
+.spp-submit-row {
+  margin-top: clamp(1.2rem, 2vw, 1.6rem);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.spp-submit-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0.95rem 1.9rem;
+  background: var(--gold, #f5a623);
+  color: #0a0a0a;
+  font-family: var(--font-body, "Inter", -apple-system, sans-serif);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.12s ease;
+}
+.spp-submit-btn svg {
+  width: 17px;
+  height: 17px;
+  transition: transform 0.2s ease;
+}
+.spp-submit-btn:hover {
+  background: var(--gold-bright, #ffc23c);
+  box-shadow: 0 10px 28px var(--gold-glow, rgba(245, 166, 35, 0.22)),
+    0 24px 60px rgba(0, 0, 0, 0.45);
+  transform: translateY(-1px);
+}
+.spp-submit-btn:hover svg {
+  transform: translateX(4px);
+}
+.spp-submit-btn:active {
+  transform: scale(0.98);
+}
+
+.spp-success-msg {
+  display: none;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: var(--gold, #f5a623);
+}
+.spp-success-msg.is-visible {
+  display: flex;
+}
+.spp-success-msg a {
+  color: var(--gold, #f5a623);
+  text-decoration: underline;
+}
+.spp-success-msg a:hover {
+  color: var(--gold-bright, #ffc23c);
+}
+
+/* ---------- Footer note ---------- */
+.spp-foot {
+  text-align: center;
+  padding: clamp(2rem, 5vw, 3rem) 0 clamp(1.5rem, 4vw, 2.5rem);
+  color: var(--muted, #8a8a93);
+  font-size: 0.88rem;
+}
+.spp-foot a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted, #8a8a93);
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 500;
+  margin-top: 0.4rem;
+  transition: color 0.2s ease;
+}
+.spp-foot a:hover {
+  color: var(--gold, #f5a623);
+}
+
+/* ---------- Responsive ---------- */
+@media (min-width: 640px) and (max-width: 1023px) {
+  .spp-cards-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (min-width: 1024px) {
+  .spp-form-layout {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+    align-items: start;
+  }
+  .spp-form-side {
+    position: sticky;
+    top: 3rem;
+  }
+}
+@media (max-width: 639px) {
+  .spp-cards-grid {
+    grid-template-columns: 1fr;
+  }
+  .spp-phone-row {
+    grid-template-columns: 124px 1fr;
+  }
+  .spp-submit-row {
+    justify-content: stretch;
+  }
+  .spp-submit-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .spp-card-body,
+  .spp-card-arrow,
+  .spp-submit-btn,
+  .spp-submit-btn svg,
+  .spp-field .spp-input-wrap::after {
+    transition: none;
+  }
+  .spp-card-body.spp-pulse {
+    animation: none;
+  }
+}
