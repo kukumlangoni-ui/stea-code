@@ -41,6 +41,7 @@ import {
   handleAdminOrders,
   handleAdminEntitlements,
   handleAdminUsers,
+  handleAdminSyncFirebaseUsers,
   handleAdminStats,
 } from "./routes/admin";
 import {
@@ -269,6 +270,9 @@ export default {
 
       if (apiPath === "/admin/stea-code/users" && method === "GET") {
         return handleAdminUsers(request, env);
+      }
+      if (apiPath === "/admin/stea-code/users/sync" && method === "POST") {
+        return handleAdminSyncFirebaseUsers(request, env);
       }
 
       if (apiPath === "/admin/stea-code/stats" && method === "GET") {

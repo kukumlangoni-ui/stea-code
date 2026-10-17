@@ -96,6 +96,7 @@ import ActivityPanel, {
   entryTime,
 } from "./ActivityPanel.jsx";
 import ApprovalsPanel from "./ApprovalsPanel.jsx";
+import SteaCodeUsersPanel from "./SteaCodeUsersPanel.jsx";
 import { listActivity, listRevisions } from "../services/staffAuth.js";
 
 // Shared single-source-of-truth category list. Drop the UI-only pseudo-category "All"
@@ -4685,120 +4686,7 @@ export default function SteaCodeCommercePanel({ isSuperAdmin, initialTab = "prod
 
       {/* USERS TAB */}
       {tab === "users" && canSeeMoney && (
-        <div className="sc-admin-panel">
-          <div className="sc-admin-product-toolbar">
-            <div className="sc-admin-search">
-              <Search size={16} />
-              <input
-                value={usersQuery}
-                onChange={(e) => setUsersQuery(e.target.value)}
-                placeholder="Search users by email, name, role…"
-              />
-            </div>
-            <div className="sc-admin-filter-row">
-              {[
-                { id: "all", label: `All Users (${users.length})` },
-                { id: "paid", label: `Paid Customers (${users.filter((u) => u.purchasesCount > 0).length})` },
-                { id: "free", label: `Free Members (${users.filter((u) => u.purchasesCount === 0).length})` },
-                { id: "admins", label: `Admins (${users.filter((u) => ["Super Admin", "Admin"].includes(u.role)).length})` },
-              ].map((item) => (
-                <button
-                  key={item.id}
-                  className={usersFilter === item.id ? "is-active" : ""}
-                  onClick={() => setUsersFilter(item.id)}
-                >
-                  {item.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="admin-v2-table-wrap">
-            <table className="admin-v2-table">
-              <thead>
-                <tr>
-                  <th>User</th>
-                  <th>Role</th>
-                  <th>Purchases</th>
-                  <th>Total Spent</th>
-                  <th>Entitlements</th>
-                  <th>Status</th>
-                  <th>Last Active</th>
-                  <th>Joined</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredUsers.map((u) => {
-                  const initials = (u.email || "U").slice(0, 2).toUpperCase();
-                  return (
-                    <tr key={u.id || u.email}>
-                      <td>
-                        <div className="sc-admin-user-cell">
-                          <div className="sc-admin-user-avatar">{initials}</div>
-                          <div>
-                            <strong style={{ color: "#ffffff", display: "block" }}>{u.displayName}</strong>
-                            <span style={{ fontSize: "11px", color: "rgba(255,255,255,0.45)" }}>{u.email}</span>
-                          </div>
-                        </div>
-                      </td>
-                      <td>
-                        <span className={`sca-admin-badge ${u.role === "Super Admin" ? "super" : "read"}`}>
-                          {u.role}
-                        </span>
-                      </td>
-                      <td><strong>{u.purchasesCount}</strong></td>
-                      <td><span className="sc-admin-price">USD {u.totalSpent.toFixed(2)}</span></td>
-                      <td>{u.entitlements.length} active</td>
-                      <td>
-                        <span className={`sc-admin-status ${u.isBanned ? "is-banned" : "is-active"}`}>
-                          {u.isBanned ? "Banned" : "Active"}
-                        </span>
-                      </td>
-                      <td>{formatDate(u.lastActive)}</td>
-                      <td>{formatDate(u.joinedDate)}</td>
-                      <td>
-                        <div className="sc-admin-row-actions">
-                          <button title="View User Detail" onClick={() => setSelectedUser(u)}>
-                            <Eye size={14} />
-                          </button>
-                          {isSuperAdmin && (
-                            <button title="Grant Product Entitlement" onClick={() => setGrantingUser(u)}>
-                              <KeyRound size={14} />
-                            </button>
-                          )}
-                          <button title="Resend Receipt Email" onClick={() => handleResendReceipt(u.email)}>
-                            <Mail size={14} />
-                          </button>
-                          {isSuperAdmin && (
-                            <button
-                              title={u.isBanned ? "Unban User" : "Ban User"}
-                              className={u.isBanned ? "" : "is-danger"}
-                              onClick={() => handleToggleBan(u.email)}
-                            >
-                              {u.isBanned ? <UserCheck size={14} /> : <Ban size={14} />}
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-                {filteredUsers.length === 0 && (
-                  <tr>
-                    <td colSpan={9} className="sc-admin-empty-row">
-                      <div className="sc-admin-empty-state">
-                        <Users size={36} className="sc-admin-empty-icon" />
-                        <div className="sc-admin-empty-title">No users found</div>
-                        <div className="sc-admin-empty-caption">No registered user accounts match your search and filter criteria.</div>
-                      </div>
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <SteaCodeUsersPanel />
       )}
 
       {/* ORDERS TAB */}

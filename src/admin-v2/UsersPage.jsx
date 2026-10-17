@@ -1,46 +1,51 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { AdminPageHeader } from "./AdminLayout.jsx";
-import { Ban, CheckCircle, Download, FileSpreadsheet, RefreshCw, Search, Shield, ShieldAlert, Users } from "lucide-react";
-import { createAuditLog } from "./auditLog";
-import { AdminConfirmationModal } from "./AdminConfirmationModal.jsx";
-import { contactSummary, downloadBrevoCsv, downloadContactsExcel, fetchAdminJson, syncUsersToFirestore } from "./marketingContacts.js";
+import { CheckCircle, RefreshCw, Search, ShieldAlert, Users } from "lucide-react";
+import { fetchAdminJson } from "./marketingContacts.js";
 
-const ROLES = ["user", "admin", "super_admin", "editor", "manager"];
-
-function uniqueValues(users, key, fallback = "Unknown") {
-  return [...new Set(users.map((user) => String(user[key] || user.profile?.[key] || fallback)).filter(Boolean))].sort();
+// ---- helpers ----
+function relativeTime(value) {
+  if (!value) return "—";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "—";
+  const diff = Date.now() - d.getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 30) return `${days}d ago`;
+  return d.toLocaleDateString();
 }
 
-function displayDate(value) {
-  if (!value) return "Unknown";
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? "Unknown" : date.toLocaleDateString();
+function formatMoney(value) {
+  const n = Number(value || 0);
+  return n.toLocaleString("en-US", { style: "currency", currency: "USD" });
+}
+
+function sourceBadge(source) {
+  if (source === "firebase") return <span className="admin-v2-badge" style={{ background: "#dbeafe", color: "#1d4ed8" }}>Firebase</span>;
+  if (source === "staff") return <span className="admin-v2-badge" style={{ background: "#fef3c7", color: "#b45309" }}>Staff</span>;
+  return <span className="admin-v2-badge unknown">Unknown</span>;
 }
 
 export default function UsersPage({ isSuperAdmin }) {
   const [users, setUsers] = useState([]);
-  const [stats, setStats] = useState({ totalAuthUsers: 0, totalProfiles: 0, missingProfiles: 0, orphanProfiles: 0 });
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
-  const [confirming, setConfirming] = useState(null);
-  const [filters, setFilters] = useState({ search: "", provider: "", role: "", language: "" });
+  const [filters, setFilters] = useState({ search: "", source: "", status: "" });
 
   const loadUsers = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
-      const data = await fetchAdminJson("/api/admin/users");
-      setUsers(data.authUsers || []);
-      setStats({
-        totalAuthUsers: data.totalAuthUsers || 0,
-        totalProfiles: data.totalProfiles || 0,
-        missingProfiles: data.missingProfiles || 0,
-        orphanProfiles: data.orphanProfiles || 0,
-      });
+      const data = await fetchAdminJson("/api/admin/stea-code/users");
+      setUsers(data.users || []);
     } catch (err) {
-      setError(err?.message || "Could not load real users.");
+      setError(err?.message || "Could not load users.");
     } finally {
       setLoading(false);
     }
@@ -48,13 +53,15 @@ export default function UsersPage({ isSuperAdmin }) {
 
   useEffect(() => { loadUsers(); }, [loadUsers]);
 
-  const handleSync = async () => {
+  const handleSyncFirebase = async () => {
     setSyncing(true);
     setError("");
     setMessage("");
     try {
-      const result = await syncUsersToFirestore();
-      setMessage(`Sync complete. ${result.syncedCount || 0} Auth user${result.syncedCount === 1 ? "" : "s"} written to Firestore.`);
+      const result = await fetchAdminJson("/api/admin/stea-code/users/sync", { method: "POST" });
+      if (result?.ok) {
+        setMessage(`Synced ${result.synced} users (${result.created} new, ${result.updated} updated)`);
+      }
       await loadUsers();
     } catch (err) {
       setError(err?.message || "Could not sync users.");
@@ -63,121 +70,84 @@ export default function UsersPage({ isSuperAdmin }) {
     }
   };
 
-  const handleAction = async (reason) => {
-    if (!confirming) return;
-    const { action, item, newRole } = confirming;
-    if (action === "suspend") {
-      await createAuditLog("suspend_user", "users", item.uid, { status: item.status }, { status: "suspended" }, reason);
-      await fetchAdminJson(`/api/admin/users/${encodeURIComponent(item.uid)}/status`, { method: "PATCH", body: JSON.stringify({ disabled: true }) });
-      setUsers((current) => current.map((u) => u.uid === item.uid ? { ...u, status: "suspended" } : u));
-    } else if (action === "activate") {
-      await createAuditLog("activate_user", "users", item.uid, { status: item.status }, { status: "active" }, reason);
-      await fetchAdminJson(`/api/admin/users/${encodeURIComponent(item.uid)}/status`, { method: "PATCH", body: JSON.stringify({ disabled: false }) });
-      setUsers((current) => current.map((u) => u.uid === item.uid ? { ...u, status: "active" } : u));
-    } else if (action === "editRole") {
-      await createAuditLog("edit_user_role", "users", item.uid, { role: item.role }, { role: newRole }, reason);
-      await fetchAdminJson(`/api/admin/users/${encodeURIComponent(item.uid)}/role`, { method: "PATCH", body: JSON.stringify({ role: newRole }) });
-      setUsers((current) => current.map((u) => u.uid === item.uid ? { ...u, role: newRole } : u));
-    }
-  };
-
-  const providerOptions = useMemo(() => uniqueValues(users, "provider"), [users]);
-  const roleOptions = useMemo(() => uniqueValues(users, "role", "user"), [users]);
-  const languageOptions = useMemo(() => uniqueValues(users, "language", "").filter(Boolean), [users]);
-  const summary = useMemo(() => contactSummary(users), [users]);
-  const adminCount = useMemo(() => users.filter((u) => u.role === "admin" || u.role === "super_admin").length, [users]);
+  const sourceOptions = useMemo(() => [...new Set(users.map((u) => u.source || "unknown").filter(Boolean))].sort(), [users]);
+  const setFilter = (key, value) => setFilters((current) => ({ ...current, [key]: value }));
 
   const visibleUsers = useMemo(() => {
     const search = filters.search.trim().toLowerCase();
-    return users.filter((user) => {
+    return users.filter((u) => {
       if (search) {
-        const haystack = `${user.email || ""} ${user.displayName || user.name || ""} ${user.uid || ""}`.toLowerCase();
+        const haystack = `${u.email || ""} ${u.displayName || ""} ${u.id || ""}`.toLowerCase();
         if (!haystack.includes(search)) return false;
       }
-      if (filters.provider && String(user.provider || "Unknown") !== filters.provider) return false;
-      if (filters.role && String(user.role || "user") !== filters.role) return false;
-      if (filters.language && String(user.language || user.profile?.language || "") !== filters.language) return false;
+      if (filters.source && String(u.source || "unknown") !== filters.source) return false;
+      if (filters.status) {
+        const disabled = Number(u.disabled) === 1 || String(u.status).toLowerCase() === "disabled";
+        if (filters.status === "active" && disabled) return false;
+        if (filters.status === "disabled" && !disabled) return false;
+      }
       return true;
     });
   }, [filters, users]);
 
-  const setFilter = (key, value) => setFilters((current) => ({ ...current, [key]: value }));
+  const counts = useMemo(() => ({
+    firebase: users.filter((u) => u.source === "firebase").length,
+    staff: users.filter((u) => u.source === "staff").length,
+    disabled: users.filter((u) => Number(u.disabled) === 1 || String(u.status).toLowerCase() === "disabled").length,
+  }), [users]);
 
   return (
     <>
-      <AdminPageHeader title="Users Management" description="Real Firebase Authentication contacts, profile sync, and Brevo-ready exports." />
+      <AdminPageHeader title="Users" description="All Firebase customers and staff members across STEA Code." />
 
       {!isSuperAdmin && (
-        <div className="admin-v2-safety-banner" style={{ marginBottom: 24 }}><ShieldAlert size={18} /><div><strong>Protected actions disabled.</strong> You need Super Admin privileges to sync or edit users.</div></div>
+        <div className="admin-v2-safety-banner" style={{ marginBottom: 24 }}><ShieldAlert size={18} /><div><strong>Sync disabled.</strong> Only the owner (Super Admin) can sync Firebase users.</div></div>
       )}
       {error && <div className="admin-v2-error">{error}</div>}
       {message && <div className="admin-v2-safety-banner" style={{ marginBottom: 18 }}><CheckCircle size={18} /><div>{message}</div></div>}
 
-      {confirming && (
-        <AdminConfirmationModal
-          title={confirming.action === "suspend" ? "Suspend User" : confirming.action === "activate" ? "Activate User" : "Edit User Role"}
-          actionDescription={confirming.action === "editRole" ? `You are changing ${confirming.item.email || confirming.item.uid} to ${confirming.newRole}.` : `You are about to ${confirming.action} ${confirming.item.email || confirming.item.uid}.`}
-          danger={confirming.action === "suspend"}
-          onClose={() => setConfirming(null)}
-          onConfirm={handleAction}
-        />
-      )}
-
       <div className="admin-v2-stats-row">
-        <div className="admin-v2-stat-card"><div className="admin-v2-stat-icon"><Users size={24} /></div><div><h4 className="admin-v2-stat-value">{stats.totalAuthUsers.toLocaleString()}</h4><p className="admin-v2-stat-label">Firebase Auth Users</p></div></div>
-        <div className="admin-v2-stat-card"><div className="admin-v2-stat-icon"><Users size={24} /></div><div><h4 className="admin-v2-stat-value">{stats.totalProfiles.toLocaleString()}</h4><p className="admin-v2-stat-label">Firestore Profiles</p></div></div>
-        <div className="admin-v2-stat-card"><div className="admin-v2-stat-icon"><Shield size={24} /></div><div><h4 className="admin-v2-stat-value">{adminCount.toLocaleString()}</h4><p className="admin-v2-stat-label">Admins</p></div></div>
-        <div className="admin-v2-stat-card"><div className="admin-v2-stat-icon"><CheckCircle size={24} /></div><div><h4 className="admin-v2-stat-value">{summary.subscribers.toLocaleString()}</h4><p className="admin-v2-stat-label">Subscribers</p></div></div>
+        <div className="admin-v2-stat-card"><div className="admin-v2-stat-icon"><Users size={24} /></div><div><h4 className="admin-v2-stat-value">{users.length.toLocaleString()}</h4><p className="admin-v2-stat-label">Total Users</p></div></div>
+        <div className="admin-v2-stat-card"><div className="admin-v2-stat-icon"><Users size={24} /></div><div><h4 className="admin-v2-stat-value">{counts.firebase.toLocaleString()}</h4><p className="admin-v2-stat-label">Firebase Customers</p></div></div>
+        <div className="admin-v2-stat-card"><div className="admin-v2-stat-icon"><Users size={24} /></div><div><h4 className="admin-v2-stat-value">{counts.staff.toLocaleString()}</h4><p className="admin-v2-stat-label">Staff Members</p></div></div>
+        <div className="admin-v2-stat-card"><div className="admin-v2-stat-icon"><Users size={24} /></div><div><h4 className="admin-v2-stat-value">{counts.disabled.toLocaleString()}</h4><p className="admin-v2-stat-label">Disabled</p></div></div>
       </div>
 
       <section className="admin-v2-panel">
         <div className="admin-v2-panel-head">User tools <span>{visibleUsers.length.toLocaleString()} visible</span></div>
         <div className="admin-v2-filter-grid admin-v2-users-filter-grid">
           <label>Search<input value={filters.search} onChange={(event) => setFilter("search", event.target.value)} placeholder="Email, name, or UID" /></label>
-          <label>Provider<select value={filters.provider} onChange={(event) => setFilter("provider", event.target.value)}><option value="">All providers</option>{providerOptions.map((item) => <option key={item}>{item}</option>)}</select></label>
-          <label>Role<select value={filters.role} onChange={(event) => setFilter("role", event.target.value)}><option value="">All roles</option>{roleOptions.map((item) => <option key={item}>{item}</option>)}</select></label>
-          <label>Language<select value={filters.language} onChange={(event) => setFilter("language", event.target.value)}><option value="">All languages</option>{languageOptions.map((item) => <option key={item}>{item}</option>)}</select></label>
+          <label>Source<select value={filters.source} onChange={(event) => setFilter("source", event.target.value)}><option value="">All sources</option>{sourceOptions.map((item) => <option key={item} value={item}>{item === "firebase" ? "Firebase" : item === "staff" ? "Staff" : item}</option>)}</select></label>
+          <label>Status<select value={filters.status} onChange={(event) => setFilter("status", event.target.value)}><option value="">All statuses</option><option value="active">Active</option><option value="disabled">Disabled</option></select></label>
           <div className="admin-v2-action-strip">
             <button onClick={loadUsers} disabled={loading}><RefreshCw size={14} /> Refresh</button>
-            <button onClick={handleSync} disabled={!isSuperAdmin || syncing}>{syncing ? <RefreshCw size={14} className="admin-v2-spin" /> : <RefreshCw size={14} />} Sync Users</button>
-            <button onClick={() => downloadBrevoCsv(users)} disabled={!users.length}><Download size={14} /> Export CSV</button>
-            <button onClick={() => downloadContactsExcel(users)} disabled={!users.length}><FileSpreadsheet size={14} /> Excel</button>
+            <button onClick={handleSyncFirebase} disabled={!isSuperAdmin || syncing} title={!isSuperAdmin ? "Sync requires owner access" : undefined}>{syncing ? <RefreshCw size={14} className="admin-v2-spin" /> : <RefreshCw size={14} />} Sync Firebase users</button>
           </div>
         </div>
       </section>
 
-      {loading ? <div className="admin-v2-empty">Loading real Firebase Authentication users...</div> : (
-        <>
-          <section className="admin-v2-panel admin-v2-users-table">
-            <div className="admin-v2-panel-head">Users <span>{stats.missingProfiles.toLocaleString()} missing Firestore profiles</span></div>
-            <div className="admin-v2-table-wrap">
-              <table className="admin-v2-table">
-                <thead><tr><th>User</th><th>Email</th><th>UID</th><th>Provider</th><th>Created</th><th>Role</th><th>Language</th><th>Actions</th></tr></thead>
-                <tbody>{visibleUsers.map((item) => (
-                  <tr key={item.uid}>
-                    <td><strong>{item.displayName || item.name || "Unknown Name"}</strong><br /><span className={`admin-v2-badge ${item.profileStatus === "missing" ? "unknown" : ""}`}>{item.profileStatus || "profile"}</span></td>
-                    <td>{item.email || "Unknown"}</td>
-                    <td style={{ fontFamily: "monospace", fontSize: 11 }}>{item.uid}</td>
-                    <td>{item.provider || "email"}</td>
-                    <td>{displayDate(item.createdAt)}</td>
-                    <td>{item.role || "user"}</td>
-                    <td>{item.language || item.profile?.language || "-"}</td>
-                    <td>{isSuperAdmin ? <div className="admin-v2-user-actions-live"><select value={item.role || "user"} onChange={(event) => setConfirming({ action: "editRole", item, newRole: event.target.value })}>{ROLES.map((role) => <option key={role} value={role}>{role}</option>)}</select>{item.status === "suspended" ? <button onClick={() => setConfirming({ action: "activate", item })}><CheckCircle size={14} /> Activate</button> : <button className="danger" onClick={() => setConfirming({ action: "suspend", item })}><Ban size={14} /> Suspend</button>}</div> : "-"}</td>
-                  </tr>
-                ))}</tbody>
-              </table>
-            </div>
-          </section>
-
-          <div className="admin-v2-user-cards">
-            {visibleUsers.map((item) => (
-              <article key={item.uid}>
-                <div><strong>{item.displayName || item.name || "Unknown Name"}</strong><span>{item.email || "Unknown email"}</span></div>
-                <dl><div><dt>UID</dt><dd>{item.uid}</dd></div><div><dt>Provider</dt><dd>{item.provider || "email"}</dd></div><div><dt>Role</dt><dd>{item.role || "user"}</dd></div><div><dt>Created</dt><dd>{displayDate(item.createdAt)}</dd></div></dl>
-              </article>
-            ))}
+      {loading ? <div className="admin-v2-empty">Loading users...</div> : (
+        <section className="admin-v2-panel admin-v2-users-table">
+          <div className="admin-v2-panel-head">Users <span>read-only · suspend / role actions coming soon</span></div>
+          <div className="admin-v2-table-wrap">
+            <table className="admin-v2-table">
+              <thead><tr><th>User</th><th>Email</th><th>Source</th><th>Orders</th><th>Total spent</th><th>Last login</th><th>Joined</th><th>Status</th></tr></thead>
+              <tbody>{visibleUsers.map((item) => (
+                <tr key={item.id}>
+                  <td><strong>{item.displayName || "—"}</strong></td>
+                  <td>{item.email || "—"}</td>
+                  <td>{sourceBadge(item.source)}</td>
+                  <td>{item.orderCount ?? 0}</td>
+                  <td>{formatMoney(item.totalSpent)}</td>
+                  <td>{relativeTime(item.lastLoginAt)}</td>
+                  <td>{relativeTime(item.createdAt)}</td>
+                  <td>{Number(item.disabled) === 1 || String(item.status).toLowerCase() === "disabled" ? <span className="admin-v2-badge" style={{ background: "#fee2e2", color: "#b91c1c" }}>Disabled</span> : <span className="admin-v2-badge" style={{ background: "#dcfce7", color: "#15803d" }}>Active</span>}</td>
+                </tr>
+              ))}</tbody>
+            </table>
+            {!visibleUsers.length && <div className="admin-v2-empty">No users found. Click <strong>Sync Firebase users</strong> to pull the Firebase customer list.</div>}
           </div>
-        </>
+        </section>
       )}
     </>
   );

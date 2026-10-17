@@ -546,6 +546,30 @@ export async function getAdminSteaCodeEntitlements(options = {}) {
   }
 }
 
+/**
+ * Combined Firebase customers + staff members from the `users` list
+ * endpoint (owner-only on the backend).
+ */
+export async function getAdminSteaCodeUsers(options = {}) {
+  const force = options?.force || false;
+  const t = force ? `?t=${Date.now()}` : "";
+  try {
+    return await request(`/api/admin/stea-code/users${t}`);
+  } catch (err) {
+    if (err?.code === "AUTH_REQUIRED") throw err;
+    return { users: [], _fallback: true };
+  }
+}
+
+/**
+ * Pull every Firebase Authentication user into the D1 `users` table
+ * (owner-only on the backend). Idempotent — running it again updates
+ * existing rows. Resolves to { ok, synced, created, updated }.
+ */
+export function syncAdminSteaCodeUsers() {
+  return request("/api/admin/stea-code/users/sync", { method: "POST" });
+}
+
 export function getAdminSteaCodeCategories() {
   return request("/api/admin/stea-code/categories");
 }

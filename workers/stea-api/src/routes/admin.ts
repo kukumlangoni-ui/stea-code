@@ -855,6 +855,17 @@ export async function handleAdminEntitlements(req: Request, env: Env): Promise<R
   }
 }
 
+/**
+ * GET /admin/stea-code/users
+ *
+ * Returns a combined list of:
+ *  - Firebase customers (rows from the `users` table, populated by
+ *    /admin/stea-code/users/sync; source = "firebase")
+ *  - Staff members (rows from `staff_users`; source = "staff")
+ *
+ * Each row carries purchase aggregates joined from `orders` (which reference
+ * users by Firebase UID == users.id).
+ */
 export async function handleAdminUsers(req: Request, env: Env): Promise<Response> {
   const admin = await requireOwner(req, env);
   if (!admin) {
@@ -864,15 +875,235 @@ export async function handleAdminUsers(req: Request, env: Env): Promise<Response
     });
   }
   try {
-    const result = await env.DB.prepare(
-      `SELECT * FROM users ORDER BY createdAt DESC LIMIT 500`
+    // ── Purchase aggregates by userId (Firebase UID == users.id) ──
+    const orderAgg: Record<string, { count: number; total: number }> = {};
+    const aggRows = await env.DB.prepare(
+      `SELECT userId, COUNT(*) AS cnt, COALESCE(SUM(amount), 0) AS spent
+       FROM orders WHERE status IN ('paid','complete','succeeded')
+       GROUP BY userId`
     ).all();
-    return new Response(JSON.stringify({ ok: true, users: result.results || [] }), {
-      status: 200,
-      headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) },
+    for (const r of (aggRows.results || []) as any[]) {
+      const uid = String(r.userId || "");
+      if (!uid) continue;
+      orderAgg[uid] = { count: Number(r.cnt || 0), total: Number(r.spent || 0) };
+    }
+
+    // ── Staff users (authoritative for source = "staff") ──
+    const staffEmails = new Set<string>();
+    const staffRows = await env.DB.prepare(
+      `SELECT id, email, display_name, role, status, created_at, last_login_at
+       FROM staff_users`
+    ).all();
+    const staff = ((staffRows.results || []) as any[]).map((r) => {
+      const email = String(r.email || "");
+      staffEmails.add(email.toLowerCase());
+      return {
+        id: String(r.id),
+        email,
+        displayName: r.display_name || email.split("@")[0] || "",
+        provider: "staff",
+        firebaseUid: null,
+        status: r.status || "active",
+        disabled: r.status === "disabled" ? 1 : 0,
+        role: r.role || "member",
+        source: "staff",
+        lastLoginAt: r.last_login_at || null,
+        createdAt: r.created_at || null,
+        orderCount: 0,
+        totalSpent: 0,
+      };
     });
+
+    // ── Firebase customers from the users table (skip anything that is staff) ──
+    const userRows = await env.DB.prepare(
+      `SELECT * FROM users ORDER BY createdAt DESC LIMIT 1000`
+    ).all();
+    const customers = ((userRows.results || []) as any[]).map((u) => {
+      const email = String(u.email || "");
+      if (staffEmails.has(email.toLowerCase())) return null; // staff come from staff_users
+      const agg = orderAgg[String(u.id || "")] || { count: 0, total: 0 };
+      return {
+        id: u.id,
+        email,
+        displayName: u.displayName || email.split("@")[0] || "",
+        provider: u.provider || "unknown",
+        firebaseUid: u.firebaseUid || null,
+        status: u.status || "active",
+        disabled: u.disabled ?? 0,
+        role: u.role || "member",
+        source: String(u.provider || "") === "firebase" ? "firebase" : "unknown",
+        lastLoginAt: u.lastLoginAt || null,
+        createdAt: u.createdAt || null,
+        orderCount: agg.count,
+        totalSpent: agg.total,
+      };
+    }).filter((u) => u !== null) as any[];
+
+    const users = [...customers, ...staff].sort((a, b) =>
+      String(b.createdAt || "").localeCompare(String(a.createdAt || ""))
+    );
+
+    return new Response(
+      JSON.stringify({ ok: true, users, total: users.length }),
+      { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) } }
+    );
   } catch (e: any) {
     return new Response(JSON.stringify({ error: e?.message || "Failed to list users" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) },
+    });
+  }
+}
+
+/**
+ * Exchange the Firebase service account private key for a short-lived OAuth
+ * access token (JWT Bearer flow). Uses WebCrypto (crypto.subtle) — the
+ * firebase-admin SDK depends on Node's crypto module and will NOT run on
+ * Cloudflare Workers, so we call the Identity Toolkit REST API directly.
+ */
+async function getFirebaseAccessToken(saJson: string): Promise<string> {
+  const sa = JSON.parse(saJson);
+  const now = Math.floor(Date.now() / 1000);
+  const header = { alg: "RS256", typ: "JWT" };
+  const payload = {
+    iss: sa.client_email,
+    scope: "https://www.googleapis.com/auth/identitytoolkit https://www.googleapis.com/auth/firebase",
+    aud: "https://oauth2.googleapis.com/token",
+    iat: now,
+    exp: now + 3600,
+  };
+  const enc = (o: any) =>
+    btoa(JSON.stringify(o)).replace(/=+$/, "").replace(/\+/g, "-").replace(/\//g, "_");
+  const toSign = `${enc(header)}.${enc(payload)}`;
+
+  const pem = String(sa.private_key || "").replace(/\\n/g, "\n");
+  const b64 = pem
+    .replace(/-----BEGIN PRIVATE KEY-----/, "")
+    .replace(/-----END PRIVATE KEY-----/, "")
+    .replace(/\s+/g, "");
+  const raw = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+  const key = await crypto.subtle.importKey(
+    "pkcs8",
+    raw.buffer,
+    { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+  const sig = await crypto.subtle.sign(
+    { name: "RSASSA-PKCS1-v1_5" },
+    key,
+    new TextEncoder().encode(toSign)
+  );
+  const sigB64 = btoa(String.fromCharCode(...new Uint8Array(sig)))
+    .replace(/=+$/, "")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_");
+  const jwt = `${toSign}.${sigB64}`;
+
+  const res = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${jwt}`,
+  });
+  const data: any = await res.json().catch(() => ({}));
+  if (!data?.access_token) {
+    throw new Error("Failed to get Firebase access token");
+  }
+  return data.access_token;
+}
+
+/**
+ * POST /admin/stea-code/users/sync
+ *
+ * Owner-only. Lists every Firebase Authentication user via the Identity
+ * Toolkit batchGet REST endpoint and upserts them into the `users` table
+ * (id = Firebase localId, matching orders.userId). Idempotent — running it
+ * again updates existing rows without creating duplicates.
+ */
+export async function handleAdminSyncFirebaseUsers(req: Request, env: Env): Promise<Response> {
+  const admin = await requireOwner(req, env);
+  if (!admin) {
+    return new Response(JSON.stringify({ error: "Owner only", code: "OWNER_ONLY" }), {
+      status: 403,
+      headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) },
+    });
+  }
+  try {
+    const sa = (env as any).FIREBASE_SERVICE_ACCOUNT;
+    const projectId = (env as any).FIREBASE_PROJECT_ID;
+    if (!sa || !projectId) {
+      return new Response(JSON.stringify({ error: "Firebase not configured" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) },
+      });
+    }
+
+    const accessToken = await getFirebaseAccessToken(sa);
+    const url =
+      `https://identitytoolkit.googleapis.com/v1/projects/${encodeURIComponent(projectId)}` +
+      `/accounts:batchGet?maxResults=1000`;
+    const res = await fetch(url, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (!res.ok) {
+      const detail = (await res.text().catch(() => "")).slice(0, 300);
+      return new Response(JSON.stringify({ error: "Firebase list failed", detail }), {
+        status: 500,
+        headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) },
+      });
+    }
+    const data: any = await res.json();
+    const fbUsers = Array.isArray(data?.users) ? data.users : [];
+
+    const now = new Date().toISOString();
+    const upsert = env.DB.prepare(
+      `INSERT INTO users
+        (id, email, displayName, firebaseUid, lastLoginAt, disabled, syncedAt, createdAt, lastActiveAt,
+         role, status, provider)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'member', 'active', 'firebase')
+       ON CONFLICT(id) DO UPDATE SET
+         email        = excluded.email,
+         displayName  = excluded.displayName,
+         provider     = 'firebase',
+         firebaseUid  = excluded.firebaseUid,
+         lastLoginAt  = excluded.lastLoginAt,
+         disabled     = excluded.disabled,
+         syncedAt     = excluded.syncedAt,
+         lastActiveAt = excluded.lastActiveAt`
+    );
+
+    let created = 0;
+    let updated = 0;
+    for (const fu of fbUsers) {
+      const uid = String(fu.localId || "");
+      if (!uid) continue;
+      const email = String(fu.email || "").toLowerCase();
+      const name = fu.displayName || email.split("@")[0] || "";
+      const lastLoginAt = fu.lastLoginAt
+        ? new Date(Number(fu.lastLoginAt)).toISOString()
+        : null;
+      const createdAt = fu.createdAt
+        ? new Date(Number(fu.createdAt)).toISOString()
+        : now;
+      const disabled = fu.disabled ? 1 : 0;
+
+      const existing = await env.DB.prepare(`SELECT id FROM users WHERE id = ?`)
+        .bind(uid)
+        .first();
+      if (existing) updated += 1;
+      else created += 1;
+
+      await upsert
+        .bind(uid, email, name, uid, lastLoginAt, disabled, now, createdAt, now)
+        .run();
+    }
+
+    return new Response(
+      JSON.stringify({ ok: true, synced: fbUsers.length, created, updated }),
+      { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) } }
+    );
+  } catch (e: any) {
+    return new Response(JSON.stringify({ error: e?.message || "Sync failed" }), {
       status: 500,
       headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) },
     });

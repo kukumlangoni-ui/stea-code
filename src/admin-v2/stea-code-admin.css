@@ -1028,3 +1028,104 @@
   font-size: 12px;
   font-weight: 500;
 }
+
+/* ---- Users panel (SteaCodeUsersPanel) ----
+ * sc-users-* classes for the combined Firebase + staff users table.
+ */
+.sc-users-select {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  color: var(--sc-ink-strong, #e6e8ee);
+  padding: 8px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  outline: none;
+  cursor: pointer;
+}
+.sc-users-select option { background: #12151d; color: #e6e8ee; }
+
+.sc-users-sync-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(245, 166, 35, 0.4);
+  background: rgba(245, 166, 35, 0.1);
+  color: var(--sc-gold, #f5a623);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.sc-users-sync-btn:hover:not(:disabled) {
+  background: rgba(245, 166, 35, 0.2);
+  border-color: rgba(245, 166, 35, 0.7);
+}
+.sc-users-sync-btn:disabled { opacity: 0.5; cursor: default; }
+
+.sc-users-banner {
+  margin-bottom: 12px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: rgba(52, 211, 153, 0.1);
+  border: 1px solid rgba(52, 211, 153, 0.3);
+  color: var(--sc-success, #34d399);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.sc-users-error {
+  margin-bottom: 12px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: rgba(242, 138, 111, 0.1);
+  border: 1px solid rgba(242, 138, 111, 0.35);
+  color: #f28a6f;
+  font-size: 12px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.sc-users-retry {
+  background: rgba(242, 138, 111, 0.15);
+  border: 1px solid rgba(242, 138, 111, 0.4);
+  border-radius: 6px;
+  color: #f28a6f;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 5px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.sc-users-retry:hover { background: rgba(242, 138, 111, 0.25); }
+
+.sc-users-skeleton {
+  height: 12px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, rgba(255,255,255,0.04), rgba(255,255,255,0.1), rgba(255,255,255,0.04));
+  background-size: 200% 100%;
+  animation: scSkeleton 1.2s ease-in-out infinite;
+}
+@keyframes scSkeleton {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.sc-users-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.sc-users-badge-firebase { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
+.sc-users-badge-staff { background: rgba(245, 166, 35, 0.15); color: var(--sc-gold, #f5a623); }
+.sc-users-badge-unknown { background: rgba(139, 143, 155, 0.15); color: var(--sc-muted, #8b8f9b); }
