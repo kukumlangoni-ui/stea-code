@@ -2610,7 +2610,8 @@ function CodeProductCard({ product, tLocal, onOpen, isFavorited, onToggleFavorit
 
   const openModal = useCallback(() => {
     if (externalUrl) {
-      window.open(externalUrl, "_blank", "noopener,noreferrer");
+      // internal page — same tab, so "Back to steacode" on the form returns home
+      window.location.href = externalUrl;
       return;
     }
     if (typeof onOpen === "function") onOpen();

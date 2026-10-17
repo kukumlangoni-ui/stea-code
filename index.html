@@ -55,22 +55,33 @@
     <script>
       (function () {
         var host = window.location.hostname;
-        var isCode = host === 'code.stea.africa' || host.endsWith('.code.stea.africa') || host.includes('stea-code') || host === 'localhost';
-        var iconPath = isCode ? '/stea-code-favicon-32.png?v=stea-real-logo-2026' : '/stea-www-globe.png?v=stea-globe-2026';
+        var isCode = host === 'code.stea.africa' || host.endsWith('.code.stea.africa') || host.includes('stea-code') || host === 'steacode.com' || host === 'www.steacode.com' || host === 'localhost';
         var iconType = 'image/png';
-        var applePath = isCode ? '/stea-code-apple-touch-icon.png?v=stea-real-logo-2026' : '/stea-www-globe-512.png?v=stea-globe-2026';
         var manifestPath = isCode ? '/code.webmanifest?v=stea-real-logo-2026' : '/site.webmanifest?v=stea-globe-2026';
 
         if (isCode) {
           document.title = "steacode — Developer Marketplace";
+          // Full branded favicon set for steacode (code.stea.africa / steacode.com).
+          var v = '?v=stea-real-logo-2026';
+          document.write(
+            '<link rel="icon" type="' + iconType + '" sizes="32x32" href="/stea-code-favicon-32.png' + v + '">' +
+            '<link rel="icon" type="' + iconType + '" sizes="16x16" href="/stea-code-favicon-16.png' + v + '">' +
+            '<link rel="icon" type="' + iconType + '" sizes="48x48" href="/stea-code-favicon-48.png' + v + '">' +
+            '<link rel="icon" type="' + iconType + '" sizes="192x192" href="/stea-code-favicon-192.png' + v + '">' +
+            '<link rel="icon" type="' + iconType + '" href="/stea-code-logo.png' + v + '">' +
+            '<link rel="apple-touch-icon" sizes="180x180" href="/stea-code-favicon-180.png' + v + '">' +
+            '<link rel="shortcut icon" href="/stea-code-favicon-32.png' + v + '">' +
+            '<link rel="manifest" href="' + manifestPath + '">'
+          );
+        } else {
+          // Non-code tenants keep their own globe branding.
+          document.write(
+            '<link rel="icon" type="' + iconType + '" href="/stea-www-globe.png?v=stea-globe-2026">' +
+            '<link rel="alternate icon" type="' + iconType + '" href="/stea-www-globe.png?v=stea-globe-2026">' +
+            '<link rel="apple-touch-icon" href="/stea-www-globe-512.png?v=stea-globe-2026">' +
+            '<link rel="manifest" href="' + manifestPath + '">'
+          );
         }
-
-        document.write(
-          '<link rel="icon" type="' + iconType + '" href="' + iconPath + '">' +
-          '<link rel="alternate icon" type="' + iconType + '" href="' + iconPath + '">' +
-          '<link rel="apple-touch-icon" href="' + applePath + '">' +
-          '<link rel="manifest" href="' + manifestPath + '">'
-        );
 
         if (isCode) {
           var setMeta = function (selector, attr, value) {
