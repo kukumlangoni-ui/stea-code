@@ -470,6 +470,54 @@ function EmailVerificationBanner({ user, tLocal, onToast }) {
   );
 }
 
+/* ======================================================================
+ * GridBoundary — catches crashes in the product grid so a bad prop or
+ * malformed product can't blank the whole page. The header, nav and search
+ * keep working; users see a friendly error instead of "all previews down".
+ * ====================================================================== */
+class GridBoundary extends React.Component {
+  state = { hasError: false, error: null };
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, info) {
+    console.error("[GridBoundary] Product grid crashed:", error, info);
+    try {
+      fetch("/api/log-error", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "GRID_BOUNDARY",
+          message: String(error?.message || error),
+          stack: String(error?.stack || ""),
+          componentStack: String(info?.componentStack || ""),
+          url: typeof window !== "undefined" ? window.location.href : "",
+        }),
+      }).catch(() => {});
+    } catch {}
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ padding: 40, textAlign: "center", color: "#8a8a94" }}>
+          <h2 style={{ color: "#fff", marginBottom: 12 }}>Something went wrong loading products.</h2>
+          <p style={{ marginBottom: 20 }}>The catalog could not be displayed. Our team has been notified.</p>
+          <button
+            onClick={() => window.location.reload()}
+            style={{ padding: "12px 24px", background: "#f5a623", color: "#0a0a0a", border: 0, borderRadius: 999, fontWeight: 700, cursor: "pointer" }}
+          >
+            Reload page
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSearch }) {
   const { tLocal, uiLocale, setUiLocale } = useSteaCodeI18n();
   const navigate = useNavigate();
@@ -1291,6 +1339,26 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
     homepageProducts.length <
     Math.min(filtered.length, 50);
 
+  /* Sanity check: drop malformed products before they reach the grid so one
+     bad record can't take down every card. Logs once per session if any were
+     filtered out. */
+  const validHomepageProducts = useMemo(() => {
+    if (!Array.isArray(homepageProducts)) return [];
+    return homepageProducts.filter((p) => {
+      if (!p || typeof p !== "object") return false;
+      if (!p.id && !p.slug) return false;
+      return true;
+    });
+  }, [homepageProducts]);
+
+  useEffect(() => {
+    if (homepageProducts.length !== validHomepageProducts.length) {
+      console.warn(
+        `[Catalog] ${homepageProducts.length - validHomepageProducts.length} malformed product(s) filtered out.`
+      );
+    }
+  }, [homepageProducts.length, validHomepageProducts.length]);
+
   useEffect(() => {
     setVisibleProductCount(24);
   }, [activeTab, category, pricing, framework, q]);
@@ -1585,8 +1653,13 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
       {false && <EmailVerificationBanner user={effectiveUser} tLocal={tLocal} onToast={showPageToast} />}
 
       <main>
-        {effectiveView === "checkout" ? (
-          <SteaCodeCheckoutPage
+        {(() => {
+          /* Guard-first render chain: each branch is independent, the
+             storefront/grid is the explicit fallthrough. A bad prop in one
+             branch can no longer skip or break the rest. */
+          if (effectiveView === "checkout") {
+            return (
+              <SteaCodeCheckoutPage
             productId={checkoutProductId}
             locale={uiLocale}
             onBack={() => {
@@ -1599,9 +1672,12 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
               setMemberGateAction({ type: "checkout", productId: pid || checkoutProductId });
               setMemberGateOpen(true);
             }}
-          />
-        ) : effectiveView === "purchases" ? (
-          <SteaCodePurchasesPage
+            />
+          );
+          }
+          if (effectiveView === "purchases") {
+            return (
+              <SteaCodePurchasesPage
             locale={uiLocale}
             onGoHome={() => {
               if (location.pathname === "/library") {
@@ -1623,9 +1699,12 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
               setMemberGateOpen(true);
             }}
           />
-        ) : viewMode === "explore" ? (
-          /* ================= EXPLORE CATALOG VIEW ================= */
-          <section id="explore" className="sc-market-section">
+          );
+          }
+          if (viewMode === "explore") {
+            return (
+              /* ================= EXPLORE CATALOG VIEW ================= */
+              <section id="explore" className="sc-market-section">
             <div className="sc-market-section-head">
               <div>
                 <h2>{tLocal(COPY.exploreCode)}</h2>
@@ -1714,9 +1793,10 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
                   <SteaCodeProductSkeleton key={i} />
                 ))}
               </div>
-            ) : homepageProducts.length > 0 ? (
+            ) : validHomepageProducts.length > 0 ? (
+              <GridBoundary>
               <div className={`sc-product-grid ${isGridSwitching ? "is-switching" : ""}`}>
-                {homepageProducts.map((product, index) => (
+                {validHomepageProducts.map((product, index) => (
                   <Reveal key={getProductIdentity(product)} delay={Math.min(index, 6) * 25}>
                     <TiltCard>
                       <PreviewErrorBoundary>
@@ -1732,6 +1812,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
                   </Reveal>
                 ))}
               </div>
+              </GridBoundary>
             ) : (
               <div className="sc-empty-state" role="status" aria-live="polite">
                 <div className="sc-empty-orb" aria-hidden="true">
@@ -1800,8 +1881,10 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
               </div>
             ) : null}
           </section>
-        ) : (
+          );
+          }
           /* ================= STOREFRONT HOMEPAGE SECTIONS ================= */
+          return (
           <>
             {/* 1. HERO */}
             <section className={`sc-market-hero ${heroReady ? 'is-ready' : ''}`}>
@@ -2018,9 +2101,10 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
                     <SteaCodeProductSkeleton key={i} />
                   ))}
                 </div>
-              ) : homepageProducts.length > 0 ? (
+              ) : validHomepageProducts.length > 0 ? (
+                <GridBoundary>
                 <div className={`sc-product-grid ${isGridSwitching ? "is-switching" : ""}`}>
-                  {homepageProducts.map((product, index) => (
+                  {validHomepageProducts.map((product, index) => (
                     <Reveal key={getProductIdentity(product)} delay={Math.min(index, 6) * 25}>
                       <TiltCard>
                         <PreviewErrorBoundary>
@@ -2036,6 +2120,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
                     </Reveal>
                   ))}
                 </div>
+                </GridBoundary>
               ) : (
                 <div className="sc-empty-state" role="status" aria-live="polite">
                 <div className="sc-empty-orb" aria-hidden="true">
@@ -2087,7 +2172,8 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
 
 
           </>
-        )}
+          );
+        })()}
       </main>
 
       <footer className="sc-footer">
