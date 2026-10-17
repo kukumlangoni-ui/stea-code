@@ -26,7 +26,6 @@ const SteaCodeUpgradePage = lazy(() => import("./pages/stea-code/SteaCodeUpgrade
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy.jsx"));
 const CookiePolicy = lazy(() => import("./pages/CookiePolicy.jsx"));
 import CookieConsentBanner from "./components/stea-code/CookieConsentBanner.jsx";
-import ClerkBridge from "./components/stea-code/ClerkBridge.jsx";
 import { useConsentGatedScripts } from "./hooks/useConsentGatedScripts.js";
 
 class LocalErrorBoundary extends Component {
@@ -137,8 +136,6 @@ function PageLoadingFallback() {
   );
 }
 
-const CLERK_ENABLED = Boolean(import.meta.env.VITE_CLERK_PUBLISHABLE_KEY);
-
 export default function App() {
   const { user, loading: authLoading } = useAuth();
   const location = useLocation();
@@ -147,7 +144,6 @@ export default function App() {
 
   return (
     <LocalErrorBoundary>
-      {CLERK_ENABLED && <ClerkBridge />}
       <SettingsProvider>
         <SitesLanguageProvider>
           <PWAProvider>

@@ -127,32 +127,6 @@ import { SettingsProvider } from "./contexts/SettingsContext.jsx";
 import { SiteSettingsProvider } from "./contexts/SiteSettingsContext.jsx";
 import { CheckoutProvider } from "./contexts/CheckoutContext.jsx";
 import { PWAProvider } from "./contexts/PWAContext.jsx";
-import { ClerkProvider } from "@clerk/clerk-react";
-
-const CLERK_PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
-const clerkEnabled = Boolean(CLERK_PUBLISHABLE_KEY);
-
-function Root() {
-  const app = (
-    <BrowserRouter>
-      <SettingsProvider>
-        <SiteSettingsProvider>
-          <CheckoutProvider>
-            <PWAProvider>
-              <App />
-            </PWAProvider>
-          </CheckoutProvider>
-        </SiteSettingsProvider>
-      </SettingsProvider>
-    </BrowserRouter>
-  );
-  if (!clerkEnabled) return app;
-  return (
-    <ClerkProvider publishableKey={CLERK_PUBLISHABLE_KEY} afterSignOutUrl="/">
-      {app}
-    </ClerkProvider>
-  );
-}
 
 console.log('Rendering App...');
 
@@ -166,7 +140,17 @@ try {
   root.render(
     <React.StrictMode>
       <ErrorBoundary>
-        <Root />
+        <BrowserRouter>
+          <SettingsProvider>
+            <SiteSettingsProvider>
+              <CheckoutProvider>
+                <PWAProvider>
+                  <App />
+                </PWAProvider>
+              </CheckoutProvider>
+            </SiteSettingsProvider>
+          </SettingsProvider>
+        </BrowserRouter>
       </ErrorBoundary>
     </React.StrictMode>
   );
