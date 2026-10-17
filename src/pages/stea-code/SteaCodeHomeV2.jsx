@@ -2604,7 +2604,7 @@ function CodeProductCard({ product, tLocal, onOpen, isFavorited, onToggleFavorit
     : { scale: 0.985, transition: { duration: 0.12 } };
 
   const EXTERNAL_REDIRECTS = {
-    "premium-website-hero": "https://isayamasika.stea.africa/contact/",
+    "premium-website-hero": "/start-project.html",
   };
   const externalUrl = EXTERNAL_REDIRECTS[product.slug] || EXTERNAL_REDIRECTS[productId];
 
