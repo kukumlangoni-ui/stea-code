@@ -17030,3 +17030,42 @@ header,
   align-items: center;
 }
 
+
+/* ===== Restore gold-filled style for Copy Source + Copy Image buttons ===== */
+/* Override the dark glass variants to match the gold Copy AI Prompt button */
+.sc-detail-action.sc-detail-action--code,
+.sc-detail-action.sc-detail-action--image {
+  background: linear-gradient(180deg, #f5a623 0%, #e89313 100%);
+  border: 1px solid transparent;
+  color: #0a0a0f;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.15) inset,
+    0 8px 24px rgba(245, 166, 35, 0.22);
+}
+.sc-detail-action.sc-detail-action--code:hover:not(:disabled),
+.sc-detail-action.sc-detail-action--image:hover:not(:disabled) {
+  filter: brightness(1.06);
+  transform: translateY(-1px);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.2) inset,
+    0 10px 28px rgba(245, 166, 35, 0.32);
+}
+.sc-detail-action.sc-detail-action--code .sc-detail-action-icon,
+.sc-detail-action.sc-detail-action--code .sc-detail-action-label,
+.sc-detail-action.sc-detail-action--image .sc-detail-action-icon,
+.sc-detail-action.sc-detail-action--image .sc-detail-action-label {
+  color: #0a0a0f;
+}
+
+/* Preserve the green "copied" success state */
+.sc-detail-action.sc-detail-action--code.is-copied {
+  background: linear-gradient(180deg, #22c55e 0%, #16a34a 100%);
+  border-color: transparent;
+  color: #ffffff;
+  box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.15), 0 12px 32px rgba(34, 197, 94, 0.3);
+}
+.sc-detail-action.sc-detail-action--code.is-copied .sc-detail-action-icon,
+.sc-detail-action.sc-detail-action--code.is-copied .sc-detail-action-label {
+  color: #ffffff;
+}
+/* ===== end Copy button gold fill ===== */
