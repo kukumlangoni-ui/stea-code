@@ -33,6 +33,7 @@ import {
 import { auth } from "../firebase.js";
 import { submitRevision } from "../services/staffAuth.js";
 import { CODE_PRODUCT_CATEGORIES } from "../data/stea-code/codeProducts.js";
+import { SUBCATEGORIES as PRODUCT_SUBCATEGORIES } from "../data/stea-code/tabs.js";
 import {
   buildHtmlCssJsDoc,
   buildFullHtmlDoc,
@@ -41,19 +42,13 @@ import {
 import SteaCodeLogo from "../components/stea-code/SteaCodeLogo.jsx";
 import "./ProductStudioV3.css";
 
-const CATEGORIES = CODE_PRODUCT_CATEGORIES.filter((c) => c !== "All");
+// Components categories — the 9 real categories (excluding the "All" filter).
+const COMPONENT_CATEGORIES = CODE_PRODUCT_CATEGORIES.filter((c) => c !== "All");
 
-// Layout-only subcategories. The Subcategory dropdown appears ONLY when
-// form.category === "Layout". Every other category uses "" (None).
-const LAYOUT_SUBCATEGORIES = [
-  "Pricing Tables",
-  "Hero Sections",
-  "Feature Grids",
-  "Testimonials",
-  "FAQ Blocks",
-  "Footers",
-  "Dashboards",
-];
+// Kits categories (Apps, Websites, Games) and their sub-categories, straight
+// from the master taxonomy in src/data/stea-code/tabs.js — keep in sync.
+// Components have NO subcategories; only these Kits categories do.
+const KIT_CATEGORIES = Object.keys(PRODUCT_SUBCATEGORIES);
 
 const BASE_PREVIEW = {
   enabled: true,
@@ -76,7 +71,8 @@ const EMPTY_PRODUCT = {
   titleEn: "",
   shortDescriptionEn: "",
   craftNoteEn: "",
-  category: "Components",
+  tab: "Components",
+  category: COMPONENT_CATEGORIES[0],
   subcategory: "",
   pricingType: "free",
   price: 0,
@@ -1015,7 +1011,8 @@ export function ProductStudioV3({
         liveUrl: String(form.liveUrl || "").trim(),
         repoUrl: String(form.repoUrl || "").trim(),
         previewMode: form.previewMode || "live",
-        subcategory: String(form.subcategory || ""),
+        tab: form.tab || "Components",
+        subcategory: form.tab === "Kits" ? (String(form.subcategory || "") || null) : null,
         designWidth: Number(form.designWidth) || 640,
         designHeight: Number(form.designHeight) || 480,
         craftNoteEn: String(form.craftNoteEn || "").trim(),
@@ -1151,7 +1148,8 @@ export function ProductStudioV3({
       price: form.price,
       pricingType: form.pricingType,
       category: form.category,
-      subcategory: String(form.subcategory || ""),
+      tab: form.tab || "Components",
+      subcategory: form.tab === "Kits" ? (String(form.subcategory || "") || null) : null,
       status: form.status || "draft",
       featured: form.featured,
       homepageVisible: Boolean(form.homepageVisible),
@@ -1442,26 +1440,52 @@ export function ProductStudioV3({
                     rows={2}
                   />
                 </Field>
+                <Field label="Tab" required hint="Components are single pieces pasted into a page; Kits are full pages or apps">
+                  <div className="psv3-tab-selector" role="tablist" aria-label="Product tab">
+                    {["Components", "Kits"].map((t) => (
+                      <button
+                        key={t}
+                        type="button"
+                        role="tab"
+                        aria-selected={form.tab === t}
+                        className={`psv3-chip ${form.tab === t ? "psv3-chip--active" : ""}`}
+                        onClick={() => {
+                          if (form.tab === t) return;
+                          updateForm("tab", t);
+                          // Reset category + subcategory to a valid value for the
+                          // newly selected tab (components vs kits).
+                          updateForm("category", t === "Kits" ? KIT_CATEGORIES[0] : COMPONENT_CATEGORIES[0]);
+                          updateForm("subcategory", "");
+                        }}
+                      >
+                        {t}
+                      </button>
+                    ))}
+                  </div>
+                </Field>
                 <Field label="Category" required>
                   <Select
                     value={form.category}
                     onChange={(v) => {
                       updateForm("category", v);
-                      // Subcategories exist only under Layout — clear them
-                      // the moment the user picks any other category.
-                      if (v !== "Layout") updateForm("subcategory", "");
+                      // Sub-categories exist only for Kits (Apps/Websites/Games) —
+                      // clear the subcategory the moment the selected category
+                      // has none (or the tab is Components).
+                      if (!(form.tab === "Kits" && PRODUCT_SUBCATEGORIES[v])) {
+                        updateForm("subcategory", "");
+                      }
                     }}
-                    options={CATEGORIES.map((c) => ({ value: c, label: c }))}
+                    options={(form.tab === "Kits" ? KIT_CATEGORIES : COMPONENT_CATEGORIES).map((c) => ({ value: c, label: c }))}
                   />
                 </Field>
-                {form.category === "Layout" && (
-                  <Field label="Subcategory">
+                {form.tab === "Kits" && PRODUCT_SUBCATEGORIES[form.category] && (
+                  <Field label="Sub-category">
                     <Select
                       value={form.subcategory || ""}
                       onChange={(v) => updateForm("subcategory", v)}
                       options={[
                         { value: "", label: "None" },
-                        ...LAYOUT_SUBCATEGORIES.map((sc) => ({ value: sc, label: sc })),
+                        ...PRODUCT_SUBCATEGORIES[form.category].map((sc) => ({ value: sc, label: sc })),
                       ]}
                     />
                   </Field>
