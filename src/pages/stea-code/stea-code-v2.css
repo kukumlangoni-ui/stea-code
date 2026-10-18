@@ -16794,6 +16794,39 @@ header,
   to   { opacity: 1; transform: translate(-50%, 0); }
 }
 
+/* ── Fix: category tooltips render behind product cards (z-index) ──────────
+   The pill row and the product grid are siblings with no explicit stacking
+   context, so the tooltip ::after (z-index 40) loses to the grid's cards.
+   Give the pill row its own stacking context above the grid, keep the
+   tooltip pseudo-element above everything, and drop the grid below.       */
+.sc-homepage-pill-row {
+  position: relative;
+  z-index: 50;
+}
+.sc-homepage-pill,
+[data-tooltip] {
+  position: relative;
+  z-index: 60;
+}
+[data-tooltip]:hover::after {
+  z-index: 1000;
+}
+.sc-product-grid {
+  position: relative;
+  z-index: 1;
+}
+/* Also raise the pill row used in the secondary market view so its
+   tooltips (same data-tooltip buttons) sit above content. */
+.sc-market-tabs {
+  position: relative;
+  z-index: 50;
+}
+.sc-market-tabs button[data-tooltip] {
+  position: relative;
+  z-index: 60;
+}
+
+
 /* ── Layouts tab: static poster cards ───────────────────────────── */
 .sc-product-preview-layout {
   position: relative;
