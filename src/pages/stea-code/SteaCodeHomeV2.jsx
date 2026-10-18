@@ -145,33 +145,21 @@ const NAV_LINKS = [
 
 const CATEGORY_LABELS = {
   All: { en: "All", zhCN: "全部" },
-  // Components
+  "Text Animations": { en: "Text Animations", zhCN: "文字动画" },
+  Animations: { en: "Animations", zhCN: "动画" },
   Buttons: { en: "Buttons", zhCN: "按钮" },
-  Inputs: { en: "Inputs", zhCN: "输入框" },
-  Navigation: { en: "Navigation", zhCN: "导航" },
-  Cards: { en: "Cards", zhCN: "卡片" },
-  Overlays: { en: "Overlays", zhCN: "浮层" },
-  Feedback: { en: "Feedback", zhCN: "反馈" },
-  Text: { en: "Text", zhCN: "文字" },
-  Layout: { en: "Layout", zhCN: "布局" },
   Backgrounds: { en: "Backgrounds", zhCN: "背景" },
-  // Kits
-  Apps: { en: "Apps", zhCN: "应用" },
-  Websites: { en: "Websites", zhCN: "网站" },
-  Games: { en: "Games", zhCN: "游戏" },
-  // Kits sub-categories
-  "Mobile Apps": { en: "Mobile Apps", zhCN: "移动应用" },
-  "Desktop Apps": { en: "Desktop Apps", zhCN: "桌面应用" },
-  Dashboards: { en: "Dashboards", zhCN: "数据面板" },
-  "Landing Pages": { en: "Landing Pages", zhCN: "落地页" },
-  Portfolios: { en: "Portfolios", zhCN: "作品集" },
-  "E-commerce": { en: "E-commerce", zhCN: "电商" },
-  "Auth Flows": { en: "Auth Flows", zhCN: "登录流程" },
-  Arcade: { en: "Arcade", zhCN: "街机" },
-  Puzzle: { en: "Puzzle", zhCN: "解谜" },
-  Interactive: { en: "Interactive", zhCN: "互动" },
-};
-
+  Cards: { en: "Cards", zhCN: "卡片" },
+  Heroes: { en: "Heroes", zhCN: "Hero 区块" },
+  Navigation: { en: "Navigation", zhCN: "导航" },
+  Forms: { en: "Forms", zhCN: "表单" },
+  Loaders: { en: "Loaders", zhCN: "加载动画" },
+  Commerce: { en: "Commerce", zhCN: "电商" },
+  "Page Transitions": { en: "Page Transitions", zhCN: "页面转场" },
+  Components: { en: "Components", zhCN: "组件" },
+  Portfolio: { en: "Portfolio", zhCN: "作品集" },
+  "Toggle Switches": { en: "Toggle Switches", zhCN: "切换开关" },
+  "Inputs": { en: "Inputs", zhCN: "输入框" } };
 
 const BROWSE_CATEGORIES = [
   "Animations",
@@ -1307,12 +1295,11 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
     setVisibleProductCount(24);
   }, [activeTab, category, pricing, framework, q]);
 
-  // Subcategory pills reset to "All" whenever the tab or top-level category
-  // changes (e.g. switching Kits/Websites → Apps clears the "Dashboards" sub
-  // filter, and switching to Components hides the sub row entirely).
+  // Subcategory pills reset to "All" whenever the top-level category changes
+  // (e.g. switching Layout → Buttons clears the sub filter).
   useEffect(() => {
     setActiveSubcategory("All");
-  }, [category, activeTab]);
+  }, [category]);
 
   const submit = (event) => {
     event?.preventDefault?.();
@@ -1670,8 +1657,6 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
               setActiveTab={setActiveTab}
               category={category}
               setCategory={setCategory}
-              activeSubcategory={activeSubcategory}
-              setActiveSubcategory={setActiveSubcategory}
               pricing={pricing}
               setPricing={setPricing}
               framework={framework}
@@ -2458,7 +2443,7 @@ function SectionHead({ title, sub, action }) {
   );
 }
 
-function ProductControls({ tLocal, uiLocale = "en", activeTab, setActiveTab, category, setCategory, activeSubcategory, setActiveSubcategory, pricing, setPricing, framework, setFramework }) {
+function ProductControls({ tLocal, uiLocale = "en", activeTab, setActiveTab, category, setCategory, pricing, setPricing, framework, setFramework }) {
   return (
     <div className="sc-market-controls">
       <div
@@ -2492,7 +2477,6 @@ function ProductControls({ tLocal, uiLocale = "en", activeTab, setActiveTab, cat
             onClick={() => {
               setActiveTab("components");
               setCategory("All");
-              setActiveSubcategory("All");
             }}
           >
             Components
@@ -2503,7 +2487,6 @@ function ProductControls({ tLocal, uiLocale = "en", activeTab, setActiveTab, cat
             onClick={() => {
               setActiveTab("kits");
               setCategory("All");
-              setActiveSubcategory("All");
             }}
           >
             Kits
@@ -2515,38 +2498,12 @@ function ProductControls({ tLocal, uiLocale = "en", activeTab, setActiveTab, cat
               key={cat.id}
               type="button"
               className={category === cat.id ? "is-active" : ""}
-              onClick={() => {
-                setCategory(cat.id);
-                setActiveSubcategory("All");
-              }}
+              onClick={() => setCategory(cat.id)}
             >
               {cat.label}
             </button>
           ))}
         </div>
-        {/* Kits-only subcategory row — only appears when the active
-            top-level category has subcategories defined (Apps/Websites/Games). */}
-        {SUBCATEGORIES[category] && (
-          <div
-            className="sc-homepage-pill-row sc-homepage-pill-row--sub"
-            role="tablist"
-            aria-label="Subcategories"
-            style={{ marginTop: 6, paddingLeft: 34 }}
-          >
-            {["All", ...SUBCATEGORIES[category]].map((sub) => (
-              <button
-                key={sub}
-                type="button"
-                role="tab"
-                aria-selected={activeSubcategory === sub}
-                className={`sc-homepage-pill sc-homepage-pill--sub ${activeSubcategory === sub ? "is-active" : ""}`}
-                onClick={() => setActiveSubcategory(sub)}
-              >
-                {sub}
-              </button>
-            ))}
-          </div>
-        )}
       </div>
       <div
         className="sc-market-filter-row"

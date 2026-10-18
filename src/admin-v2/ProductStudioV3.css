@@ -976,16 +976,3 @@
     display: none;
   }
 }
-
-/* ---------- Tab selector (Components / Kits) ---------- */
-.psv3-tab-selector {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
-}
-.psv3-tab-selector .psv3-chip {
-  padding: 9px 18px;
-  font-size: 12px;
-  letter-spacing: 0.02em;
-}

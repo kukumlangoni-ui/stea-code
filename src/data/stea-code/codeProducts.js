@@ -1,14 +1,21 @@
 export const CODE_PRODUCT_CATEGORIES = [
   "All",
+  "Text Animations",
+  "Animations",
   "Buttons",
-  "Inputs",
-  "Navigation",
-  "Cards",
-  "Overlays",
-  "Feedback",
-  "Text",
-  "Layout",
   "Backgrounds",
+  "Cards",
+  "Heroes",
+  "Navigation",
+  "Forms",
+  "Loaders",
+  "Commerce",
+  "Page Transitions",
+  "Portfolio",
+  "Components",
+  "Toggle Switches",
+  "Inputs",
+  "Layout",
 ];
 
 export const CODE_PRODUCT_TECH = [
