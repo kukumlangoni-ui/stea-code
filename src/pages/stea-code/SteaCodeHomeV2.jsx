@@ -3028,67 +3028,12 @@ const ProductPreview = forwardRef(function ProductPreview({
   const hasVideo = Boolean(videoUrl);
   const posterUrl = getPreviewPosterUrl(product) || "";
 
-  // LAYOUTS: static poster only — image-first, no live iframe, no video.
-  // Used in both the card grid and the product modal. Falls back to a
-  // gradient placeholder with the product title when no image exists.
-  if (product?.tab === "layouts") {
-    const layoutImg = posterUrl;
-    return (
-      <div
-        className="sc-product-preview sc-product-preview-layout"
-        data-preview-product={productId}
-        aria-label={categoryLabel + " preview"}
-      >
-        <div className="sc-preview-art" aria-label={categoryLabel}>
-          {layoutImg ? (
-            <img
-              src={layoutImg}
-              alt={product?.titleEn || product?.titleZh || productId || "Layout preview"}
-              loading="lazy"
-              className="sc-preview-poster-image sc-layout-poster"
-              style={{
-                width: "100%",
-                height: "100%",
-                objectFit: "cover",
-                display: "block",
-                borderRadius: "12px",
-              }}
-            />
-          ) : (
-            <div
-              className="sc-preview-unavailable sc-layout-poster-placeholder"
-              aria-label="Layout preview placeholder"
-              style={{
-                width: "100%",
-                height: "100%",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                background:
-                  "radial-gradient(120% 80% at 50% 0%, rgba(245,166,35,0.10), rgba(15,23,42,0.00) 60%), linear-gradient(180deg, #151823, #0a0a0c)",
-                borderRadius: "12px",
-                color: "#fff",
-                fontSize: "13px",
-                letterSpacing: "0.02em",
-                gap: "6px",
-                textAlign: "center",
-                padding: "16px",
-              }}
-            >
-              <span style={{ color: "#f5a623", fontWeight: 700 }}>
-                {product?.titleEn || product?.titleZh || productId || "Layout"}
-              </span>
-              <span style={{ color: "rgba(148, 163, 184, 0.9)", fontSize: "11px" }}>
-                {categoryLabel}
-              </span>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
-
+  // Layouts products render through the SAME data-driven decision tree below
+  // (live iframe when HTML source / enabled preview exists → hover video →
+  // poster → placeholder). A layouts product with live source (preview.enabled
+  // or sourceCode) shows the interactive iframe like Components and Kits;
+  // poster-only layouts fall through to the poster branch, and layouts with
+  // neither get the branded placeholder. Do NOT force layouts to poster-only.
   // Card hover-to-play: poster by default, video on desktop hover.
   // If the video errors (404, codec), drop through to the live preview /
   // poster branches below.
