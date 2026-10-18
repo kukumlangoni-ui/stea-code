@@ -513,6 +513,39 @@ function admin500(req: Request, e: any, code: string, fallback: string): Respons
   );
 }
 
+/**
+ * Normalize a gallery value into a clean array of image URLs.
+ * Accepts an array or a JSON-encoded string. Validates each entry is a
+ * usable URL (https:) or a /api/stea-code/media/* path, dedupes, and caps
+ * the array at 10 items. Returns [] on empty/invalid input.
+ */
+function normalizeGallery(value: any): string[] {
+  let arr: any = value;
+  if (typeof arr === "string") {
+    try {
+      arr = JSON.parse(arr);
+    } catch {
+      return [];
+    }
+  }
+  if (!Array.isArray(arr)) return [];
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const item of arr) {
+    if (typeof item !== "string") continue;
+    const v = item.trim();
+    if (!v) continue;
+    const isUrl = /^https?:\/\/.+/i.test(v);
+    const isMediaPath = /^\/api\/stea-code\/media\//.test(v);
+    if (!isUrl && !isMediaPath) continue;
+    if (seen.has(v)) continue;
+    seen.add(v);
+    out.push(v);
+    if (out.length >= 10) break;
+  }
+  return out;
+}
+
 export async function handleAdminCreateProduct(req: Request, env: Env): Promise<Response> {
   const writer = await resolveWriter(req, env);
   if (!writer) return admin403(req);
@@ -540,6 +573,9 @@ export async function handleAdminCreateProduct(req: Request, env: Env): Promise<
     // Subcategory (Layout only). Empty string = "no subcategory". Accept any
     // string; the frontend controls the allowed values.
     data.subcategory = typeof data.subcategory === "string" ? data.subcategory : "";
+    // Gallery — JSON array of up to 10 image URLs (first = cover).
+    data.gallery = normalizeGallery(body.gallery);
+    data.tab = typeof body.tab === "string" && body.tab ? body.tab : "components";
     data.createdAt = new Date().toISOString();
     data.updatedAt = data.createdAt;
 
@@ -587,6 +623,14 @@ export async function handleAdminUpdateProduct(req: Request, env: Env, productId
     // allowed through so an editor save persists what they typed. Missing
     // keys are simply not written (merge-safe below) — nothing is wiped.
     const data = stripProtectedMetadataFields(rawData);
+
+    // Gallery + tab — merge-safe: only touched when explicitly provided.
+    if (body.gallery !== undefined) {
+      data.gallery = normalizeGallery(body.gallery);
+    }
+    if (body.tab !== undefined) {
+      data.tab = typeof body.tab === "string" && body.tab ? body.tab : "components";
+    }
 
     // Fetch existing row first for a proper deep merge
     const existing = await getDoc(env, PRODUCTS_COLLECTION, productId);

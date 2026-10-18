@@ -52,6 +52,7 @@ const SCHEMAS: Record<string, TableSchema> = {
     columns: [
       "id", "slug", "titleEn", "titleZh", "shortDescriptionEn",
       "shortDescriptionZh", "price", "pricingType", "category", "subcategory",
+      "tab", "gallery",
       "status", "featured", "homepageVisible", "tags", "frameworks",
       "languages", "craftNoteEn", "aiPrompt", "previewVideoUrl",
       "posterImageUrl", "previewMode", "preview", "designWidth", "designHeight",
@@ -64,7 +65,7 @@ const SCHEMAS: Record<string, TableSchema> = {
     jsonColumns: new Set([
       "tags", "frameworks", "languages", "preview", "publicFiles",
       "protectedFiles", "sourceFiles", "sourceCode", "fileNames",
-      "package", "extraData",
+      "gallery", "package", "extraData",
     ]),
     boolColumns: new Set(["featured", "homepageVisible"]),
     numColumns: new Set(["price", "designWidth", "designHeight"]),

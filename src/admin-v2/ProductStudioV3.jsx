@@ -32,7 +32,7 @@ import {
 } from "../services/steaCodeCommerce.js";
 import { auth } from "../firebase.js";
 import { submitRevision } from "../services/staffAuth.js";
-import { CODE_PRODUCT_CATEGORIES } from "../data/stea-code/codeProducts.js";
+import { TABS as TAXONOMY_TABS, SUBCATEGORIES } from "../data/stea-code/tabs.js";
 import {
   buildHtmlCssJsDoc,
   buildFullHtmlDoc,
@@ -41,19 +41,15 @@ import {
 import SteaCodeLogo from "../components/stea-code/SteaCodeLogo.jsx";
 import "./ProductStudioV3.css";
 
-const CATEGORIES = CODE_PRODUCT_CATEGORIES.filter((c) => c !== "All");
+// Taxonomy helpers driven by the single source of truth (tabs.js).
+// CATEGORIES_FOR_TAB(tab) → the category ids for a tab (minus "All").
+// SUBCATEGORIES_FOR(category) → kit subcategory ids (undefined for non-kits).
+const CATEGORIES_FOR_TAB = (tabId) =>
+  (TAXONOMY_TABS[tabId]?.categories || [])
+    .filter((c) => c.id !== "All")
+    .map((c) => c.id);
 
-// Layout-only subcategories. The Subcategory dropdown appears ONLY when
-// form.category === "Layout". Every other category uses "" (None).
-const LAYOUT_SUBCATEGORIES = [
-  "Pricing Tables",
-  "Hero Sections",
-  "Feature Grids",
-  "Testimonials",
-  "FAQ Blocks",
-  "Footers",
-  "Dashboards",
-];
+const KIT_TABS = ["kits"];
 
 const BASE_PREVIEW = {
   enabled: true,
@@ -76,8 +72,10 @@ const EMPTY_PRODUCT = {
   titleEn: "",
   shortDescriptionEn: "",
   craftNoteEn: "",
-  category: "Components",
+  tab: "components",
+  category: "Buttons",
   subcategory: "",
+  gallery: [],
   pricingType: "free",
   price: 0,
   currency: "USD",
@@ -549,6 +547,12 @@ export function ProductStudioV3({
     return {
       ...EMPTY_PRODUCT,
       ...(product || {}),
+      tab: product?.tab || "components",
+      gallery: Array.isArray(product?.gallery)
+        ? product.gallery
+        : typeof product?.gallery === "string"
+        ? (() => { try { const p = JSON.parse(product.gallery); return Array.isArray(p) ? p : []; } catch { return []; } })()
+        : [],
       previewMode: initialPreviewMode,
       preview: hydratedPreview,
       protectedFiles: pickArrays("protectedFiles", "protectedFiles"),
@@ -723,6 +727,11 @@ export function ProductStudioV3({
   const videoInputRef = useRef(null);
   const [posterUploading, setPosterUploading] = useState(false);
   const [posterUploadProgress, setPosterUploadProgress] = useState(0);
+  const [galleryUploadingIndex, setGalleryUploadingIndex] = useState(null);
+  const [galleryUploadProgress, setGalleryUploadProgress] = useState(0);
+  const [copyImageNotice, setCopyImageNotice] = useState("");
+  const galleryInputRef = useRef(null);
+  const galleryPendingIndexRef = useRef(0);
   const [videoUploading, setVideoUploading] = useState(false);
   const [videoUploadProgress, setVideoUploadProgress] = useState(0);
   const [packageUploading, setPackageUploading] = useState(false);
@@ -812,6 +821,90 @@ export function ProductStudioV3({
     } finally {
       setPosterUploading(false);
       setPosterUploadProgress(0);
+    }
+  };
+
+  // Upload an image into the gallery slot at `index` (append if index >= length).
+  const uploadGalleryImage = async (file, index) => {
+    if (!file) return;
+    const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    if (!allowed.includes(file.type) && !file.name.match(/\.(jpg|jpeg|png|webp|gif)$/i)) {
+      setError("Only JPG, PNG, WebP or GIF images are supported.");
+      return;
+    }
+    if (file.size > 15 * 1024 * 1024) {
+      setError("Image must be under 15 MB.");
+      return;
+    }
+    const pid = uploadId || product?.id;
+    if (!pid) {
+      setError("Save the product first before uploading an image.");
+      return;
+    }
+    setGalleryUploadingIndex(index);
+    setGalleryUploadProgress(0);
+    setError("");
+    try {
+      const result = await uploadFileWithProgress(file, pid, (p) => setGalleryUploadProgress(p));
+      if (!result?.ok || !result?.key) {
+        throw new Error(result?.error || "Upload failed");
+      }
+      const url = result.url || `/api/stea-code/media/${result.key}`;
+      setForm((prev) => {
+        const g = Array.isArray(prev.gallery) ? prev.gallery.slice() : [];
+        if (index >= 0 && index < g.length) g[index] = url;
+        else g.push(url);
+        return { ...prev, gallery: g.slice(0, 10) };
+      });
+      setNotice("Gallery image uploaded");
+      setTimeout(() => setNotice(""), 2000);
+    } catch (err) {
+      setError(getUploadErrorMessage(err, "gallery upload"));
+    } finally {
+      setGalleryUploadingIndex(null);
+      setGalleryUploadProgress(0);
+    }
+  };
+
+  const removeGalleryImage = (index) => {
+    setForm((prev) => {
+      const g = Array.isArray(prev.gallery) ? prev.gallery.slice() : [];
+      g.splice(index, 1);
+      return { ...prev, gallery: g };
+    });
+  };
+
+  // Admin verification of the buyer "Copy Image" flow — copies the cover /
+  // poster image to the clipboard using the same ClipboardItem approach the
+  // product modal uses.
+  const handleCopyImageForReview = async () => {
+    const url =
+      (Array.isArray(form.gallery) && form.gallery.length && form.gallery[0]) ||
+      (form.posterImageUrl && form.posterImageUrl.trim()) ||
+      (form.preview?.posterKey
+        ? `/api/stea-code/media/${String(form.preview.posterKey).trim()}`
+        : null);
+    if (!url) {
+      setCopyImageNotice("No image available for this product yet.");
+      setTimeout(() => setCopyImageNotice(""), 2600);
+      return;
+    }
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`FETCH_FAILED ${res.status}`);
+      const blob = await res.blob();
+      if (navigator.clipboard && window.isSecureContext && typeof ClipboardItem !== "undefined") {
+        await navigator.clipboard.write([new ClipboardItem({ [blob.type || "image/png"]: blob })]);
+        setCopyImageNotice("Image copied ✓");
+        setTimeout(() => setCopyImageNotice(""), 2200);
+      } else {
+        setCopyImageNotice("Clipboard image not supported — right-click → Save Image instead.");
+        setTimeout(() => setCopyImageNotice(""), 3200);
+      }
+    } catch (err) {
+      console.warn("[PSV3] Copy image failed:", err);
+      setCopyImageNotice("Couldn't copy the image. Right-click → Save Image instead.");
+      setTimeout(() => setCopyImageNotice(""), 3200);
     }
   };
 
@@ -1015,7 +1108,13 @@ export function ProductStudioV3({
         liveUrl: String(form.liveUrl || "").trim(),
         repoUrl: String(form.repoUrl || "").trim(),
         previewMode: form.previewMode || "live",
-        subcategory: String(form.subcategory || ""),
+        tab: form.tab || "components",
+        gallery: Array.isArray(form.gallery)
+          ? form.gallery
+              .filter((u) => typeof u === "string" && u.trim())
+              .slice(0, 10)
+          : [],
+        subcategory: form.tab === "kits" ? String(form.subcategory || "") : "",
         designWidth: Number(form.designWidth) || 640,
         designHeight: Number(form.designHeight) || 480,
         craftNoteEn: String(form.craftNoteEn || "").trim(),
@@ -1442,26 +1541,44 @@ export function ProductStudioV3({
                     rows={2}
                   />
                 </Field>
+                <Field
+                  label="Tab"
+                  required
+                  hint="Components = copy-paste pieces · Layouts = full-page sections · Kits = full working products"
+                >
+                  <RadioGroup
+                    value={form.tab}
+                    onChange={(v) => {
+                      const nextTab = Object.values(TAXONOMY_TABS).find((t) => t.id === v);
+                      const firstCat =
+                        (nextTab?.categories || []).filter((c) => c.id !== "All")[0]?.id || "";
+                      updateForm("tab", v);
+                      updateForm("category", firstCat);
+                      updateForm("subcategory", "");
+                    }}
+                    options={Object.values(TAXONOMY_TABS).map((t) => ({ id: t.id, label: t.label }))}
+                  />
+                </Field>
                 <Field label="Category" required>
                   <Select
                     value={form.category}
                     onChange={(v) => {
                       updateForm("category", v);
-                      // Subcategories exist only under Layout — clear them
-                      // the moment the user picks any other category.
-                      if (v !== "Layout") updateForm("subcategory", "");
+                      // Subcategories only exist under Kits — clear them the
+                      // moment the user switches tab or picks any other category.
+                      if (form.tab !== "kits") updateForm("subcategory", "");
                     }}
-                    options={CATEGORIES.map((c) => ({ value: c, label: c }))}
+                    options={CATEGORIES_FOR_TAB(form.tab).map((c) => ({ value: c, label: c }))}
                   />
                 </Field>
-                {form.category === "Layout" && (
+                {form.tab === "kits" && SUBCATEGORIES[form.category] && (
                   <Field label="Subcategory">
                     <Select
                       value={form.subcategory || ""}
                       onChange={(v) => updateForm("subcategory", v)}
                       options={[
                         { value: "", label: "None" },
-                        ...LAYOUT_SUBCATEGORIES.map((sc) => ({ value: sc, label: sc })),
+                        ...SUBCATEGORIES[form.category].map((sc) => ({ value: sc, label: sc })),
                       ]}
                     />
                   </Field>
@@ -1799,6 +1916,69 @@ export function ProductStudioV3({
                 </div>
               </Section>
             )}
+
+            <Section
+              title="Gallery (up to 10 images)"
+              subtitle="Add screenshots to show different parts of this product. First image is the cover."
+            >
+              <div className="psv3-gallery-grid">
+                {Array.from({ length: 10 }).map((_, i) => {
+                  const url = (Array.isArray(form.gallery) ? form.gallery : [])[i] || "";
+                  const isUploading = galleryUploadingIndex === i;
+                  if (url) {
+                    return (
+                      <div key={i} className="psv3-gallery-slot psv3-gallery-slot--filled">
+                        <img src={url} alt={`Gallery ${i + 1}`} className="psv3-gallery-thumb" />
+                        {i === 0 && <span className="psv3-gallery-cover">Cover</span>}
+                        <button
+                          type="button"
+                          className="psv3-gallery-remove"
+                          onClick={() => removeGalleryImage(i)}
+                          aria-label={`Remove image ${i + 1}`}
+                        >
+                          <X size={12} />
+                        </button>
+                      </div>
+                    );
+                  }
+                  return (
+                    <button
+                      key={i}
+                      type="button"
+                      className="psv3-gallery-slot psv3-gallery-slot--empty"
+                      disabled={isUploading}
+                      onClick={() => {
+                        galleryPendingIndexRef.current = i;
+                        galleryInputRef.current?.click();
+                      }}
+                      aria-label={`Add image ${i + 1}`}
+                    >
+                      {isUploading ? (
+                        <div className="psv3-progress-track">
+                          <div
+                            className="psv3-progress-fill"
+                            style={{ width: `${galleryUploadProgress}%` }}
+                          />
+                        </div>
+                      ) : (
+                        <span>+ Add image</span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+              <input
+                ref={galleryInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                style={{ display: "none" }}
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) uploadGalleryImage(f, galleryPendingIndexRef.current ?? 0);
+                  e.target.value = "";
+                }}
+              />
+            </Section>
           </>
         )}
 
@@ -1815,8 +1995,17 @@ export function ProductStudioV3({
                   <Download size={16} />
                   Import from Preview tab
                 </button>
-                {importStatus && (
-                  <span className="psv3-import-status">{importStatus}</span>
+                <button
+                  type="button"
+                  className="psv3-btn"
+                  onClick={handleCopyImageForReview}
+                  title="Copy the cover/poster image to clipboard — preview the buyer copy-image flow"
+                >
+                  <Copy size={16} />
+                  Copy Image
+                </button>
+                {(importStatus || copyImageNotice) && (
+                  <span className="psv3-import-status">{copyImageNotice || importStatus}</span>
                 )}
               </div>
 

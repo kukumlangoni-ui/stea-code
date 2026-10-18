@@ -15,6 +15,7 @@ import {
   Copy,
   ExternalLink,
   Globe2,
+  Image,
   Layers,
   Lock,
   Mail,
@@ -1224,6 +1225,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
     return products
       .filter((p) => {
         if (activeTab === "components") return p.tab === "components" || p.tab === undefined;
+        if (activeTab === "layouts") return p.tab === "layouts";
         if (activeTab === "kits") return p.tab === "kits";
         return true;
       })
@@ -1661,6 +1663,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
               setPricing={setPricing}
               framework={framework}
               setFramework={setFramework}
+              setActiveSubcategory={setActiveSubcategory}
             />
             {isFallbackCatalog && (
               <div
@@ -1898,32 +1901,24 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
                 </div>
               </div>
 
-              {/* Two-tab navigation (Components / Kits) */}
+              {/* Three-tab navigation (Components / Layouts / Kits) */}
               <div className="sc-tabs" style={{ marginBottom: "16px" }}>
-                <button
-                  type="button"
-                  className={`sc-tabs__item ${activeTab === "components" ? "is-active" : ""}`}
-                  onClick={() => {
-                    setActiveTab("components");
-                    setCategory("All");
-                    setPricing("All");
-                    setFramework("All Frameworks");
-                  }}
-                >
-                  Components
-                </button>
-                <button
-                  type="button"
-                  className={`sc-tabs__item ${activeTab === "kits" ? "is-active" : ""}`}
-                  onClick={() => {
-                    setActiveTab("kits");
-                    setCategory("All");
-                    setPricing("All");
-                    setFramework("All Frameworks");
-                  }}
-                >
-                  Kits
-                </button>
+                {Object.values(TABS).map((tab) => (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    className={`sc-tabs__item ${activeTab === tab.id ? "is-active" : ""}`}
+                    onClick={() => {
+                      setActiveTab(tab.id);
+                      setCategory("All");
+                      setActiveSubcategory("All");
+                      setPricing("All");
+                      setFramework("All Frameworks");
+                    }}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
               </div>
 
               {/* Category filter pills — dynamic based on activeTab */}
@@ -1935,8 +1930,10 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
                     role="tab"
                     aria-selected={category === cat.id}
                     className={`sc-homepage-pill ${category === cat.id ? "is-active" : ""}`}
+                    data-tooltip={cat.tooltip || undefined}
                     onClick={() => {
                       setCategory(cat.id);
+                      setActiveSubcategory("All");
                       setPricing("All");
                       setFramework("All Frameworks");
                     }}
@@ -2443,7 +2440,7 @@ function SectionHead({ title, sub, action }) {
   );
 }
 
-function ProductControls({ tLocal, uiLocale = "en", activeTab, setActiveTab, category, setCategory, pricing, setPricing, framework, setFramework }) {
+function ProductControls({ tLocal, uiLocale = "en", activeTab, setActiveTab, category, setCategory, pricing, setPricing, framework, setFramework, setActiveSubcategory }) {
   return (
     <div className="sc-market-controls">
       <div
@@ -2471,26 +2468,20 @@ function ProductControls({ tLocal, uiLocale = "en", activeTab, setActiveTab, cat
           {uiLocale === "zhCN" ? "分类" : "Categories"}
         </span>
         <div className="sc-tabs">
-          <button
-            type="button"
-            className={`sc-tabs__item ${activeTab === "components" ? "is-active" : ""}`}
-            onClick={() => {
-              setActiveTab("components");
-              setCategory("All");
-            }}
-          >
-            Components
-          </button>
-          <button
-            type="button"
-            className={`sc-tabs__item ${activeTab === "kits" ? "is-active" : ""}`}
-            onClick={() => {
-              setActiveTab("kits");
-              setCategory("All");
-            }}
-          >
-            Kits
-          </button>
+          {Object.values(TABS).map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              className={`sc-tabs__item ${activeTab === tab.id ? "is-active" : ""}`}
+              onClick={() => {
+                setActiveTab(tab.id);
+                setCategory("All");
+                setActiveSubcategory("All");
+              }}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
         <div className="sc-market-tabs">
           {TABS[activeTab].categories.map((cat) => (
@@ -2498,7 +2489,11 @@ function ProductControls({ tLocal, uiLocale = "en", activeTab, setActiveTab, cat
               key={cat.id}
               type="button"
               className={category === cat.id ? "is-active" : ""}
-              onClick={() => setCategory(cat.id)}
+              data-tooltip={cat.tooltip || undefined}
+              onClick={() => {
+                setCategory(cat.id);
+                setActiveSubcategory("All");
+              }}
             >
               {cat.label}
             </button>
@@ -2585,7 +2580,7 @@ function CodeProductCard({ product, tLocal, onOpen, isFavorited, onToggleFavorit
   const categoryLabel =
     CATEGORY_LABELS[product?.category]?.en || product?.category || "Code";
   const price = formatPrice(product);
-  const posterUrl = product?.posterImageUrl || getPreviewPosterUrl(product);
+  const posterUrl = getPreviewPosterUrl(product) || product?.posterImageUrl || "";
 
   // Dynamic aspect ratio from admin-configured design canvas dimensions.
   // Falls back to 1600×1100 for kits, 640×480 for components.
@@ -2738,11 +2733,37 @@ function getPreviewVideoUrl(product) {
  * Supports product.preview.posterKey via R2 media endpoint.
  */
 function getPreviewPosterUrl(product) {
+  // Gallery cover image takes priority (first image = cover, set in Admin).
+  const gallery = product?.gallery;
+  const galleryCover = Array.isArray(gallery) && gallery.length ? gallery[0] : null;
+  if (galleryCover && typeof galleryCover === "string" && galleryCover.trim()) {
+    return galleryCover.trim();
+  }
   const posterKey = product?.preview?.posterKey;
   if (posterKey && typeof posterKey === "string" && posterKey.trim()) {
     return `/api/stea-code/media/${posterKey.trim()}`;
   }
   return product?.posterImageUrl || null;
+}
+
+/**
+ * Resolve the image URL used by the "Copy Image" action. Priority:
+ * gallery[0] (cover) → posterImageUrl → preview.posterKey media path.
+ * Returns null when no image is available to copy.
+ */
+function getCopyImageUrl(product) {
+  const gallery = product?.gallery;
+  if (Array.isArray(gallery) && gallery.length && typeof gallery[0] === "string" && gallery[0].trim()) {
+    return gallery[0].trim();
+  }
+  if (product?.posterImageUrl && typeof product.posterImageUrl === "string" && product.posterImageUrl.trim()) {
+    return product.posterImageUrl.trim();
+  }
+  const posterKey = product?.preview?.posterKey;
+  if (posterKey && typeof posterKey === "string" && posterKey.trim()) {
+    return `/api/stea-code/media/${posterKey.trim()}`;
+  }
+  return null;
 }
 
 // Autoplay concurrency limit — max 3 videos autoplaying at once for CPU/battery
@@ -3007,6 +3028,67 @@ const ProductPreview = forwardRef(function ProductPreview({
   const hasVideo = Boolean(videoUrl);
   const posterUrl = getPreviewPosterUrl(product) || "";
 
+  // LAYOUTS: static poster only — image-first, no live iframe, no video.
+  // Used in both the card grid and the product modal. Falls back to a
+  // gradient placeholder with the product title when no image exists.
+  if (product?.tab === "layouts") {
+    const layoutImg = posterUrl;
+    return (
+      <div
+        className="sc-product-preview sc-product-preview-layout"
+        data-preview-product={productId}
+        aria-label={categoryLabel + " preview"}
+      >
+        <div className="sc-preview-art" aria-label={categoryLabel}>
+          {layoutImg ? (
+            <img
+              src={layoutImg}
+              alt={product?.titleEn || product?.titleZh || productId || "Layout preview"}
+              loading="lazy"
+              className="sc-preview-poster-image sc-layout-poster"
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+                display: "block",
+                borderRadius: "12px",
+              }}
+            />
+          ) : (
+            <div
+              className="sc-preview-unavailable sc-layout-poster-placeholder"
+              aria-label="Layout preview placeholder"
+              style={{
+                width: "100%",
+                height: "100%",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                background:
+                  "radial-gradient(120% 80% at 50% 0%, rgba(245,166,35,0.10), rgba(15,23,42,0.00) 60%), linear-gradient(180deg, #151823, #0a0a0c)",
+                borderRadius: "12px",
+                color: "#fff",
+                fontSize: "13px",
+                letterSpacing: "0.02em",
+                gap: "6px",
+                textAlign: "center",
+                padding: "16px",
+              }}
+            >
+              <span style={{ color: "#f5a623", fontWeight: 700 }}>
+                {product?.titleEn || product?.titleZh || productId || "Layout"}
+              </span>
+              <span style={{ color: "rgba(148, 163, 184, 0.9)", fontSize: "11px" }}>
+                {categoryLabel}
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   // Card hover-to-play: poster by default, video on desktop hover.
   // If the video errors (404, codec), drop through to the live preview /
   // poster branches below.
@@ -3252,6 +3334,133 @@ function PackCard({ pack, tLocal }) {
   );
 }
 
+/**
+ * Normalize the gallery field into a clean array of image URL strings.
+ * Accepts an array or a JSON-encoded string (products.gallery is stored as
+ * TEXT JSON in D1).
+ */
+function normalizeGalleryField(value) {
+  if (Array.isArray(value)) return value.filter((x) => typeof x === "string" && x.trim());
+  if (typeof value === "string") {
+    try {
+      const p = JSON.parse(value);
+      if (Array.isArray(p)) return p.filter((x) => typeof x === "string" && x.trim());
+      return [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
+/**
+ * Image carousel for the product modal — shown when a product has more than
+ * one gallery image. Arrow keys + swipe + dots navigate; clicking opens the
+ * fullscreen lightbox.
+ */
+function GalleryCarousel({ images, title, onOpenLightbox }) {
+  const [index, setIndex] = useState(0);
+  const touchX = useRef(null);
+
+  const go = (dir) => setIndex((i) => (i + dir + images.length) % images.length);
+  const goto = (i) => setIndex(i);
+
+  // Reset to first image when the gallery changes (new product opened).
+  useEffect(() => setIndex(0), [images]);
+
+  useEffect(() => {
+    function onKey(e) {
+      if (e.key === "ArrowLeft") { e.preventDefault(); go(-1); }
+      if (e.key === "ArrowRight") { e.preventDefault(); go(1); }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [images.length]);
+
+  return (
+    <div className="sc-gallery-carousel" role="region" aria-label="Gallery">
+      <div
+        className="sc-gallery-stage"
+        onTouchStart={(e) => { touchX.current = e.touches[0].clientX; }}
+        onTouchEnd={(e) => {
+          if (touchX.current == null) return;
+          const dx = e.changedTouches[0].clientX - touchX.current;
+          if (Math.abs(dx) > 40) dx < 0 ? go(1) : go(-1);
+          touchX.current = null;
+        }}
+      >
+        <img
+          key={index}
+          src={images[index]}
+          alt={`${title || "Product"} — image ${index + 1}`}
+          className="sc-gallery-image"
+          onClick={() => onOpenLightbox(index)}
+          loading="lazy"
+        />
+        {images.length > 1 && (
+          <>
+            <button type="button" className="sc-gallery-nav sc-gallery-nav--prev" onClick={() => go(-1)} aria-label="Previous image">‹</button>
+            <button type="button" className="sc-gallery-nav sc-gallery-nav--next" onClick={() => go(1)} aria-label="Next image">›</button>
+          </>
+        )}
+      </div>
+      {images.length > 1 && (
+        <div className="sc-gallery-dots">
+          {images.map((img, i) => (
+            <button
+              key={i}
+              type="button"
+              className={`sc-gallery-dot ${i === index ? "is-active" : ""}`}
+              onClick={() => goto(i)}
+              aria-label={`Go to image ${i + 1}`}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Fullscreen lightbox with zoom for the "View full page" experience.
+ */
+function Lightbox({ images, index, onClose }) {
+  const [zoom, setZoom] = useState(1);
+  useEffect(() => {
+    function onKey(e) { if (e.key === "Escape") onClose(); }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+  const img = images[index];
+  if (!img) return null;
+  return (
+    <motion.div
+      className="sc-lightbox"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.12 }}
+      role="dialog"
+      aria-modal="true"
+      onClick={onClose}
+    >
+      <div className="sc-lightbox-inner" onClick={(e) => e.stopPropagation()}>
+        <img
+          src={img}
+          alt="Full page view"
+          style={{ transform: `scale(${zoom})`, transformOrigin: "center" }}
+          onClick={() => setZoom((z) => (z >= 1.5 ? 1 : z + 0.5))}
+        />
+        <div className="sc-lightbox-toolbar">
+          <button type="button" onClick={() => setZoom((z) => Math.min(z + 0.25, 3))} aria-label="Zoom in">＋</button>
+          <button type="button" onClick={() => setZoom((z) => Math.max(z - 0.25, 0.5))} aria-label="Zoom out">－</button>
+          <button type="button" onClick={onClose} aria-label="Close">✕</button>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
 function ProductDetail({
   product,
   onClose,
@@ -3265,9 +3474,12 @@ function ProductDetail({
   const [copied, setCopied] = useState(false);
   const [copiedPrompt, setCopiedPrompt] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
+  const [copiedImage, setCopiedImage] = useState(false);
   const [copiedRepo, setCopiedRepo] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [galleryIndex, setGalleryIndex] = useState(0);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
   const [notice, setNotice] = useState("");
   const [premiumAccess, setPremiumAccess] = useState({
     loading: false,
@@ -3309,6 +3521,19 @@ function ProductDetail({
 
   const detailVideoUrl = getPreviewVideoUrl(product);
   const hasVideo = Boolean(detailVideoUrl);
+
+  const galleryImages = useMemo(
+    () => normalizeGalleryField(product?.gallery),
+    [product?.gallery]
+  );
+
+  // Reset gallery position when a different product is opened.
+  useEffect(() => {
+    setGalleryIndex(0);
+    setLightboxOpen(false);
+  }, [product?.id, product?.slug]);
+
+  const detailPosterUrl = getPreviewPosterUrl(product) || "";
 
   // Default to video tab when product has a video, otherwise live demo.
   // Reset when the product changes (user clicks a different card).
@@ -3803,6 +4028,66 @@ function ProductDetail({
     executeCopySource();
   }, [isSignedIn, hasAccess, handleGateAction, onOpenUnlockModal, executeCopySource]);
 
+  // ── Copy Image (Layouts / poster-based + free products) ──────────
+  const handleCopyImageSuccess = useCallback(() => {
+    setCopiedImage(true);
+    recordSteaCodeCopy(getProductIdentity(product));
+    void trackUserEvent("copy", {
+      productId: getProductIdentity(product),
+      productSlug: product?.slug || "",
+      email: currentUser?.email || "",
+    });
+    setToast({ type: "success", message: "Image copied to clipboard" });
+    setTimeout(() => setCopiedImage(false), 2200);
+    setTimeout(() => setToast(null), 2600);
+  }, [product, currentUser]);
+
+  const executeCopyImage = useCallback(async () => {
+    const imageUrl = getCopyImageUrl(product);
+    if (!imageUrl) {
+      setToast({ type: "error", message: "No image available for this product." });
+      setTimeout(() => setToast(null), 3200);
+      return;
+    }
+    try {
+      const res = await fetch(imageUrl);
+      if (!res.ok) throw new Error(`FETCH_FAILED ${res.status}`);
+      const blob = await res.blob();
+      if (navigator.clipboard && window.isSecureContext && typeof ClipboardItem !== "undefined") {
+        await navigator.clipboard.write([new ClipboardItem({ [blob.type || "image/png"]: blob })]);
+      } else {
+        throw new Error("NO_IMAGE_CLIPBOARD");
+      }
+      handleCopyImageSuccess();
+    } catch (err) {
+      console.error("[copy-image] failed:", err);
+      setToast({
+        type: "error",
+        message: "Couldn't copy the image. Right-click → Save Image instead.",
+      });
+      setTimeout(() => setToast(null), 3200);
+    }
+  }, [product, handleCopyImageSuccess]);
+
+  const handleCopyImageClick = useCallback((e) => {
+    e.stopPropagation();
+    // Free products copy without sign-in (per product spec).
+    if (isFree) {
+      executeCopyImage();
+      return;
+    }
+    // Paid products: sign-in gate + entitlement gate.
+    if (!isSignedIn) {
+      handleGateAction("copy-image");
+      return;
+    }
+    if (!hasAccess) {
+      onOpenUnlockModal?.();
+      return;
+    }
+    executeCopyImage();
+  }, [isFree, isSignedIn, hasAccess, handleGateAction, onOpenUnlockModal, executeCopyImage]);
+
   const handleDownloadClick = useCallback((e) => {
     e.stopPropagation();
     if (!isSignedIn) {
@@ -3830,6 +4115,8 @@ function ProductDetail({
           executeCopySource();
         } else if (pending.type === "copy-prompt") {
           executeCopyPrompt();
+        } else if (pending.type === "copy-image") {
+          executeCopyImage();
         } else if (pending.type === "download") {
           executeDownload(currentPid);
         } else if (pending.type === "unlock") {
@@ -3842,7 +4129,7 @@ function ProductDetail({
     } catch (err) {
       console.warn("Failed resuming pending action in ProductDetail:", err);
     }
-  }, [currentUser, product, executeCopySource, executeCopyPrompt, executeDownload, onOpenUnlockModal]);
+  }, [currentUser, product, executeCopySource, executeCopyPrompt, executeCopyImage, executeDownload, onOpenUnlockModal]);
 
   const reduceMotion = useReducedMotion();
 
@@ -3950,7 +4237,16 @@ function ProductDetail({
             }}
           >
             <PreviewErrorBoundary>
-              {hasVideo ? (
+              {galleryImages.length > 1 ? (
+                <GalleryCarousel
+                  images={galleryImages}
+                  title={product?.titleEn || product?.titleZh || ""}
+                  onOpenLightbox={(i) => {
+                    setGalleryIndex(i);
+                    setLightboxOpen(true);
+                  }}
+                />
+              ) : hasVideo ? (
                 <div
                   className="sc-product-detail-video-player"
                   style={{
@@ -4000,17 +4296,48 @@ function ProductDetail({
             </PreviewErrorBoundary>
           </div>
 
+          {/* View full page — for image-first Layouts */}
+          {product?.tab === "layouts" && (galleryImages.length > 0 || detailPosterUrl) && (
+            <div className="sc-detail-view-fullpage">
+              <button
+                type="button"
+                className="sc-detail-action sc-detail-action--fullpage"
+                onClick={() => {
+                  const idx = galleryImages.length ? Math.min(galleryIndex, galleryImages.length - 1) : 0;
+                  if (galleryImages.length) {
+                    setGalleryIndex(idx);
+                    setLightboxOpen(true);
+                  } else if (detailPosterUrl) {
+                    setGalleryIndex(0);
+                    setLightboxOpen(true);
+                  }
+                }}
+              >
+                <span className="sc-detail-action-icon" aria-hidden="true">
+                  <Maximize2 size={16} />
+                </span>
+                <span className="sc-detail-action-label">
+                  {tLocal({ en: "View full page", zhCN: "查看整页" })}{" →"}
+                </span>
+              </button>
+            </div>
+          )}
+
           <div className="sc-product-preview-caption">
             <span>
-              {hasVideo
+              {galleryImages.length > 1
+                ? tLocal({ en: "Gallery", zhCN: "图库" })
+                : hasVideo
                 ? tLocal({ en: "Preview Video", zhCN: "视频预览" })
                 : tLocal({ en: "Interactive preview", zhCN: "交互预览" })}
             </span>
 
             <small>
-              {tLocal({
-                en: "Preview the experience before getting the code.",
-                zhCN: "获取代码前先体验最终效果。" })}
+              {galleryImages.length > 1
+                ? tLocal({ en: "Swipe or use the arrows to browse images.", zhCN: "左右滑动或使用箭头浏览图片。" })
+                : tLocal({
+                    en: "Preview the experience before getting the code.",
+                    zhCN: "获取代码前先体验最终效果。" })}
             </small>
           </div>
         </div>
@@ -4186,8 +4513,36 @@ function ProductDetail({
             </div>
           )}
 
-          {/* ===== ACTION BUTTONS — Copy Prompt / Copy Code / Download ===== */}
+          {/* ===== ACTION BUTTONS — Copy Image / Copy Prompt / Copy Code / Download ===== */}
           <div className="sc-detail-actions">
+
+            {/* Copy Image — Layouts (poster-based) products and any product with a gallery cover */}
+            {(product?.tab === "layouts" || galleryImages.length > 0) && getCopyImageUrl(product) && (
+              <button
+                type="button"
+                className={`sc-detail-action sc-detail-action--image ${copiedImage ? 'is-copied' : ''}`}
+                onClick={handleCopyImageClick}
+              >
+                <span className="sc-detail-action-icon" aria-hidden="true">
+                  {(!isFree && (!isSignedIn || !hasAccess)) ? (
+                    <Lock size={18} />
+                  ) : copiedImage ? (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                  ) : (
+                    <Image size={18} />
+                  )}
+                </span>
+                <span className="sc-detail-action-label">
+                  {!isFree && !isSignedIn
+                    ? 'Sign in to copy image'
+                    : !isFree && !hasAccess
+                    ? `Unlock for $${productPrice.toFixed(2)}`
+                    : copiedImage ? 'Image Copied' : 'Copy Image'}
+                </span>
+              </button>
+            )}
 
             {/* Copy AI Prompt — hidden for premium products until user has access */}
             {product?.aiPrompt && (!isPremium || hasAccess) && (
@@ -4386,6 +4741,15 @@ function ProductDetail({
           )}
         </div>
       </motion.section>
+
+      {/* Fullscreen lightbox (View full page) */}
+      {lightboxOpen && (
+        <Lightbox
+          images={galleryImages.length ? galleryImages : detailPosterUrl ? [detailPosterUrl] : []}
+          index={galleryImages.length ? Math.min(galleryIndex, galleryImages.length - 1) : 0}
+          onClose={() => setLightboxOpen(false)}
+        />
+      )}
 
       {/* Toast */}
       {toast && (
