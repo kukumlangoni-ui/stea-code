@@ -1,6 +1,7 @@
 export const CODE_PRODUCT_CATEGORIES = [
   "Buttons",
   "Inputs",
+  "Forms",
   "Toggle Switches",
   "Feedback",
   "Text",

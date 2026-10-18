@@ -7,6 +7,7 @@ export const TABS = {
       { id: "All", label: "All", tooltip: null },
       { id: "Buttons", label: "Buttons", tooltip: null },
       { id: "Inputs", label: "Inputs", tooltip: null },
+      { id: "Forms", label: "Forms", tooltip: "Login, sign-up, subscribe forms" },
       { id: "Toggle Switches", label: "Toggle Switches", tooltip: null },
       { id: "Feedback", label: "Feedback", tooltip: "Loaders, spinners, toasts" },
       { id: "Text", label: "Text", tooltip: "Animated text, gradients" },
