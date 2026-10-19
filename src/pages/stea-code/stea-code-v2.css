@@ -21536,3 +21536,56 @@ html body .sc-market-hero.sc-home-hero.sc-hero-twocol h1.sc-hero-title > .sc-her
 .sc-hero-stack:hover .sc-stack-card.middle { 
   transform: rotate(0deg) translate(0, 10px) !important; 
 }
+
+
+/* =========================================
+   HERO STACK FINAL ADJUSTMENT (BIGGER & WIDER)
+   ========================================= */
+
+/* 1. Make the whole stack bigger */
+.sc-hero-stack {
+  max-width: 700px !important;
+  height: 500px !important;
+}
+
+/* 2. BACK card (Alex Graham portfolio) - Keep in back */
+.sc-stack-card.back {
+  top: 0 !important;
+  left: -10% !important;
+  width: 70% !important;
+  transform: rotate(-8deg) !important;
+  z-index: 1 !important;
+}
+
+/* 3. MIDDLE card (01 DISCOVER) - Make it wider/horizontal so it doesn't get covered */
+.sc-stack-card.front {
+  top: 20% !important;
+  left: 5% !important;
+  width: 90% !important; /* Wider */
+  height: 300px !important; /* Shorter to look horizontal */
+  object-fit: cover !important; /* Ensures it fills the horizontal box */
+  transform: rotate(4deg) !important;
+  z-index: 2 !important;
+}
+
+/* 4. FRONT card (Laptop Mockup) - Back on top, but offset so it shows the middle */
+.sc-stack-card.middle {
+  top: auto !important;
+  bottom: 0 !important;
+  right: -5% !important;
+  left: auto !important;
+  width: 85% !important;
+  transform: rotate(-4deg) !important;
+  z-index: 3 !important;
+}
+
+/* 5. Update Hover Animations */
+.sc-hero-stack:hover .sc-stack-card.back { 
+  transform: rotate(-12deg) translate(-15px, -15px) !important; 
+}
+.sc-hero-stack:hover .sc-stack-card.front { 
+  transform: rotate(6deg) translate(10px, -5px) !important; 
+}
+.sc-hero-stack:hover .sc-stack-card.middle { 
+  transform: rotate(0deg) translate(0, 15px) !important; 
+}
