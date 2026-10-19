@@ -17497,3 +17497,56 @@ header,
   white-space: nowrap !important;
 }
 /* ===== end complete premium redesign ===== */
+
+/* ============================================================
+   Responsive preview fix — preserve aspect on ALL devices
+   (no distortion / no hidden card on desktop)
+   ============================================================ */
+.sc-premium-product-detail .sc-product-detail-media {
+  display: block !important;
+  text-align: center !important;
+  padding: 24px clamp(14px, 3vw, 34px) 30px !important;
+  min-height: 0 !important;
+}
+.sc-premium-product-detail .sc-product-detail-preview-shell {
+  width: min(100%, 1180px) !important;
+  aspect-ratio: var(--preview-aspect) !important;
+  /* safety net only for very tall designs; landscape heroes keep true aspect */
+  max-height: 90vh !important;
+  margin: 0 auto !important;
+}
+/* Leave real space under the preview: no overlap hiding the card */
+.sc-premium-product-detail .sc-product-detail-copy {
+  margin-top: 0 !important;
+  padding-top: clamp(40px, 6vw, 72px) !important;
+}
+/* Keep caption + fullpage centered under the hero */
+.sc-product-preview-caption,
+.sc-detail-view-fullpage {
+  text-align: center !important;
+}
+.sc-detail-view-fullpage {
+  margin-top: 14px !important;
+}
+/* Readability: contained, premium reading width on desktop */
+.sc-premium-product-detail .sc-product-detail-copy {
+  max-width: 1080px !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+.sc-premium-product-detail .sc-product-detail-copy h2#sc-product-title {
+  font-size: clamp(34px, 5vw, 58px) !important;
+}
+.sc-product-detail-description {
+  font-size: 17px !important;
+  line-height: 1.65 !important;
+}
+/* crisp hover on tags + buttons */
+.sc-product-detail-tags > span {
+  transition: transform .15s ease, background .15s ease !important;
+}
+.sc-product-detail-tags > span:hover {
+  transform: translateY(-1px) !important;
+  background: rgba(15, 18, 27, 0.09) !important;
+}
+/* ===== end responsive preview fix ===== */
