@@ -1890,20 +1890,31 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
                 </div>
 
                 <div className="sc-hero-visual" aria-hidden="true">
-                  <div className="sc-hero-mockup">
-                    <div className="sc-mockup-header">
-                      <span className="sc-mockup-dot" />
-                      <span className="sc-mockup-dot" />
-                      <span className="sc-mockup-dot" />
+                  <div className="sc-hero-stack">
+                    <div className="sc-stack-card back">
+                      <img
+                        src="/stea-code-logo.png"
+                        alt=""
+                        className="sc-stack-mark"
+                        loading="lazy"
+                        decoding="async"
+                      />
                     </div>
-                    <div className="sc-mockup-body">
-                      <div className="sc-mockup-line" />
-                      <div className="sc-mockup-line short" />
-                      <div className="sc-mockup-tiles">
-                        <span />
-                        <span />
-                        <span />
-                        <span />
+                    <img
+                      src="/previews/premium-website-hero.png"
+                      alt=""
+                      className="sc-stack-card middle"
+                      loading="eager"
+                      decoding="async"
+                      draggable={false}
+                    />
+                    <div className="sc-stack-card front">
+                      <div className="sc-stack-card-inner">
+                        <span className="sc-stack-badge">NEW</span>
+                        <h3 className="sc-stack-title">Premium UI Kit</h3>
+                        <span className="sc-stack-meta">
+                          {uiLocale === "zhCN" ? "真实组件 · 源码开放" : "Real components · Open source"}
+                        </span>
                       </div>
                     </div>
                   </div>
