@@ -2613,6 +2613,27 @@ function CodeProductCard({ product, tLocal, onOpen, isFavorited, onToggleFavorit
   const designH = Number(product?.designHeight || product?.preview?.height) || (isKit ? 1100 : 480);
   const previewAspect = `${designW} / ${designH}`;
 
+  // --- Poster gallery.
+  // getPreviewPosterUrl() already returns gallery[0], so the cover is what the
+  // card has always shown. The remaining gallery images cycle on the card via
+  // dots / swipe. Falls back to a single-image list when gallery is absent. ---
+  const cardGallery = useMemo(() => {
+    const images = normalizeGalleryField(product?.gallery);
+    if (images.length) return images;
+    return posterUrl ? [posterUrl] : [];
+  }, [product?.gallery, posterUrl]);
+  const [cardImageIndex, setCardImageIndex] = useState(0);
+  const cardTouchX = useRef(null);
+  const activePoster = cardGallery[cardImageIndex] || posterUrl;
+  const cycleCardImage = useCallback(
+    (dir) => {
+      const len = cardGallery.length;
+      if (len <= 1) return;
+      setCardImageIndex((i) => (i + dir + len) % len);
+    },
+    [cardGallery.length]
+  );
+
   // --- Motion: subtle lift on hover, press scale. Honors prefers-reduced-motion. ---
   const reduceMotion = useReducedMotion();
 
@@ -2660,16 +2681,41 @@ function CodeProductCard({ product, tLocal, onOpen, isFavorited, onToggleFavorit
         {isKit && <span className="sc-kit-badge">Kit</span>}
 
         {isPosterCard ? (
-          <div className="sc-card-poster-preview">
+          <div
+            className="sc-card-poster-preview"
+            style={{ aspectRatio: previewAspect }}
+            onTouchStart={(e) => {
+              cardTouchX.current = e.touches[0].clientX;
+            }}
+            onTouchEnd={(e) => {
+              if (cardTouchX.current == null) return;
+              const dx = e.changedTouches[0].clientX - cardTouchX.current;
+              if (Math.abs(dx) > 40) cycleCardImage(dx < 0 ? 1 : -1);
+              cardTouchX.current = null;
+            }}
+          >
             <img
-              src={posterUrl}
+              src={activePoster}
               alt={title}
-              width={Number(product?.preview?.width || product?.designWidth) || undefined}
-              height={Number(product?.preview?.height || product?.designHeight) || undefined}
               loading="lazy"
               decoding="async"
               draggable={false}
             />
+            {cardGallery.length > 1 && (
+              <div className="sc-card-gallery-dots" aria-hidden="true">
+                {cardGallery.map((_, i) => (
+                  <span
+                    key={i}
+                    className={`sc-card-gallery-dot ${i === cardImageIndex ? "is-active" : ""}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
+                      setCardImageIndex(i);
+                    }}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         ) : (
           <div className="sc-code-card__preview">
