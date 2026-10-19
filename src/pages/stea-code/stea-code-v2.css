@@ -20215,3 +20215,47 @@ div[class*="lightbox"] > div:last-child {
   height: 32px; /* The gap */
   background: #f7f7f9; /* Matches the modal background */
 }
+
+
+/* =========================================
+   FINAL FIX: FULL IMAGE, NO OVERLAP
+   ========================================= */
+
+/* The container holding the image */
+.sc-detail-preview-container,
+.sc-product-preview-stage,
+div[style*="--preview-aspect"] {
+  height: auto !important;
+  max-height: none !important;
+  aspect-ratio: auto !important;
+  overflow: hidden !important;
+  padding-bottom: 0 !important;
+  margin-bottom: 0 !important;
+  border-bottom-left-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+}
+
+/* The image itself */
+.sc-detail-preview-container img,
+.sc-product-preview-stage img {
+  width: 100% !important;
+  height: auto !important;
+  aspect-ratio: auto !important;
+  object-fit: contain !important;
+  display: block !important;
+  border-bottom-left-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+}
+
+/* The white info card */
+.sc-detail-info-card,
+.sc-modal-info,
+.sc-product-modal-body {
+  margin-top: 0 !important; /* Strict separation */
+  border-top-left-radius: 32px !important;
+  border-top-right-radius: 32px !important;
+  background: #ffffff !important;
+  box-shadow: 0 -10px 30px rgba(0,0,0,0.05) !important;
+  position: relative !important;
+  z-index: 10 !important;
+}

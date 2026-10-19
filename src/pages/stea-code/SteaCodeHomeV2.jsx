@@ -2638,8 +2638,8 @@ function CodeProductCard({ product, tLocal, onOpen, isFavorited, onToggleFavorit
         className="sc-code-card__preview-wrap"
         style={{
           // aspectRatio: previewAspect, // REMOVED: forcing image crop
-          '--card-aspect': previewAspect,
-          '--preview-aspect': previewAspect,
+          // '--card-aspect': previewAspect, // REMOVED: forcing image crop
+          // '--preview-aspect': previewAspect, // REMOVED: forcing image crop
         }}
       >
         {/* Kit badge on top-left corner */}
