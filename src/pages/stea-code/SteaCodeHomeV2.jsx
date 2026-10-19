@@ -2587,6 +2587,22 @@ function CodeProductCard({ product, tLocal, onOpen, isFavorited, onToggleFavorit
     CATEGORY_LABELS[product?.category]?.en || product?.category || "Code";
   const price = formatPrice(product);
   const posterUrl = getPreviewPosterUrl(product) || product?.posterImageUrl || "";
+  const cardHasVideo = Boolean(getPreviewVideoUrl(product));
+  const cardHasLivePreview = Boolean(
+    product?.preview?.enabled ||
+      product?.hasSource ||
+      product?.demoPreview?.fullDocument ||
+      product?.demoPreview?.html ||
+      product?.demoPreview?.css ||
+      (Array.isArray(product?.publicFiles) &&
+        product.publicFiles.some(
+          (file) => file && (file.language === "html" || file.language === "css")
+        ))
+  );
+  const isPosterCard =
+    Boolean(posterUrl) &&
+    !cardHasVideo &&
+    (product?.previewMode === "poster" || !cardHasLivePreview);
 
   // Dynamic aspect ratio from admin-configured design canvas dimensions.
   // Falls back to 1600×1100 for kits, 640×480 for components.
@@ -2635,21 +2651,30 @@ function CodeProductCard({ product, tLocal, onOpen, isFavorited, onToggleFavorit
       {/* Preview area — aspect ratio driven by product design canvas (designWidth / designHeight).
           Falls back to 640:480 (4:3) if admin dimensions aren't set. Edge-to-edge, no internal scroll. */}
       <div
-        className="sc-code-card__preview-wrap"
-        style={{
-          // aspectRatio: previewAspect, // REMOVED: forcing image crop
-          // '--card-aspect': previewAspect, // REMOVED: forcing image crop
-          // '--preview-aspect': previewAspect, // REMOVED: forcing image crop
-        }}
+        className={`sc-code-card__preview-wrap ${isPosterCard ? "is-poster-card" : ""}`}
       >
         {/* Kit badge on top-left corner */}
         {isKit && <span className="sc-kit-badge">Kit</span>}
 
-        <div className="sc-code-card__preview">
-          <div className="sc-product-preview-art">
-            <ProductPreview product={product} fillMode="cover" cardZoom={product.cardZoom || "full"} offsetX={product.cardOffsetX || 0} offsetY={product.cardOffsetY || 0} interactive={false} preferVideo={true} cardPreview={true} />
+        {isPosterCard ? (
+          <div className="sc-card-poster-preview">
+            <img
+              src={posterUrl}
+              alt={title}
+              width={Number(product?.preview?.width || product?.designWidth) || undefined}
+              height={Number(product?.preview?.height || product?.designHeight) || undefined}
+              loading="lazy"
+              decoding="async"
+              draggable={false}
+            />
           </div>
-        </div>
+        ) : (
+          <div className="sc-code-card__preview">
+            <div className="sc-product-preview-art">
+              <ProductPreview product={product} fillMode="cover" cardZoom={product.cardZoom || "full"} offsetX={product.cardOffsetX || 0} offsetY={product.cardOffsetY || 0} interactive={false} preferVideo={true} cardPreview={true} />
+            </div>
+          </div>
+        )}
 
         {/* Favorite button */}
         <button

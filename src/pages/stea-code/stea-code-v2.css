@@ -20356,6 +20356,73 @@ div[style*="--preview-aspect"] {
   background: #ffffff !important;
 }
 
+/* ============================================================
+   HOMEPAGE POSTER CARDS
+   Poster cards grow with the full image. All preview layers use
+   matching clean radii and a white backing so no dark parent
+   background can leak through the corners.
+   ============================================================ */
+.sc-market-home .sc-code-card::before,
+.sc-market-home .sc-code-card::after,
+.sc-market-home .sc-code-card__preview-wrap::before,
+.sc-market-home .sc-code-card__preview-wrap::after {
+  display: none !important;
+  content: none !important;
+}
+
+.sc-market-home .sc-code-card__preview-wrap {
+  border-radius: 16px !important;
+  border: 1px solid rgba(15, 18, 27, 0.08) !important;
+  background: #ffffff !important;
+  background-image: none !important;
+  -webkit-mask-image: none !important;
+  mask-image: none !important;
+  box-shadow: 0 12px 30px -22px rgba(15, 18, 27, 0.28) !important;
+}
+
+.sc-market-home .sc-code-card__preview,
+.sc-market-home .sc-product-preview-art,
+.sc-market-home .sc-product-preview {
+  border-radius: 15px !important;
+  background: transparent !important;
+  background-image: none !important;
+}
+
+.sc-market-home .sc-code-card__preview-wrap.is-poster-card {
+  display: block !important;
+  width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  aspect-ratio: auto !important;
+  overflow: hidden !important;
+}
+
+.sc-market-home .sc-card-poster-preview {
+  display: block !important;
+  width: 100% !important;
+  height: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: #ffffff !important;
+}
+
+.sc-market-home .sc-card-poster-preview img {
+  display: block !important;
+  width: 100% !important;
+  height: auto !important;
+  max-height: none !important;
+  aspect-ratio: auto !important;
+  object-fit: contain !important;
+  object-position: top center !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: #ffffff !important;
+  box-shadow: none !important;
+}
+
 
 /* =========================================
    FIX HOMEPAGE GRID CARD POSTER CROPPING
