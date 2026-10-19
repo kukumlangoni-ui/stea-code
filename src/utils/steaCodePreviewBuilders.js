@@ -54,6 +54,14 @@ ${safeJs}
 </html>`;
 }
 
+/**
+ * Matches documents that hard-code a fixed pixel artboard on <html>/<body>,
+ * e.g. `html, body { width:600px; height:440px; background:#d9c9b0 }`.
+ * Responsive documents (`width:100%` / `height:100%`) do NOT match.
+ */
+const FIXED_ARTBOARD_RE =
+  /(?:html|body)(?:\s*,\s*(?:html|body))?\s*\{[^}]*(?:\bwidth\s*:\s*\d+(?:\.\d+)?px[^}]*\bheight\s*:\s*\d+(?:\.\d+)?px|\bheight\s*:\s*\d+(?:\.\d+)?px[^}]*\bwidth\s*:\s*\d+(?:\.\d+)?px)/i;
+
 export function buildFullHtmlDoc({ fullDocument, baseUrl }) {
   if (!fullDocument) return "";
 
@@ -62,11 +70,30 @@ export function buildFullHtmlDoc({ fullDocument, baseUrl }) {
   // suppress scrollbars that belong to the iframe's html/body.
   const noScrollStyle = `<style id="__sc_no_scroll__">html,body{margin:0!important;padding:0!important;overflow:hidden!important;width:100%!important;height:100%!important;}::-webkit-scrollbar{display:none!important;}*{scrollbar-width:none!important;}</style>`;
 
+  // Neutralize hard-coded fixed-pixel artboards.
+  //
+  // The preview iframe viewport is scale-locked to designWidth × designHeight
+  // (see INVARIANT 1 in SteaCodeProductLivePreview). A document that declares
+  // BOTH a pixel size and an opaque page color on html/body therefore renders its
+  // artboard pinned to the top-left, while the opaque page color paints the
+  // leftover canvas — which reads as a large empty colored block beside the
+  // artboard. Dropping that page color lets the neutral preview stage show
+  // through (matching well-authored responsive previews), and centering keeps
+  // the artboard balanced instead of stuck in the corner.
+  //
+  // Scoped strictly to detected documents — responsive previews are untouched.
+  const artboardNeutralizeStyle = FIXED_ARTBOARD_RE.test(fullDocument)
+    ? `<style id="__sc_artboard_neutralize__">html,body{background:transparent!important;}body{display:flex!important;align-items:center!important;justify-content:center!important;}</style>`
+    : "";
+  const injectedChrome = artboardNeutralizeStyle
+    ? `${noScrollStyle}\n${artboardNeutralizeStyle}`
+    : noScrollStyle;
+
   // If the document already has a <base>, don't inject another.
   if (/<base\s/i.test(fullDocument)) {
     // Still inject scrollbar kill
     if (/<head[^>]*>/i.test(fullDocument)) {
-      return fullDocument.replace(/<head[^>]*>/i, (m) => `${m}\n${noScrollStyle}`);
+      return fullDocument.replace(/<head[^>]*>/i, (m) => `${m}\n${injectedChrome}`);
     }
     return fullDocument;
   }
@@ -75,9 +102,9 @@ export function buildFullHtmlDoc({ fullDocument, baseUrl }) {
     : "";
   // Inject base tag + scrollbar kill right after <head> if present, else prepend.
   if (/<head[^>]*>/i.test(fullDocument)) {
-    return fullDocument.replace(/<head[^>]*>/i, (m) => `${m}\n${noScrollStyle}\n${baseTag}`);
+    return fullDocument.replace(/<head[^>]*>/i, (m) => `${m}\n${injectedChrome}\n${baseTag}`);
   }
-  return `${noScrollStyle}\n${baseTag}\n${fullDocument}`;
+  return `${injectedChrome}\n${baseTag}\n${fullDocument}`;
 }
 
 const BABEL_VERSION = "7.25.6";
