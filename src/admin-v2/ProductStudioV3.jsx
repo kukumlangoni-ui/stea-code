@@ -245,8 +245,8 @@ const RUNTIMES = [
 const DESIGN_CANVAS_PRESETS = [
   { id: "button", label: "Button / Small", width: 480, height: 320 },
   { id: "card", label: "Card / Medium", width: 640, height: 480 },
-  { id: "section", label: "Section / Large", width: 1200, height: 900 },
-  { id: "landing", label: "Landing Page", width: 1440, height: 1200 },
+  { id: "section", label: "Section / Large", width: 960, height: 720 },
+  { id: "landing", label: "Landing Page", width: 1440, height: 900 },
   { id: "custom", label: "Custom", width: 0, height: 0 },
 ];
 
