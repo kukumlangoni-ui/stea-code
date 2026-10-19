@@ -19770,3 +19770,71 @@ iframe.sc-card-preview {
             display: none !important;
         }
         
+
+/* =========================================
+   FULLSCREEN MODAL FIX (LIGHT MODE)
+   ========================================= */
+
+/* 1. The Fullscreen Overlay Background */
+.sc-lightbox-overlay,
+.sc-fullscreen-modal,
+.sc-preview-modal,
+div[class*="lightbox"] {
+  background-color: #f7f7f9 !important; /* Light background, kills the black bars */
+  backdrop-filter: blur(10px) !important;
+}
+
+/* 2. The Fullscreen Preview Stage */
+.sc-fullscreen-stage,
+.sc-lightbox-content,
+div[class*="fullscreen"] > div:first-child {
+  background-color: #f0f0f0 !important; /* Soft grey stage */
+  width: 100% !important;
+  height: 100% !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  border: none !important;
+}
+
+/* 3. The Image/Iframe inside the Fullscreen Stage */
+.sc-fullscreen-stage img,
+.sc-fullscreen-stage iframe,
+.sc-lightbox-content img,
+.sc-lightbox-content iframe {
+  max-width: 95% !important;
+  max-height: 90% !important;
+  object-fit: contain !important;
+  background: transparent !important;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.1) !important;
+  border-radius: 12px !important;
+}
+
+/* 4. The Bottom White Info Card */
+.sc-fullscreen-info,
+div[class*="fullscreen-info"] {
+  background-color: #ffffff !important;
+  border-radius: 32px 32px 0 0 !important;
+  box-shadow: 0 -10px 40px rgba(0,0,0,0.05) !important;
+  border-top: 1px solid #e5e5e5 !important;
+}
+
+/* 5. Header Buttons (Back, CROSS, Expand) */
+.sc-lightbox-header button,
+.sc-fullscreen-header button {
+  background-color: #ffffff !important;
+  color: #111111 !important;
+  border: 1px solid #e5e5e5 !important;
+  border-radius: 50% !important;
+  width: 40px !important;
+  height: 40px !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05) !important;
+}
+
+.sc-lightbox-header button:hover,
+.sc-fullscreen-header button:hover {
+  background-color: #f0f0f0 !important;
+}

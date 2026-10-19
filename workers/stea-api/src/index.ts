@@ -145,7 +145,7 @@ export default {
       }
 
       if (apiPath === "/stea-code/catalog" && method === "GET") {
-        return handleCatalog(request, env);
+        return handleCatalog(request, env, ctx);
       }
 
       const productMatch = apiPath.match(/^\/stea-code\/products\/([^/]+)$/);

@@ -123,12 +123,32 @@ async function listHomepageCards(env: Env): Promise<any[]> {
   }));
 }
 
-export async function handleCatalog(req: Request, env: Env): Promise<Response> {
+export async function handleCatalog(req: Request, env: Env, ctx?: ExecutionContext): Promise<Response> {
   try {
     const url = new URL(req.url);
     const scope = url.searchParams.get("scope") || "";
     const category = url.searchParams.get("category") || "";
     const subcategory = url.searchParams.get("subcategory") || "";
+    const canUseHomepageCache = scope === "homepage" && !category && !subcategory;
+    const homepageCacheKey = new Request(
+      "https://stea-code.internal/catalog/homepage-v1",
+      { method: "GET" }
+    );
+
+    if (canUseHomepageCache) {
+      const cached = await caches.default.match(homepageCacheKey);
+      if (cached) {
+        return new Response(await cached.text(), {
+          status: cached.status,
+          headers: {
+            "Content-Type": "application/json",
+            "Cache-Control": "public, max-age=30, s-maxage=300, stale-while-revalidate=600",
+            "X-STEA-Catalog-Cache": "HIT",
+            ...corsHeaders(req.headers.get("origin")),
+          },
+        });
+      }
+    }
 
     let products: any[];
     if (scope === "homepage") {
@@ -155,19 +175,34 @@ export async function handleCatalog(req: Request, env: Env): Promise<Response> {
     //   - 60s browser cache (max-age) for instant back/forward nav
     //   - 2min CDN edge cache (s-maxage) for fast global response
     //   - 10min stale-while-revalidate — serves old data while refreshing
-    return new Response(
-      JSON.stringify({ products, total: products.length }),
-      {
-        status: 200,
-        headers: {
-          "Content-Type": "application/json",
-          "Cache-Control": scope === "homepage"
-            ? "public, max-age=30, s-maxage=300, stale-while-revalidate=600"
-            : "public, max-age=60, s-maxage=120, stale-while-revalidate=600",
-          ...corsHeaders(req.headers.get("origin")),
-        },
-      }
-    );
+    const body = JSON.stringify({ products, total: products.length });
+    const response = new Response(body, {
+      status: 200,
+      headers: {
+        "Content-Type": "application/json",
+        "Cache-Control": scope === "homepage"
+          ? "public, max-age=30, s-maxage=300, stale-while-revalidate=600"
+          : "public, max-age=60, s-maxage=120, stale-while-revalidate=600",
+        ...corsHeaders(req.headers.get("origin")),
+      },
+    });
+
+    if (canUseHomepageCache && ctx) {
+      ctx.waitUntil(
+        caches.default.put(
+          homepageCacheKey,
+          new Response(body, {
+            status: 200,
+            headers: {
+              "Content-Type": "application/json",
+              "Cache-Control": "public, max-age=30, s-maxage=300",
+            },
+          })
+        )
+      );
+    }
+
+    return response;
   } catch (e: any) {
     return new Response(JSON.stringify({ error: e?.message || "Catalog fetch failed" }), {
       status: 500,
