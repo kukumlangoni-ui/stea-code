@@ -1064,7 +1064,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
       if (
         !product ||
         product.status !== "published" ||
-        product.homepageVisible !== true
+        !(product.homepageVisible === true || product.homepageVisible === 1 || product.homepageVisible === '1')
       ) return false;
 
       if (!isProductReady(product)) {
