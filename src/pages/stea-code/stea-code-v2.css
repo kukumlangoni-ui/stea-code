@@ -18836,3 +18836,43 @@ body:has(.sc-market-home) { color-scheme: light; }
   color: #b45309 !important;
 }
 /* ===== end supapare cards ===== */
+
+/* ============================================================
+   CATEGORY-EYEBROW CARDS — category above title, price right corner
+   ============================================================ */
+.sc-market-home .sc-code-card--v2 .sc-code-card__caption-main,
+.sc-market-home .sc-code-card .sc-code-card__caption-main {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 5px !important;
+}
+.sc-market-home .sc-code-card--v2 .sc-code-card__category,
+.sc-market-home .sc-code-card .sc-code-card__category {
+  order: 0 !important;
+  margin: 0 0 2px !important;
+  font-size: 11.5px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.09em !important;
+  text-transform: uppercase !important;
+  color: #8a8f99 !important;
+}
+.sc-market-home .sc-code-card--v2 .sc-code-card__title,
+.sc-market-home .sc-code-card .sc-code-card__title {
+  order: 1 !important;
+  margin: 0 !important;
+  font-size: 19px !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.015em !important;
+  color: #111111 !important;
+  line-height: 1.25 !important;
+}
+/* price stays in the right corner (caption is flex space-between) */
+.sc-market-home .sc-code-card--v2 .sc-code-card__caption,
+.sc-market-home .sc-code-card .sc-code-card__caption {
+  display: flex !important;
+  align-items: flex-start !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+  padding: 16px 2px 2px !important;
+}
+/* ===== end category-eyebrow cards ===== */

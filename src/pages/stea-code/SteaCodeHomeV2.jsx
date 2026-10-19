@@ -2674,10 +2674,9 @@ function CodeProductCard({ product, tLocal, onOpen, isFavorited, onToggleFavorit
         </button>
       </div>
 
-      {/* Caption — title + category left, badge right */}
+      {/* Caption — category + title left, price/free right */}
       <div className="sc-code-card__caption">
         <div className="sc-code-card__caption-main">
-          <h3 className="sc-code-card__title">{title}</h3>
           {externalUrl ? (
             <span className="sc-code-card__price-badge sc-code-card__cta-badge sc-code-card__logo-badge">
               <img src="/stea-code-logo.png" alt="steacode" draggable={false} />
@@ -2685,6 +2684,7 @@ function CodeProductCard({ product, tLocal, onOpen, isFavorited, onToggleFavorit
           ) : (
             <p className="sc-code-card__category">{categoryLabel}</p>
           )}
+          <h3 className="sc-code-card__title">{title}</h3>
         </div>
         {externalUrl ? (
           <span className="sc-code-card__price-badge sc-code-card__cta-badge">
