@@ -25,7 +25,7 @@ const SteaCodeUpgradePage = lazy(() => import("./pages/stea-code/SteaCodeUpgrade
 // Shared
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy.jsx"));
 const CookiePolicy = lazy(() => import("./pages/CookiePolicy.jsx"));
-import CookieConsentBanner from "./components/stea-code/CookieConsentBanner.jsx";
+// import CookieConsentBanner from "./components/stea-code/CookieConsentBanner.jsx";
 import { useConsentGatedScripts } from "./hooks/useConsentGatedScripts.js";
 
 class LocalErrorBoundary extends Component {
@@ -148,7 +148,7 @@ export default function App() {
         <SitesLanguageProvider>
           <PWAProvider>
             <div className="stea-master-root" style={{ minHeight: "100vh", background: "#050505", overflow: "visible" }}>
-              <CookieConsentBanner />
+              {/* <CookieConsentBanner /> removed */}
               <Suspense fallback={<PageLoadingFallback />}>
                 <Routes>
                   {/* Home */}
