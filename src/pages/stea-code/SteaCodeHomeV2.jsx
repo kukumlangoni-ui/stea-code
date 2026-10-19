@@ -1811,7 +1811,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
           /* ================= STOREFRONT HOMEPAGE SECTIONS ================= */
           <>
             {/* 1. HERO */}
-            <section className={`sc-market-hero sc-home-hero ${heroReady ? 'is-ready' : ''}`}>
+            <section className={`sc-market-hero sc-home-hero sc-hero-twocol ${heroReady ? 'is-ready' : ''}`}>
               {/* Ambient glow background */}
               <div className="sc-hero-glow" aria-hidden="true" />
 
@@ -1830,8 +1830,9 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
                 ))}
               </div>
 
-              <div className="sc-home-hero-inner">
-                <h1 className="sc-hero-title"><span>Build better.</span><strong>Code faster.</strong></h1>
+              <div className="sc-home-hero-inner sc-hero-twocol-inner">
+                <div className="sc-hero-content">
+                <h1 className="sc-hero-title"><strong>Code faster.</strong><span className="sc-hero-title-accent">Build better.</span></h1>
                 <p className="sc-home-hero-subtitle">{tLocal(COPY.sub)}</p>
                 <form className="sc-market-search" onSubmit={submit} role="search">
                   <Search size={18} aria-hidden="true" />
@@ -1865,15 +1866,6 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
                     {tLocal(COPY.browsePremium)}
                   </button>
                 </div>
-                <div
-                  className="sc-tech-strip sc-hero-tech-pills"
-                  aria-label="Supported technologies"
-                >
-                  {CODE_PRODUCT_TECH.map((tech) => (
-                    <span key={tech}>{tech}</span>
-                  ))}
-                </div>
-
                 <div className="sc-trust-bar" role="status" aria-label="steacode stats">
                   <div className="sc-trust-item">
                     <span className="sc-trust-value">{products.length || 94}+</span>
@@ -1893,6 +1885,27 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
                   <div className="sc-trust-item">
                     <span className="sc-trust-value">{uiLocale === "zhCN" ? "每周" : "Updated"}</span>
                     <span className="sc-trust-label">{uiLocale === "zhCN" ? "更新" : "Weekly"}</span>
+                  </div>
+                </div>
+                </div>
+
+                <div className="sc-hero-visual" aria-hidden="true">
+                  <div className="sc-hero-mockup">
+                    <div className="sc-mockup-header">
+                      <span className="sc-mockup-dot" />
+                      <span className="sc-mockup-dot" />
+                      <span className="sc-mockup-dot" />
+                    </div>
+                    <div className="sc-mockup-body">
+                      <div className="sc-mockup-line" />
+                      <div className="sc-mockup-line short" />
+                      <div className="sc-mockup-tiles">
+                        <span />
+                        <span />
+                        <span />
+                        <span />
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -4642,42 +4655,15 @@ function ProductDetail({
                   {relatedProducts.map((relatedProduct) => (
                     <div
                       key={getProductIdentity(relatedProduct)}
-                      className="sc-also-like-card"
-                      role="button"
-                      tabIndex={0}
-                      onClick={() => onOpenProduct?.(relatedProduct)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" || e.key === " ") {
-                          e.preventDefault();
-                          onOpenProduct?.(relatedProduct);
-                        }
-                      }}
+                      style={{ transform: "scale(0.85)", transformOrigin: "top left", minWidth: 0 }}
                     >
-                      <div
-                        className="sc-also-like-thumb"
-                        style={{
-                          height: 140,
-                          backgroundColor: "#f4f4f5",
-                          borderRadius: 8,
-                          overflow: "hidden",
-                          marginBottom: 12,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                        }}
-                      >
-                        {(relatedProduct.posterImageUrl || relatedProduct.preview?.posterUrl) ? (
-                          <img
-                            src={relatedProduct.posterImageUrl || relatedProduct.preview?.posterUrl}
-                            alt={relatedProduct.titleEn || relatedProduct.titleZh || relatedProduct.title || ""}
-                            style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                          />
-                        ) : (
-                          <span style={{ fontSize: 12, color: "#888" }}>No Preview</span>
-                        )}
-                      </div>
-                      <h5>{relatedProduct.titleEn || relatedProduct.titleZh || relatedProduct.title}</h5>
-                      <p>{relatedProduct.category || "Component"}</p>
+                      <PreviewErrorBoundary>
+                        <CodeProductCard
+                          product={relatedProduct}
+                          tLocal={tLocal}
+                          onOpen={() => onOpenProduct?.(relatedProduct)}
+                        />
+                      </PreviewErrorBoundary>
                     </div>
                   ))}
                 </div>
