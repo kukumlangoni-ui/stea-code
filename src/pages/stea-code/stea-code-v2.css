@@ -18481,3 +18481,162 @@ html,
   background-color: transparent !important;
 }
 /* ===== end force-white ===== */
+
+/* ============================================================
+   COMPLETE LIGHT OVERRIDE — mirrors the .sc-market-home dark block
+   with equal/higher specificity so it WINS (Supahero white theme)
+   ============================================================ */
+html:has(.sc-market-home),
+body:has(.sc-market-home),
+#root:has(.sc-market-home),
+.stea-master-root:has(.sc-market-home),
+html:has(.stea-code-app.sc-v2.sc-market-home),
+body:has(.stea-code-app.sc-v2.sc-market-home),
+#root:has(.stea-code-app.sc-v2.sc-market-home) {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+}
+body:has(.sc-market-home) { color-scheme: light; }
+.stea-code-app.sc-v2.sc-market-home {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  color: #111111 !important;
+}
+
+/* Topbar */
+.sc-market-home .sc-topbar {
+  background: rgba(255, 255, 255, 0.95) !important;
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  border-bottom: 1px solid #e6e6e6 !important;
+}
+.sc-market-home .sc-topbar-logo,
+.sc-market-home .sc-topbar-logo span {
+  color: #111111 !important;
+}
+.sc-market-home .sc-topbar-nav a,
+.sc-market-home .sc-topbar-nav button,
+.sc-market-home .sc-topbar-nav .sc-nav-link {
+  color: #4a4f5a !important;
+  background: transparent !important;
+}
+.sc-market-home .sc-topbar-nav a:hover,
+.sc-market-home .sc-topbar-nav button:hover,
+.sc-market-home .sc-topbar-nav a.is-active,
+.sc-market-home .sc-topbar-nav button.is-active {
+  color: #111111 !important;
+  background: #f1f2f4 !important;
+}
+
+/* Hero */
+.sc-market-home .sc-market-hero { color: #111111 !important; }
+.sc-market-home .sc-hero-title,
+.sc-market-home .sc-market-hero h1.sc-hero-title {
+  color: #111111 !important;
+}
+.stea-code-app.sc-v2.sc-market-home .sc-market-hero h1.sc-hero-title > span,
+.stea-code-app.sc-v2.sc-market-home .sc-market-hero h1.sc-hero-title > strong {
+  color: #111111 !important;
+  -webkit-text-fill-color: #111111 !important;
+  background: none !important;
+  -webkit-background-clip: initial !important;
+  background-clip: initial !important;
+}
+.sc-market-home .sc-home-hero-subtitle,
+.sc-market-home .sc-market-hero .sc-home-hero-subtitle,
+.sc-market-home .sc-market-hero p {
+  color: #5a6272 !important;
+}
+
+/* Search */
+.sc-market-home .sc-market-hero .sc-market-search {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  border: 1px solid #e2e4e8 !important;
+  box-shadow: 0 10px 30px -20px rgba(0, 0, 0, 0.15) !important;
+}
+.sc-market-home .sc-market-search input { color: #111111 !important; }
+.sc-market-home .sc-market-search input::placeholder { color: #9aa0aa !important; }
+.sc-market-home .sc-market-search svg { color: #6b7280 !important; }
+.sc-market-home .sc-v2-kbd {
+  color: #6b7280 !important;
+  background: #f1f2f4 !important;
+  border: 1px solid #e2e4e8 !important;
+}
+
+/* CTAs */
+.sc-market-home .sc-market-hero .sc-market-secondary,
+.sc-market-home .sc-market-hero .sc-hero-cta-secondary {
+  color: #111111 !important;
+  background: transparent !important;
+  border: 1px solid #d8dade !important;
+}
+.sc-market-home .sc-market-hero .sc-market-secondary:hover,
+.sc-market-home .sc-market-hero .sc-hero-cta-secondary:hover {
+  color: #111111 !important;
+  background: #f5f6f7 !important;
+  border-color: #b9bcc3 !important;
+}
+
+/* Tech pills */
+.sc-market-home .sc-market-hero .sc-hero-tech-pills > span {
+  color: #5a6272 !important;
+  background: transparent !important;
+  border: 1px solid #e2e4e8 !important;
+}
+.sc-market-home .sc-market-hero .sc-hero-tech-pills > span:hover {
+  color: #111111 !important;
+  background: #f5f6f7 !important;
+  border-color: #cfd2d8 !important;
+}
+
+/* Trust bar */
+.sc-market-home .sc-market-hero .sc-trust-bar {
+  border-top: 1px solid #eceef1 !important;
+  border-bottom: 1px solid #eceef1 !important;
+}
+.sc-market-home .sc-trust-value { color: #111111 !important; }
+.sc-market-home .sc-trust-label { color: #6b7280 !important; }
+.sc-market-home .sc-trust-divider { background: #e4e6eb !important; }
+
+/* Sections */
+.sc-market-home .sc-market-section + .sc-market-section {
+  border-top: 1px solid #eceef1 !important;
+}
+.sc-market-home .sc-market-section-head h2 { color: #111111 !important; }
+.sc-market-home .sc-market-section-head p { color: #5a6272 !important; }
+
+/* Category pills */
+.sc-market-home .sc-homepage-pill {
+  color: #5a6272 !important;
+  background: transparent !important;
+  border: 1px solid #e2e4e8 !important;
+}
+.sc-market-home .sc-homepage-pill:hover {
+  color: #111111 !important;
+  background: #f5f6f7 !important;
+  border-color: #cfd2d8 !important;
+}
+.sc-market-home .sc-homepage-pill.is-active {
+  color: #0a0a0a !important;
+  background: #f5a623 !important;
+  border-color: #f5a623 !important;
+}
+
+/* Product cards */
+.sc-market-home .sc-code-card,
+.sc-market-home .sc-code-card__preview-wrap,
+.sc-market-home .sc-code-card__preview,
+.sc-market-home .sc-product-preview-art {
+  background-color: #ffffff !important;
+}
+.sc-market-home .sc-code-card {
+  border: 1px solid #e8eaee !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03) !important;
+}
+.sc-market-home .sc-code-card:hover {
+  border-color: #d0d4da !important;
+  box-shadow: 0 10px 30px -18px rgba(0, 0, 0, 0.12) !important;
+}
+.sc-market-home .sc-code-card__title { color: #111111 !important; }
+.sc-market-home .sc-code-card__category { color: #8a8f99 !important; }
+/* ===== end complete light override ===== */
