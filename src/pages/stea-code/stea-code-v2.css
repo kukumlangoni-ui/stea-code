@@ -19137,3 +19137,39 @@ body:has(.sc-market-home) { color-scheme: light; }
   font-size: 16px !important;
   color: #333333 !important;
 }
+
+
+/* =========================================
+   FOOTER FIX FOR LIGHT MODE
+   ========================================= */
+   
+.sc-footer, 
+footer {
+  background-color: transparent !important; /* Keep it matched to the page body */
+  border-top: 1px solid #e5e5e5 !important;
+  color: #888888 !important; /* Dark gray text */
+}
+
+/* Force all text inside the footer to be visible */
+.sc-footer *, 
+footer * {
+  color: #888888 !important;
+}
+
+/* Make any links in the footer slightly darker */
+.sc-footer a, 
+footer a {
+  color: #111111 !important;
+  text-decoration: none !important;
+}
+
+.sc-footer a:hover, 
+footer a:hover {
+  text-decoration: underline !important;
+}
+
+/* Watermark Fix */
+.watermark {
+  color: #000000 !important;
+  opacity: 0.1 !important; /* Make it subtly visible on white */
+}
