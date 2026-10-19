@@ -2637,7 +2637,7 @@ function CodeProductCard({ product, tLocal, onOpen, isFavorited, onToggleFavorit
       <div
         className="sc-code-card__preview-wrap"
         style={{
-          aspectRatio: previewAspect,
+          // aspectRatio: previewAspect, // REMOVED: forcing image crop
           '--card-aspect': previewAspect,
           '--preview-aspect': previewAspect,
         }}
@@ -2967,7 +2967,7 @@ function ProductVideoPreview({ videoUrl, posterUrl, title, playing, autoPlayWhen
             inset: 0,
             width: "100%",
             height: "100%",
-            objectFit: "cover",
+            objectFit: "contain",
             pointerEvents: "none",
             opacity: showPoster ? 1 : 0,
             transition: "opacity 0.25s ease",
@@ -2995,7 +2995,7 @@ function ProductVideoPreview({ videoUrl, posterUrl, title, playing, autoPlayWhen
           inset: 0,
           width: "100%",
           height: "100%",
-          objectFit: "cover",
+          objectFit: "contain",
           background: "#000",
           pointerEvents: "none",
           opacity: showPoster ? 0 : 1,
