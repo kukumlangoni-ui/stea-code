@@ -1891,32 +1891,30 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
 
                 <div className="sc-hero-visual" aria-hidden="true">
                   <div className="sc-hero-stack">
-                    <div className="sc-stack-card back">
-                      <img
-                        src="/stea-code-logo.png"
-                        alt=""
-                        className="sc-stack-mark"
-                        loading="lazy"
-                        decoding="async"
-                      />
-                    </div>
                     <img
-                      src="/previews/premium-website-hero.png"
+                      src="/images/hero/card-back.png"
+                      alt=""
+                      className="sc-stack-card back"
+                      loading="eager"
+                      decoding="async"
+                      draggable={false}
+                    />
+                    <img
+                      src="/images/hero/card-middle.png"
                       alt=""
                       className="sc-stack-card middle"
                       loading="eager"
                       decoding="async"
                       draggable={false}
                     />
-                    <div className="sc-stack-card front">
-                      <div className="sc-stack-card-inner">
-                        <span className="sc-stack-badge">NEW</span>
-                        <h3 className="sc-stack-title">Premium UI Kit</h3>
-                        <span className="sc-stack-meta">
-                          {uiLocale === "zhCN" ? "真实组件 · 源码开放" : "Real components · Open source"}
-                        </span>
-                      </div>
-                    </div>
+                    <img
+                      src="/images/hero/card-front.png"
+                      alt=""
+                      className="sc-stack-card front"
+                      loading="eager"
+                      decoding="async"
+                      draggable={false}
+                    />
                   </div>
                 </div>
               </div>

@@ -21165,95 +21165,47 @@ html body .sc-market-hero.sc-home-hero.sc-hero-twocol h1.sc-hero-title > .sc-her
 
 .sc-market-hero.sc-home-hero.sc-hero-twocol .sc-stack-card {
   position: absolute !important;
+  display: block !important;
   border-radius: 20px !important;
   overflow: hidden !important;
   border: 1px solid rgba(255, 255, 255, 0.7) !important;
   box-shadow: 0 30px 70px -24px rgba(15, 23, 42, 0.30), 0 8px 22px -14px rgba(15, 23, 42, 0.18) !important;
   transition: transform 450ms cubic-bezier(0.22, 1, 0.36, 1) !important;
+  /* All three cards are now opaque <img> elements — cover keeps them from
+     stretching. Box ratios are kept within ~8% of the source artwork's ratio
+     (1.34 / 1.34 / 1.81) so the crop stays imperceptible. */
+  object-fit: cover !important;
+  object-position: center !important;
 }
 
-/* Back — pale brand card, rotated away. The mark is pinned to the top-left
-   corner because the middle card covers the centre of this card. */
+/* Back — the bright portfolio card, rotated away */
 .sc-market-hero.sc-home-hero.sc-hero-twocol .sc-stack-card.back {
   top: 0 !important;
   left: 0 !important;
   width: 70% !important;
-  height: 60% !important;
+  height: 64% !important;
   z-index: 1 !important;
-  display: flex !important;
-  align-items: flex-start !important;
-  justify-content: flex-start !important;
-  padding: 20px !important;
-  background: linear-gradient(150deg, #ffffff 0%, #eef1f7 100%) !important;
   transform: rotate(-8deg) !important;
 }
 
-.sc-market-hero.sc-home-hero.sc-hero-twocol .sc-stack-mark {
-  width: 38px !important;
-  height: 38px !important;
-  opacity: 0.55 !important;
-}
-
-/* Middle — the real product screenshot */
+/* Middle — the dark laptop / layout screenshot */
 .sc-market-hero.sc-home-hero.sc-hero-twocol .sc-stack-card.middle {
   top: 4% !important;
   right: 0 !important;
   width: 80% !important;
-  height: 72% !important;
+  height: 74% !important;
   z-index: 2 !important;
-  background: #ffffff !important;
-  object-fit: cover !important;
-  object-position: top center !important;
   transform: rotate(5deg) !important;
 }
 
-/* Front — dark gradient label card, the focal point */
+/* Front — the dark navy card, the focal point */
 .sc-market-hero.sc-home-hero.sc-hero-twocol .sc-stack-card.front {
   bottom: 0 !important;
   left: 2% !important;
   width: 78% !important;
-  height: 48% !important;
+  height: 52% !important;
   z-index: 3 !important;
-  display: flex !important;
-  flex-direction: column !important;
-  justify-content: flex-end !important;
-  padding: 22px !important;
-  background: linear-gradient(140deg, #0f172a 0%, #1e293b 55%, #312e81 100%) !important;
   transform: rotate(-2deg) !important;
-}
-
-.sc-market-hero.sc-home-hero.sc-hero-twocol .sc-stack-card-inner {
-  display: flex !important;
-  flex-direction: column !important;
-  gap: 6px !important;
-}
-
-.sc-market-hero.sc-home-hero.sc-hero-twocol .sc-stack-badge {
-  align-self: flex-start !important;
-  padding: 3px 9px !important;
-  border-radius: 999px !important;
-  background: rgba(255, 255, 255, 0.14) !important;
-  border: 1px solid rgba(255, 255, 255, 0.22) !important;
-  color: #e0e7ff !important;
-  font-size: 10px !important;
-  font-weight: 700 !important;
-  letter-spacing: 0.14em !important;
-}
-
-.sc-market-hero.sc-home-hero.sc-hero-twocol .sc-stack-title {
-  margin: 0 !important;
-  color: #ffffff !important;
-  font-size: 22px !important;
-  font-weight: 800 !important;
-  line-height: 1.15 !important;
-  letter-spacing: -0.02em !important;
-}
-
-.sc-market-hero.sc-home-hero.sc-hero-twocol .sc-stack-meta {
-  color: rgba(224, 231, 255, 0.72) !important;
-  font-size: 12px !important;
-  font-weight: 500 !important;
-  letter-spacing: 0.01em !important;
 }
 
 .sc-market-hero.sc-home-hero.sc-hero-twocol .sc-hero-stack:hover .sc-stack-card.back {
