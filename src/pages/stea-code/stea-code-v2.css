@@ -18448,3 +18448,36 @@ html,
   color: #555555 !important;
 }
 /* ===== end cache-safe white ===== */
+
+/* ============================================================
+   FORCE-WHITE: topbar + all sections + grid containers
+   ============================================================ */
+.sc-topbar {
+  background-color: rgba(255, 255, 255, 0.94) !important;
+  background: rgba(255, 255, 255, 0.94) !important;
+  background-image: none !important;
+  border-bottom: 1px solid #e6e6e6 !important;
+  backdrop-filter: none !important;
+}
+.sc-market,
+.sc-market-home,
+.sc-market-container {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+}
+.sc-market-section,
+#explore.sc-market-section,
+#trending.sc-market-section,
+.sc-market-section + .sc-market-section {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+.sc-product-grid,
+.sc-product-grid-wrap {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+/* ===== end force-white ===== */
