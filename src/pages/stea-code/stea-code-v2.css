@@ -20355,3 +20355,31 @@ div[style*="--preview-aspect"] {
   box-shadow: none !important;
   background: #ffffff !important;
 }
+
+
+/* =========================================
+   FIX HOMEPAGE GRID CARD POSTER CROPPING
+   ========================================= */
+
+/* 1. Remove fixed heights from the card wrapper */
+.sc-product-card,
+.sc-card-preview,
+.sc-card-image-wrapper {
+  height: auto !important;
+  max-height: none !important;
+  aspect-ratio: auto !important;
+  overflow: hidden !important;
+}
+
+/* 2. Force the image to display fully */
+.sc-product-card img,
+.sc-card-preview img,
+.sc-card-image-wrapper img {
+  width: 100% !important;
+  height: auto !important;
+  max-height: none !important;
+  aspect-ratio: auto !important;
+  object-fit: contain !important;
+  display: block !important;
+  border-radius: 16px 16px 0 0 !important;
+}
