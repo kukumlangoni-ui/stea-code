@@ -19978,3 +19978,49 @@ div[class*="poster"] img {
   border-radius: 12px !important;
   padding: 16px 24px !important;
 }
+
+
+/* =========================================
+   FIX POSTER IMAGE CROPPING (NO MORE SLICING)
+   ========================================= */
+
+/* 1. The container holding the image: remove forced heights and white gaps */
+.sc-product-preview-stage,
+.sc-detail-preview-wrapper,
+div[class*="preview"]:has(img),
+div[class*="poster"]:has(img) {
+  height: auto !important;
+  max-height: none !important;
+  padding: 0 !important; /* Remove weird white padding/gaps */
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  display: block !important; /* Let the image dictate the height naturally */
+}
+
+/* 2. The actual image: remove cropping and forced aspect ratios */
+.sc-product-preview-stage img,
+.sc-detail-preview-wrapper img,
+div[class*="preview"] img,
+div[class*="poster"] img,
+img[class*="poster"],
+img[src*="poster"] {
+  width: 100% !important;
+  height: auto !important; /* AUTO height ensures the full image is seen */
+  max-height: none !important;
+  object-fit: contain !important; /* Show the whole image */
+  object-position: top center !important;
+  border-radius: 24px 24px 0 0 !important; /* Smooth top corners */
+  display: block !important;
+  margin: 0 !important;
+  box-shadow: none !important; 
+}
+
+/* 3. If the image is in an iframe or a video poster, handle it */
+.sc-product-preview-stage video,
+.sc-product-preview-stage iframe {
+  width: 100% !important;
+  height: auto !important;
+  aspect-ratio: auto !important;
+  border-radius: 24px 24px 0 0 !important;
+}
