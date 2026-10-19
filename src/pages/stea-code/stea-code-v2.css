@@ -17560,3 +17560,82 @@ header,
   background: rgba(15, 18, 27, 0.09) !important;
 }
 /* ===== end responsive preview fix ===== */
+
+/* ============================================================
+   White premium hero — clean white page, attractive, not too
+   big on desktop, with real space between preview and info.
+   ============================================================ */
+/* Hero surface: clean white */
+.sc-premium-product-detail .sc-product-detail-media {
+  background: #ffffff !important;
+  border-bottom: 1px solid rgba(15, 18, 27, 0.08) !important;
+  min-height: clamp(300px, 40vh, 520px) !important;
+  padding: 10px clamp(14px, 3vw, 36px) 52px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+}
+/* Preview: white, contained, generous max width (not too big on PC) */
+.sc-premium-product-detail .sc-product-detail-preview-shell {
+  width: 100% !important;
+  max-width: 1080px !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  background: #ffffff !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  margin: 0 auto !important;
+  overflow: hidden !important;
+}
+/* Top bar -> light theme on white */
+.sc-modal-media-header {
+  background: transparent !important;
+}
+.sc-modal-back-btn {
+  background: rgba(15, 18, 27, 0.05) !important;
+  border: 1px solid rgba(15, 18, 27, 0.1) !important;
+  color: #0b0f1a !important;
+}
+.sc-modal-back-btn:hover {
+  background: rgba(15, 18, 27, 0.09) !important;
+  border-color: rgba(15, 18, 27, 0.16) !important;
+}
+.sc-icon-btn {
+  background: rgba(15, 18, 27, 0.05) !important;
+  border: 1px solid rgba(15, 18, 27, 0.1) !important;
+  color: #0b0f1a !important;
+}
+.sc-icon-btn:hover {
+  background: rgba(15, 18, 27, 0.09) !important;
+}
+.sc-modal-media-header-left .sc-product-detail-type {
+  background: rgba(15, 18, 27, 0.05) !important;
+  border: 1px solid rgba(15, 18, 27, 0.1) !important;
+  color: #0b0f1a !important;
+}
+/* Caption + fullpage: dark, subtle on white */
+.sc-product-preview-caption span {
+  color: #9aa1b0 !important;
+  opacity: 1 !important;
+}
+.sc-detail-view-fullpage .sc-detail-action {
+  background: rgba(15, 18, 27, 0.05) !important;
+  border: 1px solid rgba(15, 18, 27, 0.1) !important;
+  color: #0b0f1a !important;
+}
+.sc-detail-view-fullpage .sc-detail-action:hover {
+  background: rgba(15, 18, 27, 0.09) !important;
+}
+/* generous space between preview and info is provided by the
+   hero's 52px bottom padding + info sheet's top padding */
+.sc-premium-product-detail .sc-product-detail-copy {
+  padding-top: clamp(44px, 6vw, 72px) !important;
+}
+/* ===== end white premium hero ===== */
+/* Panel + full page: white, seamless, no dark seam around the sheet */
+.sc-product-modal-panel.sc-premium-product-detail {
+  background: #ffffff !important;
+}
+/* ===== end white panel ===== */
