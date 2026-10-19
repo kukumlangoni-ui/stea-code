@@ -16,6 +16,7 @@ const CATALOG_STRIP_FIELDS = [
   "sourceFiles",
   "sourceCode",           // huge — fetched per-product on modal open
   "publicFiles",          // huge — fetched per-product on modal open
+  "deliverablesSource",   // huge authoring payload — never rendered publicly
   "tags",
   "languages",
   "fileNames",
@@ -43,6 +44,85 @@ function safeProduct(raw: any): any {
   return p;
 }
 
+const HOMEPAGE_CARD_COLUMNS = [
+  "id",
+  "slug",
+  "titleEn",
+  "titleZh",
+  "shortDescriptionEn",
+  "shortDescriptionZh",
+  "price",
+  "pricingType",
+  "category",
+  "subcategory",
+  "tab",
+  "status",
+  "featured",
+  "homepageVisible",
+  "frameworks",
+  "posterImageUrl",
+  "previewVideoUrl",
+  "previewMode",
+  "preview",
+  "gallery",
+  "designWidth",
+  "designHeight",
+  "createdAt",
+  "updatedAt",
+];
+
+function parseJsonColumn(value: any, fallback: any): any {
+  if (value === null || value === undefined || value === "") return fallback;
+  if (typeof value !== "string") return value;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return fallback;
+  }
+}
+
+/**
+ * Homepage cards only need a small subset of columns. Querying just those
+ * columns avoids loading multi-megabyte source/authoring blobs from D1 and
+ * keeps the first catalog response small enough to cache effectively.
+ */
+async function listHomepageCards(env: Env): Promise<any[]> {
+  const columns = [...new Set(HOMEPAGE_CARD_COLUMNS)].join(", ");
+  const result = await env.DB.prepare(
+    `SELECT ${columns}
+       FROM products
+      WHERE status = 'published' AND homepageVisible = 1
+      ORDER BY featured DESC, createdAt DESC`
+  ).all();
+
+  return (result.results || []).map((row: any) => ({
+    id: row.id,
+    slug: row.slug,
+    titleEn: row.titleEn,
+    titleZh: row.titleZh,
+    shortDescriptionEn: row.shortDescriptionEn,
+    shortDescriptionZh: row.shortDescriptionZh,
+    price: Number(row.price) || 0,
+    pricingType: row.pricingType,
+    category: row.category,
+    subcategory: row.subcategory,
+    tab: row.tab,
+    status: row.status,
+    featured: row.featured === 1 || row.featured === true,
+    homepageVisible: row.homepageVisible === 1 || row.homepageVisible === true,
+    frameworks: parseJsonColumn(row.frameworks, []),
+    posterImageUrl: row.posterImageUrl,
+    previewVideoUrl: row.previewVideoUrl,
+    previewMode: row.previewMode,
+    preview: parseJsonColumn(row.preview, null),
+    gallery: parseJsonColumn(row.gallery, []),
+    designWidth: row.designWidth === null ? null : Number(row.designWidth),
+    designHeight: row.designHeight === null ? null : Number(row.designHeight),
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  }));
+}
+
 export async function handleCatalog(req: Request, env: Env): Promise<Response> {
   try {
     const url = new URL(req.url);
@@ -50,15 +130,14 @@ export async function handleCatalog(req: Request, env: Env): Promise<Response> {
     const category = url.searchParams.get("category") || "";
     const subcategory = url.searchParams.get("subcategory") || "";
 
-    const docs = await listDocs(env, PRODUCTS_COLLECTION, {});
-    let products = docs
-      .map((d) => ({ id: d.id, ...safeProduct(d.data) }))
-      .filter((p) => p.status === "published");
-
-    // scope=homepage → only products explicitly approved for the homepage.
-    // This is the server-side safety gate that matches the frontend's expectation.
+    let products: any[];
     if (scope === "homepage") {
-      products = products.filter((p) => p.homepageVisible === true);
+      products = await listHomepageCards(env);
+    } else {
+      const docs = await listDocs(env, PRODUCTS_COLLECTION, {});
+      products = docs
+        .map((d) => ({ id: d.id, ...safeProduct(d.data) }))
+        .filter((p) => p.status === "published");
     }
 
     // Category filter (e.g. ?category=Components)
@@ -82,7 +161,9 @@ export async function handleCatalog(req: Request, env: Env): Promise<Response> {
         status: 200,
         headers: {
           "Content-Type": "application/json",
-          "Cache-Control": "public, max-age=60, s-maxage=120, stale-while-revalidate=600",
+          "Cache-Control": scope === "homepage"
+            ? "public, max-age=30, s-maxage=300, stale-while-revalidate=600"
+            : "public, max-age=60, s-maxage=120, stale-while-revalidate=600",
           ...corsHeaders(req.headers.get("origin")),
         },
       }

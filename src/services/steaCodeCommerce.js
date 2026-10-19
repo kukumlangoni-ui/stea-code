@@ -296,9 +296,8 @@ export function downloadSteaCodePdf(productId) {
   return downloadSteaCodeFile(productId, "pdf");
 }
 
-// LocalStorage cache for catalog responses. Served instantly on repeat visits,
-// LocalStorage cache for catalog responses. Served instantly on repeat visits,
-// then refreshed in the background. TTL = 30 seconds to ensure quick propagation.
+// LocalStorage cache for catalog responses. Always served instantly on repeat
+// visits; stale entries are refreshed in the background.
 const CATALOG_CACHE_KEY_PREFIX = "stea_code_catalog_v1_";
 const CATALOG_CACHE_TTL = 30 * 1000;
 
@@ -311,8 +310,8 @@ function readCatalogCache(scope) {
     const raw = localStorage.getItem(getCatalogCacheKey(scope));
     if (!raw) return null;
     const entry = JSON.parse(raw);
-    if (Date.now() - entry.timestamp > CATALOG_CACHE_TTL) return null;
-    return entry.data;
+    if (!entry?.data) return null;
+    return entry;
   } catch {
     return null;
   }
@@ -364,13 +363,18 @@ export async function getSteaCodeCatalog(options = {}) {
     : `${API_BASE}/api/stea-code/catalog`;
 
   // Try cache first for instant response unless forceFresh is set
-  const cached = options?.forceFresh ? null : readCatalogCache(scope);
+  const cachedEntry = options?.forceFresh ? null : readCatalogCache(scope);
 
   const fetchFresh = async () => {
     const sep = baseUrl.includes("?") ? "&" : "?";
-    const freshUrl = `${baseUrl}${sep}_t=${Date.now()}`;
+    // Only a deliberate force-refresh should bypass the CDN cache. Normal
+    // homepage requests use the Worker's cache headers so the first visitor
+    // warms the response for everyone else.
+    const freshUrl = options?.forceFresh
+      ? `${baseUrl}${sep}_t=${Date.now()}`
+      : baseUrl;
     const response = await fetch(freshUrl, {
-      cache: "no-cache",
+      cache: options?.forceFresh ? "no-cache" : "default",
       headers: {
         Accept: "application/json",
       },
@@ -382,10 +386,12 @@ export async function getSteaCodeCatalog(options = {}) {
   };
 
   // If we have cached data, return it immediately and refresh in background.
-  if (cached) {
-    // Kick off background refresh (fire-and-forget)
-    fetchFresh().catch(() => {});
-    return cached;
+  if (cachedEntry) {
+    const isStale = Date.now() - Number(cachedEntry.timestamp || 0) > CATALOG_CACHE_TTL;
+    if (isStale) {
+      fetchFresh().catch(() => {});
+    }
+    return cachedEntry.data;
   }
 
   // No cache — wait for the network

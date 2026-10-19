@@ -54,6 +54,7 @@ import { fetchEntitlements } from "../../services/steaCodeEntitlements.js";
 import {
   downloadSteaCodeSource,
   getSteaCodeCatalog,
+  getSteaCodeProduct,
   getSteaCodeFreeProductContent,
   getSteaCodeProductAccess,
   getSteaCodeProductContent,
@@ -653,7 +654,6 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
   }, [favorites]);
 
   const [liveCatalog, setLiveCatalog] = useState(null);
-  const [fullCatalog, setFullCatalog] = useState([]);
   const [isFallbackCatalog, setIsFallbackCatalog] = useState(false);
   // Incrementing this triggers a fresh catalog load (used by the error-state Retry).
   const [catalogReloadToken, setCatalogReloadToken] = useState(0);
@@ -982,87 +982,44 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
     setIsFallbackCatalog(false);
     setIsLoading(true);
 
-    async function loadDualCatalogs() {
-      // Spec #12: two catalogs loaded in parallel from dedicated routes.
-      //   homepageCatalog -> Explore Code homepage cards ONLY.
-      //   fullCatalog     -> direct product detail (by URL slug), search
-      //                      palette, purchases — every published product.
-      // The two are intentionally separate so Admin can fully control
-      // which products surface on /code without losing the ability to
-      // deep-link to any published product.
+    async function loadHomepageCatalog() {
       try {
-        // Stale-while-revalidate: returns cached data instantly (if available),
-        // then onFresh fires when the network response arrives.
-        let homepageFresh = false;
-        let fullFresh = false;
-
-        const tryApplyFresh = () => {
-          if (!homepageFresh || !fullFresh || !active) return;
-        };
-
-        const [homepageResult, fullResult] = await Promise.all([
-          getSteaCodeCatalog({
-            scope: "homepage",
-            onFresh: (fresh) => {
-              homepageFresh = true;
-              if (!active) return;
-              const products = Array.isArray(fresh?.products) ? fresh.products : [];
-              setLiveCatalog(products);
-              tryApplyFresh();
-            },
-          }),
-          getSteaCodeCatalog({
-            onFresh: (fresh) => {
-              fullFresh = true;
-              if (!active) return;
-              const products = Array.isArray(fresh?.products)
-                ? fresh.products.filter((p) => p?.status === "published")
-                : [];
-              setFullCatalog(products);
-              tryApplyFresh();
-            },
-          }),
-        ]);
+        const homepageResult = await getSteaCodeCatalog({
+          scope: "homepage",
+          onFresh: (fresh) => {
+            if (!active) return;
+            const products = Array.isArray(fresh?.products) ? fresh.products : [];
+            setLiveCatalog(products);
+            setIsLoading(false);
+          },
+        });
 
         if (!active) return;
 
-        // Spec #2 + #13: EMPTY ARRAY [] IS VALID DATA. DO NOT interpret it
-        // as failure. Only the catch() block represents failure. KEEP empty.
+        // Empty array is valid catalog data. Only a rejected request is an error.
         const homepageNext = Array.isArray(homepageResult?.products)
           ? homepageResult.products
           : [];
 
-        const fullNext = Array.isArray(fullResult?.products)
-          ? fullResult.products.filter(
-              (product) => product?.status === "published"
-            )
-          : [];
-
         setIsFallbackCatalog(false);
         setLiveCatalog(homepageNext);
-        setFullCatalog(fullNext);
         setIsLoading(false);
       } catch (error) {
         console.error(
-          "[steacode] LIVE API LOAD FAILED — no fallback to seed data.\n" +
+          "[steacode] HOMEPAGE CATALOG LOAD FAILED — no fallback to seed data.\n" +
           "Error details:",
           error
         );
 
         if (active) {
-          // NEVER fall back to bundled demo/seed products. Showing fake
-          // products when the live D1 API fails looks like a scam and breaks
-          // trust. Instead surface a real error state so the user knows the
-          // live catalog failed to load and can retry.
           setIsFallbackCatalog(true);
           setLiveCatalog([]);
-          setFullCatalog([]);
           setIsLoading(false);
         }
       }
     }
 
-    loadDualCatalogs();
+    loadHomepageCatalog();
 
     return () => {
       active = false;
@@ -1122,17 +1079,50 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
     });
   }, [liveCatalog, isProductReady]);
 
+  const productDetailRequestsRef = useRef(new Set());
+
+  // The homepage catalog is intentionally card-sized. Hydrate the complete
+  // product record only when the detail modal is opened.
+  const hydrateProductDetail = useCallback((product) => {
+    const productId = getProductIdentity(product);
+    if (!productId || productDetailRequestsRef.current.has(productId)) return;
+
+    productDetailRequestsRef.current.add(productId);
+    getSteaCodeProduct(productId)
+      .then((fullProduct) => {
+        if (!fullProduct) return;
+        setSelected((previous) => {
+          if (!previous || getProductIdentity(previous) !== productId) {
+            return previous;
+          }
+          return {
+            ...previous,
+            ...fullProduct,
+            id: fullProduct.id || previous.id,
+            slug: fullProduct.slug || previous.slug,
+          };
+        });
+      })
+      .catch((error) => {
+        console.warn("[steacode] Product detail hydration failed:", error);
+      })
+      .finally(() => {
+        productDetailRequestsRef.current.delete(productId);
+      });
+  }, []);
+
   // Open product detail by navigating to its clean URL and setting selected state
   const openProduct = useCallback((product) => {
     const slug = String(product?.slug || product?.id || "").trim();
     if (!slug) return;
     setSelected(product);
+    hydrateProductDetail(product);
     const prefix = location.pathname.startsWith("/code") ? "/code" : "";
     const targetPath = `${prefix}/products/${encodeURIComponent(slug)}`;
     if (location.pathname !== targetPath) {
       navigate(targetPath);
     }
-  }, [navigate, location.pathname]);
+  }, [navigate, location.pathname, hydrateProductDetail]);
 
   // Close product detail by navigating back to the marketplace homepage.
   // Preserves current query params (category, pricing, view) so the user
@@ -1148,19 +1138,25 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
     if (!pendingFreeCodeProductId) return;
     const productId = pendingFreeCodeProductId;
     setPendingFreeCodeProductId(null);
-    const searchable = [
-      ...(Array.isArray(products) ? products : []),
-      ...(Array.isArray(fullCatalog) ? fullCatalog : []),
-    ];
     const match =
-      searchable.find((p) => String(p.id || p.slug || "") === productId) ||
-      searchable.find(
+      products.find((p) => String(p.id || p.slug || "") === productId) ||
+      products.find(
         (p) =>
           String(p.id || p.slug || "").toLowerCase() ===
           String(productId).toLowerCase()
       );
-    if (match) openProduct(match);
-  }, [pendingFreeCodeProductId, products, fullCatalog, openProduct]);
+    if (match) {
+      openProduct(match);
+      return;
+    }
+    getSteaCodeProduct(productId)
+      .then((product) => {
+        if (product) openProduct(product);
+      })
+      .catch((error) => {
+        console.warn("[steacode] Pending product lookup failed:", error);
+      });
+  }, [pendingFreeCodeProductId, products, openProduct]);
 
   // Legacy ?product= query param → redirect to clean /code/products/:slug URL
   useEffect(() => {
@@ -1169,19 +1165,12 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
 
     if (!requestedProduct) return;
 
-    const searchableProducts = [
-      ...(Array.isArray(products) ? products : []),
-      ...(Array.isArray(fullCatalog) ? fullCatalog : []),
-    ];
-
-    if (!searchableProducts.length) return;
-
     const match =
-      searchableProducts.find(
+      products.find(
         (p) =>
           String(p.id || p.slug || "") === requestedProduct
       ) ||
-      searchableProducts.find(
+      products.find(
         (p) =>
           String(p.id || p.slug || "").toLowerCase() ===
           requestedProduct.toLowerCase()
@@ -1196,8 +1185,22 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
         const prefix = location.pathname.startsWith("/code") ? "/code" : "";
         navigate(`${prefix}/products/${encodeURIComponent(slug)}${sp.toString() ? `?${sp.toString()}` : ""}`, { replace: true });
       }
+      return;
     }
-  }, [products, fullCatalog, navigate, location.pathname]);
+
+    getSteaCodeProduct(requestedProduct)
+      .then((product) => {
+        const resolvedSlug = String(product?.slug || product?.id || "").trim();
+        if (!resolvedSlug) return;
+        const next = new URLSearchParams(sp);
+        next.delete("product");
+        const prefix = location.pathname.startsWith("/code") ? "/code" : "";
+        navigate(`${prefix}/products/${encodeURIComponent(resolvedSlug)}${next.toString() ? `?${next.toString()}` : ""}`, { replace: true });
+      })
+      .catch(() => {
+        // Keep the legacy URL untouched if the product no longer exists.
+      });
+  }, [products, navigate, location.pathname]);
 
   /* ---------- Deep link: /code/products/:slug or /products/:slug ----------
    * URL is the source of truth for the product detail modal.
@@ -1220,30 +1223,40 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
       return;
     }
 
-    // Search both homepage products and full catalog so any published
-    // product is reachable via deep link, not just homepage-approved ones.
-    const searchable = [
-      ...(Array.isArray(products) ? products : []),
-      ...(Array.isArray(fullCatalog) ? fullCatalog : []),
-    ];
-    if (!searchable.length) return; // wait for data
-
     const slug = productSlugFromUrl.toLowerCase();
     const match =
-      searchable.find((p) => String(p.slug || "").toLowerCase() === slug) ||
-      searchable.find((p) => String(p.id || "").toLowerCase() === slug);
+      products.find((p) => String(p.slug || "").toLowerCase() === slug) ||
+      products.find((p) => String(p.id || "").toLowerCase() === slug);
 
     if (match && isProductReady(match)) {
-      if (!selected || getProductIdentity(selected) !== getProductIdentity(match)) {
-        setSelected(match);
-      }
-    } else if (liveCatalog !== null || (Array.isArray(fullCatalog) && fullCatalog.length > 0)) {
-      // Product genuinely not found or incomplete after catalog loaded — redirect to homepage
-      const sp = new URLSearchParams(location.search);
-      const basePath = location.pathname.startsWith("/code") ? "/code" : "/";
-      navigate(`${basePath}${sp.toString() ? `?${sp.toString()}` : ""}`, { replace: true });
+      setSelected(match);
+      hydrateProductDetail(match);
+      return;
     }
-  }, [productSlugFromUrl, products, fullCatalog, liveCatalog, navigate, location.search, isProductReady, selected, location.pathname]);
+
+    if (liveCatalog === null) return;
+
+    let cancelled = false;
+    getSteaCodeProduct(productSlugFromUrl)
+      .then((product) => {
+        if (cancelled) return;
+        if (product && isProductReady(product)) {
+          setSelected(product);
+          return;
+        }
+        throw new Error("Product not found");
+      })
+      .catch(() => {
+        if (cancelled) return;
+        const sp = new URLSearchParams(location.search);
+        const basePath = location.pathname.startsWith("/code") ? "/code" : "/";
+        navigate(`${basePath}${sp.toString() ? `?${sp.toString()}` : ""}`, { replace: true });
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [productSlugFromUrl, products, liveCatalog, navigate, location.search, isProductReady, hydrateProductDetail, location.pathname]);
 
   const filtered = useMemo(() => {
     const query = q.trim().toLowerCase();
@@ -1293,7 +1306,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
 
   const categoryCounts = useMemo(() => {
     const counts = {};
-    const list = Array.isArray(fullCatalog) && fullCatalog.length ? fullCatalog : (Array.isArray(products) ? products : []);
+    const list = Array.isArray(products) ? products : [];
     for (const p of list) {
       if (p?.category) {
         counts[p.category] = (counts[p.category] || 0) + 1;
@@ -1304,7 +1317,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
       // count references for 7worlds regression
     }
     return counts;
-  }, [fullCatalog, products]);
+  }, [products]);
 
   // Catalog already contains only homepage-approved products (scope=homepage).
   // Filters refine the approved set. Publishing and homepage approval remain
@@ -1598,10 +1611,18 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
               }
             }}
             onGoProduct={(pid) => {
-              const p = fullCatalog.find((item) => item.id === pid || item.slug === pid);
+              const p = products.find((item) => item.id === pid || item.slug === pid);
               if (p) {
                 openProduct(p);
+                return;
               }
+              getSteaCodeProduct(pid)
+                .then((product) => {
+                  if (product) openProduct(product);
+                })
+                .catch((error) => {
+                  console.warn("[steacode] Purchase product lookup failed:", error);
+                });
             }}
             onRequireAuth={() => {
               setMemberGateAction({ type: "purchases" });
