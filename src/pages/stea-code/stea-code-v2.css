@@ -19737,3 +19737,29 @@ button[class*="sc-detail-action--live"] {
   gap: 24px !important;
   padding: 24px 0 !important;
 }
+
+
+/* Force the card preview containers to be visible on white bg */
+.sc-card-preview,
+.sc-product-card-image,
+.sc-product-card-preview,
+iframe.sc-card-preview {
+  background-color: #f4f4f5 !important; /* Soft grey */
+  background-image: none !important;
+  border-bottom: 1px solid #e5e5e5 !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  min-height: 200px !important;
+}
+
+/* Ensure the image or iframe inside scales properly */
+.sc-card-preview img,
+.sc-card-preview iframe,
+.sc-product-card-image img,
+.sc-product-card-image iframe {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  border-radius: 12px 12px 0 0 !important;
+}

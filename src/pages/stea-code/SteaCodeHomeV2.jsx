@@ -72,6 +72,17 @@ import { TABS, DEFAULT_TAB, SUBCATEGORIES } from "../../data/stea-code/tabs.js";
 import { useScrollReveal } from "../../hooks/useScrollReveal.js";
 import { useTilt } from "../../hooks/useTilt.js";
 
+const SkeletonCard = () => (
+  <div className="sc-product-card" style={{ pointerEvents: 'none', animation: 'pulse 1.5s infinite' }}>
+    <div style={{ width: '100%', height: '220px', backgroundColor: '#f0f0f0', borderRadius: '16px 16px 0 0' }}></div>
+    <div style={{ padding: '20px' }}>
+      <div style={{ width: '40%', height: '12px', backgroundColor: '#e5e5e5', borderRadius: '4px', marginBottom: '12px' }}></div>
+      <div style={{ width: '80%', height: '20px', backgroundColor: '#e5e5e5', borderRadius: '4px', marginBottom: '8px' }}></div>
+      <div style={{ width: '30%', height: '16px', backgroundColor: '#e5e5e5', borderRadius: '4px' }}></div>
+    </div>
+  </div>
+);
+
     const SkeletonGrid = () => (
       <div className="sc-skeleton-grid">
         {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
