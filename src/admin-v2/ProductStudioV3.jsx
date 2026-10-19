@@ -32,6 +32,7 @@ import {
 } from "../services/steaCodeCommerce.js";
 import { auth } from "../firebase.js";
 import { submitRevision, getToken as getStaffToken } from "../services/staffAuth.js";
+import PosterCropModal from "./PosterCropModal";
 import { TABS as TAXONOMY_TABS, SUBCATEGORIES } from "../data/stea-code/tabs.js";
 import {
   buildHtmlCssJsDoc,
@@ -727,6 +728,8 @@ export function ProductStudioV3({
   const videoInputRef = useRef(null);
   const [posterUploading, setPosterUploading] = useState(false);
   const [posterUploadProgress, setPosterUploadProgress] = useState(0);
+  // Active poster crop session — { src (object URL), file, pid, aspect }.
+  const [posterCrop, setPosterCrop] = useState(null);
   const [galleryUploadingIndex, setGalleryUploadingIndex] = useState(null);
   const [galleryUploadProgress, setGalleryUploadProgress] = useState(0);
   const [copyImageNotice, setCopyImageNotice] = useState("");
@@ -820,11 +823,30 @@ export function ProductStudioV3({
       setError("Save the product first before uploading an image.");
       return;
     }
+    // Open the crop UI first — the admin picks what part fills the canvas,
+    // then the cropped image (at exactly designWidth × designHeight) is uploaded.
+    const aspect = (Number(form.designWidth) || 640) / (Number(form.designHeight) || 480);
+    setError("");
+    setPosterCrop({ src: URL.createObjectURL(file), file, pid, aspect });
+  };
+
+  // Upload the admin's chosen crop (a PNG blob at the exact canvas aspect).
+  const confirmPosterCrop = async (croppedBlob) => {
+    const crop = posterCrop;
+    if (!crop) return;
+    setPosterCrop(null);
+    if (crop.src) URL.revokeObjectURL(crop.src);
+    // canvas.toBlob yields a nameless blob — wrap it in a File so the backend
+    // derives a valid extension for the R2 key.
+    const baseName = (crop.file?.name || "poster").replace(/\.[^.]+$/, "") || "poster";
+    const croppedFile = new File([croppedBlob], `${baseName}-cropped.png`, {
+      type: croppedBlob.type || "image/png",
+    });
     setPosterUploading(true);
     setPosterUploadProgress(0);
     setError("");
     try {
-      const result = await uploadFileWithProgress(file, pid, (percent) =>
+      const result = await uploadFileWithProgress(croppedFile, crop.pid, (percent) =>
         setPosterUploadProgress(percent)
       );
       if (!result?.ok || !result?.key) {
@@ -843,6 +865,11 @@ export function ProductStudioV3({
       setPosterUploading(false);
       setPosterUploadProgress(0);
     }
+  };
+
+  const cancelPosterCrop = () => {
+    if (posterCrop?.src) URL.revokeObjectURL(posterCrop.src);
+    setPosterCrop(null);
   };
 
   // Upload an image into the gallery slot at `index` (append if index >= length).
@@ -2380,6 +2407,15 @@ export function ProductStudioV3({
           </>
         )}
       </div>
+
+      {posterCrop && (
+        <PosterCropModal
+          imageSrc={posterCrop.src}
+          aspect={posterCrop.aspect}
+          onCancel={cancelPosterCrop}
+          onConfirm={confirmPosterCrop}
+        />
+      )}
     </div>
   );
 }
