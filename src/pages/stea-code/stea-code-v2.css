@@ -18409,3 +18409,42 @@ html,
   color: #5a6272 !important;
 }
 /* ===== end homepage full light theme ===== */
+
+/* ============================================================
+   CACHE-SAFE redundant white overrides (belt & suspenders)
+   ============================================================ */
+.sc-market-home,
+.sc-v2-home,
+.stea-code-app.sc-market-home,
+.stea-code-app.sc-v2-home {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+}
+.sc-market-hero,
+.sc-market-hero.sc-home-hero,
+.sc-market-hero .sc-home-hero-inner {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+.sc-hero-glow,
+.sc-hero-particles,
+.sc-hero-particle {
+  display: none !important;
+}
+.sc-market-hero h1,
+.sc-market-hero h1 span,
+.sc-market-hero h1 strong,
+.sc-hero-title,
+.sc-hero-title span,
+.sc-hero-title strong {
+  color: #111111 !important;
+  -webkit-text-fill-color: #111111 !important;
+}
+.sc-market-hero p,
+.sc-hero-subtitle,
+.sc-market-hero .sc-home-hero-subtitle {
+  color: #555555 !important;
+}
+/* ===== end cache-safe white ===== */
