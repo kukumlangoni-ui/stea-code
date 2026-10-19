@@ -1379,7 +1379,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
         siteName="steacode"
       />
     <div className="stea-code-app sc-v2 sc-market-home sc-v2-home sc-v2-has-liquid">
-      <div className="sc-v2-liquid-wrap" aria-hidden="true"><PreviewErrorBoundary><SteaCodeLiquidHero theme="dark" /></PreviewErrorBoundary></div>
+      <div className="sc-v2-liquid-wrap" aria-hidden="true"><PreviewErrorBoundary><SteaCodeLiquidHero theme="light" /></PreviewErrorBoundary></div>
       <div className="sc-v2-veil" aria-hidden="true" />
 
       <header className="sc-topbar">

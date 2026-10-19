@@ -18739,3 +18739,30 @@ body:has(.sc-market-home) { color-scheme: light; }
   gap: 36px 30px !important;
 }
 /* ===== end premium light cards ===== */
+
+/* ============================================================
+   RESPONSIVE CARD GRID — bigger on desktop, not oversized on phone
+   ============================================================ */
+.sc-market-home .sc-product-grid,
+.sc-product-grid {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)) !important;
+}
+@media (min-width: 1200px) {
+  .sc-market-home .sc-product-grid,
+  .sc-product-grid {
+    grid-template-columns: repeat(auto-fill, minmax(390px, 1fr)) !important;
+    gap: 36px 30px !important;
+  }
+}
+@media (max-width: 480px) {
+  .sc-market-home .sc-product-grid,
+  .sc-product-grid {
+    grid-template-columns: repeat(auto-fill, minmax(100%, 1fr)) !important;
+    gap: 26px 0 !important;
+  }
+  .sc-market-home .sc-code-card--v2 .sc-code-card__title,
+  .sc-market-home .sc-code-card__title {
+    font-size: 18px !important;
+  }
+}
+/* ===== end responsive card grid ===== */
