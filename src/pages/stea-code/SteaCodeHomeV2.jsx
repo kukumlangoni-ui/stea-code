@@ -2586,60 +2586,11 @@ function CodeProductCard({ product, tLocal, onOpen, isFavorited, onToggleFavorit
   // Falls back to 1600×1100 for kits, 640×480 for components.
   const designW = Number(product?.designWidth || product?.preview?.width)  || (isKit ? 1600 : 640);
   const designH = Number(product?.designHeight || product?.preview?.height) || (isKit ? 1100 : 480);
-
-  // Separate HTML products from poster-only products for the card ratio:
-  //  - HTML products (live source) keep the admin canvas ratio (large), so the
-  //    iframe renders the full design.
-  //  - Poster-only products use the poster image's natural aspect ratio so the
-  //    card matches the design's true shape (tall for long pages, wide for heroes).
-  const hasDemoPreview = Boolean(
-    product?.demoPreview &&
-      (product.demoPreview.html ||
-        product.demoPreview.css ||
-        product.demoPreview.javascript ||
-        product.demoPreview.fullDocument ||
-        product.demoPreview.jsx)
-  );
-  const hasPublicHtmlCss = Boolean(
-    Array.isArray(product?.publicFiles) &&
-      product.publicFiles.some((f) => f && (f.language === "html" || f.language === "css"))
-  );
-  const hasLiveHtml = Boolean(
-    product?.preview?.enabled ||
-      product?.hasSource ||
-      hasDemoPreview ||
-      hasPublicHtmlCss ||
-      product?.sourceCode ||
-      product?.preview?.fullDocument ||
-      product?.preview?.html
-  );
-  const posterAspectUrl = getPreviewPosterUrl(product) || product?.posterImageUrl || "";
-  const hasPoster = Boolean(posterAspectUrl);
-  const [posterAspect, setPosterAspect] = useState(null);
-  useEffect(() => {
-    if (hasLiveHtml || !hasPoster) {
-      setPosterAspect(null);
-      return;
-    }
-    let cancelled = false;
-    const img = new Image();
-    img.onload = () => {
-      if (!cancelled && img.naturalWidth && img.naturalHeight) {
-        setPosterAspect(`${img.naturalWidth} / ${img.naturalHeight}`);
-      }
-    };
-    img.src = posterAspectUrl;
-    return () => {
-      cancelled = true;
-    };
-  }, [hasLiveHtml, hasPoster, posterAspectUrl, productId]);
-
-  // HTML products → fixed canvas ratio. Poster-only → natural image ratio
-  // (falling back to the canvas ratio until the image dimensions are known).
-  const previewAspect =
-    hasLiveHtml || !hasPoster
-      ? `${designW} / ${designH}`
-      : posterAspect || `${designW} / ${designH}`;
+  // Card ratio = the saved design canvas. New poster uploads set
+  // designWidth/designHeight to the image's dimensions at save time
+  // (auto-fit), while old products keep their saved canvas exactly — so the
+  // new behavior never changes already-saved previews.
+  const previewAspect = `${designW} / ${designH}`;
 
   // --- Motion: subtle lift on hover, press scale. Honors prefers-reduced-motion. ---
   const reduceMotion = useReducedMotion();

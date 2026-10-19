@@ -830,10 +830,11 @@ export function ProductStudioV3({
     setPosterCrop({ src: URL.createObjectURL(file), file, pid });
   };
 
-  // Upload the admin's chosen crop (a PNG blob). We do NOT overwrite
-  // designWidth/designHeight — HTML products keep their large canvas, and the
-  // homepage reads the poster image's natural dimensions for poster-only cards.
-  const confirmPosterCrop = async (croppedBlob) => {
+  // Upload the admin's chosen crop (a PNG blob). For poster-only products we
+  // adopt the crop's pixel dimensions as the card canvas (auto-fit). For
+  // HTML/video products we leave designWidth/designHeight untouched so old
+  // saved previews and the live iframe stay exactly as configured.
+  const confirmPosterCrop = async (croppedBlob, croppedAreaPixels) => {
     const crop = posterCrop;
     if (!crop) return;
     setPosterCrop(null);
@@ -844,6 +845,10 @@ export function ProductStudioV3({
     const croppedFile = new File([croppedBlob], `${baseName}-cropped.png`, {
       type: croppedBlob.type || "image/png",
     });
+    const cropW = Math.round(Number(croppedAreaPixels?.width) || 0);
+    const cropH = Math.round(Number(croppedAreaPixels?.height) || 0);
+    // Only auto-fit genuinely poster-only products (previewMode 'poster').
+    const isPosterOnly = form?.previewMode === "poster";
     setPosterUploading(true);
     setPosterUploadProgress(0);
     setError("");
@@ -856,6 +861,12 @@ export function ProductStudioV3({
       }
       setForm((prev) => ({
         ...prev,
+        ...(isPosterOnly
+          ? {
+              designWidth: cropW || prev.designWidth || 640,
+              designHeight: cropH || prev.designHeight || 480,
+            }
+          : {}),
         preview: { ...prev.preview, posterKey: result.key },
         posterImageUrl: result.url || `/api/stea-code/media/${result.key}`,
       }));
