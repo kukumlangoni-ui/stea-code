@@ -247,6 +247,38 @@ function resolvePreviewWithFallback(apiPreview, productId) {
   };
 }
 
+// For static (non-interactive) card previews, inject a script that scales the
+// design content up to FILL the canvas. Some products are authored as compact
+// fixed-size components (e.g. small pricing tables) vertically centered inside
+// a tall canvas — on the homepage they otherwise appear small with large empty
+// space. Auto-fitting makes them fill the card like the poster's cover-fill.
+const CONTENT_AUTO_FIT_SCRIPT =
+  '<script>(function(){' +
+  'function fill(){' +
+    'var w=window.innerWidth||0,h=window.innerHeight||0;if(!w||!h)return;' +
+    'var b=document.body;if(!b)return;var el=null,best=0;' +
+    'if(b.children){Array.prototype.forEach.call(b.children,function(c){' +
+      'if(c.tagName==="SCRIPT"||c.tagName==="STYLE"||c.tagName==="LINK"||c.tagName==="NOSCRIPT")return;' +
+      'var a=c.offsetWidth||0,bb=c.offsetHeight||0;var area=a*bb;' +
+      'if(area>best&&a>0){best=area;el=c;}' +
+    '});}' +
+    'if(!el)return;var s=Math.min(w/el.offsetWidth,h/el.offsetHeight);' +
+    'if(!isFinite(s)||s<=1.001){el.style.transform="";return;}' +
+    'el.style.transformOrigin="center center";' +
+    'el.style.transform="scale("+s+")";' +
+  '}' +
+  'if(document.readyState!=="loading")fill();else window.addEventListener("load",fill);' +
+  'window.addEventListener("resize",fill);' +
+  'if(window.requestAnimationFrame)requestAnimationFrame(fill);' +
+  '})();</' + 'script>';
+
+function injectContentAutoFit(doc) {
+  if (!doc || typeof doc !== "string") return doc;
+  const idx = doc.toLowerCase().lastIndexOf("</body>");
+  if (idx === -1) return doc + CONTENT_AUTO_FIT_SCRIPT;
+  return doc.slice(0, idx) + CONTENT_AUTO_FIT_SCRIPT + doc.slice(idx);
+}
+
 export default forwardRef(function SteaCodeProductLivePreview({
   productId,
   title = "",
@@ -509,6 +541,8 @@ export default forwardRef(function SteaCodeProductLivePreview({
       rawHtml.length > 1000;
     const effectiveFullDoc = rawFullDoc || (htmlLooksLikeFullDoc ? rawHtml : "");
 
+    let doc;
+
     /*
      * IMPORTANT:
      * A complete authored HTML document is authoritative.
@@ -518,36 +552,40 @@ export default forwardRef(function SteaCodeProductLivePreview({
      * the saved runtime value.
      */
     if (effectiveFullDoc) {
-      return buildFullHtmlDoc({
+      doc = buildFullHtmlDoc({
         fullDocument: effectiveFullDoc,
         baseUrl: preview.baseUrl,
       });
-    }
-    if (runtime === "full-html") {
-      return buildFullHtmlDoc({
+    } else if (runtime === "full-html") {
+      doc = buildFullHtmlDoc({
         fullDocument: effectiveFullDoc || preview.fullDocument,
         baseUrl: preview.baseUrl,
       });
-    }
-    if (runtime === "react") {
-      // Prefer explicit JSX/TSX fields. Fall back to html/javascript for
-      // older saves where the preview content was stored in those fields.
+    } else if (runtime === "react") {
       const reactSource =
         preview.tsx || preview.jsx || preview.javascript || preview.html || "";
-      return buildReactDoc({
+      doc = buildReactDoc({
         jsx: reactSource,
         css: preview.css || "",
         baseUrl: preview.baseUrl,
       });
+    } else if (runtime === "external") {
+      return "";
+    } else {
+      doc = buildHtmlCssJsDoc({
+        html: preview.html,
+        css: preview.css,
+        javascript: preview.javascript,
+        baseUrl: preview.baseUrl,
+      });
     }
-    if (runtime === "external") return "";
-    return buildHtmlCssJsDoc({
-      html: preview.html,
-      css: preview.css,
-      javascript: preview.javascript,
-      baseUrl: preview.baseUrl,
-    });
-  }, [preview, previewBelongsToCurrentProduct]);
+    // Static (non-interactive) previews — e.g. homepage cards — auto-fit the
+    // design content to fill the canvas so compact components don't render
+    // with large empty space (matches the poster's cover-fill look). The
+    // interactive modal preview is left untouched.
+    if (!interactive && doc) return injectContentAutoFit(doc);
+    return doc;
+  }, [preview, previewBelongsToCurrentProduct, interactive]);
 
   // SCALE LOCK — fixed baseline viewport from design canvas. No measurement.
   // designWidth/designHeight are the admin-configured design canvas dimensions.
