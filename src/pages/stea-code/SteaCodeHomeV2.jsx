@@ -4439,7 +4439,7 @@ function ProductDetail({
           )}
 
           {/* ===== ACTION BUTTONS — Copy Image / Copy Prompt / Copy Code / Download ===== */}
-          <div className="sc-detail-actions sc-copy-actions-row">
+          <div className="sc-detail-actions">
 
             {/* Copy Image — Layouts (poster-based) products and any product with a gallery cover */}
             {(product?.tab === "layouts" || galleryImages.length > 0) && getCopyImageUrl(product) && (
@@ -4469,6 +4469,7 @@ function ProductDetail({
               </button>
             )}
 
+            <div className="sc-copy-actions-row">
             {/* Copy AI Prompt — hidden for premium products until user has access */}
             {product?.aiPrompt && (!isPremium || hasAccess) && (
               <button

@@ -19173,3 +19173,64 @@ footer a:hover {
   color: #000000 !important;
   opacity: 0.1 !important; /* Make it subtly visible on white */
 }
+
+
+/* =========================================
+   TOPBAR & DRAWER COMMUNITY BUTTONS (LIGHT MODE)
+   ========================================= */
+
+/* 1. Top Navigation Community Button */
+a:has(> .sc-topbar-community-label),
+.sc-topbar-community {
+  background-color: #f0f0f0 !important;
+  border: 1px solid #e5e5e5 !important;
+  border-radius: 100px !important;
+  padding: 6px 16px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  text-decoration: none !important;
+  transition: all 0.2s ease !important;
+  cursor: pointer !important;
+}
+
+a:has(> .sc-topbar-community-label):hover,
+.sc-topbar-community:hover {
+  background-color: #e5e5e5 !important;
+  border-color: #d4d4d4 !important;
+}
+
+/* Top Nav Label */
+.sc-topbar-community-label {
+  color: #111111 !important;
+  font-weight: 600 !important;
+  font-size: 13px !important;
+}
+
+/* Top Nav Icon (The Discord icon) */
+.sc-topbar-community-icon svg {
+  color: #5865F2 !important; /* Discord Blurple */
+  fill: currentColor !important;
+}
+
+/* 2. Mobile Drawer Community Button */
+a:has(> .sc-drawer-community-icon) {
+  background-color: #f0f0f0 !important;
+  border-radius: 8px !important;
+  margin: 8px 16px !important;
+  padding: 12px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  text-decoration: none !important;
+}
+
+a:has(> .sc-drawer-community-icon) span:not(.sc-drawer-community-icon) {
+  color: #111111 !important;
+  font-weight: 600 !important;
+}
+
+.sc-drawer-community-icon svg {
+  color: #5865F2 !important;
+  fill: currentColor !important;
+}
