@@ -4469,7 +4469,7 @@ function ProductDetail({
               </button>
             )}
 
-            <div className="sc-copy-actions-row">
+            <div className="sc-copy-actions-row sc-detail-actions-row">
             {/* Copy AI Prompt — hidden for premium products until user has access */}
             {product?.aiPrompt && (!isPremium || hasAccess) && (
               <button
@@ -4525,7 +4525,38 @@ function ProductDetail({
             )}
             </div>
 
-            {/* Download ZIP — shows when package exists AND user has access */}
+            
+            {/* Custom Service Callout */}
+            <div className="sc-custom-service-section">
+              <div className="sc-custom-service-text">
+                <h4>Need this customized?</h4>
+                <p>Our team can adapt this product for your specific needs.</p>
+              </div>
+              <div className="sc-custom-service-buttons">
+                <a href="/services" className="sc-btn-service">
+                  Book a Call
+                </a>
+                <a href="/services" className="sc-btn-service primary">
+                  Request Customization
+                </a>
+              </div>
+            </div>
+
+            {/* You Might Also Like */}
+            <div className="sc-also-like-section">
+              <h3 className="sc-also-like-title">You might also like</h3>
+              <div className="sc-also-like-grid">
+                {/* We mock 4 cards here. In the future, you can map over a real products array */}
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="sc-also-like-card">
+                    <h5>Similar Component {i}</h5>
+                    <p>View details</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+{/* Download ZIP — shows when package exists AND user has access */}
             {product?.package?.storageKey && (isFree || (isPremium && hasAccess)) && (
               <button
                 type="button"

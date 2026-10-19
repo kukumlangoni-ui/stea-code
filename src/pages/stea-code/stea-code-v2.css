@@ -19379,3 +19379,287 @@ a:has(> .sc-drawer-community-icon) span:not(.sc-drawer-community-icon) {
   max-height: 90vh !important;
   overflow-y: auto !important;
 }
+
+
+/* =========================================
+   PREMIUM MODAL ACTIONS & CONSISTENCY
+   ========================================= */
+
+/* Fix the massive buttons - Make them consistent and premium */
+.sc-detail-action,
+.sc-btn-copy-secondary,
+.sc-btn-copy-primary,
+button[class*="sc-detail-action--code"],
+button[class*="sc-detail-action--download"],
+button[class*="sc-detail-action--live"] {
+  width: auto !important;
+  min-width: 200px !important;
+  display: inline-flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  padding: 12px 24px !important;
+  border-radius: 100px !important; /* Pill shape */
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  transition: all 0.2s ease !important;
+}
+
+/* Standardize the flex row for all action buttons */
+.sc-detail-actions-row {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 12px !important;
+  align-items: center !important;
+  margin-bottom: 32px !important;
+}
+
+/* Custom Service Section */
+.sc-custom-service-section {
+  background: #f9f9fb !important;
+  border: 1px solid #e5e5e5 !important;
+  border-radius: 16px !important;
+  padding: 24px !important;
+  margin: 32px 0 !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+}
+
+.sc-custom-service-text h4 {
+  font-size: 18px !important;
+  font-weight: 700 !important;
+  color: #111111 !important;
+  margin-bottom: 4px !important;
+}
+
+.sc-custom-service-text p {
+  font-size: 14px !important;
+  color: #666666 !important;
+  margin: 0 !important;
+}
+
+.sc-custom-service-buttons {
+  display: flex !important;
+  gap: 12px !important;
+}
+
+.sc-btn-service {
+  background: #ffffff !important;
+  color: #111111 !important;
+  border: 1px solid #d4d4d4 !important;
+  padding: 10px 20px !important;
+  border-radius: 100px !important;
+  font-weight: 600 !important;
+  font-size: 14px !important;
+  text-decoration: none !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  transition: all 0.2s !important;
+}
+
+.sc-btn-service:hover {
+  background: #f0f0f0 !important;
+  border-color: #111111 !important;
+}
+
+.sc-btn-service.primary {
+  background: #111111 !important;
+  color: #ffffff !important;
+  border-color: #111111 !important;
+}
+.sc-btn-service.primary:hover {
+  background: #333333 !important;
+}
+
+/* You Might Also Like Section */
+.sc-also-like-section {
+  margin-top: 48px !important;
+  padding-top: 32px !important;
+  border-top: 1px solid #e5e5e5 !important;
+}
+
+.sc-also-like-title {
+  font-size: 22px !important;
+  font-weight: 700 !important;
+  color: #111111 !important;
+  margin-bottom: 20px !important;
+}
+
+.sc-also-like-grid {
+  display: grid !important;
+  grid-template-columns: repeat(4, 1fr) !important;
+  gap: 16px !important;
+}
+
+.sc-also-like-card {
+  background: #f9f9fb !important;
+  border: 1px solid #e5e5e5 !important;
+  border-radius: 12px !important;
+  padding: 16px !important;
+  cursor: pointer !important;
+  transition: all 0.2s !important;
+}
+
+.sc-also-like-card:hover {
+  border-color: #d4d4d4 !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05) !important;
+}
+
+.sc-also-like-card h5 {
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  color: #111111 !important;
+  margin-bottom: 4px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.sc-also-like-card p {
+  font-size: 12px !important;
+  color: #888888 !important;
+  margin: 0 !important;
+}
+
+
+/* =========================================
+   PREMIUM MODAL ACTIONS & CONSISTENCY
+   ========================================= */
+
+/* Fix the massive buttons - Make them consistent and premium */
+.sc-detail-action,
+.sc-btn-copy-secondary,
+.sc-btn-copy-primary,
+button[class*="sc-detail-action--code"],
+button[class*="sc-detail-action--download"],
+button[class*="sc-detail-action--live"] {
+  width: auto !important;
+  min-width: 200px !important;
+  display: inline-flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  padding: 12px 24px !important;
+  border-radius: 100px !important; /* Pill shape */
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  transition: all 0.2s ease !important;
+}
+
+/* Standardize the flex row for all action buttons */
+.sc-detail-actions-row {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 12px !important;
+  align-items: center !important;
+  margin-bottom: 32px !important;
+}
+
+/* Custom Service Section */
+.sc-custom-service-section {
+  background: #f9f9fb !important;
+  border: 1px solid #e5e5e5 !important;
+  border-radius: 16px !important;
+  padding: 24px !important;
+  margin: 32px 0 !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+}
+
+.sc-custom-service-text h4 {
+  font-size: 18px !important;
+  font-weight: 700 !important;
+  color: #111111 !important;
+  margin-bottom: 4px !important;
+}
+
+.sc-custom-service-text p {
+  font-size: 14px !important;
+  color: #666666 !important;
+  margin: 0 !important;
+}
+
+.sc-custom-service-buttons {
+  display: flex !important;
+  gap: 12px !important;
+}
+
+.sc-btn-service {
+  background: #ffffff !important;
+  color: #111111 !important;
+  border: 1px solid #d4d4d4 !important;
+  padding: 10px 20px !important;
+  border-radius: 100px !important;
+  font-weight: 600 !important;
+  font-size: 14px !important;
+  text-decoration: none !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  transition: all 0.2s !important;
+}
+
+.sc-btn-service:hover {
+  background: #f0f0f0 !important;
+  border-color: #111111 !important;
+}
+
+.sc-btn-service.primary {
+  background: #111111 !important;
+  color: #ffffff !important;
+  border-color: #111111 !important;
+}
+.sc-btn-service.primary:hover {
+  background: #333333 !important;
+}
+
+/* You Might Also Like Section */
+.sc-also-like-section {
+  margin-top: 48px !important;
+  padding-top: 32px !important;
+  border-top: 1px solid #e5e5e5 !important;
+}
+
+.sc-also-like-title {
+  font-size: 22px !important;
+  font-weight: 700 !important;
+  color: #111111 !important;
+  margin-bottom: 20px !important;
+}
+
+.sc-also-like-grid {
+  display: grid !important;
+  grid-template-columns: repeat(4, 1fr) !important;
+  gap: 16px !important;
+}
+
+.sc-also-like-card {
+  background: #f9f9fb !important;
+  border: 1px solid #e5e5e5 !important;
+  border-radius: 12px !important;
+  padding: 16px !important;
+  cursor: pointer !important;
+  transition: all 0.2s !important;
+}
+
+.sc-also-like-card:hover {
+  border-color: #d4d4d4 !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05) !important;
+}
+
+.sc-also-like-card h5 {
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  color: #111111 !important;
+  margin-bottom: 4px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.sc-also-like-card p {
+  font-size: 12px !important;
+  color: #888888 !important;
+  margin: 0 !important;
+}
