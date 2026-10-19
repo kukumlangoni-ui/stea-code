@@ -20597,3 +20597,42 @@ div[class*="card-preview"] img {
   display: none !important;
   content: none !important;
 }
+
+
+/* =========================================
+   REMOVE EMPTY GREY SPACE ABOVE POSTER IMAGES
+   ========================================= */
+
+/* 1. The stage holding the image must shrink to fit */
+.sc-product-preview-stage,
+.sc-detail-preview-wrapper,
+div[class*="preview-stage"] {
+  min-height: 0 !important;
+  height: auto !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  display: flex !important;
+  align-items: flex-start !important; /* Push image to the very top */
+  justify-content: center !important;
+  background-color: transparent !important;
+}
+
+/* 2. The image must sit flush at the top */
+.sc-product-preview-stage img,
+.sc-detail-preview-wrapper img,
+div[class*="preview-stage"] img {
+  width: 100% !important;
+  height: auto !important;
+  display: block !important;
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+  object-fit: contain !important;
+  align-self: flex-start !important;
+  border-radius: 0 !important;
+}
+
+/* 3. Kill any pseudo-element spacers */
+.sc-product-preview-stage::before,
+.sc-product-preview-stage::after {
+  display: none !important;
+}
