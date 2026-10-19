@@ -646,7 +646,6 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
     };
   }, [selected]);
 
-  const [menuOpen, setMenuOpen] = useState(false);
   const [memberGateOpen, setMemberGateOpen] = useState(false);
   const [memberGateAction, setMemberGateAction] = useState(null);
 
@@ -1539,50 +1538,8 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
             )}
           </div>
 
-          <button
-            type="button"
-            className="sc-topbar-icon-btn sc-mobile-only"
-            onClick={() => setMenuOpen(true)}
-            aria-label="Open menu"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-                 stroke="currentColor" strokeWidth="2" strokeLinecap="round"
-                 strokeLinejoin="round">
-              <line x1="3" y1="6" x2="21" y2="6"/>
-              <line x1="3" y1="12" x2="21" y2="12"/>
-              <line x1="3" y1="18" x2="21" y2="18"/>
-            </svg>
-          </button>
         </div>
       </header>
-
-
-      {menuOpen ? (
-        <MobileMenu
-          onClose={() => setMenuOpen(false)}
-          onGoWorld={onGoWorld}
-          tLocal={tLocal}
-          onSelectNav={(item) => {
-            setMenuOpen(false);
-            if (item.href) {
-              navigate(item.href);
-            } else {
-              if (item.filter?.category) setCategory(item.filter.category);
-              if (item.filter?.pricing) setPricing(item.filter.pricing);
-              setViewMode(item.mode || "explore");
-            }
-          }}
-          user={effectiveUser}
-          isAdmin={isAdmin}
-          onSignOut={handleSignOut}
-          onGoUnlimited={handleGoUnlimited}
-          category={category}
-          setCategory={setCategory}
-          setPricing={setPricing}
-          setFramework={setFramework}
-          mobileMenuCategories={CODE_PRODUCT_CATEGORIES.filter((c) => c !== "All")}
-        />
-      ) : null}
 
       {/* Email verification banner disabled — re-enable when SMTP delivery is configured */}
       {false && <EmailVerificationBanner user={effectiveUser} tLocal={tLocal} onToast={showPageToast} />}
@@ -4565,6 +4522,7 @@ function ProductDetail({
                 </span>
               </button>
             )}
+            </div>
 
             {/* Download ZIP — shows when package exists AND user has access */}
             {product?.package?.storageKey && (isFree || (isPremium && hasAccess)) && (
