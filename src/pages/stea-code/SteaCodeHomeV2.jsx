@@ -2636,9 +2636,6 @@ function CodeProductCard({ product, tLocal, onOpen, isFavorited, onToggleFavorit
           '--preview-aspect': previewAspect,
         }}
       >
-        {/* Kit badge on top-left corner */}
-        {isKit && <span className="sc-kit-badge">Kit</span>}
-
         <div className="sc-code-card__preview">
           <div className="sc-product-preview-art">
             <ProductPreview product={product} fillMode="cover" cardZoom={product.cardZoom || "full"} offsetX={product.cardOffsetX || 0} offsetY={product.cardOffsetY || 0} interactive={false} preferVideo={true} cardPreview={true} />

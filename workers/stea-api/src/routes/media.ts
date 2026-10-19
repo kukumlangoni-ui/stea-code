@@ -14,6 +14,7 @@
 
 import { corsHeaders } from "../cors.js";
 import { verifyFirebaseToken, extractBearerToken } from "../auth.js";
+import { requireStaff } from "../staff-auth/middleware";
 import type { WorkerEnv } from "../index.js";
 
 const ADMIN_EMAILS = new Set(["stea.africa@gmail.com", "kukumlangoni@gmail.com"]);
@@ -179,7 +180,10 @@ export async function handleMediaUpload(req: Request, env: WorkerEnv): Promise<R
     });
   }
 
-  // --- Auth: require valid Firebase ID token + admin email ---
+  // --- Auth: staff token (owner/approver) OR legacy Firebase admin email ---
+  // Mirrors the product create/update endpoints: staff auth is tried first
+  // (uploading is a write, so min role = approver), then the legacy Firebase
+  // admin-whitelist path for backward compatibility.
   const token = extractBearerToken(req);
   if (!token) {
     return new Response(
@@ -191,20 +195,31 @@ export async function handleMediaUpload(req: Request, env: WorkerEnv): Promise<R
     );
   }
 
-  let decoded;
+  let authed = false;
+
+  // Staff path (new admin panel) — accepts owner and approver tokens.
   try {
-    decoded = await verifyFirebaseToken(env, token);
+    const staff = await requireStaff(req, env, "approver");
+    if (staff && !(staff instanceof Response)) {
+      authed = true;
+    }
   } catch {
-    return new Response(
-      JSON.stringify({ error: "Unauthorized" }),
-      {
-        status: 401,
-        headers: { "Content-Type": "application/json", ...corsHeaders(origin) },
-      }
-    );
+    // fall through to Firebase path
   }
 
-  if (!decoded.email || !ADMIN_EMAILS.has(decoded.email)) {
+  // Legacy Firebase path — admin email whitelist.
+  if (!authed) {
+    try {
+      const decoded = await verifyFirebaseToken(env, token);
+      if (decoded?.email && ADMIN_EMAILS.has(decoded.email)) {
+        authed = true;
+      }
+    } catch {
+      // fall through — not authorized
+    }
+  }
+
+  if (!authed) {
     return new Response(
       JSON.stringify({ error: "Forbidden" }),
       {

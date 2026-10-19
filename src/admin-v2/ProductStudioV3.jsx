@@ -31,7 +31,7 @@ import {
   invalidateSteaCodeProductPreviewCache,
 } from "../services/steaCodeCommerce.js";
 import { auth } from "../firebase.js";
-import { submitRevision } from "../services/staffAuth.js";
+import { submitRevision, getToken as getStaffToken } from "../services/staffAuth.js";
 import { TABS as TAXONOMY_TABS, SUBCATEGORIES } from "../data/stea-code/tabs.js";
 import {
   buildHtmlCssJsDoc,
@@ -743,14 +743,24 @@ export function ProductStudioV3({
   // which is why uploads sat at 0%. Same contract as uploadSteaCodePreviewAssets:
   // POST /api/stea-code/media/upload with productId + file → { ok, key, url }
   const uploadFileWithProgress = async (file, productId, onProgress) => {
-    // Get Firebase ID token for auth on the upload endpoint
-    const token = await auth?.currentUser?.getIdToken().catch(() => null);
+    // Auth token for the upload endpoint: the staff session token takes
+    // priority (owner/approver logged in via /staff/login), falling back to
+    // the Firebase ID token. Without a token the Worker returns 401 and the
+    // admin surfaces "Permission denied — sign in again."
+    const staffToken = getStaffToken();
+    const token = staffToken || (await auth?.currentUser?.getIdToken().catch(() => null));
 
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
       const fd = new FormData();
       fd.append("productId", productId);
       fd.append("file", file);
+
+      let timedOut = false;
+      const timeoutId = setTimeout(() => {
+        timedOut = true;
+        xhr.abort();
+      }, 30000);
 
       xhr.upload.addEventListener("progress", (e) => {
         if (e.lengthComputable) {
@@ -759,6 +769,7 @@ export function ProductStudioV3({
       });
 
       xhr.addEventListener("load", () => {
+        clearTimeout(timeoutId);
         if (xhr.status >= 200 && xhr.status < 300) {
           try {
             resolve(JSON.parse(xhr.responseText));
@@ -770,10 +781,20 @@ export function ProductStudioV3({
         }
       });
 
-      xhr.addEventListener("error", () =>
-        reject(new Error("Network error — check your connection and retry."))
-      );
-      xhr.addEventListener("abort", () => reject(new Error("Upload cancelled.")));
+      xhr.addEventListener("error", () => {
+        clearTimeout(timeoutId);
+        reject(new Error("Network error — check your connection and retry."));
+      });
+      xhr.addEventListener("abort", () => {
+        clearTimeout(timeoutId);
+        reject(
+          new Error(
+            timedOut
+              ? "Upload timed out (30s). Check your connection and retry."
+              : "Upload cancelled."
+          )
+        );
+      });
 
       xhr.open("POST", "/api/stea-code/media/upload", true);
       if (token) {
