@@ -1,10 +1,30 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import Cropper from "react-easy-crop";
 
-export default function PosterCropModal({ imageSrc, aspect, onCancel, onConfirm }) {
+export default function PosterCropModal({ imageSrc, onCancel, onConfirm }) {
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
+  // Natural width/height ratio of the uploaded image — the crop frame starts
+  // at the design's true shape (tall for long pages, wide for hero sections).
+  const [naturalAspect, setNaturalAspect] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    loadImage(imageSrc)
+      .then((img) => {
+        if (cancelled) return;
+        const w = img.naturalWidth || img.width || 1;
+        const h = img.naturalHeight || img.height || 1;
+        setNaturalAspect(w / h);
+      })
+      .catch(() => {
+        if (!cancelled) setNaturalAspect(1);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [imageSrc]);
 
   const onCropComplete = useCallback((_, pixels) => {
     setCroppedAreaPixels(pixels);
@@ -13,8 +33,15 @@ export default function PosterCropModal({ imageSrc, aspect, onCancel, onConfirm 
   const handleConfirm = async () => {
     if (!croppedAreaPixels) return;
     const croppedBlob = await getCroppedImg(imageSrc, croppedAreaPixels);
-    onConfirm(croppedBlob);
+    // Pass both the blob and its exact pixel size so the caller can set
+    // designWidth/designHeight to the image's true dimensions.
+    onConfirm(croppedBlob, croppedAreaPixels);
   };
+
+  const ratioLabel =
+    naturalAspect != null
+      ? `W:${Math.round(naturalAspect * 100)} H:100`
+      : "…";
 
   return (
     <div
@@ -49,24 +76,27 @@ export default function PosterCropModal({ imageSrc, aspect, onCancel, onConfirm 
             Crop your poster
           </h3>
           <p style={{ margin: "4px 0 0", color: "#8a8a94", fontSize: 13 }}>
-            Drag and pinch to fit the exact canvas size (
-            {Math.round(aspect * 1000)} ratio).
+            Frame starts at your image's natural shape ({ratioLabel}) — drag to
+            choose what fills the card.
           </p>
         </div>
         <div style={{ position: "relative", width: "100%", height: 400, background: "#000" }}>
-          <Cropper
-            image={imageSrc}
-            crop={crop}
-            zoom={zoom}
-            aspect={aspect}
-            onCropChange={setCrop}
-            onZoomChange={setZoom}
-            onCropComplete={onCropComplete}
-            style={{
-              containerStyle: { background: "#0a0a0a" },
-              cropAreaStyle: { border: "2px solid #f5a623" },
-            }}
-          />
+          {naturalAspect != null && (
+            <Cropper
+              image={imageSrc}
+              crop={crop}
+              zoom={zoom}
+              aspect={naturalAspect}
+              onCropChange={setCrop}
+              onZoomChange={setZoom}
+              onCropComplete={onCropComplete}
+              objectFit="contain"
+              style={{
+                containerStyle: { background: "#0a0a0a" },
+                cropAreaStyle: { border: "2px solid #f5a623" },
+              }}
+            />
+          )}
         </div>
         <div
           style={{
@@ -133,7 +163,7 @@ export default function PosterCropModal({ imageSrc, aspect, onCancel, onConfirm 
 }
 
 // Crops the source image to the exact pixel region chosen in the cropper
-// and returns it as a Blob at exactly the design-canvas dimensions.
+// and returns it as a Blob at exactly those dimensions.
 export async function getCroppedImg(imageSrc, pixelCrop) {
   const image = await loadImage(imageSrc);
   const canvas = document.createElement("canvas");

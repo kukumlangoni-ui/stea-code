@@ -823,15 +823,17 @@ export function ProductStudioV3({
       setError("Save the product first before uploading an image.");
       return;
     }
-    // Open the crop UI first — the admin picks what part fills the canvas,
-    // then the cropped image (at exactly designWidth × designHeight) is uploaded.
-    const aspect = (Number(form.designWidth) || 640) / (Number(form.designHeight) || 480);
+    // Open the crop UI first — the admin picks what part fills the card, then
+    // the cropped image (at its own natural shape) is uploaded and its true
+    // dimensions become the product's designWidth / designHeight.
     setError("");
-    setPosterCrop({ src: URL.createObjectURL(file), file, pid, aspect });
+    setPosterCrop({ src: URL.createObjectURL(file), file, pid });
   };
 
-  // Upload the admin's chosen crop (a PNG blob at the exact canvas aspect).
-  const confirmPosterCrop = async (croppedBlob) => {
+  // Upload the admin's chosen crop (a PNG blob) and adopt its exact pixel
+  // dimensions as the card's design canvas, so the homepage card matches the
+  // design's true shape (tall for long pages, wide for hero sections).
+  const confirmPosterCrop = async (croppedBlob, croppedAreaPixels) => {
     const crop = posterCrop;
     if (!crop) return;
     setPosterCrop(null);
@@ -842,6 +844,8 @@ export function ProductStudioV3({
     const croppedFile = new File([croppedBlob], `${baseName}-cropped.png`, {
       type: croppedBlob.type || "image/png",
     });
+    const cropW = Math.round(Number(croppedAreaPixels?.width) || 0);
+    const cropH = Math.round(Number(croppedAreaPixels?.height) || 0);
     setPosterUploading(true);
     setPosterUploadProgress(0);
     setError("");
@@ -854,6 +858,9 @@ export function ProductStudioV3({
       }
       setForm((prev) => ({
         ...prev,
+        // Adopt the cropped image's true dimensions as the card's canvas.
+        designWidth: cropW || prev.designWidth || 640,
+        designHeight: cropH || prev.designHeight || 480,
         preview: { ...prev.preview, posterKey: result.key },
         posterImageUrl: result.url || `/api/stea-code/media/${result.key}`,
       }));
@@ -2411,7 +2418,6 @@ export function ProductStudioV3({
       {posterCrop && (
         <PosterCropModal
           imageSrc={posterCrop.src}
-          aspect={posterCrop.aspect}
           onCancel={cancelPosterCrop}
           onConfirm={confirmPosterCrop}
         />
