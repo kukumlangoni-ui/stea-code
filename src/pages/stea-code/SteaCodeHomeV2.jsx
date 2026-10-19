@@ -4482,7 +4482,7 @@ function ProductDetail({
           )}
 
           {/* ===== ACTION BUTTONS — Copy Image / Copy Prompt / Copy Code / Download ===== */}
-          <div className="sc-detail-actions">
+          <div className="sc-detail-actions sc-copy-actions-row">
 
             {/* Copy Image — Layouts (poster-based) products and any product with a gallery cover */}
             {(product?.tab === "layouts" || galleryImages.length > 0) && getCopyImageUrl(product) && (
@@ -4516,7 +4516,7 @@ function ProductDetail({
             {product?.aiPrompt && (!isPremium || hasAccess) && (
               <button
                 type="button"
-                className={`sc-detail-action sc-detail-action--prompt ${copiedPrompt ? 'is-copied' : ''}`}
+                className={`sc-detail-action sc-detail-action--prompt sc-btn-copy-secondary ${copiedPrompt ? 'is-copied' : ''}`}
                 onClick={handleCopyPromptClick}
               >
                 <span className="sc-detail-action-icon" aria-hidden="true">
@@ -4534,12 +4534,10 @@ function ProductDetail({
                   )}
                 </span>
                 <span className="sc-detail-action-label">
-                  <div className="sc-copy-actions-row">
-{!isSignedIn ? 'Sign in to copy AI prompt' : !hasAccess ? `Unlock for $${productPrice.toFixed(2)}` : copiedPrompt ? 'Prompt Copied' : 'Copy AI Prompt'}
+                  {!isSignedIn ? 'Sign in to copy AI prompt' : !hasAccess ? `Unlock for $${productPrice.toFixed(2)}` : copiedPrompt ? 'Prompt Copied' : 'Copy AI Prompt'}
                 </span>
               </button>
             )}
-
 
             {/* Copy Source Code — free products always, premium when buyer has access */}
             {sourceCodeHtml && (isFree || (isPremium && hasAccess)) && (
@@ -4567,7 +4565,6 @@ function ProductDetail({
                 </span>
               </button>
             )}
-</div>
 
             {/* Download ZIP — shows when package exists AND user has access */}
             {product?.package?.storageKey && (isFree || (isPremium && hasAccess)) && (
