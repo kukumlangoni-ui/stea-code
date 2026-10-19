@@ -17499,21 +17499,31 @@ header,
 /* ===== end complete premium redesign ===== */
 
 /* ============================================================
-   Responsive preview fix — preserve aspect on ALL devices
-   (no distortion / no hidden card on desktop)
+   Hero: preview FILLS the hero (big & prominent), design
+   contain-fits so it is never cropped, on ALL devices.
    ============================================================ */
 .sc-premium-product-detail .sc-product-detail-media {
-  display: block !important;
-  text-align: center !important;
-  padding: 24px clamp(14px, 3vw, 34px) 30px !important;
-  min-height: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  min-height: clamp(340px, 54vh, 660px) !important;
+  padding: 12px clamp(14px, 3vw, 34px) 20px !important;
+  background: radial-gradient(circle at 50% 30%, rgba(245, 166, 35, 0.06), transparent 58%) #08090d !important;
+  background-size: 100% 100% !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07) !important;
 }
 .sc-premium-product-detail .sc-product-detail-preview-shell {
-  width: min(100%, 1180px) !important;
-  aspect-ratio: var(--preview-aspect) !important;
-  /* safety net only for very tall designs; landscape heroes keep true aspect */
-  max-height: 90vh !important;
+  width: 100% !important;
+  max-width: 1240px !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  border: none !important;
+  background: transparent !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
   margin: 0 auto !important;
+  overflow: hidden !important;
 }
 /* Leave real space under the preview: no overlap hiding the card */
 .sc-premium-product-detail .sc-product-detail-copy {
