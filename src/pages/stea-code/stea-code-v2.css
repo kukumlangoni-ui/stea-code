@@ -21539,53 +21539,73 @@ html body .sc-market-hero.sc-home-hero.sc-hero-twocol h1.sc-hero-title > .sc-her
 
 
 /* =========================================
-   HERO STACK FINAL ADJUSTMENT (BIGGER & WIDER)
+   HERO STACK - FINAL 3D LAYOUT
    ========================================= */
 
-/* 1. Make the whole stack bigger */
-.sc-hero-stack {
-  max-width: 700px !important;
-  height: 500px !important;
+.sc-market-hero.sc-home-hero.sc-hero-twocol .sc-hero-stack {
+  position: relative !important;
+  width: 100% !important;
+  max-width: 650px !important; /* Bigger overall size */
+  height: 480px !important;
+  margin-top: 40px !important;
 }
 
-/* 2. BACK card (Alex Graham portfolio) - Keep in back */
-.sc-stack-card.back {
+.sc-market-hero.sc-home-hero.sc-hero-twocol .sc-stack-card {
+  position: absolute !important;
+  border-radius: 20px !important;
+  box-shadow: 0 30px 60px -12px rgba(15, 23, 42, 0.25) !important;
+  border: 1px solid rgba(255, 255, 255, 0.8) !important;
+  object-fit: cover !important;
+  object-position: center !important;
+  transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.5s ease !important;
+  will-change: transform !important;
+}
+
+/* 1. BACK CARD (Alex Graham) - Peeking out top-left */
+.sc-market-hero.sc-home-hero.sc-hero-twocol .sc-stack-card.back {
   top: 0 !important;
-  left: -10% !important;
-  width: 70% !important;
+  left: -5% !important;
+  width: 75% !important;
+  height: 75% !important;
   transform: rotate(-8deg) !important;
   z-index: 1 !important;
 }
 
-/* 3. MIDDLE card (01 DISCOVER) - Make it wider/horizontal so it doesn't get covered */
-.sc-stack-card.front {
-  top: 20% !important;
-  left: 5% !important;
-  width: 90% !important; /* Wider */
-  height: 300px !important; /* Shorter to look horizontal */
-  object-fit: cover !important; /* Ensures it fills the horizontal box */
-  transform: rotate(4deg) !important;
+/* 2. MIDDLE CARD (Laptop) - Peeking out top-right */
+.sc-market-hero.sc-home-hero.sc-hero-twocol .sc-stack-card.middle {
+  top: 5% !important;
+  right: -5% !important;
+  left: auto !important;
+  bottom: auto !important;
+  width: 80% !important;
+  height: 80% !important;
+  transform: rotate(6deg) !important;
   z-index: 2 !important;
 }
 
-/* 4. FRONT card (Laptop Mockup) - Back on top, but offset so it shows the middle */
-.sc-stack-card.middle {
-  top: auto !important;
+/* 3. FRONT CARD (01 DISCOVER) - Standard horizontal card, front and center */
+.sc-market-hero.sc-home-hero.sc-hero-twocol .sc-stack-card.front {
   bottom: 0 !important;
-  right: -5% !important;
-  left: auto !important;
+  left: 10% !important;
+  top: auto !important;
+  right: auto !important;
   width: 85% !important;
-  transform: rotate(-4deg) !important;
+  height: 65% !important; /* Restores the card shape, not a flat banner */
+  transform: rotate(-2deg) !important;
   z-index: 3 !important;
+  object-position: left center !important;
 }
 
-/* 5. Update Hover Animations */
-.sc-hero-stack:hover .sc-stack-card.back { 
-  transform: rotate(-12deg) translate(-15px, -15px) !important; 
+/* Hover Animations - The "Fanning Out" Effect */
+.sc-market-hero.sc-home-hero.sc-hero-twocol .sc-hero-stack:hover .sc-stack-card.back {
+  transform: rotate(-14deg) translate(-20px, -20px) !important;
+  box-shadow: 0 40px 80px -20px rgba(15, 23, 42, 0.3) !important;
 }
-.sc-hero-stack:hover .sc-stack-card.front { 
-  transform: rotate(6deg) translate(10px, -5px) !important; 
+.sc-market-hero.sc-home-hero.sc-hero-twocol .sc-hero-stack:hover .sc-stack-card.middle {
+  transform: rotate(12deg) translate(20px, -10px) !important;
+  box-shadow: 0 40px 80px -20px rgba(15, 23, 42, 0.3) !important;
 }
-.sc-hero-stack:hover .sc-stack-card.middle { 
-  transform: rotate(0deg) translate(0, 15px) !important; 
+.sc-market-hero.sc-home-hero.sc-hero-twocol .sc-hero-stack:hover .sc-stack-card.front {
+  transform: rotate(0deg) translateY(15px) !important;
+  box-shadow: 0 40px 80px -20px rgba(15, 23, 42, 0.4) !important;
 }
