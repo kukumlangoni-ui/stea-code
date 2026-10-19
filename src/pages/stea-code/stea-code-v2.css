@@ -20103,3 +20103,50 @@ div[class*="lightbox"] > div {
 .sc-detail-preview-wrapper img {
   box-shadow: none !important;
 }
+
+
+/* =========================================
+   FULL INDEPENDENT POSTER IMAGE & SEPARATED INFO CARD
+   ========================================= */
+
+/* 1. Force the image container to be completely independent, no rounded corners on the image itself */
+.sc-product-preview-stage,
+.sc-detail-preview-wrapper,
+div[class*="preview-stage"] {
+  border-radius: 0 !important; 
+  border-bottom-left-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+  padding-bottom: 40px !important; /* Clean gap below image */
+  margin-bottom: 0 !important;
+  background: transparent !important;
+}
+
+/* 2. Force the image to have sharp corners at the bottom and be fully visible */
+.sc-product-preview-stage img,
+.sc-detail-preview-wrapper img {
+  border-radius: 0 !important; 
+  border-bottom-left-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+  box-shadow: none !important;
+  object-fit: contain !important;
+  height: auto !important;
+  max-height: none !important;
+}
+
+/* 3. Reset the white info card to NOT overlap the image */
+.sc-product-modal-container,
+.sc-lightbox-content,
+div[class*="lightbox"] > div {
+  margin-top: 0 !important; /* KILL the negative overlap */
+  padding-top: 40px !important; /* Space inside the white card */
+  border-radius: 0 !important; /* Kill the rounded top that bites into the image */
+  background-color: #ffffff !important;
+  box-shadow: 0 -4px 20px rgba(0,0,0,0.02) !important; /* Very subtle shadow line */
+}
+
+/* 4. Ensure the modal container itself doesn't clip anything */
+.sc-product-modal,
+.sc-lightbox {
+  overflow-y: auto !important;
+  border-radius: 24px !important; /* Only the outer modal has rounded corners */
+}
