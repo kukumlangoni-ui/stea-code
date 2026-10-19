@@ -20768,3 +20768,24 @@ div[class*="preview-stage"] img {
 .sc-product-detail-media img:not([src]) {
   display: none !important;
 }
+
+/* =========================================
+   LIVE INTERACTIVE PREVIEW SIZING
+   ========================================= */
+
+/* In the stacked layout the media column is height:auto, which would collapse a
+   live iframe to 0px. The live shell therefore derives a definite height from
+   the product's design aspect ratio so the iframe has room to render.
+   Specificity (0,4,0) beats the height:auto / aspect-ratio:auto rules above. */
+.sc-product-modal-panel.sc-premium-product-detail .sc-product-detail-preview-shell.is-live-preview {
+  aspect-ratio: var(--preview-aspect, 4 / 3) !important;
+  height: auto !important;
+  min-height: 320px !important;
+  max-height: none !important;
+  width: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  overflow: hidden !important;
+  background: #f4f4f5 !important;
+}

@@ -3532,6 +3532,18 @@ function ProductDetail({
     Boolean(product?.preview?.enabled);
   const useFullMediaLayout = isPosterOnly || isLayoutFullPreview;
 
+  // The live interactive preview is the fallback branch of the media chain:
+  // it renders when there is no multi-image gallery, no poster-only mode,
+  // no video, and no working poster image.
+  const livePreviewActive =
+    galleryImages.length <= 1 &&
+    !isPosterOnly &&
+    !hasVideo &&
+    !showDetailPoster;
+  const livePreviewAspect = isLayoutFullPreview
+    ? `${product?.preview?.width || product?.designWidth || 1440} / ${product?.preview?.height || product?.designHeight || 1200}`
+    : `${product?.designWidth || product?.preview?.width || (product?.tab === "kits" ? 1600 : 640)} / ${product?.designHeight || product?.preview?.height || (product?.tab === "kits" ? 1100 : 480)}`;
+
   // Default to video tab when product has a video, otherwise live demo.
   // Reset when the product changes (user clicks a different card).
   useEffect(() => {
@@ -4221,7 +4233,8 @@ function ProductDetail({
           </div>
 
           <div
-            className={`sc-product-detail-preview-shell ${isPosterOnly ? "is-poster-preview" : ""}`}
+            className={`sc-product-detail-preview-shell ${isPosterOnly ? "is-poster-preview" : ""} ${livePreviewActive ? "is-live-preview" : ""}`}
+            style={livePreviewActive ? { "--preview-aspect": livePreviewAspect } : undefined}
           >
             <PreviewErrorBoundary>
               {galleryImages.length > 1 ? (
@@ -4289,10 +4302,19 @@ function ProductDetail({
                   />
                 </div>
               ) : (
-                <div className="sc-static-preview-placeholder">
-                  <span>{product?.titleEn || product?.titleZh || ""}</span>
-                  {product?.category && <small>{product.category}</small>}
-                </div>
+                <ProductPreview
+                  ref={previewRef}
+                  key={`detail-preview-${getProductIdentity(product)}`}
+                  product={product}
+                  interactive={detailPreviewInteractive}
+                  showControls={Boolean(product.preview?.enabled)}
+                  forceLiveDemo={true}
+                  fillMode="scale"
+                  modalZoom={product.modalZoom || 1}
+                  offsetX={product.modalOffsetX || 0}
+                  offsetY={product.modalOffsetY || 0}
+                  hideToolbar={true}
+                />
               )}
             </PreviewErrorBoundary>
           </div>
