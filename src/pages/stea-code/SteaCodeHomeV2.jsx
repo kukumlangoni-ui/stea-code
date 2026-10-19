@@ -4534,16 +4534,18 @@ function ProductDetail({
                   )}
                 </span>
                 <span className="sc-detail-action-label">
-                  {!isSignedIn ? 'Sign in to copy AI prompt' : !hasAccess ? `Unlock for $${productPrice.toFixed(2)}` : copiedPrompt ? 'Prompt Copied' : 'Copy AI Prompt'}
+                  <div className="sc-copy-actions-row">
+{!isSignedIn ? 'Sign in to copy AI prompt' : !hasAccess ? `Unlock for $${productPrice.toFixed(2)}` : copiedPrompt ? 'Prompt Copied' : 'Copy AI Prompt'}
                 </span>
               </button>
             )}
+
 
             {/* Copy Source Code — free products always, premium when buyer has access */}
             {sourceCodeHtml && (isFree || (isPremium && hasAccess)) && (
               <button
                 type="button"
-                className={`sc-detail-action sc-detail-action--code ${copiedCode ? 'is-copied' : ''}`}
+                className={`sc-detail-action sc-detail-action--code sc-btn-copy-primary ${copiedCode ? 'is-copied' : ''}`}
                 onClick={handleCopySourceClick}
               >
                 <span className="sc-detail-action-icon" aria-hidden="true">
@@ -4565,6 +4567,7 @@ function ProductDetail({
                 </span>
               </button>
             )}
+</div>
 
             {/* Download ZIP — shows when package exists AND user has access */}
             {product?.package?.storageKey && (isFree || (isPremium && hasAccess)) && (
