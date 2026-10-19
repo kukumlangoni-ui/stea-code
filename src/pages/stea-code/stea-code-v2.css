@@ -20953,3 +20953,64 @@ html body .sc-btn-copy-primary.is-copied::before {
     font-size: 2rem !important;
   }
 }
+
+/* =========================================
+   CLEAN MODAL HEADER — BACK BUTTON ONLY
+   ========================================= */
+
+/* Single Back control at the top of the preview stage. */
+.sc-modal-clean-header {
+  display: flex !important;
+  align-items: center !important;
+  width: 100% !important;
+  flex: 0 0 auto !important;
+  padding: 18px 20px 6px !important;
+  background: transparent !important;
+}
+
+/* Subtle light pill. The previous .sc-modal-back-btn used white-on-translucent
+   styling, which was near-invisible on this #f4f4f5 stage. */
+.sc-btn-back-premium {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 9px 16px 9px 13px !important;
+  border-radius: 999px !important;
+  background: rgba(255, 255, 255, 0.78) !important;
+  border: 1px solid rgba(15, 23, 42, 0.08) !important;
+  color: #334155 !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  line-height: 1 !important;
+  white-space: nowrap !important;
+  cursor: pointer !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06) !important;
+  backdrop-filter: blur(6px) !important;
+  transition: background 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease !important;
+}
+
+.sc-btn-back-premium span {
+  color: #334155 !important;
+}
+
+.sc-btn-back-premium svg {
+  flex: 0 0 auto !important;
+  color: #334155 !important;
+}
+
+.sc-btn-back-premium:hover {
+  background: #ffffff !important;
+  border-color: rgba(15, 23, 42, 0.16) !important;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.1) !important;
+}
+
+.sc-btn-back-premium:focus-visible {
+  outline: 2px solid #2563eb !important;
+  outline-offset: 2px !important;
+}
+
+/* Remove the hard separation line between the preview and the info card. */
+.sc-premium-product-detail .sc-product-detail-copy,
+.sc-product-modal-panel .sc-product-detail-copy {
+  border-top: 0 !important;
+}

@@ -4232,65 +4232,16 @@ function ProductDetail({
         transition={{ duration: 0.14, ease: "easeOut" }}
       >
         <div className={`sc-product-detail-media ${isPosterOnly ? "is-poster-only" : ""} ${isLayoutFullPreview ? "is-live-full" : ""}`}>
-          <div className="sc-modal-media-header">
-            <div className="sc-modal-media-header-left">
+          <div className="sc-modal-clean-header">
             <button
               type="button"
-              className="sc-modal-back-btn"
-              onClick={(e) => {
-                e.stopPropagation();
-                onClose();
-              }}
+              className="sc-btn-back-premium"
+              onClick={onClose}
               aria-label={tLocal({ en: "Back", zhCN: "返回" })}
             >
               <ArrowLeft size={16} />
               <span>{tLocal({ en: "Back", zhCN: "返回" })}</span>
             </button>
-
-            {product?.category && (
-              <span className="sc-product-detail-type">
-                {tLocal(CATEGORY_LABELS[product.category] || { en: product.category, zhCN: product.category })}
-              </span>
-            )}
-          </div>
-
-            <div className="sc-product-modal-actions">
-              <button
-                className={`sc-product-fav-btn ${isFavorited ? 'is-active' : ''}`}
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (onToggleFavorite) onToggleFavorite(getProductIdentity(product));
-                }}
-                aria-label={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
-              >
-                <svg
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill={isFavorited ? "currentColor" : "none"}
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-                </svg>
-              </button>
-
-              <div className="sc-modal-actions-divider" />
-
-              <div className="sc-modal-actions-spacer" />
-
-              <button
-                className="sc-product-close sc-icon-btn"
-                type="button"
-                onClick={onClose}
-                aria-label={tLocal({ en: "Close", zhCN: "关闭" })}
-              >
-                <X size={18} />
-              </button>
-            </div>
           </div>
 
           <div
@@ -4406,26 +4357,6 @@ function ProductDetail({
               </button>
             </div>
           )}
-
-          <div className="sc-product-preview-caption">
-            <span>
-              {galleryImages.length > 1
-                ? tLocal({ en: "Gallery", zhCN: "图库" })
-                : isPosterOnly
-                ? tLocal({ en: "Poster preview", zhCN: "海报预览" })
-                : hasVideo
-                ? tLocal({ en: "Preview Video", zhCN: "视频预览" })
-                : tLocal({ en: "Preview", zhCN: "预览" })}
-            </span>
-
-            <small>
-              {galleryImages.length > 1
-                ? tLocal({ en: "Swipe or use the arrows to browse images.", zhCN: "左右滑动或使用箭头浏览图片。" })
-                : tLocal({
-                    en: "Preview the layout before getting the code.",
-                    zhCN: "获取代码前先查看布局效果。" })}
-            </small>
-          </div>
         </div>
 
         <div className="sc-product-detail-copy">
