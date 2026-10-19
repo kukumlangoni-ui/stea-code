@@ -17069,3 +17069,154 @@ header,
   color: #ffffff;
 }
 /* ===== end Copy button gold fill ===== */
+
+/* ============================================================
+   Product detail: FULL-PAGE vertical layout (Supahero-style)
+   Replaces the old left|right split with: Back button → big
+   contained preview hero → info stacked below. Scrollable page,
+   works on all devices.
+   ============================================================ */
+.sc-product-modal-panel.sc-premium-product-detail {
+  width: 100vw !important;
+  height: 100vh !important;
+  height: 100dvh !important;
+  max-width: none !important;
+  max-height: none !important;
+  min-height: 100vh !important;
+  min-height: 100dvh !important;
+  border-radius: 0 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  grid-template-rows: auto auto !important;
+  align-content: start !important;
+  align-items: start !important;
+}
+
+/* Media = full-width hero */
+.sc-premium-product-detail .sc-product-detail-media {
+  position: relative !important;
+  width: 100% !important;
+  height: auto !important;
+  min-height: 56vh !important;
+  max-height: none !important;
+  padding: 16px clamp(16px, 4vw, 40px) 24px !important;
+  background-color: #07090e !important;
+  background-image:
+    radial-gradient(circle at 50% 30%, rgba(245, 166, 35, 0.06), transparent 62%),
+    radial-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px) !important;
+  background-size: 100% 100%, 22px 22px !important;
+  border-right: none !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  justify-content: flex-start !important;
+  gap: 12px !important;
+  box-sizing: border-box !important;
+}
+
+/* Big contained preview hero */
+.sc-premium-product-detail .sc-product-detail-preview-shell {
+  position: relative !important;
+  z-index: 1 !important;
+  width: 100% !important;
+  max-width: 1180px !important;
+  max-height: min(74vh, 860px) !important;
+  height: auto !important;
+  min-height: 0 !important;
+  aspect-ratio: var(--preview-aspect, 4 / 3) !important;
+  flex: 0 1 auto !important;
+  margin: 4px auto 0 !important;
+  align-self: center !important;
+  overflow: hidden !important;
+  border-radius: 16px !important;
+  background: #07090e !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.5) !important;
+}
+
+.sc-premium-product-detail .sc-product-detail-preview-shell > .sc-product-preview {
+  width: 100% !important;
+  height: 100% !important;
+  max-height: none !important;
+  min-height: 0 !important;
+  aspect-ratio: auto !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+}
+
+/* Copy = full-width info stacked below the hero */
+.sc-premium-product-detail .sc-product-detail-copy {
+  position: relative !important;
+  width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow: visible !important;
+  overflow-y: visible !important;
+  padding: clamp(28px, 5vw, 56px) clamp(20px, 7vw, 68px) 72px !important;
+}
+
+/* Clean Back button (top-left) */
+.sc-modal-back-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 8px 16px 8px 12px !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  color: rgba(245, 247, 251, 0.9) !important;
+  border-radius: 999px !important;
+  cursor: pointer !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  line-height: 1 !important;
+  transition: background 0.16s ease, border-color 0.16s ease !important;
+  white-space: nowrap !important;
+}
+.sc-modal-back-btn:hover {
+  background: rgba(245, 166, 35, 0.12) !important;
+  border-color: rgba(245, 166, 35, 0.4) !important;
+  color: #f5a623 !important;
+}
+
+.sc-modal-media-header-left .sc-product-detail-type {
+  display: inline-flex !important;
+  align-items: center !important;
+  padding: 7px 14px !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  color: rgba(245, 247, 251, 0.8) !important;
+  border-radius: 999px !important;
+  font-size: 12.5px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.04em !important;
+  text-transform: uppercase !important;
+  white-space: nowrap !important;
+}
+
+/* Responsive: tighter hero + padding on small screens */
+@media (max-width: 720px) {
+  .sc-premium-product-detail .sc-product-detail-media {
+    min-height: 44vh !important;
+    padding: 12px 12px 18px !important;
+  }
+  .sc-premium-product-detail .sc-product-detail-preview-shell {
+    max-height: 62vh !important;
+    border-radius: 12px !important;
+  }
+  .sc-modal-back-btn span {
+    display: inline !important;
+  }
+  .sc-premium-product-detail .sc-product-detail-copy {
+    padding: 26px 18px 56px !important;
+  }
+}
+/* ===== end full-page product detail ===== */

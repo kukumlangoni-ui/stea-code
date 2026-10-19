@@ -5,6 +5,7 @@ import SEO from "../../components/SEO.jsx";
 import "./stea-code.css";
 import "./stea-code-v2.css";
 import {
+  ArrowLeft,
   ArrowRight,
   BookOpen,
   Boxes,
@@ -3229,7 +3230,9 @@ const ProductPreview = forwardRef(function ProductPreview({
             style={{
               width: "100%",
               height: "100%",
-              objectFit: "cover",
+              // Cards fill edge-to-edge (cover); the detail/full-page hero shows
+              // the whole poster contained & centered so it never looks cropped.
+              objectFit: fillMode === "cover" ? "cover" : "contain",
               display: "block",
               borderRadius: "12px",
             }}
@@ -4108,7 +4111,26 @@ function ProductDetail({
       >
         <div className="sc-product-detail-media">
           <div className="sc-modal-media-header">
-            <div className="sc-modal-media-header-left" />
+            <div className="sc-modal-media-header-left">
+            <button
+              type="button"
+              className="sc-modal-back-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                onClose();
+              }}
+              aria-label={tLocal({ en: "Back", zhCN: "返回" })}
+            >
+              <ArrowLeft size={16} />
+              <span>{tLocal({ en: "Back", zhCN: "返回" })}</span>
+            </button>
+
+            {product?.category && (
+              <span className="sc-product-detail-type">
+                {tLocal(CATEGORY_LABELS[product.category] || { en: product.category, zhCN: product.category })}
+              </span>
+            )}
+          </div>
 
             <div className="sc-product-modal-actions">
               <button
