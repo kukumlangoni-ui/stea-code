@@ -20789,3 +20789,81 @@ div[class*="preview-stage"] img {
   overflow: hidden !important;
   background: #f4f4f5 !important;
 }
+
+/* =========================================
+   COPY SOURCE CODE — GLASS + GRADIENT BORDER
+   ========================================= */
+
+/* Premium Glassmorphic Button with Gradient Border */
+.sc-btn-copy-primary,
+.sc-detail-action--code {
+  background: linear-gradient(135deg, #1a1a1a 0%, #000000 100%) !important;
+  color: #ffffff !important;
+  border: 1px solid transparent !important;
+  background-clip: padding-box !important;
+  position: relative !important;
+  border-radius: 100px !important;
+  padding: 14px 28px !important;
+  font-weight: 600 !important;
+  font-size: 15px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 10px !important;
+  transition: all 0.3s ease !important;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5) !important;
+  overflow: hidden !important;
+}
+
+/* The Gradient Border Effect */
+.sc-btn-copy-primary::before,
+.sc-detail-action--code::before {
+  content: "" !important;
+  position: absolute !important;
+  inset: 0 !important;
+  border-radius: 100px !important;
+  padding: 1px !important; /* Border thickness */
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 25%, #ff0844 75%, #ffb199 100%) !important;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0) !important;
+  -webkit-mask-composite: xor !important;
+  mask-composite: exclude !important;
+  pointer-events: none !important;
+  opacity: 0.8 !important;
+  transition: opacity 0.3s ease !important;
+}
+
+.sc-btn-copy-primary:hover::before,
+.sc-detail-action--code:hover::before {
+  opacity: 1 !important;
+}
+
+/* Ensure all text inside is white and visible.
+   The label/icon children carry their own color (0,3,0 specificity, no
+   !important) from the gold-fill block, which made the text invisible on the
+   dark glass background — !important here wins over that rule. */
+.sc-btn-copy-primary *,
+.sc-detail-action--code * {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
+}
+
+.sc-btn-copy-primary svg,
+.sc-detail-action--code svg {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
+}
+
+/* Keep the green "copied" success feedback.
+   The glass rule above would otherwise override it (single-class !important
+   beats the 3-class non-important green rule), leaving the button dark. */
+.sc-btn-copy-primary.is-copied,
+.sc-detail-action--code.is-copied {
+  background: linear-gradient(180deg, #22c55e 0%, #16a34a 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.15), 0 12px 32px rgba(34, 197, 94, 0.3) !important;
+}
+
+.sc-btn-copy-primary.is-copied::before,
+.sc-detail-action--code.is-copied::before {
+  opacity: 0 !important;
+}
