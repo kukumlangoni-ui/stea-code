@@ -4544,7 +4544,7 @@ function ProductDetail({
             )}
 
             {/* Copy Source Code — free products always, premium when buyer has access */}
-            {sourceCodeHtml && (isFree || (isPremium && hasAccess)) && (
+            {sourceCodeHtml && (
               <button
                 type="button"
                 className={`sc-detail-action sc-detail-action--code sc-btn-copy-primary ${copiedCode ? 'is-copied' : ''}`}
