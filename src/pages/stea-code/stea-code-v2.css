@@ -19319,3 +19319,63 @@ a:has(> .sc-drawer-community-icon) span:not(.sc-drawer-community-icon) {
   border: none !important;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
 }
+
+
+/* =========================================
+   DRIBBBLE STYLE FULL IMAGE PREVIEW
+   ========================================= */
+
+/* 1. The Container: Soft grey, no black bars, auto height */
+.sc-product-preview-stage,
+.sc-detail-preview-wrapper,
+.modal-preview-area,
+.sc-preview-container {
+  background-color: #f4f4f5 !important; /* Dribbble soft grey */
+  padding: 40px !important;
+  border-radius: 24px 24px 0 0 !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  min-height: 300px !important;
+  height: auto !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+/* 2. The Image: Full size, clear, no forced ratios */
+.sc-product-preview-stage img,
+.sc-detail-preview-wrapper img,
+.sc-preview-container img {
+  width: auto !important;
+  height: auto !important;
+  max-width: 100% !important;
+  max-height: 80vh !important; /* Don't let it be taller than the screen */
+  object-fit: contain !important; /* Shows the ENTIRE image, no cropping */
+  background-color: transparent !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08) !important; /* Soft float shadow */
+  border-radius: 12px !important;
+  border: 1px solid #e5e5e5 !important;
+  margin: 0 auto !important;
+  display: block !important;
+}
+
+/* 3. The iframe (for live code previews): Full size */
+.sc-product-preview-stage iframe,
+.sc-detail-preview-wrapper iframe {
+  width: 100% !important;
+  height: 60vh !important; /* Takes up good space */
+  max-height: 600px !important;
+  border-radius: 12px !important;
+  border: 1px solid #e5e5e5 !important;
+  background-color: #ffffff !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08) !important;
+}
+
+/* 4. Make sure the modal wrapper doesn't force a height */
+.sc-product-modal-container {
+  background-color: #ffffff !important;
+  border: none !important;
+  height: auto !important;
+  max-height: 90vh !important;
+  overflow-y: auto !important;
+}
