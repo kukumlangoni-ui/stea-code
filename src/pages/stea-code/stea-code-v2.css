@@ -19234,3 +19234,43 @@ a:has(> .sc-drawer-community-icon) span:not(.sc-drawer-community-icon) {
   color: #5865F2 !important;
   fill: currentColor !important;
 }
+
+
+/* =========================================
+   FIX PREVIEW BLACK BACKGROUNDS
+   ========================================= */
+
+/* 1. Force the preview stage to be a soft grey/white */
+.sc-product-preview-stage,
+.sc-preview-container,
+.sc-detail-preview-wrapper,
+.modal-preview-area {
+  background-color: #f0f0f0 !important; /* Soft grey like the Supahéro style */
+  background-image: none !important;
+  border-radius: 16px !important;
+  overflow: hidden !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  padding: 40px !important;
+}
+
+/* 2. Force any iframes or images inside the preview to have no black bars */
+.sc-product-preview-stage iframe,
+.sc-product-preview-stage img,
+.sc-preview-container iframe,
+.sc-preview-container img,
+.sc-detail-preview-wrapper img {
+  background-color: transparent !important;
+  background: transparent !important;
+  border-radius: 12px !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1) !important; /* Soft shadow to lift it off the bg */
+  max-width: 100% !important;
+  object-fit: contain !important;
+}
+
+/* 3. Fix the wrapper holding both the preview and the info text */
+.sc-product-detail-wrapper,
+.sc-modal-content-wrapper {
+  background-color: #ffffff !important; /* Force the whole modal area to white */
+}
