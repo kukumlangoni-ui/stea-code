@@ -19,9 +19,9 @@ let client = null;
 function getClient() {
   if (client) return client;
 
-  const accessKeyId = process.env.R2_ACCESS_KEY_ID || import.meta.env?.R2_ACCESS_KEY_ID;
-  const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY || import.meta.env?.R2_SECRET_ACCESS_KEY;
-  const endpoint = process.env.R2_ENDPOINT || import.meta.env?.R2_ENDPOINT;
+  const accessKeyId = process.env.R2_ACCESS_KEY_ID || (typeof import.meta !== "undefined" && import.meta.env?.R2_ACCESS_KEY_ID);
+  const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY || (typeof import.meta !== "undefined" && import.meta.env?.R2_SECRET_ACCESS_KEY);
+  const endpoint = process.env.R2_ENDPOINT || (typeof import.meta !== "undefined" && import.meta.env?.R2_ENDPOINT);
 
   if (!accessKeyId || !secretAccessKey || !endpoint) {
     return null;
@@ -40,7 +40,7 @@ function getClient() {
 }
 
 function getBucket() {
-  return process.env.R2_BUCKET_NAME || import.meta.env?.R2_BUCKET_NAME || "steacode";
+  return process.env.R2_BUCKET_NAME || (typeof import.meta !== "undefined" && import.meta.env?.R2_BUCKET_NAME) || "steacode";
 }
 
 export function isR2Configured() {
@@ -96,7 +96,7 @@ export async function getSignedDownloadUrl(key, expiresIn = 300) {
  * domain configured). Returns empty string if no public URL is set.
  */
 export function getPublicUrl(key) {
-  const publicUrl = process.env.R2_PUBLIC_URL || import.meta.env?.R2_PUBLIC_URL || "";
+  const publicUrl = process.env.R2_PUBLIC_URL || (typeof import.meta !== "undefined" && import.meta.env?.R2_PUBLIC_URL) || "";
   if (!publicUrl) return "";
   const base = publicUrl.endsWith("/") ? publicUrl : `${publicUrl}/`;
   return `${base}${key}`;
