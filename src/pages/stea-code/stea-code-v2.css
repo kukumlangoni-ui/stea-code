@@ -20024,3 +20024,55 @@ img[src*="poster"] {
   aspect-ratio: auto !important;
   border-radius: 24px 24px 0 0 !important;
 }
+
+
+/* =========================================
+   FIX POSTER IMAGE CONTAINER HEIGHT & OVERLAP
+   ========================================= */
+
+/* 1. Force the preview stage to grow with the image */
+.sc-product-preview-stage,
+.sc-detail-preview-wrapper,
+div[class*="preview-stage"],
+div[class*="lightbox-preview"] {
+  height: auto !important; 
+  max-height: none !important;
+  overflow: visible !important;
+  display: block !important; 
+  padding: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+/* 2. Force the image to be fully visible and dictate the height */
+.sc-product-preview-stage img,
+.sc-detail-preview-wrapper img,
+div[class*="preview-stage"] img {
+  width: 100% !important;
+  height: auto !important; 
+  max-height: none !important;
+  object-fit: contain !important;
+  display: block !important;
+  border-radius: 24px 24px 0 0 !important;
+  margin: 0 !important;
+}
+
+/* 3. Remove any negative margins causing the white card to overlap */
+.sc-product-modal-container,
+.sc-lightbox-content,
+div[class*="lightbox"] > div {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+  border-radius: 24px !important;
+  overflow: hidden !important;
+  background: #ffffff !important;
+}
+
+/* 4. Fix the white info card below the image */
+.sc-product-modal-body,
+.sc-lightbox-info {
+  position: relative !important;
+  background: #ffffff !important;
+  margin-top: 0 !important; 
+  border-radius: 24px 24px 0 0 !important;
+  box-shadow: 0 -10px 30px rgba(0,0,0,0.05) !important; /* Subtle shadow so it looks layered */
+}
