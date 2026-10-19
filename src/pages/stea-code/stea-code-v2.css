@@ -19274,3 +19274,48 @@ a:has(> .sc-drawer-community-icon) span:not(.sc-drawer-community-icon) {
 .sc-modal-content-wrapper {
   background-color: #ffffff !important; /* Force the whole modal area to white */
 }
+
+
+/* =========================================
+   FLAT DRIBBBLE-STYLE PREVIEW FIX
+   ========================================= */
+
+/* 1. Kill the black background and force a flat light-grey stage */
+.sc-product-preview-stage,
+.sc-detail-preview-wrapper,
+.modal-preview-area,
+.sc-preview-container {
+  background-color: #f3f4f6 !important; /* Light grey, like Dribbble */
+  background-image: none !important;
+  padding: 40px !important;
+  border-radius: 24px 24px 0 0 !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  min-height: 400px !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+/* 2. Remove any 3D shadows, borders, and black backgrounds from the image/iframe */
+.sc-product-preview-stage img,
+.sc-product-preview-stage iframe,
+.sc-detail-preview-wrapper img,
+.sc-detail-preview-wrapper iframe {
+  background: transparent !important;
+  background-color: transparent !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05) !important; /* Very soft, flat shadow */
+  border: 1px solid #e5e5e5 !important;
+  border-radius: 12px !important;
+  max-width: 100% !important;
+  max-height: 600px !important;
+  object-fit: contain !important;
+  transform: none !important; /* Kill any 3D transforms */
+}
+
+/* 3. Ensure the modal content below is pure white */
+.sc-product-modal-container {
+  background-color: #ffffff !important;
+  border: none !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+}
