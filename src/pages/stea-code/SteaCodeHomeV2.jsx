@@ -4534,9 +4534,7 @@ function ProductDetail({
                   )}
                 </span>
                 <span className="sc-detail-action-label">
-                  {/* BUTTON WRAPPER START */}
-            <div className="sc-copy-actions-row">
-            {!isSignedIn ? 'Sign in to copy AI prompt' : !hasAccess ? `Unlock for $${productPrice.toFixed(2)}` : copiedPrompt ? 'Prompt Copied' : 'Copy AI Prompt'}
+                  {!isSignedIn ? 'Sign in to copy AI prompt' : !hasAccess ? `Unlock for $${productPrice.toFixed(2)}` : copiedPrompt ? 'Prompt Copied' : 'Copy AI Prompt'}
                 </span>
               </button>
             )}
@@ -4568,7 +4566,7 @@ function ProductDetail({
               </button>
             )}
             </div>
-            {/* BUTTON WRAPPER END */}
+
 
             {/* Download ZIP — shows when package exists AND user has access */}
             {product?.package?.storageKey && (isFree || (isPremium && hasAccess)) && (
