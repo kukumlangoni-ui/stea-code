@@ -1,4 +1,5 @@
 import express from "express";
+import https from "https";
 import axios from "axios";
 import * as cheerio from "cheerio";
 import cors from "cors";
@@ -158,6 +159,52 @@ async function startServer() {
   console.log(`[Server] Starting in ${process.env.NODE_ENV || 'development'} mode`);
   const app = express();
   const PORT = 3000;
+
+  // ---------------------------------------------------------------------------
+  // STEA Code API proxy — local dev reads straight from the Cloudflare Worker
+  // (D1-backed). Production routes /api/* on steacode.com to the Worker; mirroring
+  // that here means localhost sees the same real D1 data instead of Firestore
+  // demo/seed products. Disable with STEA_CODE_API_ORIGIN="" to fall back to the
+  // local handlers below.
+  // ---------------------------------------------------------------------------
+  const STEA_CODE_API_ORIGIN = (process.env.STEA_CODE_API_ORIGIN || "https://steacode.com").replace(/\/+$/, "");
+
+  function proxySteaCodeApi(req: any, res: any) {
+    const target = new URL(req.originalUrl, STEA_CODE_API_ORIGIN);
+    const headers: Record<string, string> = {};
+    for (const h of ["content-type", "authorization", "accept", "accept-encoding", "origin", "cookie", "x-request-id", "user-agent"]) {
+      const v = req.headers[h];
+      if (v !== undefined) headers[h] = Array.isArray(v) ? v.join(", ") : String(v);
+    }
+    headers["host"] = target.host;
+
+    const proxyReq = https.request(target, { method: req.method, headers }, (proxyRes) => {
+      res.statusCode = proxyRes.statusCode || 502;
+      const hopByHop = new Set([
+        "connection", "keep-alive", "transfer-encoding", "upgrade",
+        "proxy-authenticate", "proxy-authorization", "te", "trailer",
+      ]);
+      for (const [k, v] of Object.entries(proxyRes.headers)) {
+        if (hopByHop.has(k.toLowerCase()) || v === undefined) continue;
+        res.setHeader(k, Array.isArray(v) ? v.join(", ") : String(v));
+      }
+      proxyRes.pipe(res);
+    });
+    proxyReq.on("error", (err) => {
+      console.error("[stea-code proxy] Worker unreachable:", err.message);
+      if (!res.headersSent) {
+        res.status(502).json({ ok: false, error: "SteaCode API (Worker) unreachable" });
+      } else {
+        res.end();
+      }
+    });
+    req.pipe(proxyReq);
+  }
+
+  if (STEA_CODE_API_ORIGIN) {
+    app.use("/api/stea-code", proxySteaCodeApi);
+    app.use("/api/admin/stea-code", proxySteaCodeApi);
+  }
 
   // AI: Gemini Proxy
   app.post("/api/gemini", async (req, res) => {

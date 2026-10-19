@@ -18876,3 +18876,86 @@ body:has(.sc-market-home) { color-scheme: light; }
   padding: 16px 2px 2px !important;
 }
 /* ===== end category-eyebrow cards ===== */
+
+/* ============================================================
+   CARD GRID — UNIFORM PREMIUM, RESPONSIVE, NO OVERFLOW (final override)
+   Fixes: mobile 2-column compact grid, side padding on all devices,
+   mobile typography downscaled, pill-row overflow removed.
+   This block is last in the file so it wins the cascade.
+   ============================================================ */
+
+/* --- 1) Restore side margins so cards never touch screen edges --- */
+.sc-market-home .sc-market-section,
+#trending.sc-market-section {
+  padding-left: clamp(20px, 4vw, 64px) !important;
+  padding-right: clamp(20px, 4vw, 64px) !important;
+}
+.sc-market-section#explore {
+  padding-left: clamp(20px, 4vw, 64px) !important;
+  padding-right: clamp(20px, 4vw, 64px) !important;
+}
+
+/* --- 2) Grid columns — desktop / tablet keep tidy auto-fill --- */
+@media (min-width: 1200px) {
+  .sc-market-home .sc-product-grid,
+  .sc-product-grid {
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)) !important;
+    gap: 32px 28px !important;
+  }
+}
+@media (min-width: 641px) and (max-width: 1199px) {
+  .sc-market-home .sc-product-grid,
+  .sc-product-grid,
+  #explore .sc-product-grid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)) !important;
+    gap: 26px 20px !important;
+  }
+}
+
+/* --- 3) Mobile ≤640px: two compact columns, tighter gap, smaller type --- */
+@media (max-width: 640px) {
+  .sc-market-home .sc-product-grid,
+  .sc-product-grid,
+  #explore .sc-product-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 18px 12px !important;
+  }
+
+  /* Compact card internals */
+  .sc-code-card--v2,
+  .sc-market-home .sc-code-card--v2 {
+    gap: 6px !important;
+  }
+  .sc-market-home .sc-code-card--v2 .sc-code-card__title,
+  .sc-market-home .sc-code-card .sc-code-card__title {
+    font-size: 13px !important;
+    font-weight: 700 !important;
+    line-height: 1.25 !important;
+    letter-spacing: -0.01em !important;
+  }
+  .sc-market-home .sc-code-card--v2 .sc-code-card__category,
+  .sc-market-home .sc-code-card .sc-code-card__category {
+    font-size: 10px !important;
+    letter-spacing: 0.08em !important;
+    margin: 0 0 2px !important;
+  }
+  .sc-market-home .sc-code-card--v2 .sc-code-card__caption,
+  .sc-market-home .sc-code-card .sc-code-card__caption {
+    gap: 6px !important;
+    padding: 8px 2px 2px !important;
+  }
+  .sc-market-home .sc-code-card--v2 .sc-code-card__price-badge,
+  .sc-market-home .sc-code-card .sc-code-card__price-badge {
+    font-size: 10px !important;
+    padding: 2px 6px !important;
+    letter-spacing: 0.02em !important;
+  }
+}
+
+/* --- 4) Pill row: stop the 4px negative-margin overflow on mobile --- */
+@media (max-width: 600px) {
+  .sc-homepage-pill-row {
+    margin: 0 0 16px !important;
+    padding: 0 4px 4px !important;
+  }
+}
