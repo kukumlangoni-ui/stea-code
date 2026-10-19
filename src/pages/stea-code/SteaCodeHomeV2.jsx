@@ -1435,7 +1435,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
           }}
         >
           <img
-            src="/stea-apps/stea-code.png"
+            src="/stea-code-logo.png"
             alt="steacode"
             className="sc-topbar-logo-img"
             width={36}
@@ -2098,7 +2098,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
           {/* BRAND COLUMN */}
           <div className="sc-footer-brand">
             <a href="/code" className="sc-footer-brand-logo">
-              <img src="/stea-apps/stea-code.png" alt="steacode" width={28} height={28} />
+              <img src="/stea-code-logo.png" alt="steacode" width={28} height={28} />
               steacode
             </a>
             <p className="sc-footer-tagline">

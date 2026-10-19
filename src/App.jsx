@@ -112,7 +112,7 @@ function PageLoadingFallback() {
       background: '#0a0a0f',
     }}>
       <img
-        src="/stea-apps/stea-code.png"
+        src="/stea-code-logo.png"
         alt=""
         width="56" height="37"
         style={{
