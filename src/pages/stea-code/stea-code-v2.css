@@ -20551,3 +20551,49 @@ div[class*="card-preview"] img {
   display: none !important;
   content: none !important;
 }
+
+
+/* =========================================
+   FIX HOMEPAGE PRODUCT CARD POSTER IMAGES
+   ========================================= */
+
+.sc-product-card,
+.sc-card-preview,
+.sc-card-image-wrapper,
+div[class*="card-preview"],
+div[class*="product-card"] {
+  height: auto !important;
+  max-height: none !important;
+  aspect-ratio: auto !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  outline: none !important;
+  overflow: hidden !important;
+  border-radius: 16px !important;
+}
+
+.sc-product-card img,
+.sc-card-preview img,
+.sc-card-image-wrapper img,
+div[class*="card-preview"] img {
+  width: 100% !important;
+  height: auto !important;
+  max-height: none !important;
+  aspect-ratio: auto !important;
+  object-fit: contain !important;
+  display: block !important;
+  background: transparent !important;
+  border-radius: 16px 16px 0 0 !important;
+  box-shadow: none !important;
+}
+
+.sc-product-card::before,
+.sc-product-card::after,
+.sc-card-preview::before,
+.sc-card-preview::after,
+.sc-card-image-wrapper::before,
+.sc-card-image-wrapper::after {
+  display: none !important;
+  content: none !important;
+}
