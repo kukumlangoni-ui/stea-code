@@ -1891,31 +1891,10 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
 
                 <div className="sc-hero-visual" aria-hidden="true">
                   <div className="sc-hero-stack">
-                    <img
-                      src="/images/hero/card-back.png"
-                      alt=""
-                      className="sc-stack-card back"
-                      loading="eager"
-                      decoding="async"
-                      draggable={false}
-                    />
-                    <img
-                      src="/images/hero/card-middle.png"
-                      alt=""
-                      className="sc-stack-card middle"
-                      loading="eager"
-                      decoding="async"
-                      draggable={false}
-                    />
-                    <img
-                      src="/images/hero/card-front.png"
-                      alt=""
-                      className="sc-stack-card front"
-                      loading="eager"
-                      decoding="async"
-                      draggable={false}
-                    />
-                  </div>
+  <img src="/images/hero/card-back.png" alt="Portfolio Card" className="sc-stack-card back" />
+  <img src="/images/hero/card-middle.png" alt="Laptop Mockup" className="sc-stack-card middle" />
+  <img src="/images/hero/card-front.png" alt="Discover Card" className="sc-stack-card front" />
+</div>
                 </div>
               </div>
             </section>

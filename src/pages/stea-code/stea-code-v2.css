@@ -21345,3 +21345,67 @@ html body .sc-market-hero.sc-home-hero.sc-hero-twocol h1.sc-hero-title > .sc-her
 /* Note: no `::after` spacer on the media — it carries `overflow: hidden`, so a
    pseudo-element inside it is clipped and can never create visible space. The
    margin in rule 1 is what actually produces the gap. */
+
+
+/* =========================================
+   HERO STACKED CARDS (REFERENCE IMAGES)
+   ========================================= */
+
+.sc-hero-stack {
+  position: relative !important;
+  width: 100% !important;
+  max-width: 500px !important;
+  height: 380px !important;
+}
+
+.sc-stack-card {
+  position: absolute !important;
+  border-radius: 20px !important;
+  box-shadow: 0 30px 60px -15px rgba(15, 23, 42, 0.35) !important;
+  border: 1px solid rgba(255, 255, 255, 0.6) !important;
+  transition: transform 0.4s ease, box-shadow 0.4s ease !important;
+  object-fit: cover !important;
+  object-position: center !important;
+  display: block !important;
+}
+
+/* Back Card (Top Left) */
+.sc-stack-card.back {
+  top: 0 !important;
+  left: -5% !important;
+  width: 65% !important;
+  height: auto !important;
+  transform: rotate(-8deg) !important;
+  z-index: 1 !important;
+}
+
+/* Middle Card (Top Right) */
+.sc-stack-card.middle {
+  top: 5% !important;
+  right: -5% !important;
+  width: 75% !important;
+  height: auto !important;
+  transform: rotate(5deg) !important;
+  z-index: 2 !important;
+}
+
+/* Front Card (Bottom Left) */
+.sc-stack-card.front {
+  bottom: 0 !important;
+  left: 0 !important;
+  width: 80% !important;
+  height: auto !important;
+  transform: rotate(-2deg) !important;
+  z-index: 3 !important;
+}
+
+/* Hover Animation */
+.sc-hero-stack:hover .sc-stack-card.back { 
+  transform: rotate(-12deg) translate(-10px, -10px) !important; 
+}
+.sc-hero-stack:hover .sc-stack-card.middle { 
+  transform: rotate(8deg) translate(10px, -5px) !important; 
+}
+.sc-hero-stack:hover .sc-stack-card.front { 
+  transform: rotate(0deg) translate(0, 10px) !important; 
+}
