@@ -20265,7 +20265,7 @@ div[style*="--preview-aspect"] {
    The poster image defines the height; the info sheet starts
    after a real 32px spacer with no overlap or clipping.
    ============================================================ */
-.sc-product-modal-panel.sc-premium-product-detail.is-poster-modal {
+.sc-product-modal-panel.sc-premium-product-detail.is-full-media-modal {
   display: block !important;
   grid-template-columns: none !important;
   grid-template-rows: none !important;
@@ -20341,6 +20341,63 @@ div[style*="--preview-aspect"] {
 }
 
 .sc-premium-product-detail .sc-product-detail-media.is-poster-only + .sc-product-detail-copy {
+  position: relative !important;
+  z-index: 1 !important;
+  width: 100% !important;
+  max-width: none !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  margin: 0 !important;
+  padding-top: clamp(40px, 6vw, 64px) !important;
+  overflow: visible !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: #ffffff !important;
+}
+
+/* Full-page live layouts use the same stacked media + info rhythm. */
+.sc-premium-product-detail .sc-product-detail-media.is-live-full {
+  display: block !important;
+  width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  padding: 0 0 32px !important;
+  overflow: visible !important;
+  background: #f4f4f5 !important;
+  border-bottom: 0 !important;
+  border-radius: 0 !important;
+}
+
+.sc-premium-product-detail .sc-product-detail-media.is-live-full .sc-modal-media-header {
+  padding: 14px clamp(16px, 3vw, 36px) 8px !important;
+}
+
+.sc-premium-product-detail .sc-product-detail-preview-shell.is-live-full-preview {
+  display: flex !important;
+  width: 100% !important;
+  max-width: 1240px !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  aspect-ratio: var(--preview-aspect, 1440 / 1200) !important;
+  flex: none !important;
+  margin: 0 auto !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  background: #f4f4f5 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+.sc-premium-product-detail .sc-product-detail-media.is-live-full .sc-product-preview-caption,
+.sc-premium-product-detail .sc-product-detail-media.is-live-full .sc-detail-view-fullpage {
+  display: none !important;
+}
+
+.sc-premium-product-detail .sc-product-detail-media.is-live-full + .sc-product-detail-copy {
   position: relative !important;
   z-index: 1 !important;
   width: 100% !important;

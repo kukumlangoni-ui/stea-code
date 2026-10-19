@@ -3519,6 +3519,13 @@ function ProductDetail({
       (!product?.preview?.enabled &&
         !product?.hasSource &&
         !product?.demoPreview));
+  const isLayoutFullPreview =
+    !isPosterOnly &&
+    !hasVideo &&
+    galleryImages.length <= 1 &&
+    product?.tab === "layouts" &&
+    Boolean(product?.preview?.enabled);
+  const useFullMediaLayout = isPosterOnly || isLayoutFullPreview;
 
   // Default to video tab when product has a video, otherwise live demo.
   // Reset when the product changes (user clicks a different card).
@@ -4140,13 +4147,13 @@ function ProductDetail({
       />
 
       <motion.section
-        className={`sc-product-modal-panel sc-premium-product-detail ${isPosterOnly ? "is-poster-modal" : ""}`}
+        className={`sc-product-modal-panel sc-premium-product-detail ${useFullMediaLayout ? "is-full-media-modal" : ""} ${isPosterOnly ? "is-poster-modal" : ""}`}
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 6 }}
         transition={{ duration: 0.14, ease: "easeOut" }}
       >
-        <div className={`sc-product-detail-media ${isPosterOnly ? "is-poster-only" : ""}`}>
+        <div className={`sc-product-detail-media ${isPosterOnly ? "is-poster-only" : ""} ${isLayoutFullPreview ? "is-live-full" : ""}`}>
           <div className="sc-modal-media-header">
             <div className="sc-modal-media-header-left">
             <button
@@ -4235,9 +4242,11 @@ function ProductDetail({
           </div>
 
           <div
-            className={`sc-product-detail-preview-shell ${isPosterOnly ? "is-poster-preview" : ""}`}
+            className={`sc-product-detail-preview-shell ${isPosterOnly ? "is-poster-preview" : ""} ${isLayoutFullPreview ? "is-live-full-preview" : ""}`}
             style={isPosterOnly ? undefined : {
-              '--preview-aspect': `${product.designWidth || product.preview?.width || (product.tab === "kits" ? 1600 : 640)} / ${product.designHeight || product.preview?.height || (product.tab === "kits" ? 1100 : 480)}`,
+              '--preview-aspect': isLayoutFullPreview
+                ? `${product.preview?.width || product.designWidth || 1440} / ${product.preview?.height || product.designHeight || 1200}`
+                : `${product.designWidth || product.preview?.width || (product.tab === "kits" ? 1600 : 640)} / ${product.designHeight || product.preview?.height || (product.tab === "kits" ? 1100 : 480)}`,
             }}
           >
             <PreviewErrorBoundary>
