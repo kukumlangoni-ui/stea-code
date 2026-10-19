@@ -3230,11 +3230,10 @@ const ProductPreview = forwardRef(function ProductPreview({
             style={{
               width: "100%",
               height: "100%",
-              // Cards fill edge-to-edge (cover); the detail/full-page hero shows
-              // the whole poster contained & centered so it never looks cropped.
-              objectFit: fillMode === "cover" ? "cover" : "contain",
+              // Always show the full design (well-fit, like the admin panel).
+              // Contain guarantees no cropping / "too big" zoom on any card.
+              objectFit: "contain",
               display: "block",
-              borderRadius: "12px",
             }}
           />
         ) : (

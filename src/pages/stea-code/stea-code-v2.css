@@ -17220,3 +17220,96 @@ header,
   }
 }
 /* ===== end full-page product detail ===== */
+
+/* ============================================================
+   Premium polish for the full-page product detail
+   — removes the preview frame/border, refines buttons + info
+   ============================================================ */
+/* 1) Preview = clean, borderless, full-bleed (no box/border/background) */
+.sc-premium-product-detail .sc-product-detail-preview-shell {
+  border: none !important;
+  background: transparent !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  max-width: 1280px !important;
+  max-height: min(80vh, 920px) !important;
+}
+.sc-premium-product-detail .sc-product-detail-preview-shell .sc-preview-poster-image {
+  border-radius: 0 !important;
+}
+
+/* 2) Cleaner hero backdrop (drop the noisy dotted grid) */
+.sc-premium-product-detail .sc-product-detail-media {
+  background-color: #08090d !important;
+  background-image:
+    radial-gradient(circle at 50% 28%, rgba(245, 166, 35, 0.05), transparent 60%) !important;
+  background-size: 100% 100% !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+}
+
+/* 3) Top bar: tighter, premium */
+.sc-modal-media-header {
+  gap: 12px !important;
+}
+
+/* 4) Action buttons: small, premium, arranged in a tidy wrapping row */
+.sc-detail-actions {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: wrap !important;
+  gap: 10px !important;
+  margin-top: 22px !important;
+  margin-bottom: 6px !important;
+  align-items: center !important;
+}
+.sc-detail-action {
+  flex: 0 1 auto !important;
+  min-height: 36px !important;
+  padding: 8px 15px !important;
+  border-radius: 999px !important;
+  font-size: 13px !important;
+  white-space: nowrap !important;
+}
+.sc-detail-action .sc-detail-action-icon {
+  margin: 0 !important;
+}
+
+/* 5) Info: contained, well-arranged, refined */
+.sc-premium-product-detail .sc-product-detail-copy {
+  padding: clamp(32px, 6vw, 64px) clamp(20px, 7vw, 72px) 80px !important;
+}
+.sc-product-detail-copy h2 {
+  margin: 16px 0 10px !important;
+  font-size: clamp(30px, 4.4vw, 52px) !important;
+  letter-spacing: -0.03em !important;
+}
+.sc-product-detail-description {
+  font-size: 16px !important;
+  max-width: 72ch !important;
+  line-height: 1.6 !important;
+}
+.sc-product-detail-topline {
+  align-items: center !important;
+  gap: 12px !important;
+}
+/* Section headings: small, spaced, uppercase gold-ish */
+.sc-product-detail-heading {
+  margin-top: 30px !important;
+}
+.sc-product-detail-heading span {
+  font-size: 13px !important;
+  letter-spacing: 0.08em !important;
+}
+.sc-product-included-grid {
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)) !important;
+  gap: 10px !important;
+}
+.sc-product-craft-note {
+  max-width: 80ch !important;
+}
+
+/* Full-page detail: also fix the legacy caption + view-fullpage spacing */
+.sc-product-preview-caption {
+  margin-top: 6px !important;
+}
+/* ===== end premium product detail polish ===== */
