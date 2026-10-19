@@ -21348,3 +21348,48 @@ html body .sc-market-hero.sc-home-hero.sc-hero-twocol h1.sc-hero-title > .sc-her
     transition: none !important;
   }
 }
+
+/* =========================================
+   COMPONENT PREVIEW SEPARATION FIX
+   Measured before this block (1440x900, a live HTML/CSS/JS component):
+     .sc-product-detail-media   top   1  bottom 872
+     .sc-product-detail-copy    top 872  bottom 952   -> gap = 0px
+   The earlier "FORCE CLEAN STACKED PREVIEW" block flattens the media's
+   padding AND margin to 0, so the preview surface ends exactly on the info
+   card's top edge. Restoring a bottom margin is the whole fix.
+   ========================================= */
+
+/* 1. Guaranteed gap between the preview surface and the info card.
+   Applies to every preview type (live iframe, poster image, video) because
+   it lives on the media column, not on the preview itself.
+   Deliberately NOT setting `height: 60vh` / `max-height` here: the media is
+   already 871px tall (driven by `.is-live-preview { aspect-ratio }`), and it
+   has `overflow: hidden`, so any shorter fixed height would crop the preview
+   instead of sizing it. A bottom margin can never crop. */
+.sc-premium-product-detail .sc-product-detail-media,
+.sc-product-modal-panel .sc-product-detail-media {
+  margin-bottom: 32px !important;
+  min-height: 400px !important; /* floor: the preview can never collapse */
+}
+
+/* 1b. Poster and full-page-layout previews keep the grey surface 32px past the
+   artwork via their own `padding-bottom`, so the margin above would add a
+   second, dead 32px (total ~128px before the title). Reset it for those two. */
+.sc-premium-product-detail .sc-product-detail-media.is-poster-only,
+.sc-premium-product-detail .sc-product-detail-media.is-live-full {
+  margin-bottom: 0 !important;
+}
+
+/* 2. The info card sits strictly below — no negative offsets, no seam. */
+.sc-premium-product-detail .sc-product-detail-copy,
+.sc-product-modal-panel .sc-product-detail-copy {
+  margin-top: 0 !important;
+  border-top: 0 !important;
+  background: #ffffff !important;
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+/* Note: no `::after` spacer on the media — it carries `overflow: hidden`, so a
+   pseudo-element inside it is clipped and can never create visible space. The
+   margin in rule 1 is what actually produces the gap. */
