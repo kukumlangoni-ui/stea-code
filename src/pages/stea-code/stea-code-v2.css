@@ -19932,3 +19932,49 @@ div[class*="poster"] img {
   border-radius: 24px !important;
   overflow: hidden !important;
 }
+
+
+/* =========================================
+   BUTTON SIZING & PREMIUM UNLOCK FIX
+   ========================================= */
+
+/* Force the action buttons to be inline, not full width */
+.sc-detail-action,
+.sc-btn-copy-secondary,
+.sc-btn-copy-primary,
+.sc-copy-actions-row button {
+  width: auto !important;
+  min-width: 220px !important;
+  max-width: 300px !important; /* Stop it from stretching across the whole screen */
+  padding: 14px 24px !important;
+  border-radius: 100px !important;
+  display: inline-flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  gap: 10px !important;
+  font-size: 15px !important;
+  font-weight: 600 !important;
+}
+
+/* Ensure the flex container holds them side by side */
+.sc-copy-actions-row {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 16px !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  width: 100% !important;
+  margin: 32px 0 !important;
+}
+
+/* Fix the premium unlock box button */
+.sc-premium-unlock-btn,
+.sc-detail-action--unlock {
+  width: 100% !important; /* Inside the box, it can be full width of the box */
+  max-width: 400px !important; /* But not the whole screen */
+  background-color: #f5a623 !important;
+  color: #000000 !important;
+  font-weight: 700 !important;
+  border-radius: 12px !important;
+  padding: 16px 24px !important;
+}
