@@ -72,6 +72,20 @@ import { TABS, DEFAULT_TAB, SUBCATEGORIES } from "../../data/stea-code/tabs.js";
 import { useScrollReveal } from "../../hooks/useScrollReveal.js";
 import { useTilt } from "../../hooks/useTilt.js";
 
+    const SkeletonGrid = () => (
+      <div className="sc-skeleton-grid">
+        {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+          <div key={i} className="sc-skeleton-card">
+            <div className="sc-skeleton-image"></div>
+            <div className="sc-skeleton-content">
+              <div className="sc-skeleton-title"></div>
+              <div className="sc-skeleton-subtitle"></div>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+    
 function Reveal({ children, delay = 0, as: Tag = "div", className = "", ...rest }) {
   const [ref, visible] = useScrollReveal();
   return (

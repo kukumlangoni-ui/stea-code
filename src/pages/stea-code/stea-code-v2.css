@@ -19663,3 +19663,77 @@ button[class*="sc-detail-action--live"] {
   color: #888888 !important;
   margin: 0 !important;
 }
+
+
+/* =========================================
+   VISIBLE PREMIUM SKELETON LOADER (WHITE BG)
+   ========================================= */
+
+/* The shimmer animation */
+@keyframes shimmer {
+  0% { background-position: -1000px 0; }
+  100% { background-position: 1000px 0; }
+}
+
+/* The base skeleton block */
+.sc-skeleton-card {
+  background: #ffffff !important;
+  border: 1px solid #e5e5e5 !important;
+  border-radius: 16px !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+  height: 320px !important; /* Standard card height */
+  box-shadow: 0 4px 12px rgba(0,0,0,0.02) !important;
+}
+
+/* The image area of the skeleton */
+.sc-skeleton-image {
+  height: 220px !important;
+  width: 100% !important;
+  background: #f0f0f0 !important;
+  background-image: linear-gradient(to right, #f0f0f0 0%, #e5e5e5 20%, #f0f0f0 40%, #f0f0f0 100%) !important;
+  background-repeat: no-repeat !important;
+  background-size: 1000px 100% !important;
+  animation: shimmer 2s infinite linear !important;
+}
+
+/* The text area of the skeleton */
+.sc-skeleton-content {
+  padding: 20px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+}
+
+/* The title bar of the skeleton */
+.sc-skeleton-title {
+  height: 24px !important;
+  width: 60% !important;
+  border-radius: 6px !important;
+  background: #f0f0f0 !important;
+  background-image: linear-gradient(to right, #f0f0f0 0%, #e5e5e5 20%, #f0f0f0 40%, #f0f0f0 100%) !important;
+  background-repeat: no-repeat !important;
+  background-size: 1000px 100% !important;
+  animation: shimmer 2s infinite linear !important;
+}
+
+/* The subtitle bar of the skeleton */
+.sc-skeleton-subtitle {
+  height: 16px !important;
+  width: 40% !important;
+  border-radius: 6px !important;
+  background: #f0f0f0 !important;
+  background-image: linear-gradient(to right, #f0f0f0 0%, #e5e5e5 20%, #f0f0f0 40%, #f0f0f0 100%) !important;
+  background-repeat: no-repeat !important;
+  background-size: 1000px 100% !important;
+  animation: shimmer 2s infinite linear !important;
+}
+
+/* The Grid Wrapper for Skeleton */
+.sc-skeleton-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)) !important;
+  gap: 24px !important;
+  padding: 24px 0 !important;
+}
