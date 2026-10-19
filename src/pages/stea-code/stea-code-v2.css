@@ -20383,3 +20383,47 @@ div[style*="--preview-aspect"] {
   display: block !important;
   border-radius: 16px 16px 0 0 !important;
 }
+
+
+/* =========================================
+   REMOVE BLACK CORNERS ON PRODUCT CARDS
+   ========================================= */
+
+/* 1. Force the card container to have no background and clean corners */
+.sc-product-card,
+.sc-card-preview,
+.sc-card-image-wrapper,
+div[class*="card-preview"],
+div[class*="product-card"] {
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  outline: none !important;
+  /* Ensure the outer container clips the inner image cleanly */
+  overflow: hidden !important;
+  border-radius: 16px !important; 
+}
+
+/* 2. Ensure the image inside matches the rounding and fills the container */
+.sc-product-card img,
+.sc-card-preview img,
+div[class*="card-preview"] img {
+  background: transparent !important;
+  background-color: transparent !important;
+  border-radius: 16px 16px 0 0 !important;
+  display: block !important;
+  width: 100% !important;
+  height: auto !important;
+  object-fit: cover !important;
+  /* Remove any inset shadows that might look like dark corners */
+  box-shadow: none !important; 
+}
+
+/* 3. Kill any pseudo-elements that might be drawing corners */
+.sc-product-card::before,
+.sc-product-card::after,
+.sc-card-preview::before,
+.sc-card-preview::after {
+  display: none !important;
+  content: none !important;
+}
