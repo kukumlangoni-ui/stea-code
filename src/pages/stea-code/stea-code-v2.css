@@ -17313,3 +17313,187 @@ header,
   margin-top: 6px !important;
 }
 /* ===== end premium product detail polish ===== */
+
+/* ============================================================
+   COMPLETE PREMIUM REDESIGN — Product detail
+   Anubi / Supahero style: clean hero on dark + white info sheet
+   ============================================================ */
+/* --- Hero: the design sits well-fit & centered, never zoomed/cropped --- */
+.sc-premium-product-detail .sc-product-detail-media {
+  background-color: #08090d !important;
+  background-image:
+    radial-gradient(circle at 50% 30%, rgba(245, 166, 35, 0.06), transparent 58%) !important;
+  background-size: 100% 100% !important;
+  min-height: 0 !important;
+  padding: 20px clamp(14px, 3vw, 32px) 26px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07) !important;
+}
+.sc-premium-product-detail .sc-product-detail-preview-shell {
+  border: none !important;
+  background: transparent !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  flex: none !important;
+  width: min(100%, 1180px) !important;
+  aspect-ratio: var(--preview-aspect) !important;
+  max-height: min(62vh, 680px) !important;
+  margin: 0 auto !important;
+}
+.sc-premium-product-detail .sc-product-detail-preview-shell .sc-preview-poster-image,
+.sc-premium-product-detail .sc-product-detail-video-player {
+  border-radius: 0 !important;
+}
+/* Caption + fullpage: tiny, subtle, unobtrusive */
+.sc-product-preview-caption {
+  margin-top: 10px !important;
+  text-align: center !important;
+}
+.sc-product-preview-caption span {
+  font-size: 12px !important;
+  letter-spacing: 0.04em !important;
+  opacity: 0.55 !important;
+}
+.sc-product-preview-caption small {
+  display: none !important;
+}
+.sc-detail-view-fullpage {
+  margin-top: 8px !important;
+}
+.sc-detail-view-fullpage .sc-detail-action {
+  background: rgba(255,255,255,0.06) !important;
+  border: 1px solid rgba(255,255,255,0.14) !important;
+  color: rgba(245,247,251,0.9) !important;
+}
+
+/* --- Info sheet: white, minimal, dark text (Anubi look) --- */
+.sc-premium-product-detail .sc-product-detail-copy {
+  background: #ffffff !important;
+  color: #0b0f1a !important;
+  border-radius: 26px 26px 0 0 !important;
+  margin-top: -20px !important;
+  position: relative !important;
+  z-index: 2 !important;
+  padding: clamp(36px, 6vw, 64px) clamp(20px, 7vw, 76px) 88px !important;
+  max-width: none !important;
+  text-align: left !important;
+}
+/* Topline: category pill + price -> light */
+.sc-premium-product-detail .sc-product-detail-topline {
+  align-items: center !important;
+  gap: 12px !important;
+  margin-bottom: 6px !important;
+}
+.sc-product-detail-topline .sc-product-category-pill {
+  background: rgba(15, 18, 27, 0.05) !important;
+  color: #0b0f1a !important;
+  border-color: rgba(15, 18, 27, 0.12) !important;
+}
+.sc-product-detail-price {
+  color: #0b0f1a !important;
+}
+.sc-product-detail-price.is-premium {
+  color: #e89313 !important;
+}
+/* Title + description */
+.sc-premium-product-detail .sc-product-detail-copy h2#sc-product-title,
+.sc-premium-product-detail .sc-product-detail-copy h2 {
+  color: #0b0f1a !important;
+  margin: 10px 0 12px !important;
+  font-size: clamp(32px, 4.6vw, 54px) !important;
+  letter-spacing: -0.03em !important;
+  line-height: 1.05 !important;
+}
+.sc-product-detail-description {
+  color: #4b5565 !important;
+  font-size: 16px !important;
+  max-width: 60ch !important;
+  line-height: 1.62 !important;
+}
+/* Craft note -> light card */
+.sc-product-craft-note {
+  background: #f6f7f9 !important;
+  border: 1px solid rgba(15, 18, 27, 0.08) !important;
+  border-radius: 16px !important;
+  padding: 18px 20px !important;
+  color: #2a3040 !important;
+}
+.sc-product-craft-note .sc-craft-note-label {
+  color: #0b0f1a !important;
+  letter-spacing: 0.08em !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+}
+.sc-product-craft-note p {
+  color: #3d4657 !important;
+  line-height: 1.6 !important;
+}
+/* Tags -> light pills */
+.sc-product-detail-tags {
+  gap: 8px !important;
+}
+.sc-product-detail-tags > span {
+  background: rgba(15, 18, 27, 0.06) !important;
+  color: #2a3040 !important;
+  border: 1px solid rgba(15, 18, 27, 0.08) !important;
+}
+/* Access box -> light card */
+.sc-product-action-box {
+  background: #f6f7f9 !important;
+  border: 1px solid rgba(15, 18, 27, 0.08) !important;
+  border-radius: 18px !important;
+  box-shadow: none !important;
+}
+.sc-product-action-copy strong {
+  color: #0b0f1a !important;
+}
+.sc-product-action-copy small {
+  color: #4b5565 !important;
+}
+.sc-product-action-microcopy {
+  color: #6b7280 !important;
+}
+.sc-owned-access-check {
+  background: #f6f7f9 !important;
+  border: 1px solid rgba(15, 18, 27, 0.08) !important;
+  border-radius: 16px !important;
+}
+.sc-owned-access-check strong { color: #0b0f1a !important; }
+.sc-owned-access-check small { color: #4b5565 !important; }
+/* Sections: clean light headings */
+.sc-product-detail-heading span {
+  color: #0b0f1a !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.04em !important;
+}
+.sc-product-detail-heading small {
+  color: #6b7280 !important;
+}
+.sc-product-included-grid > div {
+  color: #2a3040 !important;
+  background: rgba(15, 18, 27, 0.04) !important;
+  border-radius: 12px !important;
+  border: 1px solid rgba(15, 18, 27, 0.06) !important;
+}
+/* Buttons: small, premium pills */
+.sc-detail-actions {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  flex-direction: row !important;
+  gap: 10px !important;
+  align-items: center !important;
+  margin-top: 26px !important;
+}
+.sc-detail-action {
+  min-height: 36px !important;
+  padding: 8px 16px !important;
+  border-radius: 999px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  white-space: nowrap !important;
+}
+/* ===== end complete premium redesign ===== */
