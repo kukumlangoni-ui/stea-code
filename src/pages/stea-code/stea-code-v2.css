@@ -17639,3 +17639,52 @@ header,
   background: #ffffff !important;
 }
 /* ===== end white panel ===== */
+
+/* ============================================================
+   White theme legibility — make all text clearly visible
+   ============================================================ */
+/* "How to use" steps: dark, readable, slightly larger */
+.sc-product-usage-steps p {
+  color: #3d4657 !important;
+  font-size: 15px !important;
+  line-height: 1.6 !important;
+}
+.sc-product-usage-steps > div > span {
+  color: #b96a00 !important;
+  background: rgba(245, 166, 35, 0.12) !important;
+  border: 1px solid rgba(245, 166, 35, 0.28) !important;
+  font-size: 12px !important;
+}
+/* Section dividers visible on white */
+.sc-product-detail-section {
+  border-top: 1px solid rgba(15, 18, 27, 0.1) !important;
+}
+.sc-product-craft-note { color: #2a3040 !important; }
+.sc-code-tags, .sc-product-detail-tags { gap: 8px !important; }
+/* "What you get" + "How to use" heading text: clear and readable */
+.sc-product-detail-heading small {
+  color: #5a6272 !important;
+  font-size: 14px !important;
+}
+/* Included grid + usage: slightly larger, readable */
+.sc-product-included-grid > div span {
+  font-size: 14px !important;
+  line-height: 1.45 !important;
+}
+/* Action buttons: tidy, one tidy line, visible premium pills */
+.sc-detail-actions {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 10px !important;
+  align-items: center !important;
+  margin-top: 26px !important;
+}
+.sc-detail-action {
+  min-height: 38px !important;
+  padding: 8px 18px !important;
+  border-radius: 999px !important;
+  font-size: 13.5px !important;
+  font-weight: 600 !important;
+  white-space: nowrap !important;
+}
+/* ===== end white legibility ===== */
