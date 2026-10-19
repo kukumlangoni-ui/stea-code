@@ -20748,3 +20748,23 @@ div[class*="preview-stage"] img {
 .sc-product-detail-media .sc-static-preview-image img {
   flex: 0 0 auto !important;
 }
+
+/* =========================================
+   STATIC PREVIEW PLACEHOLDER POLISH
+   ========================================= */
+
+/* Ensure the static preview image or placeholder fills the media area cleanly */
+.sc-product-detail-media .sc-static-preview-image img {
+  width: 100% !important;
+  height: auto !important;
+  display: block !important;
+  object-fit: contain !important;
+  min-height: 320px !important;
+  background-color: #f4f4f5 !important;
+}
+
+/* Hide broken image icons */
+.sc-product-detail-media img[src=""],
+.sc-product-detail-media img:not([src]) {
+  display: none !important;
+}

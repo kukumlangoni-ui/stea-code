@@ -3475,6 +3475,9 @@ function ProductDetail({
   );
   const [sourceMenuOpen, setSourceMenuOpen] = useState(false);
   const sourceMenuRef = useRef(null);
+  // Tracks a poster URL that failed to load, so the modal can fall back to the
+  // clean placeholder instead of rendering a broken image icon.
+  const [failedPosterUrl, setFailedPosterUrl] = useState("");
 
   useEffect(() => {
     if (!sourceMenuOpen) return;
@@ -3511,6 +3514,8 @@ function ProductDetail({
   }, [product?.id, product?.slug]);
 
   const detailPosterUrl = getPreviewPosterUrl(product) || "";
+  const showDetailPoster =
+    Boolean(detailPosterUrl) && failedPosterUrl !== detailPosterUrl;
   const isPosterOnly =
     Boolean(detailPosterUrl) &&
     !hasVideo &&
@@ -4272,7 +4277,7 @@ function ProductDetail({
                     placeholder={null}
                   />
                 </div>
-              ) : detailPosterUrl ? (
+              ) : showDetailPoster ? (
                 <div className="sc-poster-full-image sc-static-preview-image">
                   <img
                     src={detailPosterUrl}
@@ -4280,6 +4285,7 @@ function ProductDetail({
                     loading="eager"
                     decoding="async"
                     draggable={false}
+                    onError={() => setFailedPosterUrl(detailPosterUrl)}
                   />
                 </div>
               ) : (
@@ -4326,15 +4332,15 @@ function ProductDetail({
                 ? tLocal({ en: "Poster preview", zhCN: "海报预览" })
                 : hasVideo
                 ? tLocal({ en: "Preview Video", zhCN: "视频预览" })
-                : tLocal({ en: "Interactive preview", zhCN: "交互预览" })}
+                : tLocal({ en: "Preview", zhCN: "预览" })}
             </span>
 
             <small>
               {galleryImages.length > 1
                 ? tLocal({ en: "Swipe or use the arrows to browse images.", zhCN: "左右滑动或使用箭头浏览图片。" })
                 : tLocal({
-                    en: "Preview the experience before getting the code.",
-                    zhCN: "获取代码前先体验最终效果。" })}
+                    en: "Preview the layout before getting the code.",
+                    zhCN: "获取代码前先查看布局效果。" })}
             </small>
           </div>
         </div>
