@@ -1808,7 +1808,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
           /* ================= STOREFRONT HOMEPAGE SECTIONS ================= */
           <>
             {/* 1. HERO */}
-            <section className={`sc-market-hero ${heroReady ? 'is-ready' : ''}`}>
+            <section className={`sc-market-hero sc-home-hero ${heroReady ? 'is-ready' : ''}`}>
               {/* Ambient glow background */}
               <div className="sc-hero-glow" aria-hidden="true" />
 
@@ -1827,68 +1827,70 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
                 ))}
               </div>
 
-              <h1 className="sc-hero-title"><span>Build better.</span><strong>Code faster.</strong></h1>
-              <p>{tLocal(COPY.sub)}</p>
-              <form className="sc-market-search" onSubmit={submit} role="search">
-                <Search size={18} />
-                <input
-                  value={q}
-                  onChange={(e) => setQ(e.target.value)}
-                  placeholder={tLocal(COPY.search)}
-                  aria-label={tLocal(COPY.search)}
-                />
-                <span className="sc-v2-kbd"><Command size={12} /> K</span>
-              </form>
-              <div className="sc-market-ctas">
-                <button
-                  type="button"
-                  className="sc-market-primary sc-hero-cta-primary"
-                  onClick={() => {
-                    setPricing("Free");
-                    setCategory("All");
-                  }}
+              <div className="sc-home-hero-inner">
+                <h1 className="sc-hero-title"><span>Build better.</span><strong>Code faster.</strong></h1>
+                <p className="sc-home-hero-subtitle">{tLocal(COPY.sub)}</p>
+                <form className="sc-market-search" onSubmit={submit} role="search">
+                  <Search size={18} aria-hidden="true" />
+                  <input
+                    value={q}
+                    onChange={(e) => setQ(e.target.value)}
+                    placeholder={tLocal(COPY.search)}
+                    aria-label={tLocal(COPY.search)}
+                  />
+                  <span className="sc-v2-kbd"><Command size={12} /> K</span>
+                </form>
+                <div className="sc-market-ctas">
+                  <button
+                    type="button"
+                    className="sc-market-primary sc-hero-cta-primary"
+                    onClick={() => {
+                      setPricing("Free");
+                      setCategory("All");
+                    }}
+                  >
+                    {tLocal(COPY.browseFree)} <ArrowRight size={16} />
+                  </button>
+                  <button
+                    type="button"
+                    className="sc-market-secondary sc-hero-cta-secondary"
+                    onClick={() => {
+                      setPricing("Premium");
+                      setCategory("All");
+                    }}
+                  >
+                    {tLocal(COPY.browsePremium)}
+                  </button>
+                </div>
+                <div
+                  className="sc-tech-strip sc-hero-tech-pills"
+                  aria-label="Supported technologies"
                 >
-                  {tLocal(COPY.browseFree)} <ArrowRight size={16} />
-                </button>
-                <button
-                  type="button"
-                  className="sc-market-secondary sc-hero-cta-secondary"
-                  onClick={() => {
-                    setPricing("Premium");
-                    setCategory("All");
-                  }}
-                >
-                  {tLocal(COPY.browsePremium)}
-                </button>
-              </div>
-              <div
-                className="sc-tech-strip sc-hero-tech-pills"
-                aria-label="Supported technologies"
-              >
-                {CODE_PRODUCT_TECH.map((tech) => (
-                  <span key={tech}>{tech}</span>
-                ))}
-              </div>
+                  {CODE_PRODUCT_TECH.map((tech) => (
+                    <span key={tech}>{tech}</span>
+                  ))}
+                </div>
 
-              <div className="sc-trust-bar" role="status" aria-label="steacode stats">
-                <div className="sc-trust-item">
-                  <span className="sc-trust-value">{products.length || 94}+</span>
-                  <span className="sc-trust-label">{uiLocale === "zhCN" ? "组件" : "Components"}</span>
-                </div>
-                <div className="sc-trust-divider" aria-hidden="true" />
-                <div className="sc-trust-item">
-                  <span className="sc-trust-value">11</span>
-                  <span className="sc-trust-label">{uiLocale === "zhCN" ? "分类" : "Categories"}</span>
-                </div>
-                <div className="sc-trust-divider" aria-hidden="true" />
-                <div className="sc-trust-item">
-                  <span className="sc-trust-value">{uiLocale === "zhCN" ? "免费" : "Free"}</span>
-                  <span className="sc-trust-label">{uiLocale === "zhCN" ? "永久" : "Forever"}</span>
-                </div>
-                <div className="sc-trust-divider" aria-hidden="true" />
-                <div className="sc-trust-item">
-                  <span className="sc-trust-value">{uiLocale === "zhCN" ? "每周" : "Updated"}</span>
-                  <span className="sc-trust-label">{uiLocale === "zhCN" ? "更新" : "Weekly"}</span>
+                <div className="sc-trust-bar" role="status" aria-label="steacode stats">
+                  <div className="sc-trust-item">
+                    <span className="sc-trust-value">{products.length || 94}+</span>
+                    <span className="sc-trust-label">{uiLocale === "zhCN" ? "组件" : "Components"}</span>
+                  </div>
+                  <div className="sc-trust-divider" aria-hidden="true" />
+                  <div className="sc-trust-item">
+                    <span className="sc-trust-value">11</span>
+                    <span className="sc-trust-label">{uiLocale === "zhCN" ? "分类" : "Categories"}</span>
+                  </div>
+                  <div className="sc-trust-divider" aria-hidden="true" />
+                  <div className="sc-trust-item">
+                    <span className="sc-trust-value">{uiLocale === "zhCN" ? "免费" : "Free"}</span>
+                    <span className="sc-trust-label">{uiLocale === "zhCN" ? "永久" : "Forever"}</span>
+                  </div>
+                  <div className="sc-trust-divider" aria-hidden="true" />
+                  <div className="sc-trust-item">
+                    <span className="sc-trust-value">{uiLocale === "zhCN" ? "每周" : "Updated"}</span>
+                    <span className="sc-trust-label">{uiLocale === "zhCN" ? "更新" : "Weekly"}</span>
+                  </div>
                 </div>
               </div>
             </section>

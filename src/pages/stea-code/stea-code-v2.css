@@ -17689,117 +17689,723 @@ header,
 }
 /* ===== end white legibility ===== */
 
-/* ============================================================
-   HOMEPAGE — white premium theme (match the detail page UI)
-   ============================================================ */
-/* Page: clean white */
-.sc-market-home,
-.sc-v2-home {
-  background: #ffffff !important;
-  color: #0b0f1a !important;
+/* =====================================================================
+   HOMEPAGE — FINAL DARK PREMIUM LAYOUT
+   One scoped source of truth for the public marketplace homepage.
+   Full-bleed surfaces, fixed translucent header, white display type.
+   ===================================================================== */
+
+html:has(.sc-market-home),
+body:has(.sc-market-home),
+#root:has(.sc-market-home),
+.stea-master-root:has(.sc-market-home) {
+  width: 100%;
+  min-height: 100%;
+  margin: 0;
+  padding: 0;
+  background: #050505 !important;
 }
-/* Hero: white, premium, dark text; drop the dark glow/particles */
-.sc-market-hero {
-  background: #ffffff !important;
-  color: #0b0f1a !important;
-  padding: 40px 24px 44px !important;
+
+html:has(.stea-code-app.sc-v2.sc-market-home),
+body:has(.stea-code-app.sc-v2.sc-market-home),
+#root:has(.stea-code-app.sc-v2.sc-market-home) {
+  background: #050505 !important;
 }
-.sc-hero-glow,
-.sc-hero-particles {
-  display: none !important;
+
+body:has(.sc-market-home) {
+  color-scheme: dark;
 }
-.sc-hero-title,
-.sc-hero-title span,
-.sc-hero-title strong {
-  color: #0b0f1a !important;
+
+.stea-code-app.sc-v2.sc-market-home {
+  width: 100% !important;
+  max-width: none !important;
+  min-height: 100vh;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: #050505 !important;
+  color: #ffffff !important;
+  overflow-x: hidden;
 }
-.sc-market-secondary {
-  border: 1px solid rgba(15, 18, 27, 0.14) !important;
-  color: #0b0f1a !important;
-  background: #ffffff !important;
+
+.stea-code-app.sc-v2.sc-market-home > main {
+  display: block;
+  width: 100%;
+  min-height: 100vh;
+  padding-top: 68px;
+  background: transparent;
 }
-.sc-market-secondary:hover {
-  background: rgba(15, 18, 27, 0.04) !important;
+
+/* The liquid artwork is atmosphere only; the page itself stays #050505. */
+.stea-code-app.sc-market-home .sc-v2-veil {
+  background:
+    radial-gradient(ellipse 78% 58% at 50% 34%, rgba(5,5,5,0) 0%, rgba(5,5,5,.22) 58%, rgba(5,5,5,.78) 100%),
+    linear-gradient(180deg, rgba(5,5,5,.06), rgba(5,5,5,.62));
 }
-.sc-hero-tech-pills,
-.sc-tech-strip {
-  color: #5a6272 !important;
+
+/* ---------- Fixed top navigation ---------------------------------- */
+.sc-market-home .sc-topbar {
+  position: fixed !important;
+  top: 0 !important;
+  right: 0 !important;
+  left: 0 !important;
+  z-index: 100 !important;
+  display: grid !important;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center !important;
+  justify-content: stretch !important;
+  gap: clamp(16px, 2vw, 30px) !important;
+  width: 100% !important;
+  height: 68px;
+  padding: 0 clamp(18px, 3vw, 48px) !important;
+  background: rgba(5, 5, 5, 0.8) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow: none !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
-/* Category + subcategory pills: light */
-.sc-homepage-pill {
-  color: #5a6272 !important;
-  background: #ffffff !important;
-  border: 1px solid rgba(15, 18, 27, 0.12) !important;
-}
-.sc-homepage-pill:hover {
-  background: rgba(15, 18, 27, 0.04) !important;
-  color: #0b0f1a !important;
-}
-.sc-homepage-pill.is-active {
-  background: #0b0f1a !important;
-  border-color: #0b0f1a !important;
+
+.sc-market-home .sc-topbar-logo,
+.sc-market-home .sc-topbar-logo span {
   color: #ffffff !important;
 }
-/* Cards: white preview surfaces, dark readable text, premium hover */
-.sc-code-card__preview-wrap,
-.sc-code-card__preview,
-.sc-product-preview-art,
-.sc-code-card {
+
+.sc-market-home .sc-topbar-nav {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 2px !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+}
+
+.sc-market-home .sc-topbar-nav a,
+.sc-market-home .sc-topbar-nav button,
+.sc-market-home .sc-topbar-nav .sc-nav-link {
+  color: #ffffff !important;
+  background: transparent;
+  border-radius: 999px;
+}
+
+.sc-market-home .sc-topbar-nav a:hover,
+.sc-market-home .sc-topbar-nav button:hover {
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.sc-market-home .sc-topbar-nav a.is-active,
+.sc-market-home .sc-topbar-nav button.is-active {
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.09);
+}
+
+.sc-market-home .sc-topbar-actions {
+  justify-self: end;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 8px !important;
+  margin: 0 !important;
+  flex-shrink: 0 !important;
+}
+
+.sc-market-home .sc-topbar-icon-btn.sc-mobile-only {
+  display: none !important;
+}
+
+/* The drawer must escape the homepage's z-index:2 content layer. */
+.sc-market-home > .sc-market-drawer {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 1000 !important;
+}
+
+/* ---------- Full-bleed hero --------------------------------------- */
+.sc-market-home .sc-market-hero {
+  position: relative !important;
+  z-index: 2 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  max-width: none !important;
+  min-height: calc(100svh - 68px) !important;
+  margin: 0 !important;
+  padding: clamp(64px, 9vh, 112px) clamp(20px, 4vw, 64px) clamp(48px, 7vh, 84px) !important;
+  color: #ffffff !important;
+  text-align: center !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  overflow: hidden;
+}
+
+.sc-market-home .sc-home-hero-inner {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 1040px;
+  margin: 0 auto;
+  pointer-events: none;
+}
+
+.sc-market-home .sc-home-hero-inner > * {
+  pointer-events: auto;
+}
+
+/* ---------- Hero typography --------------------------------------- */
+.sc-market-home .sc-hero-title {
+  margin: 0 0 22px !important;
+  color: #ffffff !important;
+  font-size: clamp(58px, 9vw, 128px) !important;
+  font-weight: 900 !important;
+  line-height: 0.92 !important;
+  letter-spacing: -0.055em !important;
+  opacity: 1 !important;
+  transform: none !important;
+  text-shadow: none !important;
+}
+
+.stea-code-app.sc-v2.sc-market-home .sc-market-hero h1.sc-hero-title > span,
+.stea-code-app.sc-v2.sc-market-home .sc-market-hero h1.sc-hero-title > strong {
+  display: block;
+  color: #ffffff !important;
+  background: none !important;
+  -webkit-background-clip: initial !important;
+  background-clip: initial !important;
+  -webkit-text-fill-color: #ffffff !important;
+  filter: none !important;
+  text-shadow: none !important;
+  animation: none !important;
+}
+
+.stea-code-app.sc-v2.sc-market-home .sc-market-hero h1.sc-hero-title > span {
+  font-weight: 800 !important;
+}
+
+.stea-code-app.sc-v2.sc-market-home .sc-market-hero h1.sc-hero-title > strong {
+  font-weight: 500 !important;
+}
+
+.sc-market-home .sc-home-hero-subtitle,
+.sc-market-home .sc-market-hero .sc-home-hero-subtitle {
+  max-width: 680px !important;
+  margin: 0 auto 28px !important;
+  color: #a1a1aa !important;
+  font-size: clamp(16px, 1.5vw, 19px) !important;
+  line-height: 1.55 !important;
+  opacity: 1 !important;
+  transform: none !important;
+}
+
+/* ---------- Search ------------------------------------------------ */
+.sc-market-home .sc-market-hero .sc-market-search {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  width: 100% !important;
+  max-width: 720px !important;
+  height: 62px;
+  margin: 0 auto !important;
+  padding: 0 10px 0 20px !important;
+  background: #111113 !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 99px !important;
+  box-shadow: 0 24px 60px -42px rgba(0, 0, 0, 0.95) !important;
+  opacity: 1 !important;
+  transform: none !important;
+}
+
+.sc-market-home .sc-market-search svg {
+  flex: none;
+  color: #8a8a94 !important;
+}
+
+.sc-market-home .sc-market-search input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0 4px !important;
+  color: #ffffff !important;
+  font: inherit;
+  font-size: 15px !important;
+  background: transparent !important;
+  border: 0 !important;
+  outline: 0 !important;
+  box-shadow: none !important;
+}
+
+.sc-market-home .sc-market-search input::placeholder {
+  color: #8a8a94 !important;
+  opacity: 1 !important;
+}
+
+.sc-market-home .sc-market-search:focus-within {
+  border-color: rgba(245, 166, 35, 0.55) !important;
+  box-shadow: 0 0 0 4px rgba(245, 166, 35, 0.08), 0 24px 60px -42px rgba(0, 0, 0, 0.95) !important;
+}
+
+.sc-market-home .sc-v2-kbd {
+  flex: none;
+  color: #8a8a94 !important;
+  background: rgba(255, 255, 255, 0.03) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 999px !important;
+}
+
+/* ---------- Calls to action --------------------------------------- */
+.sc-market-home .sc-market-hero .sc-market-ctas {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 20px !important;
+  opacity: 1 !important;
+  transform: none !important;
+}
+
+.sc-market-home .sc-market-hero .sc-market-primary,
+.sc-market-home .sc-market-hero .sc-hero-cta-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 50px;
+  height: 50px;
+  padding: 0 26px !important;
+  color: #0a0a0a !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  background: #f5a623 !important;
+  border: 1px solid #f5a623 !important;
+  border-radius: 999px !important;
+  box-shadow: none !important;
+  animation: none !important;
+  cursor: pointer;
+}
+
+.sc-market-home .sc-market-hero .sc-market-primary:hover,
+.sc-market-home .sc-market-hero .sc-hero-cta-primary:hover {
+  color: #0a0a0a !important;
+  background: #ffb43b !important;
+  border-color: #ffb43b !important;
+  transform: translateY(-1px);
+  box-shadow: 0 12px 32px -18px rgba(245, 166, 35, 0.8) !important;
+}
+
+.sc-market-home .sc-market-hero .sc-market-secondary,
+.sc-market-home .sc-market-hero .sc-hero-cta-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 50px;
+  height: 50px;
+  padding: 0 26px !important;
+  color: #ffffff !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  background: transparent !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  border-radius: 999px !important;
+  box-shadow: none !important;
+  cursor: pointer;
+}
+
+.sc-market-home .sc-market-hero .sc-market-secondary:hover,
+.sc-market-home .sc-market-hero .sc-hero-cta-secondary:hover {
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-color: rgba(255, 255, 255, 0.34) !important;
+  transform: translateY(-1px);
+}
+
+/* ---------- Technology tags --------------------------------------- */
+.sc-market-home .sc-market-hero .sc-hero-tech-pills {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  width: 100% !important;
+  max-width: 900px !important;
+  margin: 24px auto 0 !important;
+  padding: 0 !important;
+  opacity: 1 !important;
+  transform: none !important;
+}
+
+.sc-market-home .sc-market-hero .sc-hero-tech-pills > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px !important;
+  height: auto !important;
+  padding: 0 14px !important;
+  color: #8a8a94 !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  background: transparent !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 99px !important;
+}
+
+.sc-market-home .sc-market-hero .sc-hero-tech-pills > span:hover {
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.035) !important;
+  border-color: rgba(255, 255, 255, 0.22) !important;
+  transform: none !important;
+}
+
+/* ---------- Stats ------------------------------------------------- */
+.sc-market-home .sc-market-hero .sc-trust-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(12px, 4vw, 40px);
+  width: 100%;
+  max-width: 760px;
+  margin: clamp(34px, 5vh, 52px) auto 0 !important;
+  padding: 22px 12px !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+  opacity: 1 !important;
+  transform: none !important;
+  transition: none !important;
+}
+
+.sc-market-home .sc-trust-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.sc-market-home .sc-trust-value,
+.sc-market-home .sc-trust-label {
+  color: #8a8a94 !important;
+}
+
+.sc-market-home .sc-trust-value {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.sc-market-home .sc-trust-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.sc-market-home .sc-trust-divider {
+  width: 1px;
+  height: 32px;
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* ---------- Full-width homepage sections -------------------------- */
+.sc-market-home .sc-market-section {
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: clamp(64px, 8vw, 104px) clamp(20px, 4vw, 64px) !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+.sc-market-home .sc-market-section + .sc-market-section {
+  border-top: 1px solid rgba(255, 255, 255, 0.07) !important;
+}
+
+.sc-market-home .sc-market-section-head h2 {
+  color: #ffffff !important;
+}
+
+.sc-market-home .sc-market-section-head p {
+  color: #8a8a94 !important;
+}
+
+.sc-market-home .sc-homepage-pill {
+  color: #8a8a94 !important;
+  background: transparent !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.sc-market-home .sc-homepage-pill:hover {
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.035) !important;
+  border-color: rgba(255, 255, 255, 0.22) !important;
+}
+
+.sc-market-home .sc-homepage-pill.is-active {
+  color: #0a0a0a !important;
+  background: #f5a623 !important;
+  border-color: #f5a623 !important;
+}
+
+.sc-market-home .sc-code-card,
+.sc-market-home .sc-code-card__preview-wrap,
+.sc-market-home .sc-code-card__preview,
+.sc-market-home .sc-product-preview-art {
+  background-color: #0b0b0d !important;
+}
+
+.sc-market-home .sc-code-card__title {
+  color: #ffffff !important;
+}
+
+.sc-market-home .sc-code-card__category {
+  color: #8a8a94 !important;
+}
+
+/* ---------- Responsive header / hero ------------------------------ */
+@media (max-width: 1380px) {
+  .sc-market-home .sc-topbar-community-label {
+    display: none;
+  }
+}
+
+@media (max-width: 1120px) {
+  .sc-market-home .sc-topbar {
+    grid-template-columns: auto 1fr;
+    gap: 12px !important;
+  }
+
+  .sc-market-home .sc-topbar-nav {
+    display: none !important;
+  }
+
+  .sc-market-home .sc-topbar-community {
+    display: none !important;
+  }
+
+  .sc-market-home .sc-topbar-icon-btn.sc-mobile-only {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 640px) {
+  .stea-code-app.sc-v2.sc-market-home > main {
+    padding-top: 62px;
+  }
+
+  .sc-market-home .sc-topbar {
+    height: 62px;
+    padding: 0 16px !important;
+  }
+
+  .sc-market-home .sc-topbar-logo {
+    gap: 8px !important;
+  }
+
+  .sc-market-home .sc-topbar-logo-img {
+    width: 32px;
+    height: 32px;
+  }
+
+  .sc-market-home .sc-topbar-logo span {
+    font-size: 18px;
+  }
+
+  .sc-market-home .sc-go-unlimited-wrap {
+    display: none !important;
+  }
+
+  .sc-market-home .sc-topbar-cta {
+    height: 36px;
+    padding: 0 14px;
+  }
+
+  .sc-market-home .sc-market-hero {
+    min-height: calc(100svh - 62px) !important;
+    padding: 54px 18px 44px !important;
+  }
+
+  .sc-market-home .sc-hero-title {
+    margin-bottom: 18px !important;
+    font-size: clamp(46px, 14.5vw, 72px) !important;
+    line-height: 0.95 !important;
+  }
+
+  .sc-market-home .sc-home-hero-subtitle,
+  .sc-market-home .sc-market-hero .sc-home-hero-subtitle {
+    margin-bottom: 22px !important;
+    font-size: 15px !important;
+  }
+
+  .sc-market-home .sc-market-hero .sc-market-search {
+    height: 58px;
+    padding: 0 8px 0 16px !important;
+  }
+
+  .sc-market-home .sc-market-search .sc-v2-kbd {
+    display: none;
+  }
+
+  .sc-market-home .sc-market-hero .sc-market-ctas {
+    width: 100%;
+  }
+
+  .sc-market-home .sc-market-hero .sc-market-primary,
+  .sc-market-home .sc-market-hero .sc-hero-cta-primary,
+  .sc-market-home .sc-market-hero .sc-market-secondary,
+  .sc-market-home .sc-market-hero .sc-hero-cta-secondary {
+    min-height: 46px;
+    height: 46px;
+    padding: 0 20px !important;
+  }
+
+  .sc-market-home .sc-market-hero .sc-hero-tech-pills {
+    gap: 6px !important;
+    margin-top: 20px !important;
+  }
+
+  .sc-market-home .sc-market-hero .sc-hero-tech-pills > span {
+    min-height: 30px !important;
+    padding: 0 11px !important;
+    font-size: 11px !important;
+  }
+
+  .sc-market-home .sc-market-hero .sc-trust-bar {
+    gap: 8px;
+    margin-top: 32px !important;
+    padding: 18px 4px !important;
+  }
+
+  .sc-market-home .sc-trust-value {
+    font-size: 14px;
+  }
+
+  .sc-market-home .sc-trust-label {
+    font-size: 8px;
+    letter-spacing: 0.08em;
+  }
+
+  .sc-market-home .sc-trust-divider {
+    height: 26px;
+  }
+
+  .sc-market-home .sc-market-section {
+    padding: 56px 18px !important;
+  }
+}
+
+/* ============================================================
+   HOMEPAGE FULL LIGHT THEME — cover all remaining dark surfaces
+   (Supahero clean-white look)
+   ============================================================ */
+/* Root + page + app shells: white */
+body,
+html,
+.stea-code-app,
+.stea-code-app.sc-v2,
+.stea-code-app.sc-market-home,
+.sc-market-home {
+  background-color: #ffffff !important;
   background: #ffffff !important;
+  color: #111111 !important;
 }
-.sc-code-card__preview-wrap {
-  border: 1px solid rgba(15, 18, 27, 0.08) !important;
-  border-radius: 18px !important;
-  overflow: hidden !important;
+.sc-v2-home {
+  background: #ffffff !important;
+  color: #111111 !important;
 }
-.sc-code-card__title {
-  color: #0b0f1a !important;
-  font-size: 16px !important;
-  letter-spacing: -0.01em !important;
+/* Hero: white, dark readable text */
+.sc-market-hero {
+  background: transparent !important;
+  background-color: #ffffff !important;
 }
-.sc-code-card__category {
+.sc-market-hero p,
+.sc-hero-subtitle {
+  color: #555555 !important;
+}
+/* Search bar -> white */
+.sc-market-search {
+  background: #ffffff !important;
+  border: 1px solid #e4e6eb !important;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.05) !important;
+  color: #111111 !important;
+}
+.sc-market-search input,
+.sc-market-search input::placeholder {
   color: #6b7280 !important;
 }
-.sc-code-card__price-badge.is-free {
-  background: rgba(34, 197, 94, 0.1) !important;
-  color: #15803d !important;
-  border: 1px solid rgba(34, 197, 94, 0.25) !important;
+/* Sections: transparent on white */
+.sc-market-section {
+  background: transparent !important;
+  box-shadow: none !important;
 }
-.sc-code-card__price-badge.is-premium {
-  background: rgba(245, 166, 35, 0.12) !important;
-  color: #b96a00 !important;
-  border: 1px solid rgba(245, 166, 35, 0.3) !important;
-}
-.sc-code-card--v2:hover .sc-code-card__preview-wrap {
-  box-shadow: 0 18px 40px rgba(15, 18, 27, 0.1) !important;
-}
-/* Section heads + market tabs: dark on white */
-.sc-market-section-head,
 .sc-market-section-head h2,
 .sc-market-section-head h3,
-.sc-market-tabs {
-  color: #0b0f1a !important;
+.sc-market-section-head {
+  color: #111111 !important;
 }
-/* ===== end homepage white theme ===== */
-/* Topbar: light on white for the whole app */
-.sc-topbar {
-  background: rgba(255, 255, 255, 0.85) !important;
-  backdrop-filter: blur(20px) saturate(1.4) !important;
-  border-bottom: 1px solid rgba(15, 18, 27, 0.08) !important;
+/* Tabs + sort + filter: dark on white */
+.sc-market-tabs-row,
+.sc-market-tabs,
+.sc-market-sort,
+.sc-market-filter-row,
+.sc-market-controls,
+.sc-market-filter-left,
+.sc-market-filter-right {
+  color: #3d4657 !important;
+  background: transparent !important;
 }
-.sc-topbar-logo {
-  color: #0b0f1a !important;
+/* Show-more: light premium pill */
+.sc-market-show-more {
+  background: #111111 !important;
+  color: #ffffff !important;
+  border: none !important;
 }
-.sc-topbar-logo img {
-  filter: none !important;
+.sc-market-show-more:hover {
+  background: #2a2f3a !important;
 }
-.sc-topbar-nav a,
-.sc-topbar-nav button,
-.sc-topbar-nav .sc-nav-link {
+/* Trust bar -> light */
+.sc-trust-bar {
+  border-top: 1px solid #eceef1 !important;
+  border-bottom: 1px solid #eceef1 !important;
+  background: #fafbfc !important;
+}
+.sc-trust-label {
+  color: #6b7280 !important;
+}
+.sc-trust-value {
+  color: #111111 !important;
+}
+.sc-trust-divider {
+  background: #e4e6eb !important;
+}
+/* Drawer -> white */
+.sc-market-drawer {
+  background: #ffffff !important;
+  color: #111111 !important;
+}
+.sc-market-drawer-panel {
+  background: #ffffff !important;
+  color: #111111 !important;
+}
+/* Footer -> light, dark text */
+.sc-footer {
+  background: #fafbfc !important;
+  color: #3d4657 !important;
+  border-top: 1px solid #eceef1 !important;
+}
+.sc-footer a,
+.sc-footer-column,
+.sc-footer-brand {
   color: #3d4657 !important;
 }
-.sc-topbar-nav a:hover,
-.sc-topbar-nav button:hover {
-  color: #0b0f1a !important;
+/* Tech strip: dark on white */
+.sc-tech-strip,
+.sc-hero-tech-pills {
+  color: #5a6272 !important;
 }
-/* ===== end topbar light ===== */
+/* ===== end homepage full light theme ===== */

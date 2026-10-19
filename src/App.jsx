@@ -147,7 +147,7 @@ export default function App() {
       <SettingsProvider>
         <SitesLanguageProvider>
           <PWAProvider>
-            <div className="stea-master-root" style={{ minHeight: "100vh", background: "#080c14", overflow: "visible" }}>
+            <div className="stea-master-root" style={{ minHeight: "100vh", background: "#050505", overflow: "visible" }}>
               <CookieConsentBanner />
               <Suspense fallback={<PageLoadingFallback />}>
                 <Routes>
