@@ -1,3 +1,4 @@
+import { requireStaff } from '../middleware/requireStaff';
 /**
  * Public media route — serves video and poster files from R2.
  *

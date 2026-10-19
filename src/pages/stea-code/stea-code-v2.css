@@ -20636,3 +20636,102 @@ div[class*="preview-stage"] img {
 .sc-product-preview-stage::after {
   display: none !important;
 }
+
+/* =========================================
+   FORCE CLEAN STACKED PREVIEW (NO OVERLAP)
+   ========================================= */
+
+/* 1. The modal panel must be a vertical stack.
+   Specificity must be (0,2,0) to beat the existing 2-column grid rule. */
+.sc-product-modal-panel.sc-premium-product-detail {
+  display: flex !important;
+  flex-direction: column !important;
+  height: auto !important;
+  max-height: 90vh !important;
+  overflow-y: auto !important;
+  border-radius: 24px !important;
+  background: #ffffff !important;
+}
+
+/* 2. The preview stage must NOT have fixed height / aspect-ratio,
+   so it grows or shrinks naturally with its content. */
+.sc-premium-product-detail .sc-product-detail-media,
+.sc-product-modal-panel .sc-product-detail-media {
+  width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  background: #f4f4f5 !important; /* Soft Dribbble grey */
+  display: block !important;
+  overflow: hidden !important;
+}
+
+/* 2b. The preview shell must not constrain its content either. */
+.sc-premium-product-detail .sc-product-detail-preview-shell,
+.sc-product-modal-panel .sc-product-detail-preview-shell {
+  width: 100% !important;
+  height: auto !important;
+  max-height: none !important;
+  aspect-ratio: auto !important;
+  display: block !important;
+  overflow: hidden !important;
+}
+
+/* 3. The static preview image fills the width naturally. */
+.sc-product-detail-media .sc-poster-full-image img,
+.sc-product-detail-media .sc-static-preview-image img {
+  width: 100% !important;
+  height: auto !important;
+  display: block !important;
+  object-fit: contain !important;
+  border-radius: 0 !important;
+}
+
+/* 3b. Placeholder shown while a product has no poster image yet. */
+.sc-static-preview-placeholder {
+  width: 100% !important;
+  min-height: 320px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  background: #f4f4f5 !important;
+  color: #64748b !important;
+  font-size: 15px !important;
+  font-weight: 600 !important;
+}
+
+/* 4. The white info card sits strictly below the image. */
+.sc-premium-product-detail .sc-product-detail-copy,
+.sc-product-modal-panel .sc-product-detail-copy {
+  width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  margin-top: 0 !important;
+  padding: 40px !important;
+  background: #ffffff !important;
+  border-top: 1px solid #e5e5e5 !important; /* Clear separation line */
+  position: relative !important;
+  z-index: 10 !important;
+  overflow: visible !important;
+}
+
+/* 5. Readability on the now-white panel. */
+.sc-product-modal-panel.sc-premium-product-detail .sc-product-detail-copy h1,
+.sc-product-modal-panel.sc-premium-product-detail .sc-product-detail-copy h2,
+.sc-product-modal-panel.sc-premium-product-detail .sc-product-detail-copy h3 {
+  color: #0f172a !important;
+}
+
+.sc-product-modal-panel.sc-premium-product-detail .sc-product-detail-copy p,
+.sc-product-modal-panel.sc-premium-product-detail .sc-product-detail-copy li {
+  color: #475569 !important;
+}
+
+.sc-product-modal-panel.sc-premium-product-detail .sc-product-detail-type,
+.sc-product-modal-panel.sc-premium-product-detail .sc-modal-back-btn {
+  color: #334155 !important;
+}

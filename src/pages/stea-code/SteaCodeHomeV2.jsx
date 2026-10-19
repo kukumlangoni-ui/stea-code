@@ -4202,32 +4202,6 @@ function ProductDetail({
 
               <div className="sc-modal-actions-divider" />
 
-              <button
-                type="button"
-                className="sc-modal-preview-btn"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  previewRef.current?.reload();
-                }}
-                aria-label="Reload preview"
-                title="Reload preview"
-              >
-                <RotateCw size={16} />
-              </button>
-              <button
-                type="button"
-                className="sc-modal-preview-btn"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  previewRef.current?.toggleFullscreen();
-                  setIsFullscreen((v) => !v);
-                }}
-                aria-label={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
-                title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
-              >
-                {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
-              </button>
-
               <div className="sc-modal-actions-spacer" />
 
               <button
@@ -4242,12 +4216,7 @@ function ProductDetail({
           </div>
 
           <div
-            className={`sc-product-detail-preview-shell ${isPosterOnly ? "is-poster-preview" : ""} ${isLayoutFullPreview ? "is-live-full-preview" : ""}`}
-            style={isPosterOnly ? undefined : {
-              '--preview-aspect': isLayoutFullPreview
-                ? `${product.preview?.width || product.designWidth || 1440} / ${product.preview?.height || product.designHeight || 1200}`
-                : `${product.designWidth || product.preview?.width || (product.tab === "kits" ? 1600 : 640)} / ${product.designHeight || product.preview?.height || (product.tab === "kits" ? 1100 : 480)}`,
-            }}
+            className={`sc-product-detail-preview-shell ${isPosterOnly ? "is-poster-preview" : ""}`}
           >
             <PreviewErrorBoundary>
               {galleryImages.length > 1 ? (
@@ -4303,20 +4272,21 @@ function ProductDetail({
                     placeholder={null}
                   />
                 </div>
+              ) : detailPosterUrl ? (
+                <div className="sc-poster-full-image sc-static-preview-image">
+                  <img
+                    src={detailPosterUrl}
+                    alt={product?.titleEn || product?.titleZh || getProductIdentity(product) || "Product preview"}
+                    loading="eager"
+                    decoding="async"
+                    draggable={false}
+                  />
+                </div>
               ) : (
-                <ProductPreview
-                  ref={previewRef}
-                  key={`detail-preview-${getProductIdentity(product)}`}
-                  product={product}
-                  interactive={detailPreviewInteractive}
-                  showControls={Boolean(product.preview?.enabled)}
-                  forceLiveDemo={true}
-                  fillMode="scale"
-                  modalZoom={product.modalZoom || 1}
-                  offsetX={product.modalOffsetX || 0}
-                  offsetY={product.modalOffsetY || 0}
-                  hideToolbar={true}
-                />
+                <div className="sc-static-preview-placeholder">
+                  <span>{product?.titleEn || product?.titleZh || ""}</span>
+                  {product?.category && <small>{product.category}</small>}
+                </div>
               )}
             </PreviewErrorBoundary>
           </div>
