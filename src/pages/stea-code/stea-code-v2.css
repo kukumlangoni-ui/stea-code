@@ -18766,3 +18766,73 @@ body:has(.sc-market-home) { color-scheme: light; }
   }
 }
 /* ===== end responsive card grid ===== */
+
+/* ============================================================
+   REMOVE MOVING LIQUID/MOTION BACKGROUND — pure white
+   ============================================================ */
+.sc-v2-liquid-wrap,
+.sc-v2-veil,
+.sc-v2-home.sc-v2-has-liquid > .sc-v2-liquid-wrap,
+.sc-v2-home.sc-v2-has-liquid > .sc-v2-veil,
+.stea-code-app.sc-v2-home .sc-v2-liquid-wrap,
+.stea-code-app.sc-v2-home .sc-v2-veil {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+/* ============================================================
+   SUPAREHERO CARDS — floating title/info below preview, no box
+   ============================================================ */
+.sc-market-home .sc-code-card,
+.sc-market-home .sc-code-card--v2 {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+.sc-market-home .sc-code-card--v2 .sc-code-card__caption {
+  padding: 16px 2px 2px !important;
+  gap: 14px !important;
+}
+.sc-market-home .sc-code-card--v2 .sc-code-card__caption-main {
+  gap: 5px !important;
+}
+.sc-market-home .sc-code-card--v2 .sc-code-card__title {
+  margin: 0 !important;
+  font-size: 19px !important;
+  font-weight: 700 !important;
+  color: #111111 !important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sc-market-home .sc-code-card--v2 .sc-code-card__category {
+  margin: 0 !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  color: #8a8f99 !important;
+  text-transform: none !important;
+}
+/* Price tag: clean floating text, right-aligned */
+.sc-market-home .sc-code-card--v2 .sc-code-card__price-badge,
+.sc-market-home .sc-code-card__price-badge {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 2px 0 !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0 !important;
+  border-radius: 0 !important;
+  align-self: flex-start;
+}
+.sc-market-home .sc-code-card--v2 .sc-code-card__price-badge.is-free,
+.sc-market-home .sc-code-card__price-badge.is-free {
+  color: #16a34a !important;
+}
+.sc-market-home .sc-code-card--v2 .sc-code-card__price-badge.is-premium,
+.sc-market-home .sc-code-card__price-badge.is-premium {
+  color: #b45309 !important;
+}
+/* ===== end supapare cards ===== */
