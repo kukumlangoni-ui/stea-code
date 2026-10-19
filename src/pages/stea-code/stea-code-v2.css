@@ -20867,3 +20867,89 @@ div[class*="preview-stage"] img {
 .sc-detail-action--code.is-copied::before {
   opacity: 0 !important;
 }
+
+/* NUCLEAR FIX: Copy Source Code Button */
+html body .sc-detail-action--code,
+html body .sc-btn-copy-primary {
+  background: #111111 !important;
+  color: #ffffff !important;
+  border: 1px solid transparent !important;
+  position: relative !important;
+  overflow: hidden !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 10px !important;
+  border-radius: 100px !important;
+  padding: 14px 28px !important;
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4) !important;
+}
+/* Force ALL children (text, spans, svgs) to be white */
+html body .sc-detail-action--code *,
+html body .sc-btn-copy-primary * {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
+  fill: none !important;
+}
+/* The Gradient Border using ::before */
+html body .sc-detail-action--code::before,
+html body .sc-btn-copy-primary::before {
+  content: "" !important;
+  position: absolute !important;
+  inset: 0 !important;
+  border-radius: 100px !important;
+  padding: 1px !important;
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 25%, #ff0844 75%, #ffb199 100%) !important;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0) !important;
+  -webkit-mask-composite: xor !important;
+  mask-composite: exclude !important;
+  pointer-events: none !important;
+  opacity: 0.8 !important;
+}
+/* Keep the green Copied state */
+html body .sc-detail-action--code.is-copied,
+html body .sc-btn-copy-primary.is-copied {
+  background: #22c55e !important;
+}
+html body .sc-detail-action--code.is-copied::before,
+html body .sc-btn-copy-primary.is-copied::before {
+  opacity: 0 !important;
+}
+
+/* =========================================
+   FORCE PRODUCT TITLE TO SINGLE LINE
+   ========================================= */
+
+/* Target the main product title in the modal */
+.sc-product-detail-copy h1,
+.sc-product-detail-copy h2,
+.sc-product-detail-title {
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  max-width: 100% !important;
+  font-size: 3rem !important; /* Adjust based on your design */
+  line-height: 1.2 !important;
+  margin-bottom: 16px !important;
+  letter-spacing: -0.02em !important;
+  display: block !important;
+}
+
+/* If the title is too long to fit on screen, allow it to shrink */
+@media (max-width: 1200px) {
+  .sc-product-detail-copy h1,
+  .sc-product-detail-copy h2,
+  .sc-product-detail-title {
+    font-size: 2.5rem !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .sc-product-detail-copy h1,
+  .sc-product-detail-copy h2,
+  .sc-product-detail-title {
+    font-size: 2rem !important;
+  }
+}

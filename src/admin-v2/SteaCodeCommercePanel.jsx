@@ -74,6 +74,7 @@ import {
 // preview for up to 5 minutes after the admin clicks Save, which reads
 // as "my edit didn't take."
 import { invalidateSteaCodeProductPreviewCache } from "../services/steaCodeCommerce.js";
+import { getToken as getStaffToken } from "../services/staffAuth.js";
 import { auth } from "../firebase.js";
 import {
   CODE_PRODUCT_CATEGORIES,
@@ -1027,8 +1028,10 @@ export function ProductStudio({ product, onClose, onSaved, onCreated, onPublishe
   // callbacks, which caused the "stuck at 0%" state. Matches the existing
   // Worker contract: POST /api/stea-code/media/upload with productId + file.
   const uploadFileWithProgress = async (file, productId, onProgress) => {
-    // Get Firebase ID token for auth on the upload endpoint
-    const token = await auth?.currentUser?.getIdToken().catch(() => null);
+    // Auth for the upload endpoint: staff session token (admin panel auth)
+    // first, Firebase ID token as a fallback.
+    const staffToken = getStaffToken();
+    const token = staffToken || (await auth?.currentUser?.getIdToken().catch(() => null));
 
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();

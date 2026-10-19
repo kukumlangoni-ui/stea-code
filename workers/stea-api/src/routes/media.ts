@@ -1,4 +1,3 @@
-import { requireStaff } from '../middleware/requireStaff';
 /**
  * Public media route — serves video and poster files from R2.
  *
@@ -14,6 +13,7 @@ import { requireStaff } from '../middleware/requireStaff';
  */
 
 import { corsHeaders } from "../cors.js";
+import { requireStaff } from "../staff-auth/middleware";
 import { verifyFirebaseToken, extractBearerToken } from "../auth.js";
 import type { WorkerEnv } from "../index.js";
 
@@ -180,39 +180,22 @@ export async function handleMediaUpload(req: Request, env: WorkerEnv): Promise<R
     });
   }
 
-  // --- Auth: require valid Firebase ID token + admin email ---
-  const token = extractBearerToken(req);
-  if (!token) {
-    return new Response(
-      JSON.stringify({ error: "Unauthorized" }),
-      {
-        status: 401,
-        headers: { "Content-Type": "application/json", ...corsHeaders(origin) },
+  // --- Auth: staff session (approver/owner) OR legacy Firebase admin ---
+  const staffAuth = await requireStaff(req, env, "approver");
+  if (staffAuth instanceof Response) {
+    // Not an approved staff session — fall back to the legacy Firebase
+    // admin check so already-deployed admin clients keep working.
+    const token = extractBearerToken(req);
+    let authorized = false;
+    if (token) {
+      try {
+        const decoded = await verifyFirebaseToken(env, token);
+        authorized = !!decoded.email && ADMIN_EMAILS.has(decoded.email);
+      } catch {
+        // fall through to unauthorized
       }
-    );
-  }
-
-  let decoded;
-  try {
-    decoded = await verifyFirebaseToken(env, token);
-  } catch {
-    return new Response(
-      JSON.stringify({ error: "Unauthorized" }),
-      {
-        status: 401,
-        headers: { "Content-Type": "application/json", ...corsHeaders(origin) },
-      }
-    );
-  }
-
-  if (!decoded.email || !ADMIN_EMAILS.has(decoded.email)) {
-    return new Response(
-      JSON.stringify({ error: "Forbidden" }),
-      {
-        status: 403,
-        headers: { "Content-Type": "application/json", ...corsHeaders(origin) },
-      }
-    );
+    }
+    if (!authorized) return staffAuth;
   }
   // --- End auth check ---
 

@@ -1,4 +1,4 @@
-import { getStaffToken } from '../services/staffAuth';
+import { getToken as getStaffToken } from '../services/staffAuth';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -744,8 +744,10 @@ export function ProductStudioV3({
   // which is why uploads sat at 0%. Same contract as uploadSteaCodePreviewAssets:
   // POST /api/stea-code/media/upload with productId + file → { ok, key, url }
   const uploadFileWithProgress = async (file, productId, onProgress) => {
-    // Get Firebase ID token for auth on the upload endpoint
-    const token = await auth?.currentUser?.getIdToken().catch(() => null);
+    // Auth for the upload endpoint: staff session token (admin panel auth)
+    // first, Firebase ID token as a fallback.
+    const staffToken = getStaffToken();
+    const token = staffToken || (await auth?.currentUser?.getIdToken().catch(() => null));
 
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();

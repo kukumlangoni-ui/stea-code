@@ -170,35 +170,59 @@ async function startServer() {
   const STEA_CODE_API_ORIGIN = (process.env.STEA_CODE_API_ORIGIN || "https://steacode.com").replace(/\/+$/, "");
 
   function proxySteaCodeApi(req: any, res: any) {
-    const target = new URL(req.originalUrl, STEA_CODE_API_ORIGIN);
-    const headers: Record<string, string> = {};
-    for (const h of ["content-type", "authorization", "accept", "accept-encoding", "origin", "cookie", "x-request-id", "user-agent"]) {
-      const v = req.headers[h];
-      if (v !== undefined) headers[h] = Array.isArray(v) ? v.join(", ") : String(v);
-    }
-    headers["host"] = target.host;
+    const bodyless = req.method === "GET" || req.method === "HEAD" || req.method === "OPTIONS";
+    let attempts = 0;
 
-    const proxyReq = https.request(target, { method: req.method, headers }, (proxyRes) => {
-      res.statusCode = proxyRes.statusCode || 502;
-      const hopByHop = new Set([
-        "connection", "keep-alive", "transfer-encoding", "upgrade",
-        "proxy-authenticate", "proxy-authorization", "te", "trailer",
-      ]);
-      for (const [k, v] of Object.entries(proxyRes.headers)) {
-        if (hopByHop.has(k.toLowerCase()) || v === undefined) continue;
-        res.setHeader(k, Array.isArray(v) ? v.join(", ") : String(v));
+    const attempt = () => {
+      attempts++;
+      const target = new URL(req.originalUrl, STEA_CODE_API_ORIGIN);
+      const headers: Record<string, string> = {};
+      for (const h of ["content-type", "authorization", "accept", "accept-encoding", "origin", "cookie", "x-request-id", "user-agent"]) {
+        const v = req.headers[h];
+        if (v !== undefined) headers[h] = Array.isArray(v) ? v.join(", ") : String(v);
       }
-      proxyRes.pipe(res);
-    });
-    proxyReq.on("error", (err) => {
-      console.error("[stea-code proxy] Worker unreachable:", err.message);
-      if (!res.headersSent) {
-        res.status(502).json({ ok: false, error: "SteaCode API (Worker) unreachable" });
+      headers["host"] = target.host;
+
+      const proxyReq = https.request(target, { method: req.method, headers }, (proxyRes) => {
+        res.statusCode = proxyRes.statusCode || 502;
+        const hopByHop = new Set([
+          "connection", "keep-alive", "transfer-encoding", "upgrade",
+          "proxy-authenticate", "proxy-authorization", "te", "trailer",
+        ]);
+        for (const [k, v] of Object.entries(proxyRes.headers)) {
+          if (hopByHop.has(k.toLowerCase()) || v === undefined) continue;
+          res.setHeader(k, Array.isArray(v) ? v.join(", ") : String(v));
+        }
+        proxyRes.pipe(res);
+      });
+
+      proxyReq.on("error", (err) => {
+        // Transient socket failures (the Worker can reset connections under
+        // load) — retry once for bodyless reads so the page never blanks.
+        const transient = ["ECONNRESET", "ETIMEDOUT", "ECONNREFUSED", "EPIPE", "ECONNABORTED"].includes(
+          (err as any)?.code
+        );
+        if (transient && attempts < 2 && bodyless && !res.headersSent) {
+          console.error(`[stea-code proxy] transient ${(err as any)?.code}, retry ${attempts}/2 — ${req.originalUrl}`);
+          attempt();
+          return;
+        }
+        console.error("[stea-code proxy] Worker unreachable:", err.message);
+        if (!res.headersSent) {
+          res.status(502).json({ ok: false, error: "SteaCode API (Worker) unreachable" });
+        } else {
+          res.end();
+        }
+      });
+
+      if (bodyless) {
+        proxyReq.end();
       } else {
-        res.end();
+        req.pipe(proxyReq);
       }
-    });
-    req.pipe(proxyReq);
+    };
+
+    attempt();
   }
 
   if (STEA_CODE_API_ORIGIN) {

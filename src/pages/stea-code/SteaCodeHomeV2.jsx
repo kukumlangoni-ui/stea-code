@@ -2206,6 +2206,8 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
           <ProductDetail
             key={`product-detail-${getProductIdentity(selected)}`}
             product={selected}
+            allProducts={products}
+            onOpenProduct={openProduct}
             onClose={() => closeProduct()}
             tLocal={tLocal}
             isFavorited={favorites.has(getProductIdentity(selected))}
@@ -3440,6 +3442,8 @@ function Lightbox({ images, index, onClose }) {
 
 function ProductDetail({
   product,
+  allProducts,
+  onOpenProduct,
   onClose,
   tLocal,
   isFavorited,
@@ -3447,6 +3451,20 @@ function ProductDetail({
   entitlements,
   onOpenUnlockModal,
 }) {
+  // "You might also like" — up to 4 real products from the same category,
+  // excluding the currently opened product.
+  const relatedProducts = useMemo(() => {
+    const list = Array.isArray(allProducts) ? allProducts : [];
+    const currentId = getProductIdentity(product);
+    return list
+      .filter(
+        (p) =>
+          p?.category === product?.category &&
+          getProductIdentity(p) !== currentId &&
+          !!(p.titleEn || p.titleZh || p.title)
+      )
+      .slice(0, 4);
+  }, [allProducts, product]);
   const previewRef = useRef(null);
   const [copied, setCopied] = useState(false);
   const [copiedPrompt, setCopiedPrompt] = useState(false);
@@ -3964,9 +3982,52 @@ function ProductDetail({
     }
   }, [product?.aiPrompt, safeCopyToClipboard, handleCopyPromptSuccess]);
 
+  // Source blobs are stripped from the catalog payload (see
+  // workers/stea-api/src/routes/catalog.ts) and fetched per product on demand,
+  // so cache the last fetch to avoid re-downloading on repeated copy clicks.
+  const remoteSourceRef = useRef({ id: "", text: "" });
+
+  const fetchCopyableSource = useCallback(async () => {
+    const pid = String(product?.id || product?.slug || "").trim();
+    if (!pid) return "";
+    if (remoteSourceRef.current.id === pid && remoteSourceRef.current.text) {
+      return remoteSourceRef.current.text;
+    }
+    const data = isFree
+      ? await getSteaCodeFreeProductContent(pid)
+      : await getSteaCodeProductContent(pid);
+    const files = Array.isArray(data?.product?.files) ? data.product.files : [];
+    let text = "";
+    if (files.length === 1) {
+      text = String(files[0]?.content || "");
+    } else if (files.length > 1) {
+      // Prefer a complete HTML document when the bundle has one, otherwise
+      // concatenate every file with a labelled header.
+      const doc = files.find(
+        (f) =>
+          /\.html?$/i.test(String(f?.name || "")) &&
+          /<html|<!doctype|<\/body>/i.test(String(f?.content || ""))
+      );
+      text = doc
+        ? String(doc.content || "")
+        : files
+            .filter((f) => String(f?.content || "").trim())
+            .map((f) => `/* ===== ${f?.name || "file"} ===== */\n${f?.content || ""}`)
+            .join("\n\n");
+    }
+    text = text.trim();
+    remoteSourceRef.current = { id: pid, text };
+    return text;
+  }, [product?.id, product?.slug, isFree]);
+
   const executeCopySource = useCallback(async () => {
     try {
-      const text = sourceCodeHtml;
+      let text = sourceCodeHtml;
+      // The catalog payload omits the heavy source blobs, so fetch the
+      // per-product source when the product object has none.
+      if (!text || !text.trim()) {
+        text = await fetchCopyableSource();
+      }
       if (!text || !text.trim()) {
         setToast({ type: "error", message: "No source available" });
         setTimeout(() => setToast(null), 2600);
@@ -3979,7 +4040,7 @@ function ProductDetail({
       setToast({ type: "error", message: "Copy failed" });
       setTimeout(() => setToast(null), 2600);
     }
-  }, [sourceCodeHtml, safeCopyToClipboard, handleCopySourceSuccess]);
+  }, [sourceCodeHtml, fetchCopyableSource, safeCopyToClipboard, handleCopySourceSuccess]);
 
   const executeDownload = useCallback(async (pid) => {
     const cleanId = pid || getProductIdentity(product);
@@ -4643,18 +4704,54 @@ function ProductDetail({
             </div>
 
             {/* You Might Also Like */}
-            <div className="sc-also-like-section">
-              <h3 className="sc-also-like-title">You might also like</h3>
-              <div className="sc-also-like-grid">
-                {/* We mock 4 cards here. In the future, you can map over a real products array */}
-                {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className="sc-also-like-card">
-                    <h5>Similar Component {i}</h5>
-                    <p>View details</p>
-                  </div>
-                ))}
+            {relatedProducts.length > 0 && (
+              <div className="sc-also-like-section">
+                <h3 className="sc-also-like-title">You might also like</h3>
+                <div className="sc-also-like-grid">
+                  {relatedProducts.map((relatedProduct) => (
+                    <div
+                      key={getProductIdentity(relatedProduct)}
+                      className="sc-also-like-card"
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => onOpenProduct?.(relatedProduct)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          onOpenProduct?.(relatedProduct);
+                        }
+                      }}
+                    >
+                      <div
+                        className="sc-also-like-thumb"
+                        style={{
+                          height: 140,
+                          backgroundColor: "#f4f4f5",
+                          borderRadius: 8,
+                          overflow: "hidden",
+                          marginBottom: 12,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        {(relatedProduct.posterImageUrl || relatedProduct.preview?.posterUrl) ? (
+                          <img
+                            src={relatedProduct.posterImageUrl || relatedProduct.preview?.posterUrl}
+                            alt={relatedProduct.titleEn || relatedProduct.titleZh || relatedProduct.title || ""}
+                            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                          />
+                        ) : (
+                          <span style={{ fontSize: 12, color: "#888" }}>No Preview</span>
+                        )}
+                      </div>
+                      <h5>{relatedProduct.titleEn || relatedProduct.titleZh || relatedProduct.title}</h5>
+                      <p>{relatedProduct.category || "Component"}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
 {/* Download ZIP — shows when package exists AND user has access */}
             {product?.package?.storageKey && (isFree || (isPremium && hasAccess)) && (
