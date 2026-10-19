@@ -20735,3 +20735,16 @@ div[class*="preview-stage"] img {
 .sc-product-modal-panel.sc-premium-product-detail .sc-modal-back-btn {
   color: #334155 !important;
 }
+
+/* 6. In the stacked column the preview must not be compressed when the
+   info card is taller than the panel — keep its natural height. */
+.sc-premium-product-detail .sc-product-detail-media,
+.sc-product-modal-panel .sc-product-detail-media,
+.sc-premium-product-detail .sc-product-detail-preview-shell,
+.sc-product-modal-panel .sc-product-detail-preview-shell,
+.sc-product-detail-media .sc-poster-full-image,
+.sc-product-detail-media .sc-static-preview-image,
+.sc-product-detail-media .sc-poster-full-image img,
+.sc-product-detail-media .sc-static-preview-image img {
+  flex: 0 0 auto !important;
+}
