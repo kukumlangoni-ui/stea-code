@@ -19838,3 +19838,47 @@ div[class*="fullscreen-info"] {
 .sc-fullscreen-header button:hover {
   background-color: #f0f0f0 !important;
 }
+
+
+/* =========================================
+   POSTER IMAGE FIX (KILL BLACK BARS)
+   ========================================= */
+
+/* 1. Force ANY poster container to have NO background and NO fixed height */
+div[class*="poster"], 
+div[class*="Poster"],
+.sc-product-poster-wrapper,
+.sc-detail-preview-stage,
+.sc-product-preview-stage {
+  background-color: transparent !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  height: auto !important; /* Stop the forced crop */
+  min-height: auto !important;
+  padding: 0 !important;
+}
+
+/* 2. Force the POSTER IMAGE itself to be fully visible and fit nicely */
+img[class*="poster"],
+img[src*="poster"],
+.sc-product-poster-img,
+div[class*="poster"] img,
+.sc-product-preview-stage img {
+  width: 100% !important;
+  height: auto !important;
+  max-height: 80vh !important; /* Don't overflow the screen */
+  object-fit: contain !important; /* Show the FULL image, no cropping */
+  background-color: #f4f4f5 !important; /* Soft grey behind the image */
+  border-radius: 16px !important;
+  border: 1px solid #e5e5e5 !important;
+  display: block !important;
+  margin: 0 auto !important;
+}
+
+/* 3. The parent container holding the preview (to ensure it blends) */
+.sc-product-detail-preview-section {
+  background-color: #f7f7f9 !important;
+  padding: 40px !important;
+  border-radius: 24px !important;
+}
