@@ -1670,7 +1670,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
                 <span style={{ fontSize: "16px" }}>⚠️</span>
                 <span style={{ flex: "1 1 auto", minWidth: "220px" }}>
                   <strong>
-                    {uiLocale === "zhCN" ? "产品加载失败：" : "Live catalog failed to load:"}
+                    {uiLocale === "zhCN" ? "产品加载失败：" : "{/* Live catalog failed to load: */}"}
                   </strong>{" "}
                   {uiLocale === "zhCN"
                     ? "无法连接到实时数据库。请重试。"
@@ -1702,7 +1702,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
               </div>
             ) : homepageProducts.length > 0 ? (
               <div className={`sc-product-grid ${isGridSwitching ? "is-switching" : ""}`}>
-                {homepageProducts.map((product, index) => (
+                {(!homepageProducts || homepageProducts.length === 0) ? <SkeletonGrid /> : homepageProducts.map((product, index) => (
                   <Reveal key={getProductIdentity(product)} delay={Math.min(index, 6) * 25}>
                     <TiltCard>
                       <PreviewErrorBoundary>
@@ -1969,7 +1969,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
                   <span style={{ fontSize: "16px" }}>⚠️</span>
                   <span style={{ flex: "1 1 auto", minWidth: "220px" }}>
                     <strong>
-                      {uiLocale === "zhCN" ? "产品加载失败：" : "Live catalog failed to load:"}
+                      {uiLocale === "zhCN" ? "产品加载失败：" : "{/* Live catalog failed to load: */}"}
                     </strong>{" "}
                     {uiLocale === "zhCN"
                       ? "无法连接到实时数据库。请重试。"
@@ -2002,7 +2002,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
                 </div>
               ) : homepageProducts.length > 0 ? (
                 <div className={`sc-product-grid ${isGridSwitching ? "is-switching" : ""}`}>
-                  {homepageProducts.map((product, index) => (
+                  {(!homepageProducts || homepageProducts.length === 0) ? <SkeletonGrid /> : homepageProducts.map((product, index) => (
                     <Reveal key={getProductIdentity(product)} delay={Math.min(index, 6) * 25}>
                       <TiltCard>
                         <PreviewErrorBoundary>

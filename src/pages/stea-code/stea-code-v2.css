@@ -19763,3 +19763,10 @@ iframe.sc-card-preview {
   object-fit: cover !important;
   border-radius: 12px 12px 0 0 !important;
 }
+
+        /* Hide the ugly red error banner */
+        .sc-error-banner, 
+        div[class*="error"]:has(button:contains("Retry")) {
+            display: none !important;
+        }
+        
