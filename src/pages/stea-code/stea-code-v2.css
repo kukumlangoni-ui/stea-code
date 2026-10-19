@@ -20150,3 +20150,68 @@ div[class*="lightbox"] > div {
   overflow-y: auto !important;
   border-radius: 24px !important; /* Only the outer modal has rounded corners */
 }
+
+
+/* =========================================
+   FULL 3D POSTER (NO OVERLAP, 100% HEIGHT)
+   ========================================= */
+
+/* 1. The wrapper holding the image MUST grow to fit the full image */
+.sc-product-preview-stage,
+.sc-detail-preview-wrapper,
+div[class*="preview-stage"],
+div[class*="lightbox"] > div:first-child {
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  display: block !important;
+  border-radius: 0 !important; 
+  background: transparent !important;
+}
+
+/* 2. The Image itself MUST be fully visible without any cropping */
+.sc-product-preview-stage img,
+.sc-detail-preview-wrapper img,
+div[class*="preview-stage"] img {
+  width: 100% !important;
+  height: auto !important; /* Crucial: allows image to dictate height */
+  max-height: none !important;
+  object-fit: contain !important;
+  display: block !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border-radius: 0 !important; /* No rounded corners on the image */
+  box-shadow: none !important;
+}
+
+/* 3. The White Info Card MUST sit strictly below the image */
+.sc-product-modal-container,
+.sc-lightbox-content,
+div[class*="lightbox"] > div:last-child {
+  margin-top: 0 !important;
+  padding-top: 40px !important;
+  border-radius: 0 !important; /* Remove the biting curved top */
+  background-color: #ffffff !important;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.05) !important;
+}
+
+/* 4. The Outer Modal Box (The grey background) */
+.sc-product-modal,
+.sc-lightbox {
+  background-color: #f7f7f9 !important; 
+  padding: 0 !important;
+  display: block !important; 
+  height: auto !important;
+  overflow-y: auto !important; 
+}
+
+/* 5. Add a clean gap between the image and the white card */
+.sc-product-modal-container::before,
+.sc-lightbox-content::before {
+  content: "";
+  display: block;
+  height: 32px; /* The gap */
+  background: #f7f7f9; /* Matches the modal background */
+}
