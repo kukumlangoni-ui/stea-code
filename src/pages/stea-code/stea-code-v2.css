@@ -18640,3 +18640,102 @@ body:has(.sc-market-home) { color-scheme: light; }
 .sc-market-home .sc-code-card__title { color: #111111 !important; }
 .sc-market-home .sc-code-card__category { color: #8a8f99 !important; }
 /* ===== end complete light override ===== */
+
+/* ============================================================
+   PREMIUM LIGHT CARDS — floating titles/category/tags, bigger on PC
+   ============================================================ */
+/* Preview: clean white surface, soft floating shadow */
+.sc-market-home .sc-code-card--v2 .sc-code-card__preview-wrap,
+.sc-market-home .sc-code-card .sc-code-card__preview-wrap {
+  background-color: #ffffff !important;
+  border: none !important;
+  box-shadow: 0 8px 26px -16px rgba(0, 0, 0, 0.14) !important;
+}
+.sc-market-home .sc-code-card--v2:hover .sc-code-card__preview-wrap,
+.sc-market-home .sc-code-card:hover .sc-code-card__preview-wrap {
+  box-shadow: 0 20px 44px -18px rgba(0, 0, 0, 0.18) !important;
+}
+
+/* Card container: borderless, floating */
+.sc-market-home .sc-code-card,
+.sc-market-home .sc-code-card--v2 {
+  background: #ffffff !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+.sc-market-home .sc-code-card:hover,
+.sc-market-home .sc-code-card--v2:hover {
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* Title: dark, bigger, premium */
+.sc-market-home .sc-code-card--v2 .sc-code-card__title,
+.sc-market-home .sc-code-card__title {
+  color: #111111 !important;
+  font-size: 20px !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.015em !important;
+}
+.sc-market-home .sc-code-card--v2:hover .sc-code-card__title,
+.sc-market-home .sc-code-card:hover .sc-code-card__title {
+  color: #111111 !important;
+}
+
+/* Category: readable gray, floating */
+.sc-market-home .sc-code-card--v2 .sc-code-card__category,
+.sc-market-home .sc-code-card__category {
+  color: #7a7f8b !important;
+  font-size: 13.5px !important;
+  font-weight: 500 !important;
+  text-transform: none !important;
+}
+
+/* Price tag: floating text — NO border, NO box, NO background */
+.sc-market-home .sc-code-card--v2 .sc-code-card__price-badge,
+.sc-market-home .sc-code-card__price-badge {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 2px 0 !important;
+  border-radius: 0 !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0 !important;
+}
+.sc-market-home .sc-code-card--v2 .sc-code-card__price-badge.is-free,
+.sc-market-home .sc-code-card__price-badge.is-free {
+  color: #16a34a !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+.sc-market-home .sc-code-card--v2:hover .sc-code-card__price-badge.is-free,
+.sc-market-home .sc-code-card:hover .sc-code-card__price-badge.is-free {
+  color: #16a34a !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+.sc-market-home .sc-code-card--v2 .sc-code-card__price-badge.is-premium,
+.sc-market-home .sc-code-card__price-badge.is-premium {
+  color: #b45309 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+.sc-market-home .sc-code-card--v2:hover .sc-code-card__price-badge.is-premium,
+.sc-market-home .sc-code-card:hover .sc-code-card__price-badge.is-premium {
+  color: #b45309 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* Bigger cards on desktop */
+.sc-market-home .sc-product-grid,
+.sc-product-grid {
+  grid-template-columns: repeat(auto-fill, minmax(390px, 1fr)) !important;
+  gap: 36px 30px !important;
+}
+/* ===== end premium light cards ===== */
