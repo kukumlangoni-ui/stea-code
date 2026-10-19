@@ -21609,3 +21609,66 @@ html body .sc-market-hero.sc-home-hero.sc-hero-twocol h1.sc-hero-title > .sc-her
   transform: rotate(0deg) translateY(15px) !important;
   box-shadow: 0 40px 80px -20px rgba(15, 23, 42, 0.4) !important;
 }
+
+
+/* =========================================
+   HERO STACK - FINAL FLOATING LAYOUT
+   ========================================= */
+
+/* 1. Reduce the overall size */
+.sc-market-hero.sc-home-hero.sc-hero-twocol .sc-hero-stack {
+  max-width: 520px !important;
+  height: 380px !important;
+}
+
+/* 2. Remove the container glow. The blurred blue/violet blob is a
+   ::before on .sc-hero-visual (see the hero-visual block above). */
+.sc-market-hero.sc-home-hero.sc-hero-twocol .sc-hero-visual::before,
+.sc-market-hero.sc-home-hero.sc-hero-twocol .sc-hero-visual::after {
+  display: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+.sc-market-hero.sc-home-hero.sc-hero-twocol .sc-hero-visual {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* 3. Re-layer: BACK (Alex), MIDDLE (01 DISCOVER), FRONT (Laptop) */
+.sc-market-hero.sc-home-hero.sc-hero-twocol .sc-stack-card.back {
+  top: 0 !important;
+  left: -5% !important;
+  width: 75% !important;
+  height: 75% !important;
+  transform: rotate(-8deg) !important;
+  z-index: 1 !important;
+}
+
+.sc-market-hero.sc-home-hero.sc-hero-twocol .sc-stack-card.front {
+  top: 15% !important;
+  left: 10% !important;
+  bottom: auto !important; /* anchored to top; an earlier rule pins bottom: 0 */
+  width: 80% !important;
+  height: 60% !important;
+  transform: rotate(2deg) !important;
+  z-index: 2 !important;
+  object-position: left center !important;
+}
+
+.sc-market-hero.sc-home-hero.sc-hero-twocol .sc-stack-card.middle {
+  top: 5% !important;
+  right: -5% !important;
+  left: auto !important;
+  bottom: auto !important;
+  width: 85% !important;
+  height: 85% !important;
+  transform: rotate(-3deg) !important;
+  z-index: 3 !important;
+  object-position: center !important;
+}
+
+/* 4. Ensure the cards look like they are floating */
+.sc-market-hero.sc-home-hero.sc-hero-twocol .sc-stack-card {
+  box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.15) !important; /* Subtle floating shadow */
+  border: none !important; /* Remove any border that makes it look like a box */
+}
