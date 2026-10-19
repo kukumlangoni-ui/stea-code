@@ -20259,3 +20259,99 @@ div[style*="--preview-aspect"] {
   position: relative !important;
   z-index: 10 !important;
 }
+
+/* ============================================================
+   POSTER-ONLY PRODUCT MODAL
+   The poster image defines the height; the info sheet starts
+   after a real 32px spacer with no overlap or clipping.
+   ============================================================ */
+.sc-product-modal-panel.sc-premium-product-detail.is-poster-modal {
+  display: block !important;
+  grid-template-columns: none !important;
+  grid-template-rows: none !important;
+  height: 100dvh !important;
+  max-height: 100dvh !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+}
+
+.sc-premium-product-detail .sc-product-detail-media.is-poster-only {
+  display: block !important;
+  width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  padding: 0 0 32px !important;
+  overflow: visible !important;
+  background: #f4f4f5 !important;
+  border-bottom: 0 !important;
+  border-radius: 0 !important;
+}
+
+.sc-premium-product-detail .sc-product-detail-media.is-poster-only .sc-modal-media-header {
+  padding: 14px clamp(16px, 3vw, 36px) 8px !important;
+}
+
+.sc-premium-product-detail .sc-product-detail-media.is-poster-only .sc-product-detail-preview-shell.is-poster-preview {
+  display: block !important;
+  width: 100% !important;
+  max-width: 1240px !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  aspect-ratio: auto !important;
+  flex: none !important;
+  margin: 0 auto !important;
+  padding: 0 !important;
+  overflow: visible !important;
+  background: #f4f4f5 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+.sc-premium-product-detail .sc-poster-full-image {
+  display: block !important;
+  width: 100% !important;
+  height: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: visible !important;
+  background: #f4f4f5 !important;
+}
+
+.sc-premium-product-detail .sc-poster-full-image img {
+  display: block !important;
+  width: 100% !important;
+  height: auto !important;
+  max-height: none !important;
+  aspect-ratio: auto !important;
+  object-fit: contain !important;
+  object-position: top center !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+.sc-premium-product-detail .sc-product-detail-media.is-poster-only .sc-product-preview-caption,
+.sc-premium-product-detail .sc-product-detail-media.is-poster-only .sc-detail-view-fullpage {
+  display: none !important;
+}
+
+.sc-premium-product-detail .sc-product-detail-media.is-poster-only + .sc-product-detail-copy {
+  position: relative !important;
+  z-index: 1 !important;
+  width: 100% !important;
+  max-width: none !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  margin: 0 !important;
+  padding-top: clamp(40px, 6vw, 64px) !important;
+  overflow: visible !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: #ffffff !important;
+}

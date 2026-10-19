@@ -3486,6 +3486,14 @@ function ProductDetail({
   }, [product?.id, product?.slug]);
 
   const detailPosterUrl = getPreviewPosterUrl(product) || "";
+  const isPosterOnly =
+    Boolean(detailPosterUrl) &&
+    !hasVideo &&
+    galleryImages.length <= 1 &&
+    (product?.previewMode === "poster" ||
+      (!product?.preview?.enabled &&
+        !product?.hasSource &&
+        !product?.demoPreview));
 
   // Default to video tab when product has a video, otherwise live demo.
   // Reset when the product changes (user clicks a different card).
@@ -4107,13 +4115,13 @@ function ProductDetail({
       />
 
       <motion.section
-        className="sc-product-modal-panel sc-premium-product-detail"
+        className={`sc-product-modal-panel sc-premium-product-detail ${isPosterOnly ? "is-poster-modal" : ""}`}
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 6 }}
         transition={{ duration: 0.14, ease: "easeOut" }}
       >
-        <div className="sc-product-detail-media">
+        <div className={`sc-product-detail-media ${isPosterOnly ? "is-poster-only" : ""}`}>
           <div className="sc-modal-media-header">
             <div className="sc-modal-media-header-left">
             <button
@@ -4202,8 +4210,8 @@ function ProductDetail({
           </div>
 
           <div
-            className="sc-product-detail-preview-shell"
-            style={{
+            className={`sc-product-detail-preview-shell ${isPosterOnly ? "is-poster-preview" : ""}`}
+            style={isPosterOnly ? undefined : {
               '--preview-aspect': `${product.designWidth || product.preview?.width || (product.tab === "kits" ? 1600 : 640)} / ${product.designHeight || product.preview?.height || (product.tab === "kits" ? 1100 : 480)}`,
             }}
           >
@@ -4217,6 +4225,18 @@ function ProductDetail({
                     setLightboxOpen(true);
                   }}
                 />
+              ) : isPosterOnly ? (
+                <div className="sc-poster-full-image">
+                  <img
+                    src={detailPosterUrl}
+                    alt={product?.titleEn || product?.titleZh || getProductIdentity(product) || "Product poster"}
+                    width={Number(product?.preview?.width || product?.designWidth) || undefined}
+                    height={Number(product?.preview?.height || product?.designHeight) || undefined}
+                    loading="eager"
+                    decoding="async"
+                    draggable={false}
+                  />
+                </div>
               ) : hasVideo ? (
                 <div
                   className="sc-product-detail-video-player"
@@ -4298,6 +4318,8 @@ function ProductDetail({
             <span>
               {galleryImages.length > 1
                 ? tLocal({ en: "Gallery", zhCN: "图库" })
+                : isPosterOnly
+                ? tLocal({ en: "Poster preview", zhCN: "海报预览" })
                 : hasVideo
                 ? tLocal({ en: "Preview Video", zhCN: "视频预览" })
                 : tLocal({ en: "Interactive preview", zhCN: "交互预览" })}
