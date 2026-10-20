@@ -132,6 +132,8 @@ const COPY = {
   browsePremium: { en: "Browse Premium", zhCN: "浏览高级代码" },
   marketplaceSub: { en: "Premium code products to ship your ideas faster.", zhCN: "高级代码产品，帮助你更快发布创意。" },
   viewAll: { en: "View all products", zhCN: "查看全部产品" },
+  featuredTitle: { en: "Featured Picks", zhCN: "精选推荐" },
+  featuredSub: { en: "Hand-picked by our editors.", zhCN: "由我们的编辑亲自精选。" },
   trendingTitle: { en: "Trending this week", zhCN: "本周趋势" },
   trendingSub: { en: "Popular resources worth checking out.", zhCN: "值得探索的热门开发者资源。" },
   freeTitle: { en: "Free to build with.", zhCN: "免费开始构建。" },
@@ -1298,6 +1300,16 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
       .slice(0, 4);
   }, [products]);
 
+  // "Featured Picks" row at the top of the homepage. Driven by the Admin
+  // "Featured" toggle (D1 `featured` 1/0, returned as a JSON boolean).
+  // Published-only, capped at 4. When empty the whole section is hidden.
+  const featuredPicks = useMemo(() => {
+    const list = Array.isArray(products) ? products : [];
+    return list
+      .filter((p) => Boolean(p?.featured) && p.status === "published")
+      .slice(0, 4);
+  }, [products]);
+
   const freeProducts = useMemo(() => {
     const list = Array.isArray(products) ? products : [];
     return list.filter((p) => p.pricingType === "free").slice(0, 8);
@@ -1330,6 +1342,13 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
   const homepageProducts = filtered.slice(
     0,
     Math.min(visibleProductCount, 50)
+  );
+
+  // Featured items are already showcased in their own row above the grid, so
+  // drop them here to avoid rendering the same product twice on one page.
+  const gridProducts = useMemo(
+    () => homepageProducts.filter((p) => !p?.featured),
+    [homepageProducts]
   );
 
   const canShowMore =
@@ -1904,7 +1923,36 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
               </div>
             </section>
 
-            {/* 2. LATEST & FEATURED PRODUCTS */}
+            {/* 2. FEATURED PICKS — hand-picked products, hidden when none */}
+            {featuredPicks.length > 0 && (
+              <section id="featured" className="sc-market-section">
+                <div className="sc-market-section-head">
+                  <div>
+                    <h2>{tLocal(COPY.featuredTitle)}</h2>
+                    <p>{tLocal(COPY.featuredSub)}</p>
+                  </div>
+                </div>
+                <div className="sc-product-grid">
+                  {featuredPicks.map((product, index) => (
+                    <Reveal key={getProductIdentity(product)} delay={Math.min(index, 6) * 25}>
+                      <TiltCard>
+                        <PreviewErrorBoundary>
+                          <CodeProductCard
+                            product={product}
+                            tLocal={tLocal}
+                            onOpen={() => openProduct(product)}
+                            isFavorited={favorites.has(getProductIdentity(product))}
+                            onToggleFavorite={handleToggleFavorite}
+                          />
+                        </PreviewErrorBoundary>
+                      </TiltCard>
+                    </Reveal>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* 3. LATEST & FEATURED PRODUCTS */}
             <section id="trending" className="sc-market-section">
               <div className="sc-market-section-head">
                 <div>
@@ -2027,9 +2075,9 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
                     <SteaCodeProductSkeleton key={i} />
                   ))}
                 </div>
-              ) : homepageProducts.length > 0 ? (
+              ) : gridProducts.length > 0 ? (
                 <div className={`sc-product-grid ${isGridSwitching ? "is-switching" : ""}`}>
-                  {(!homepageProducts || homepageProducts.length === 0) ? <SkeletonGrid /> : homepageProducts.map((product, index) => (
+                  {gridProducts.map((product, index) => (
                     <Reveal key={getProductIdentity(product)} delay={Math.min(index, 6) * 25}>
                       <TiltCard>
                         <PreviewErrorBoundary>
