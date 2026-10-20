@@ -292,7 +292,15 @@ body.mode-detail .stage-wrap{min-height:640px;padding:26px 0 66px}
   function fit(){
     var host=scaler.parentElement,w=host.clientWidth||W,h=window.innerHeight||host.clientHeight||H,k;
     if(document.body.classList.contains('mode-card')){
-      k=Math.min(1.06,(w-24)/(W+24),(h-24)/(H+48));
+      /* Budgets are measured, not guessed. The bottom-most painted element is
+         `.floor` — the book's cast shadow — which projects BELOW the scaler box
+         because the scene is a perspective 3D transform. Sized against that
+         shadow, at 272x204 / 300x225 / 260x195 / 272x170 / 300x430 / 375x281 /
+         423x317 these budgets leave nothing clipped; the earlier (w-24)/(W+24),
+         (h-24)/(H+48) pair still cut 1-2px at 272x204 and up to 16px at 300x430,
+         because the width term was allowed to bind on tall frames (the shadow's
+         aspect ratio is taller than the frame's, so width-binding overflows). */
+      k=Math.min(1.06,(w-36)/(W+32),(h-52)/(H+48));
       k=Math.max(.2,k);
     }else{
       k=Math.min(1.06,Math.max(.62,(w-40)/(W+70)));
