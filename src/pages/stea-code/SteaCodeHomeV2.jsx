@@ -5074,3 +5074,4 @@ function ProductDetail({
     document.body
   );
 }
+import './light-mode-fixes.css';
