@@ -1,14 +1,14 @@
-/* ==========================================================================
-   ISOLATED OVERRIDES (Wins the CSS war using #root)
-   ========================================================================== */
+/* =========================================
+   FORCE FULL HEIGHT ON EBOOK PREVIEWS
+   ========================================= */
 
-/* 1. FORCE FULL WIDTH/HEIGHT ON ALL PREVIEWS (No borders, no gray boxes) */
+/* Remove aspect-ratio from the container so it grows with the iframe */
 #root .sc-product-preview,
 #root .sc-code-card__preview .sc-product-preview,
 #root .sc-product-detail-preview-shell {
   aspect-ratio: auto !important; 
-  min-height: 500px !important; 
-  width: 100% !important;
+  min-height: auto !important; 
+  height: auto !important;
   padding: 0 !important;
   margin: 0 !important;
   background: transparent !important;
@@ -16,13 +16,12 @@
   box-shadow: none !important;
 }
 
-/* 2. FORCE THE IFRAME TO FILL THE SPACE */
+/* Ensure the iframe fills the space and expands naturally */
 #root .sc-live-preview,
 #root .sc-live-preview-iframe,
-#root .sc-product-preview-art iframe,
 #root .sc-product-preview iframe {
   width: 100% !important;
-  height: 100% !important;
+  height: 600px !important; /* Forces a tall enough height to show the whole book */
   border: none !important;
   outline: none !important;
   box-shadow: none !important;
@@ -31,33 +30,9 @@
   border-radius: 0 !important;
 }
 
-/* 3. KILL THE ART WRAPPER PADDING */
 #root .sc-product-preview-art {
   position: relative !important;
   padding: 0 !important;
   margin: 0 !important;
   overflow: hidden !important;
-}
-
-/* 4. FIX THE HEADER HIDING BUG */
-#root .sc-topbar { 
-  z-index: 100000 !important; 
-  position: relative !important; 
-}
-
-/* 5. FIX THE COPY BUTTONS STACKING */
-#root .sc-copy-actions-row {
-  display: flex !important;
-  flex-direction: row !important;
-  width: 100% !important;
-  gap: 16px !important;
-  justify-content: space-between !important;
-  align-items: stretch !important;
-  margin: 28px 0 !important;
-}
-#root .sc-copy-actions-row > .sc-detail-action {
-  flex: 1 1 0 !important;
-  width: auto !important;
-  min-width: 0 !important;
-  max-width: none !important;
 }
