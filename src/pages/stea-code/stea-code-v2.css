@@ -22190,3 +22190,64 @@ html body .sc-premium-product-detail .sc-product-detail-preview-shell.is-library
 .sc-code-card {
   box-shadow: none !important;
 }
+
+/* =========================================
+   SQUARE PRODUCT CARDS — SPECIFICITY-CORRECT
+   =========================================
+   A previous attempt appended `.sc-code-card__preview-wrap { border-radius: 0
+   !important }` and did nothing. Reason (measured in Chrome, not assumed):
+   `!important` does NOT beat `!important`. When both declarations are
+   important, the normal cascade resumes and the HIGHER SPECIFICITY wins.
+
+     winning rule  .sc-market-home .sc-code-card__preview-wrap  → 16px  (0,2,0)
+     appended rule .sc-code-card__preview-wrap                  →  0px  (0,1,0)
+
+   (0,2,0) beats (0,1,0) even though the 0px rule is the last rule in the file
+   — so the corners stayed rounded. Same story for `.sc-code-card__preview`
+   (15px) and `.sc-product-preview-art` (15px).
+
+   These selectors are therefore written at (0,3,0) so they outrank the (0,2,0)
+   winners. Keep them at three class selectors or more; dropping to two will
+   silently stop working.
+
+   `overflow: hidden` (not `visible`) is deliberate: it squares the corners AND
+   keeps the preview clipped to the card, so the 3D book / poster art can't
+   spill into the grid gap.
+   ========================================= */
+
+/* Wrapper + inner stage + art wrapper — squared at (0,3,0). */
+.sc-market-home .sc-code-card .sc-code-card__preview-wrap,
+.sc-market-home .sc-code-card--v2 .sc-code-card__preview-wrap,
+.sc-market-home .sc-code-card .sc-code-card__preview,
+.sc-market-home .sc-code-card--v2 .sc-code-card__preview,
+.sc-market-home .sc-code-card .sc-product-preview-art,
+.sc-market-home .sc-code-card--v2 .sc-product-preview-art,
+.sc-code-card.sc-code-card--v2 .sc-code-card__preview-wrap,
+.sc-code-card.sc-code-card--v2 .sc-code-card__preview,
+.sc-code-card.sc-code-card--v2 .sc-product-preview-art,
+.sc-product-card .sc-code-card__preview-wrap,
+.sc-product-card .sc-code-card__preview,
+.sc-also-like-card .sc-code-card__preview-wrap,
+.sc-also-like-card .sc-code-card__preview {
+  border-radius: 0 !important;
+  border-top-left-radius: 0 !important;
+  border-top-right-radius: 0 !important;
+  border-bottom-left-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+  overflow: hidden !important;
+}
+
+/* Media inside the preview — squared. Covers the 3D-cover iframe, live
+   preview iframes and poster art, all of which carry their own radius. */
+.sc-market-home .sc-code-card .sc-code-card__preview-wrap img,
+.sc-market-home .sc-code-card .sc-code-card__preview img,
+.sc-market-home .sc-code-card .sc-product-preview-art img,
+.sc-market-home .sc-code-card .sc-code-card__preview iframe,
+.sc-market-home .sc-code-card .sc-product-preview-art iframe,
+.sc-code-card.sc-code-card--v2 .sc-code-card__preview-wrap img,
+.sc-code-card.sc-code-card--v2 .sc-code-card__preview img,
+.sc-code-card.sc-code-card--v2 .sc-code-card__preview iframe,
+.sc-product-card .sc-code-card__preview img,
+.sc-also-like-card .sc-code-card__preview img {
+  border-radius: 0 !important;
+}
