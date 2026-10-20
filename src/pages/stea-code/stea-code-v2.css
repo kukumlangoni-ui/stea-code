@@ -22384,3 +22384,43 @@ html body .sc-premium-product-detail .sc-product-detail-preview-shell.is-library
 .sc-product-preview-art::after {
   display: none !important;
 }
+
+/* =========================================
+   FINAL FIX: MAKE EBOOK PREVIEW MATCH COMPONENTS
+   ========================================= */
+
+/* 1. Remove the forced min-height and 4/3 ratio that was cropping the book */
+.sc-product-preview,
+.sc-code-card__preview .sc-product-preview,
+.sc-product-detail-preview-shell {
+  aspect-ratio: auto !important; 
+  min-height: auto !important; 
+  padding: 0 !important;
+  margin: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* 2. Force the iframe wrapper to hug the HTML tightly without gaps */
+.sc-live-preview,
+.sc-live-preview-iframe,
+.sc-product-preview-art iframe,
+.sc-product-preview iframe {
+  width: 100% !important;
+  height: auto !important; /* Let the HTML dictate the height */
+  min-height: 500px !important; /* Ensures it doesn't collapse before loading */
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background: #ffffff !important;
+  display: block !important;
+}
+
+/* 3. Clean up the preview art wrapper so it doesn't add space */
+.sc-product-preview-art {
+  position: relative !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+}
