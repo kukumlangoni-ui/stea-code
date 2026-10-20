@@ -1,42 +1,123 @@
-/* =========================================
-   ISOLATED OVERRIDES (Wins the CSS war using #root)
-   ========================================= */
-/* 1. FORCE PERFECT SQUARE CORNERS ON HOMEPAGE CARDS */
+/* =========================================================================
+   STRONG FIX — home card previews now fill their card box edge to edge
+   =========================================================================
+   MEASURED ROOT CAUSE (Chrome, http://localhost:3000, 1440-wide deck; 24/24
+   home cards render the live-iframe branch, so there are zero poster cards
+   on this page to compare against):
+
+     .sc-code-card__preview-wrap     272 × 204   aspect-ratio 4/3, overflow hidden
+     .sc-code-card__preview          272 × 204
+     .sc-product-preview-art         272 × 204
+     .sc-product-preview             272 × 204
+     .sc-preview-art                 272 × 204
+     .sc-live-preview                272 × 250   <-- 46px TALLER than its own box
+     .sc-live-preview-scale-wrap     333 × 250   (640×480 canvas at scale 0.5208)
+     iframe.sc-live-preview-iframe   333 × 250
+
+   SteaCodeProductLivePreview measures .sc-live-preview with a ResizeObserver
+   and derives, for fillMode="cover":
+
+     scale = max(usableW / designW, usableH / designH)   // usableH = container height
+
+   The previous revision of this file forced `min-height: 250px !important` on
+   .sc-live-preview. That made the observed container 250px tall inside a 204px
+   box, so scale resolved to max(272/640, 250/480) = 0.5208 instead of the
+   correct 0.4255 — 22% too large. The wrapper's overflow:hidden then cropped
+   the excess off the right and bottom edges. That overflow IS the "squished
+   banner" users saw on HTML previews (an <img> poster never shows it, because
+   its height comes from the product canvas ratio rather than from a script-
+   measured container).
+
+   So the fix is NOT to absolutely position the iframe across the card — that
+   bypasses the component's own scale math and crops the canvas again. The fix
+   is to hand the component a truthful measurement (fill the 100% chain, no
+   min-height floor, no aspect-ratio of our own) and leave its scale transform
+   alone. With the real 272×204 signal scaleX === scaleY, the canvas lands
+   exactly on the wrapper, and nothing is clipped.
+
+   Poster cards keep working untouched: they render a plain <img> whose box is
+   driven by `aspectRatio: previewAspect` inline on .sc-card-poster-preview.
+   ========================================================================= */
+
+/* 1. Card + preview wrapper — square corners, no frame, white stage.
+   #root (1,1,0) outranks the light-mode rules in stea-code-v2.css at (0,3,0). */
 #root .sc-code-card,
-#root .sc-code-card__preview,
-#root .sc-product-preview,
-#root .sc-product-preview-art {
-  border-radius: 0 !important;       /* Forces perfect square */
+#root .sc-code-card__preview-wrap {
+  position: relative !important;
+  overflow: hidden !important;
+  border-radius: 0 !important;
   border: none !important;
+  box-shadow: none !important;
+  background: #ffffff !important;
+}
+
+/* 2. The 100% chain between the wrapper and the preview component. None of
+   these own a box: the wrapper owns it, everything inside just fills it.
+   `aspect-ratio: auto` kills the legacy `.sc-product-preview { aspect-ratio:
+   16 / 9 }` in stea-code-v2.css and the 16/9 this file previously put on
+   .sc-code-card__preview — either one re-introduces a bounding box. */
+#root .sc-code-card__preview,
+#root .sc-product-preview-art,
+#root .sc-product-preview,
+#root .sc-preview-art {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  aspect-ratio: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  outline: none !important;
+  background: transparent !important;
+  background-image: none !important;
+  display: block !important;
+}
+
+/* 3. The element the ResizeObserver measures. It must be exactly the size of
+   the box in rule 1 — `min-height: 0` removes the old 250px floor. No
+   transform here: the fit scale belongs to .sc-live-preview-scale-wrap. */
+#root .sc-live-preview {
+  position: relative !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: none !important;
+  border-radius: 0 !important;
   box-shadow: none !important;
   overflow: hidden !important;
 }
-/* 2. FORCE THE PREVIEW IFRAME TO BE FULL WIDTH AND SQUARE */
-#root .sc-live-preview,
-#root .sc-live-preview-iframe,
-#root .sc-product-preview-art iframe,
-#root .sc-product-preview iframe {
-  width: 100% !important;
-  height: 100% !important;
-  min-height: 250px !important;      /* Prevents the blank/collapsed look */
-  border: none !important;
-  outline: none !important;
-  box-shadow: none !important;
-  background: #ffffff !important;
-  display: block !important;
-  border-radius: 0 !important;       /* Stops the inner image from being rounded */
-  transform: none !important;
-}
-/* 3. KILL ANY PADDING THAT PUSHES THE IFRAME DOWN */
-#root .sc-product-preview-art {
-  position: relative !important;
+
+/* 4. The scaled canvas + the iframe inside it. Deliberately NO width / height /
+   transform overrides on the canvas: SteaCodeProductLivePreview writes those
+   inline (canvas size + fit scale + centring translate), and an `!important`
+   size here would defeat the scale and crop the canvas. Only decoration is
+   neutralised. */
+#root .sc-code-card__preview .sc-live-preview-scale-wrap,
+#root .sc-code-card__preview .sc-live-preview-static {
+  min-height: 0 !important;
   padding: 0 !important;
   margin: 0 !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
 }
-/* 4. FORCE THE CARD GRID TO BEHAVE */
-#root .sc-code-card__preview {
-  aspect-ratio: 16 / 9 !important;
-  display: flex !important;
-  align-items: stretch !important;
-  justify-content: stretch !important;
+
+#root .sc-code-card__preview .sc-live-preview-scale-wrap > iframe,
+#root .sc-code-card__preview .sc-live-preview-iframe {
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  outline: none !important;
+  display: block !important;
+  background: #ffffff !important;
 }
