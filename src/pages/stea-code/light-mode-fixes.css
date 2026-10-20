@@ -190,3 +190,114 @@ body .sc-product-detail-preview-shell .sc-live-preview-iframe {
   display: block !important;
   background: #ffffff !important;
 }
+
+/* =========================================================================
+   RELATED PRODUCTS ("You might also like") — same bug, and NOT a bleed
+   =========================================================================
+   The related cards are rendered by the same CodeProductCard component as the
+   homepage grid, but this section is NOT a descendant of either
+   #root  or  .sc-product-detail-preview-shell:
+
+     section.closest('#root')                         → null   (portal!)
+     section.closest('.sc-product-detail-preview-shell') → null
+
+   So rules 1–4 above (scoped `#root`) never reached these cards, and rules 5–6
+   (scoped to the detail shell) could not bleed into them either. Measured on a
+   related card at a 1024-wide viewport, before this block:
+
+     .sc-code-card                 223.5 × 240.3
+       .sc-code-card__preview-wrap 223.5 × 167.6   aspect-ratio 4/3  (already right)
+         .sc-code-card__preview    221.5 × 165.6   display: flex
+           .sc-live-preview        221.5 × 500     <-- +259.7px too tall
+             scale-wrap             inline 640×480 @ scale 1.04167
+             crop                   l 221.6  r 221.6  b 260.7
+
+   Nothing pinned `.sc-live-preview`, so it grew to its content (the 640×500
+   iframe), the ResizeObserver measured 500, cover-scale resolved to 500/480 =
+   1.04167 and the canvas was zoomed ~2.2× and clipped — the giant wallet / mail
+   / trash icons in the related row. That is the identical failure rules 1–4 fix
+   on the homepage, so this block mirrors them and nothing else.
+
+   Scope note: `body .sc-also-like-grid …` (specificity 0,3,0 / 0,3,1) is used
+   deliberately to outrank the `!important` rules in stea-code-v2.css:
+     .sc-also-like-grid .sc-code-card            (0,2,0)  !important
+     .sc-also-like-grid .sc-code-card__preview-wrap / .sc-card-poster-preview (0,2,0)
+   The related cards keep their 16px radius (their design inside the detail
+   panel is rounded, unlike the square homepage cards) — only the preview
+   stage is normalised to white, as on the homepage.
+   ========================================================================= */
+
+/* 7. Related card preview box — same stage as the homepage card. */
+body .sc-also-like-grid .sc-code-card__preview-wrap {
+  position: relative !important;
+  aspect-ratio: 4 / 3 !important;
+  width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+  background: #ffffff !important;
+}
+
+/* 8. Same 100%-fill chain as rule 2, portal-safe scope. */
+body .sc-also-like-grid .sc-code-card__preview,
+body .sc-also-like-grid .sc-product-preview-art,
+body .sc-also-like-grid .sc-product-preview,
+body .sc-also-like-grid .sc-preview-art {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  aspect-ratio: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  background-image: none !important;
+  display: block !important;
+}
+
+/* 9. The element the ResizeObserver measures — this is the actual fix. */
+body .sc-also-like-grid .sc-live-preview {
+  position: relative !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+  display: block !important;
+}
+
+/* 10. Decoration only. Deliberately NO width / height / transform on the
+   canvas wrap and NO sizing on the iframe's own scale box: the component
+   writes the 640×480 canvas + fit scale/translate inline, and overriding
+   those (e.g. forcing the wrap to 100%) collapses the canvas to a fraction of
+   the design and leaves the card looking empty again. */
+body .sc-also-like-grid .sc-live-preview-scale-wrap,
+body .sc-also-like-grid .sc-live-preview-static {
+  min-height: 0 !important;
+  max-height: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+body .sc-also-like-grid .sc-live-preview-iframe,
+body .sc-also-like-grid .sc-live-preview-scale-wrap > iframe {
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+  display: block !important;
+  background: #ffffff !important;
+}
