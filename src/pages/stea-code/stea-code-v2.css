@@ -22152,3 +22152,41 @@ html body .sc-premium-product-detail .sc-product-detail-preview-shell.is-library
     display: block !important;
   }
 }
+
+
+/* =========================================
+   FORCE SQUARE CORNERS ON ALL CARDS
+   ========================================= */
+
+/* 1. The main card container */
+.sc-code-card,
+.sc-product-card,
+.sc-also-like-card {
+  border-radius: 0 !important;
+  overflow: visible !important;
+}
+
+/* 2. The preview wrapper (where the image lives) */
+.sc-code-card__preview-wrap,
+.sc-card-poster-preview,
+.sc-code-card__preview {
+  border-radius: 0 !important;
+  overflow: hidden !important;
+}
+
+/* 3. The image itself */
+.sc-code-card__preview-wrap img,
+.sc-card-poster-preview img,
+.sc-code-card__preview img {
+  border-radius: 0 !important;
+}
+
+/* 4. The meta section (title + price) */
+.sc-code-card__meta {
+  border-radius: 0 !important;
+}
+
+/* 5. Remove any shadow that creates the illusion of rounding */
+.sc-code-card {
+  box-shadow: none !important;
+}
