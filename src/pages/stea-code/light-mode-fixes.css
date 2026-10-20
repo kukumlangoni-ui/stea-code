@@ -301,3 +301,47 @@ body .sc-also-like-grid .sc-live-preview-scale-wrap > iframe {
   display: block !important;
   background: #ffffff !important;
 }
+
+/* =========================================================================
+   HOMEPAGE POSTER CARDS — STRIP THE 24px RADIUS ON THE POSTER STAGE
+   =========================================================================
+   Measured with Chrome CDP `CSS.getMatchedStylesForNode` on
+   `.sc-card-poster-preview` (homepage "Layouts" tab, 1440 wide):
+
+     .sc-code-card (button)           border-radius  0px
+     .sc-code-card__preview-wrap      border-radius  0px
+     .sc-card-poster-preview          border-radius 24px   <-- the visible curve
+     img inside                       border-radius  0px
+
+   So the curve is NOT on the card and NOT on the image — it is on the poster
+   stage one level in. That is why the earlier
+   `#root .sc-code-card:has(.sc-card-poster-preview)` attempt changed nothing:
+   it targeted a box that was already square.
+
+   The 24px is written by stea-code-v2.css:19897, a blunt catch-all group:
+
+     ...
+     div[class*="preview"],
+     div[class*="poster"],        <-- this matches .sc-card-poster-preview
+     ... { border-radius: 24px !important }
+
+   `div[class*="poster"]` is element + attribute selector = (0,1,1) + !important,
+   which outranks the `border-radius: 0 !important` already declared for
+   `.sc-card-poster-preview` at (0,1,0). The 0 is present but loses on
+   specificity — no amount of re-declaring at (0,1,0) or (0,3,0) can win.
+
+   `#root` (1,1,0) + !important beats (0,1,1) + !important, so the single
+   declaration below settles it without touching stea-code-v2.css. Verified:
+   this rule is the only higher-specificity radius declaration that matches.
+
+   Scope: `#root` is the homepage grid. The related-products row ("You might
+   also like") renders through a portal OUTSIDE #root and keeps its intentional
+   16px radius (rules 7–10 above).
+
+   Deliberately NOT using `.sc-card-poster-preview *` here: that would also
+   flatten `.sc-card-gallery-dot` (border-radius: 50%) into squares. No
+   descendant carries the radius anyway (the img measures 0px).
+   ========================================================================= */
+#root .sc-card-poster-preview {
+  border-radius: 0 !important;
+}
