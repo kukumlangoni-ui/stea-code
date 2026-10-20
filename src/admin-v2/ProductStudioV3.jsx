@@ -85,6 +85,7 @@ const EMPTY_PRODUCT = {
   posterImageUrl: "",
   liveUrl: "",
   repoUrl: "",
+  websiteUrl: "",
   previewVideoUrl: "",
   productType: "component",
   salesPageHtml: "",
@@ -1173,6 +1174,7 @@ export function ProductStudioV3({
         aiPrompt: String(form.aiPrompt || "").trim(),
         liveUrl: String(form.liveUrl || "").trim(),
         repoUrl: String(form.repoUrl || "").trim(),
+        websiteUrl: String(form.websiteUrl || "").trim(),
         previewMode: form.previewMode || "live",
         tab: form.tab || "components",
         gallery: Array.isArray(form.gallery)
@@ -1338,6 +1340,7 @@ export function ProductStudioV3({
       sourceCode,
       liveUrl: String(form.liveUrl || "").trim(),
       repoUrl: String(form.repoUrl || "").trim(),
+      websiteUrl: String(form.websiteUrl || "").trim(),
       usageGuideEn: String(form.usageGuideEn || "").trim(),
       sortOrder: Number(form.sortOrder) || 0,
     };
@@ -1730,6 +1733,17 @@ export function ProductStudioV3({
                   <TextInput
                     value={form.liveUrl || ""}
                     onChange={(v) => updateForm("liveUrl", v)}
+                    placeholder="https://example.com"
+                  />
+                </Field>
+                <Field
+                  label="Website URL"
+                  hint="Optional. Add a public website URL for this product. A 'Visit Website' button will appear on the product card and in the product modal."
+                  full
+                >
+                  <TextInput
+                    value={form.websiteUrl || ""}
+                    onChange={(v) => updateForm("websiteUrl", v)}
                     placeholder="https://example.com"
                   />
                 </Field>

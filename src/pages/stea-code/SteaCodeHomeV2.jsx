@@ -2653,6 +2653,7 @@ function CodeProductCard({ product, tLocal, onOpen, isFavorited, onToggleFavorit
     "premium-website-hero": "/start-project.html",
   };
   const externalUrl = EXTERNAL_REDIRECTS[product.slug] || EXTERNAL_REDIRECTS[productId];
+  const siteUrl = normalizeExternalUrl(product?.websiteUrl);
 
   const openModal = useCallback(() => {
     if (externalUrl) {
@@ -2772,6 +2773,34 @@ function CodeProductCard({ product, tLocal, onOpen, isFavorited, onToggleFavorit
             <p className="sc-code-card__category">{categoryLabel}</p>
           )}
           <h3 className="sc-code-card__title">{title}</h3>
+          {/* Visit Website — only when the admin set a public websiteUrl.
+              The whole card is a <button>, so the click is stopped here before
+              it can bubble up and open the product modal. */}
+          {siteUrl && (
+            <a
+              className="sc-code-card__site-link"
+              href={siteUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <span>{tLocal({ en: "Visit Website", zhCN: "访问网站" })}</span>
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M7 17 17 7" />
+                <path d="M8 7h9v9" />
+              </svg>
+            </a>
+          )}
         </div>
         {externalUrl ? (
           <span className="sc-code-card__price-badge sc-code-card__cta-badge">
@@ -2795,6 +2824,24 @@ const NATIVE_PRODUCT_PREVIEWS = Object.freeze({});
 
 function getProductIdentity(product) {
   return String(product?.id || product?.slug || "").trim();
+}
+
+/**
+ * Normalize an admin-entered website URL into something safe to put in an
+ * href. Bare hosts ("example.com") get an https:// scheme; anything that is
+ * not http(s) (javascript:, data:, …) is rejected and returns "" so the
+ * "Visit Website" button simply doesn't render.
+ */
+function normalizeExternalUrl(value) {
+  const raw = typeof value === "string" ? value.trim() : "";
+  if (!raw) return "";
+  const candidate = /^[a-z][a-z0-9+.-]*:/i.test(raw) ? raw : `https://${raw}`;
+  try {
+    const parsed = new URL(candidate);
+    return parsed.protocol === "http:" || parsed.protocol === "https:" ? parsed.href : "";
+  } catch {
+    return "";
+  }
 }
 
 /**
@@ -3628,6 +3675,17 @@ function ProductDetail({
   // `tab === "library"` is the legacy signal, kept so a stale cached catalog
   // response (which may predate the productType column) still renders right.
   const isLibraryProduct = product?.productType === "ebook" || product?.tab === "library";
+
+  // Public marketing site for this product, set in the admin panel.
+  const modalSiteUrl = normalizeExternalUrl(product?.websiteUrl);
+
+  // "Copy Source Code" is only meaningful when the product actually has code.
+  // The public product payload strips sourceCode / publicFiles / preview HTML,
+  // so the client cannot detect this itself — the worker resolves it and sends
+  // `hasSource` (see resolveHasSource in workers/stea-api/src/routes/catalog.ts).
+  // A missing flag (stale cached payload) falls back to the old behaviour
+  // rather than hiding the button from every product.
+  const canCopySource = !isLibraryProduct && product?.hasSource !== false;
 
   // Default to video tab when product has a video, otherwise live demo.
   // Reset when the product changes (user clicks a different card).
@@ -4696,6 +4754,27 @@ function ProductDetail({
               </button>
             )}
 
+            {/* Visit Website — the product's public site, set in the admin panel */}
+            {modalSiteUrl && (
+              <a
+                href={modalSiteUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="sc-detail-action sc-detail-action--site"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <span className="sc-detail-action-icon" aria-hidden="true">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                       stroke="currentColor" strokeWidth="2" strokeLinecap="round"
+                       strokeLinejoin="round">
+                    <path d="M7 17 17 7" />
+                    <path d="M8 7h9v9" />
+                  </svg>
+                </span>
+                <span className="sc-detail-action-label">Visit Website</span>
+              </a>
+            )}
+
             {/* Copy Image — Layouts (poster-based) products and any product with a gallery cover */}
             {(product?.tab === "layouts" || galleryImages.length > 0) && getCopyImageUrl(product) && (
               <button
@@ -4752,8 +4831,10 @@ function ProductDetail({
               </button>
             )}
 
-            {/* Copy Source Code — free products always, premium when buyer has access */}
-            {!isLibraryProduct && (
+            {/* Copy Source Code — only when the product actually has code.
+                See `canCopySource` above: layouts/kits without downloadable
+                code no longer render this button at all. */}
+            {canCopySource && (
               <button
                 type="button"
                 className={`sc-detail-action sc-detail-action--code sc-btn-copy-primary ${copiedCode ? 'is-copied' : ''}`}

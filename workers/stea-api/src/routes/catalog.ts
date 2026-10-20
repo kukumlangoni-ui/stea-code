@@ -6,6 +6,8 @@ import { Env, getDoc, listDocs } from "../firestore";
 import { corsHeaders } from "../cors";
 
 const PRODUCTS_COLLECTION = "stea_code_products";
+const PREVIEWS_COLLECTION = "stea_code_product_previews";
+const SOURCES_COLLECTION = "stea_code_product_sources";
 
 /** Fields stripped from catalog responses to keep payloads small.
  *  The full product detail endpoint (/products/:id) returns everything.
@@ -57,6 +59,48 @@ function safeProduct(raw: any): any {
   return p;
 }
 
+/**
+ * True when a product actually has source code, i.e. when "Copy Source Code"
+ * would produce text.
+ *
+ * Why this lives on the server: safeProduct() strips sourceCode, publicFiles,
+ * protectedFiles, sourceFiles and the preview markup, so a client watching the
+ * public payload cannot tell a code-less poster from a component. Without this
+ * flag the button is driven by product type alone and shows on products with
+ * nothing to copy (measured on production: 9 poster-only layouts plus one kit
+ * have no code in any column, and no product uses the file-array columns at
+ * all — their code lives in `sourceCode` or the previews table).
+ *
+ * The rule mirrors the copy endpoints exactly:
+ *   - code embedded on the product document (sourceCode / *Files)
+ *   - a dedicated `sources` bundle row
+ *   - free products: their live preview, which handleFreeContent synthesises
+ *     into an index.html. Paid products get no preview fallback
+ *     (handleContent reads files only), so they don't count one either.
+ */
+function hasText(value: any): boolean {
+  if (typeof value === "string") return value.trim().length > 0;
+  if (Array.isArray(value)) return value.some(hasText);
+  if (value && typeof value === "object") return Object.values(value).some(hasText);
+  return false;
+}
+
+async function resolveHasSource(env: Env, productId: string, raw: any): Promise<boolean> {
+  if (hasText(raw.sourceCode)) return true;
+  if (hasText(raw.publicFiles) || hasText(raw.protectedFiles) || hasText(raw.sourceFiles)) return true;
+
+  const sourceDoc = await getDoc(env, SOURCES_COLLECTION, productId, {});
+  if (hasText(sourceDoc?.data?.files)) return true;
+
+  if (raw.pricingType === "free") {
+    const previewDoc = await getDoc(env, PREVIEWS_COLLECTION, productId, {});
+    const preview = previewDoc?.data || raw.preview || {};
+    return hasText(preview.fullDocument) || hasText(preview.html);
+  }
+
+  return false;
+}
+
 const HOMEPAGE_CARD_COLUMNS = [
   "id",
   "slug",
@@ -79,6 +123,7 @@ const HOMEPAGE_CARD_COLUMNS = [
   "preview",
   "gallery",
   "productType",
+  "websiteUrl",
   "designWidth",
   "designHeight",
   "createdAt",
@@ -131,6 +176,7 @@ async function listHomepageCards(env: Env): Promise<any[]> {
     preview: parseJsonColumn(row.preview, null),
     gallery: parseJsonColumn(row.gallery, []),
     productType: row.productType,
+    websiteUrl: row.websiteUrl,
     designWidth: row.designWidth === null ? null : Number(row.designWidth),
     designHeight: row.designHeight === null ? null : Number(row.designHeight),
     createdAt: row.createdAt,
@@ -146,7 +192,7 @@ export async function handleCatalog(req: Request, env: Env, ctx?: ExecutionConte
     const subcategory = url.searchParams.get("subcategory") || "";
     const canUseHomepageCache = scope === "homepage" && !category && !subcategory;
     const homepageCacheKey = new Request(
-      "https://stea-code.internal/catalog/homepage-v1",
+      "https://stea-code.internal/catalog/homepage-v2",
       { method: "GET" }
     );
 
@@ -240,8 +286,18 @@ export async function handleProduct(req: Request, env: Env, productId: string): 
         headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) },
       });
     }
+
+    // ── hasSource ────────────────────────────────────────────────
+    // safeProduct() strips every heavy source blob (sourceCode, publicFiles,
+    // sourceFiles, preview HTML/CSS/JS), so the client cannot tell a
+    // poster-only layout apart from a component that actually has code. Resolve
+    // it here, from the same three places the copy/download endpoints read, and
+    // send it as one small boolean so "Copy Source Code" can be hidden when
+    // there is nothing to copy.
+    const hasSource = await resolveHasSource(env, doc.id, doc.data || {});
+
     return new Response(
-      JSON.stringify({ product: { id: doc.id, ...safeProduct(doc.data) } }),
+      JSON.stringify({ product: { id: doc.id, ...safeProduct(doc.data), hasSource } }),
       {
         status: 200,
         headers: {

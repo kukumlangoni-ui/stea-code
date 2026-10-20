@@ -54,6 +54,7 @@ const SCHEMAS: Record<string, TableSchema> = {
       "shortDescriptionZh", "price", "pricingType", "category", "subcategory",
       "tab", "gallery",
       "productType", "salesPageHtml", "bookContentHtml", "bookDownloadUrl",
+      "websiteUrl",
       "status", "featured", "homepageVisible", "tags", "frameworks",
       "languages", "craftNoteEn", "aiPrompt", "previewVideoUrl",
       "posterImageUrl", "previewMode", "preview", "designWidth", "designHeight",

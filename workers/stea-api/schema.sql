@@ -45,6 +45,7 @@ CREATE TABLE IF NOT EXISTS products (
   salesPageHtml         TEXT,       -- eBook only: PUBLIC 3D cover / sales page
   bookContentHtml       TEXT,       -- eBook only: PAID full book chapters (never public)
   bookDownloadUrl       TEXT,       -- eBook only: optional pre-built PDF/ZIP (gated)
+  websiteUrl            TEXT,       -- public "Visit Website" URL shown on card + modal
   status                TEXT,
   featured              INTEGER DEFAULT 0,
   homepageVisible       INTEGER DEFAULT 0,
