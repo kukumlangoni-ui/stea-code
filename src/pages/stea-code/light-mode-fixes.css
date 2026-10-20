@@ -222,9 +222,10 @@ body .sc-product-detail-preview-shell .sc-live-preview-iframe {
    deliberately to outrank the `!important` rules in stea-code-v2.css:
      .sc-also-like-grid .sc-code-card            (0,2,0)  !important
      .sc-also-like-grid .sc-code-card__preview-wrap / .sc-card-poster-preview (0,2,0)
-   The related cards keep their 16px radius (their design inside the detail
-   panel is rounded, unlike the square homepage cards) — only the preview
-   stage is normalised to white, as on the homepage.
+   These rules normalise the preview stage only (white, no frame) and
+   deliberately declare no radius of their own. The 16px corner authored by
+   stea-code-v2.css:21870 / :21880 is stripped by the "RELATED PRODUCT CARDS —
+   SQUARE THE CORNERS" block at the bottom of this file.
    ========================================================================= */
 
 /* 7. Related card preview box — same stage as the homepage card. */
@@ -335,8 +336,9 @@ body .sc-also-like-grid .sc-live-preview-scale-wrap > iframe {
    this rule is the only higher-specificity radius declaration that matches.
 
    Scope: `#root` is the homepage grid. The related-products row ("You might
-   also like") renders through a portal OUTSIDE #root and keeps its intentional
-   16px radius (rules 7–10 above).
+   also like") renders through a portal OUTSIDE #root, so this rule cannot
+   reach it; that row is squared by the `body .sc-also-like-grid …` block at
+   the bottom of this file.
 
    Deliberately NOT using `.sc-card-poster-preview *` here: that would also
    flatten `.sc-card-gallery-dot` (border-radius: 50%) into squares. No
@@ -344,4 +346,35 @@ body .sc-also-like-grid .sc-live-preview-scale-wrap > iframe {
    ========================================================================= */
 #root .sc-card-poster-preview {
   border-radius: 0 !important;
+}
+
+/* =========================================================================
+   RELATED PRODUCT CARDS — SQUARE THE CORNERS ("You might also like")
+   =========================================================================
+   The radius here does NOT come from the same place as the homepage: the
+   related row is a portal, so `#root ...` never matched it. It comes from
+   stea-code-v2.css:
+
+     .sc-also-like-grid .sc-code-card                                 (0,2,0)
+       border-radius: 16px !important
+     .sc-also-like-grid .sc-code-card__preview-wrap,
+     .sc-also-like-grid .sc-card-poster-preview                       (0,2,0)
+       border-radius: 16px 16px 0 0 !important
+
+   `body .sc-also-like-grid <class>` is (0,2,1) + !important, which outranks
+   both, so these three declarations settle it. The wrap carries
+   overflow:hidden, so squaring the card AND the wrap removes the clipped
+   16px corner on both poster and live-iframe related cards; squaring the
+   poster stage (a `div[class*="poster"]` target of the 24px catch-all) stops
+   the stage from leaving grey notches inside the now-square wrap.
+   ========================================================================= */
+body .sc-also-like-grid .sc-code-card,
+body .sc-also-like-grid .sc-code-card__preview-wrap,
+body .sc-also-like-grid .sc-card-poster-preview {
+  border-radius: 0 !important;
+  border-top-left-radius: 0 !important;
+  border-top-right-radius: 0 !important;
+  border-bottom-left-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+  overflow: hidden !important;
 }
