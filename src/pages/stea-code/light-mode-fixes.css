@@ -121,3 +121,72 @@
   display: block !important;
   background: #ffffff !important;
 }
+
+/* =========================================================================
+   DETAIL / MODAL PREVIEW — same bug class, different symptom
+   =========================================================================
+   Measured on /products/3d-wallet-card-stack at a 1024-wide viewport:
+
+     .sc-product-detail-preview-shell        1022 × 767   (aspect 640/480)
+       .sc-live-preview.is-interactive.is-scale
+                                             1022 × 767   display: block  <-- the problem
+         .sc-live-preview-scale-wrap           979 × 734   inline:
+             width: 640px; height: 480px;
+             transform: translate(0px,0px) scale(1.53021);
+             transform-origin: center center
+           iframe.sc-live-preview-iframe       979 × 765   (css 640 × 500)
+
+   SteaCodeProductLivePreview's scale (contain) mode is documented as
+   "Option A: Flexbox centers the wrapper (.sc-live-preview.is-scale)" — it
+   emits tx/ty = 0 and depends on the parent flex-centring the 640×480 wrap.
+   In the detail shell the container computes to `display: block`, so flex
+   centring never happens: the wrap is laid out at the content-box top-left
+   (20px, 20px) and the scale-about-its-own-centre transform then ejects it.
+
+     wrap centre = (20 + 320, 20 + 240) = (340, 260)
+     scaled box   = 640×1.53021 × 480×1.53021 = 979 × 734
+     top-left     = 340 - 979/2, 260 - 734/2 = (-150, -107)   <-- MEASURED
+                                                                    (-150, -107)
+
+   That is the "component is not arranged at the centre" symptom: the canvas
+   is 150px left and 107px above the stage, so the design sits up-and-left and
+   the shell shows dead space to the right and below.
+
+   The iframe is also laid out 640×500 (static, 20px taller than its own
+   640×480 wrap) instead of filling it, so its viewport is not the design
+   canvas the way the card's is. Rule 6 restores that.
+
+   NOTE ON SCOPE — this is why the previous revision of this file did nothing
+   for the detail view: the product detail preview is rendered through a React
+   portal onto document.body, so it is NOT a descendant of #root
+   (measured: shell.closest('#root') === null). Any `#root ...` selector is
+   therefore dead for it. These two rules are scoped to `body` instead, which
+   does match. Verified: with `body` scoping the canvas lands at
+   dx=21.3 / dy=16 against the shell = exactly its 20px content-box inset,
+   i.e. centred; with `#root` scoping it stayed at -149.7 / -107.2.
+   ========================================================================= */
+
+/* 5. Restore the flex centring scale mode depends on. */
+body .sc-product-detail-preview-shell .sc-live-preview.is-scale {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* 6. Give the detail iframe the same truthful viewport as a card iframe:
+   the design canvas, filling its wrap, so the component renders 1:1 before
+   the fit scale is applied. */
+body .sc-product-detail-preview-shell .sc-live-preview-scale-wrap > iframe,
+body .sc-product-detail-preview-shell .sc-live-preview-iframe {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  outline: none !important;
+  display: block !important;
+  background: #ffffff !important;
+}
