@@ -159,6 +159,19 @@ body.mode-card .hint{display:none}
 body.mode-card .chip{display:none}
 body.mode-card .glow{opacity:.5}
 @media(max-width:520px){body.mode-card .stage-wrap{min-height:0}}
+/* STEACODE embedded "detail" mode (the product modal). The modal frame now has
+   its own height — light-mode-fixes.css gives .sc-product-detail-preview-shell
+   a clamp()ed height and lifts this iframe to 100% of it — so the page must
+   fill that frame instead of padding itself out to a viewport it no longer
+   owns. `min-height:100vh` on .page resolved against the modal's content box
+   inside an unconstrained iframe and inflated it to ~1350px; that, plus 48px of
+   page padding and 34/96px of stage padding, is what opened the blank band
+   above the cover and pushed the book and the floating chips out of view.
+   Deliberately a separate class from mode-card so the square homepage card
+   preview is untouched. Measured at 1440x800: blank space above the cover
+   345px -> 32px, rotate controls back inside the frame. */
+body.mode-detail .page{min-height:0;height:100%;padding:26px clamp(16px,3.4vw,48px)}
+body.mode-detail .stage-wrap{min-height:640px;padding:26px 0 66px}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
@@ -306,8 +319,9 @@ body.mode-card .glow{opacity:.5}
 (function () {
   window.addEventListener("message", function (e) {
     if (!e.data || e.data.type !== "stea-preview-mode") return;
-    if (e.data.mode === "card") document.body.classList.add("mode-card");
-    else document.body.classList.remove("mode-card");
+    var card = e.data.mode === "card";
+    document.body.classList.toggle("mode-card", card);
+    document.body.classList.toggle("mode-detail", !card);
     if (window.__still) window.__still();
   });
 })();

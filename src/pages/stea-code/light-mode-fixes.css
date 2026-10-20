@@ -379,3 +379,68 @@ body .sc-also-like-grid .sc-card-poster-preview {
   overflow: hidden !important;
 }
 
+/* =========================================================================
+   EBOOK DETAIL PREVIEW — remove the blank band, stop clipping the 3D book
+   =========================================================================
+   MEASURED (Chrome, /products/stop-letting-ai-break-your-pages, 1440 wide):
+
+     .sc-product-detail-preview-shell   1080 × 1350
+     computed aspect-ratio               4 / 5      (1080 × 4/5 = 864)
+     .sc-ebook-detail-preview iframe     1080 × 1350   <- its own viewport
+
+   The 1350 is NOT the aspect ratio (that would be 864). It comes from the
+   cover document: book-preview.html styles `.page { min-height: 100vh }`, and
+   this iframe sits in a modal with no height of its own, so its initial
+   containing block is the MODAL's content box rather than a viewport — 100vh
+   resolves to ~1350px. The 4/5 aspect-ratio is then only a *claim* about that
+   box: with both a height and an aspect-ratio set, the height wins, so the
+   shell reports the inflated 1350. Measured identical at 1440×1000, 1440×900,
+   1440×800 and 1280×720 — the frame does not track the screen at all, which is
+   exactly why the cover opened with a ~345px blank band above it and ran
+   ~355px past the bottom of the window.
+
+   So the fix is a chain, and every link is pinned, in this order:
+     shell  ->  aspect-ratio: auto (drop the 4/5 claim, which is now just
+                noise around a height we set explicitly) + a clamp()ed height
+     iframe ->  100% of that height, so the iframe's viewport becomes a
+                normal screen-sized box and the cover's own 100vh finally
+                resolves against something sensible.
+
+   MEASURED after (blank space above the cover / space below it):
+     1440×1000   345px → 110px   whole composition inside the frame
+     1440×900    345px →  66px   whole composition inside the frame
+     1440×800    345px →  48px   rotate controls 4px inside the frame edge
+   i.e. what is left is the cover's own internal spacing, and no part of the
+   composition (copy, book, floating chips, rotate controls) is off-frame at
+   900px and taller.
+
+   NOTE ON `min-width: 900px` ON THE IFRAME — deliberately NOT set. It is
+   tempting ("give the floating chips room"), but the chips are positioned
+   INSIDE the cover's .stage-wrap (`.c1{left:0}` / `.c2{right:0}`), so they
+   cannot leave it, and the cover hides them entirely below a 1000px iframe
+   width anyway. A min-width would only push the iframe wider than the shell,
+   which is the clipping this file exists to remove.
+
+   SCOPE: `.is-library-preview` is only added for productType "ebook" / tab
+   "library" and `.is-live-preview` only for previewMode "live", so ordinary
+   component previews are untouched; the square homepage CARD preview runs
+   BookProductPreview with mode="card" under a plain .sc-code-card, never
+   inside .sc-product-modal-panel, so it is untouched too. Specificity is
+   (0,5,2) — the highest competing rule in stea-code-v2.css
+   (.sc-product-modal-panel.sc-premium-product-detail
+   .sc-product-detail-preview-shell.is-live-preview) is (0,4,0).
+   ========================================================================= */
+html body .sc-product-modal-panel.sc-premium-product-detail .sc-product-detail-preview-shell.is-library-preview.is-live-preview {
+  aspect-ratio: auto !important;
+  height: clamp(560px, 88vh, 920px) !important;
+  max-height: none !important;
+  min-height: 0 !important;
+}
+
+html body .sc-product-modal-panel.sc-premium-product-detail .sc-product-detail-preview-shell.is-library-preview .sc-ebook-detail-preview,
+html body .sc-product-modal-panel.sc-premium-product-detail .sc-product-detail-preview-shell.is-library-preview .sc-ebook-detail-preview > iframe {
+  height: 100% !important;
+  min-height: 0 !important;
+  max-height: none !important;
+}
+
