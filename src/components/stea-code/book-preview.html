@@ -152,8 +152,18 @@ h1 em{font-style:normal;background:linear-gradient(100deg,#f5a623,#f59e0b 45%,#d
 /* STEACODE embedded "card" mode: hide the sales copy, show only the 3D book */
 body.mode-card .page{display:block;min-height:0;height:100%;padding:0;gap:0;overflow:hidden}
 body.mode-card .copy{display:none}
-body.mode-card .stage-wrap{min-height:0;height:100%;order:0;display:flex;align-items:center;justify-content:center;overflow:hidden}
-body.mode-card .scaler{transform:none;margin:0}
+/* padding:0 — the base rule pads 34px top / 96px bottom for the full sales page.
+   With height:100% and box-sizing:border-box that left a 74px-tall content box
+   offset upward, so centring the book happened around y=71 in a 204px frame and
+   the top of the cover was still cut off. */
+body.mode-card .stage-wrap{min-height:0;height:100%;order:0;padding:0;display:flex;align-items:center;justify-content:center;overflow:hidden}
+/* NOTE: this used to be `transform:none`, which killed the `--k` scale written by
+   fit() (0,2,1 beats .scaler's 0,1,0) and left the fixed 340x488 book to be
+   cropped by the wrap's overflow:hidden. Measured at the 272x204 homepage card:
+   the book overflowed by 183px top and 118px bottom and rendered as a zoomed-in
+   close-up instead of a cover. Card mode must SCALE, so only the margin is
+   reset here and fit() supplies a both-axes scale. */
+body.mode-card .scaler{margin:0}
 body.mode-card .ctrl{display:none}
 body.mode-card .hint{display:none}
 body.mode-card .chip{display:none}
@@ -276,7 +286,19 @@ body.mode-detail .stage-wrap{min-height:640px;padding:26px 0 66px}
   var reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var views={front:[6,-14],spine:[6,80],back:[6,-196],pages:[8,-72]};
   var ry=-28, rx=6, tRy=-28, tRx=6, dragging=false, lastX=0, lastY=0, idle=true, t0=performance.now(), cur='front', sway=0;
-  function fit(){var host=scaler.parentElement,w=host.clientWidth,k=Math.min(1.06,Math.max(.62,(w-40)/(W+70)));scaler.style.setProperty('--k',k.toFixed(3));}
+  /* Card mode puts the book alone in the frame, so --k has to satisfy BOTH axes.
+     The width-only formula below floors at .62 and ignored height, which is why
+     a short card (272x204) clipped the 340x488 book top and bottom. */
+  function fit(){
+    var host=scaler.parentElement,w=host.clientWidth||W,h=window.innerHeight||host.clientHeight||H,k;
+    if(document.body.classList.contains('mode-card')){
+      k=Math.min(1.06,(w-24)/(W+24),(h-24)/(H+48));
+      k=Math.max(.2,k);
+    }else{
+      k=Math.min(1.06,Math.max(.62,(w-40)/(W+70)));
+    }
+    scaler.style.setProperty('--k',k.toFixed(3));
+  }
   function apply(){
     book.style.setProperty('--ry',(ry+sway).toFixed(2)+'deg');book.style.setProperty('--rx',rx.toFixed(2)+'deg');
     var a=((ry+sway)%360+360)%360, s=.9+.15*Math.abs(Math.sin((ry+sway)*Math.PI/180));
@@ -300,6 +322,9 @@ body.mode-detail .stage-wrap{min-height:640px;padding:26px 0 66px}
   window.addEventListener('resize',fit);
   window.__setView=function(v){idle=false;setView(v);};
   window.__still=function(){idle=false;sway=0;};
+  /* The mode bridge toggles body.mode-card, which changes which fit() branch
+     applies — so the host needs a way to ask for a re-fit right after. */
+  window.__fit=fit;
   fit();requestAnimationFrame(loop);
 })();
 </script>
@@ -323,6 +348,9 @@ body.mode-detail .stage-wrap{min-height:640px;padding:26px 0 66px}
     document.body.classList.toggle("mode-card", card);
     document.body.classList.toggle("mode-detail", !card);
     if (window.__still) window.__still();
+    /* Re-fit: card mode has its own --k formula, so the scale must be recomputed
+       after the class flips or the book keeps the wrong scale. */
+    if (window.__fit) window.__fit();
   });
 })();
 </script>
