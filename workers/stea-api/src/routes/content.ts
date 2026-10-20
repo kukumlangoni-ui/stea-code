@@ -95,6 +95,70 @@ export async function handlePreview(req: Request, env: Env, productId: string): 
   }
 }
 
+/**
+ * Source to serve when a product has no file bundle of its own.
+ *
+ * Products created through the Admin "Import from Preview tab" flow (see
+ * handleImportFromPreview in src/admin-v2/ProductStudioV3.jsx) keep their HTML
+ * in `sourceCode` — a JSON column — and have neither publicFiles/protected files
+ * nor a `previews` doc. `handlePreview` above has always fallen back to
+ * `sourceCode` so those products still render a live preview, and
+ * `resolveHasSource` in routes/catalog.ts counts `sourceCode` as copyable — but
+ * the two copy endpoints did not, so the modal showed the "Copy Source Code"
+ * button while the request came back with `files: []` and the UI answered
+ * "No source available". Measured on the live API before this fix:
+ * GET /products/synth-era-floating-jacket-hero/free-content → files=0.
+ *
+ * Order is preview markup first, then `sourceCode`, i.e. exactly the precedence
+ * handlePreview already uses, so this is purely additive: any product that
+ * could already be copied still resolves to the same content.
+ *
+ * `sourceCode` is not treated as a secret here — handlePreview already serves
+ * it publicly as the preview document for these products.
+ */
+async function buildSourceFallback(env: Env, productId: string, data: any): Promise<any[]> {
+  let htmlContent = "";
+  const previewDoc = await getDoc(env, PREVIEWS_COLLECTION, productId);
+  const previewData = previewDoc?.data || data.preview || {};
+
+  if (previewData.fullDocument && typeof previewData.fullDocument === "string") {
+    htmlContent = previewData.fullDocument;
+  } else if (previewData.html && typeof previewData.html === "string") {
+    // Wrap fragment into a full document
+    const css = previewData.css || "";
+    const js = previewData.javascript || "";
+    const hasDoctype = previewData.html.trim().toLowerCase().startsWith("<!doctype");
+    if (hasDoctype) {
+      htmlContent = previewData.html
+        .replace("</head>", `<style>${css}</style></head>`)
+        .replace("</body>", `<script>${js}</script></body>`);
+    } else {
+      htmlContent = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Component</title>
+<style>${css}</style>
+</head>
+<body>
+${previewData.html}
+<script>${js}</script>
+</body>
+</html>`;
+    }
+  }
+
+  if (!htmlContent) {
+    const sourceCode = data.sourceCode;
+    if (sourceCode && typeof sourceCode === "string" && sourceCode.length > 100) {
+      htmlContent = sourceCode;
+    }
+  }
+
+  return htmlContent ? [{ name: "index.html", content: htmlContent, language: "html" }] : [];
+}
+
 export async function handleFreeContent(req: Request, env: Env, productId: string): Promise<Response> {
   try {
     const productDoc = await getDoc(env, PRODUCTS_COLLECTION, productId);
@@ -117,44 +181,9 @@ export async function handleFreeContent(req: Request, env: Env, productId: strin
         files = sourceDoc?.data?.files || [];
       }
       if (!files.length) {
-        // Final fallback: build files from the live preview document
-        // (same data the preview iframe uses — stored in previews collection
-        // or embedded in product.preview). This ensures "Copy Source Code"
-        // works for any free product that has a working live preview, even
-        // if publicFiles/sources haven't been explicitly set.
-        const previewDoc = await getDoc(env, PREVIEWS_COLLECTION, productId);
-        const previewData = previewDoc?.data || productDoc.data.preview || {};
-        let htmlContent = "";
-        if (previewData.fullDocument && typeof previewData.fullDocument === "string") {
-          htmlContent = previewData.fullDocument;
-        } else if (previewData.html && typeof previewData.html === "string") {
-          // Wrap fragment into a full document
-          const css = previewData.css || "";
-          const js = previewData.javascript || "";
-          const hasDoctype = previewData.html.trim().toLowerCase().startsWith("<!doctype");
-          if (hasDoctype) {
-            htmlContent = previewData.html
-              .replace("</head>", `<style>${css}</style></head>`)
-              .replace("</body>", `<script>${js}</script></body>`);
-          } else {
-            htmlContent = `<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Component</title>
-<style>${css}</style>
-</head>
-<body>
-${previewData.html}
-<script>${js}</script>
-</body>
-</html>`;
-          }
-        }
-        if (htmlContent) {
-          files = [{ name: "index.html", content: htmlContent, language: "html" }];
-        }
+        // Final fallback: the live preview document, then products.sourceCode
+        // (the Admin "Import from Preview tab" target). See buildSourceFallback.
+        files = await buildSourceFallback(env, productId, productDoc.data);
       }
     }
 
@@ -220,7 +249,13 @@ export async function handleContent(req: Request, env: Env, productId: string): 
 
     // Get source files
     const sourceDoc = await getDoc(env, SOURCES_COLLECTION, productId);
-    const files = sourceDoc?.data?.files || productDoc.data.protectedFiles || [];
+    let files = sourceDoc?.data?.files || productDoc.data.protectedFiles || [];
+    if (!files.length) {
+      // Same last resort the free endpoint uses, so a product whose only code is
+      // products.sourceCode is copyable for entitled users too. The content is
+      // the product's public preview document, which the buyer can already see.
+      files = await buildSourceFallback(env, productId, productDoc.data);
+    }
 
     return new Response(
       JSON.stringify({

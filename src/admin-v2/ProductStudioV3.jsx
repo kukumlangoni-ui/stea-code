@@ -583,6 +583,19 @@ export function ProductStudioV3({
       tags: (product?.tags || []).join(", "),
       frameworks: (product?.frameworks || []).join(", "),
       included: (product?.included || []).join("\n"),
+      // eBook "What you get" lines. Persisted like `included` (an extra field,
+      // so it lands in the products.extraData JSON column) and served back
+      // flattened onto the product. Read every shape a row may hold: array,
+      // newline string, or the nested extraData object.
+      ebookFeatures: (() => {
+        const raw = product?.extraData?.ebookFeatures ?? product?.ebookFeatures;
+        const list = Array.isArray(raw)
+          ? raw
+          : typeof raw === "string"
+          ? raw.split("\n")
+          : [];
+        return list.map((s) => String(s).trim()).filter(Boolean).join("\n");
+      })(),
     };
   });
 
@@ -1169,6 +1182,12 @@ export function ProductStudioV3({
           .split("\n")
           .map((s) => s.trim())
           .filter(Boolean),
+        // eBook "What you get" — stored in the extraData JSON column, same
+        // mechanism as `included` above.
+        ebookFeatures: String(form.ebookFeatures || "")
+          .split("\n")
+          .map((s) => s.trim())
+          .filter(Boolean),
         preview: previewSettings,
         sourceCode,
         aiPrompt: String(form.aiPrompt || "").trim(),
@@ -1434,6 +1453,13 @@ export function ProductStudioV3({
     () => (isEbook ? TABS : TABS.filter((t) => t.id !== "ebook")),
     [isEbook]
   );
+
+  // How many "What you get" lines the book page will render — drives the
+  // field's live readout in the eBook tab.
+  const ebookFeatureCount = String(form.ebookFeatures || "")
+    .split("\n")
+    .map((s) => s.trim())
+    .filter(Boolean).length;
 
   // If the type is switched away from eBook while that tab is open, fall back
   // to Basic so the user is never stranded on a hidden tab.
@@ -2340,6 +2366,28 @@ export function ProductStudioV3({
         {/* TAB — EBOOK SETTINGS (only for productType === "ebook") */}
         {tab === "ebook" && (
           <>
+            <Section
+              title="What users get"
+              subtitle="The book's own feature list — shown on the product page"
+            >
+              <Field
+                label="What users get (one per line)"
+                full
+                hint={
+                  ebookFeatureCount > 0
+                    ? `${ebookFeatureCount} item(s) render on the book page.`
+                    : "Empty — the book page hides its “What you get” section. Books never show the generic component features (Ready-to-use component, Responsive design)."
+                }
+              >
+                <TextArea
+                  value={form.ebookFeatures}
+                  onChange={(v) => updateForm("ebookFeatures", v)}
+                  placeholder={"7 days\n15 stages\n106-tag cheat sheet"}
+                  rows={5}
+                />
+              </Field>
+            </Section>
+
             <Section
               title="Sales Page HTML"
               subtitle="Paste the 3D cover code — shown on the Library card and in the product modal"

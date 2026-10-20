@@ -101,6 +101,66 @@ async function resolveHasSource(env: Env, productId: string, raw: any): Promise<
   return false;
 }
 
+/**
+ * SQL twin of resolveHasSource() above, for the list endpoints.
+ *
+ * handleProduct() resolves `hasSource` one product at a time, but the homepage
+ * asks for ~200 cards in one request — running resolveHasSource per row would
+ * cost up to two extra D1 round trips each. This expression is evaluated inside
+ * the card query instead: one statement, and the (multi-megabyte) source blobs
+ * never leave the database.
+ *
+ * The empty-value checks mirror what parseRow()/hasText() see at runtime: D1
+ * stores these JSON columns as TEXT, so a cleared column is usually `''`,
+ * `'null'`, `'[]'` or `'{}'`.
+ *
+ * Keep in sync with resolveHasSource — both drive the same "Copy Source Code"
+ * button, and a product is only copyable if the copy endpoints return files.
+ */
+const HAS_SOURCE_SQL = `CASE
+  WHEN sourceCode     IS NOT NULL AND TRIM(sourceCode)     NOT IN ('', 'null', '[]', '{}', '""') THEN 1
+  WHEN publicFiles    IS NOT NULL AND TRIM(publicFiles)    NOT IN ('', 'null', '[]', '{}', '""') THEN 1
+  WHEN protectedFiles IS NOT NULL AND TRIM(protectedFiles) NOT IN ('', 'null', '[]', '{}', '""') THEN 1
+  WHEN sourceFiles    IS NOT NULL AND TRIM(sourceFiles)    NOT IN ('', 'null', '[]', '{}', '""') THEN 1
+  WHEN EXISTS (
+    SELECT 1 FROM sources s
+     WHERE s.productId = products.id
+       AND s.files IS NOT NULL
+       AND TRIM(s.files) NOT IN ('', 'null', '[]', '{}', '""')
+  ) THEN 1
+  WHEN pricingType = 'free' AND EXISTS (
+    SELECT 1 FROM previews pv
+     WHERE pv.productId = products.id
+       AND (
+         (pv.fullDocument IS NOT NULL AND TRIM(pv.fullDocument) <> '')
+         OR (pv.html IS NOT NULL AND TRIM(pv.html) <> '')
+       )
+  ) THEN 1
+  ELSE 0
+END`;
+
+/**
+ * eBook "What you get" lines, for the homepage card payload.
+ *
+ * These lines are authored in Admin → eBook Settings and land in the products
+ * `extraData` JSON column (they are not schema columns), under `ebookFeatures`
+ * — with `included` as the older key books were authored with. HOMEPAGE_CARD_COLUMNS
+ * is a whitelist, so without this the modal only learns them from the
+ * /products/:id hydration and the section pops in a second late. extraData as a
+ * whole must NOT be exposed: it also holds internal fields (aiPrompt, repoUrl,
+ * pending_revision_id, …) that CATALOG_STRIP_FIELDS deliberately withholds.
+ *
+ * json_valid() guards malformed rows — json_extract() throws on bad JSON.
+ * Returns JSON text; parseStringList() decodes it.
+ */
+const EBOOK_FEATURES_SQL = `CASE
+  WHEN extraData IS NOT NULL AND json_valid(extraData)
+  THEN COALESCE(
+    NULLIF(json_extract(extraData, '$.ebookFeatures'), 'null'),
+    NULLIF(json_extract(extraData, '$.included'), 'null')
+  )
+END`;
+
 const HOMEPAGE_CARD_COLUMNS = [
   "id",
   "slug",
@@ -141,6 +201,36 @@ function parseJsonColumn(value: any, fallback: any): any {
 }
 
 /**
+ * Normalizes a list that may arrive as an array, a JSON-encoded string
+ * (`["a","b"]` or `"a"`) or newline-separated text, into a clean string array.
+ * Mirrors what the frontend accepts, so a row authored either way renders.
+ */
+function parseStringList(value: any): string[] {
+  if (value === null || value === undefined) return [];
+
+  let v: any = value;
+  if (typeof v === "string") {
+    const trimmed = v.trim();
+    if (!trimmed || trimmed === "null") return [];
+    if (trimmed.startsWith("[") || trimmed.startsWith('"')) {
+      try {
+        v = JSON.parse(trimmed);
+      } catch {
+        v = trimmed;
+      }
+    } else {
+      v = trimmed.split("\n");
+    }
+  }
+
+  const list = Array.isArray(v) ? v : [v];
+  return list
+    .flatMap((s) => String(s).split("\n"))
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+/**
  * Homepage cards only need a small subset of columns. Querying just those
  * columns avoids loading multi-megabyte source/authoring blobs from D1 and
  * keeps the first catalog response small enough to cache effectively.
@@ -148,7 +238,7 @@ function parseJsonColumn(value: any, fallback: any): any {
 async function listHomepageCards(env: Env): Promise<any[]> {
   const columns = [...new Set(HOMEPAGE_CARD_COLUMNS)].join(", ");
   const result = await env.DB.prepare(
-    `SELECT ${columns}
+    `SELECT ${columns}, ${HAS_SOURCE_SQL} AS hasSource, ${EBOOK_FEATURES_SQL} AS ebookFeatures
        FROM products
       WHERE status = 'published' AND homepageVisible = 1
       ORDER BY featured DESC, createdAt DESC`
@@ -181,7 +271,31 @@ async function listHomepageCards(env: Env): Promise<any[]> {
     designHeight: row.designHeight === null ? null : Number(row.designHeight),
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
+    // Same meaning as the flag handleProduct() sends: false when "Copy Source
+    // Code" would come back empty (poster-only layouts, ebooks without code).
+    hasSource: row.hasSource === 1 || row.hasSource === true,
+    // eBook-only: the book's authored "What you get" lines, so the modal can
+    // render them on first paint instead of after the detail hydration.
+    ebookFeatures: parseStringList(row.ebookFeatures),
   }));
+}
+
+/**
+ * hasSource for every published product, keyed by id — used by the unscoped
+ * catalog, which loads full documents through listDocs() and therefore cannot
+ * fold HAS_SOURCE_SQL into its own query.
+ */
+async function loadHasSourceMap(env: Env): Promise<Map<string, boolean>> {
+  const result = await env.DB.prepare(
+    `SELECT id, ${HAS_SOURCE_SQL} AS hasSource FROM products WHERE status = 'published'`
+  ).all();
+
+  const map = new Map<string, boolean>();
+  for (const row of result.results || []) {
+    const r = row as Record<string, any>;
+    map.set(String(r.id), r.hasSource === 1 || r.hasSource === true);
+  }
+  return map;
 }
 
 export async function handleCatalog(req: Request, env: Env, ctx?: ExecutionContext): Promise<Response> {
@@ -191,8 +305,12 @@ export async function handleCatalog(req: Request, env: Env, ctx?: ExecutionConte
     const category = url.searchParams.get("category") || "";
     const subcategory = url.searchParams.get("subcategory") || "";
     const canUseHomepageCache = scope === "homepage" && !category && !subcategory;
+    // Version suffix = cache generation. There is no purge route, so a deployed
+    // change to the card payload would otherwise sit behind the 5-minute
+    // s-maxage below; bump this when the shape of a card changes.
+    // v3: added hasSource + ebookFeatures.
     const homepageCacheKey = new Request(
-      "https://stea-code.internal/catalog/homepage-v2",
+      "https://stea-code.internal/catalog/homepage-v3",
       { method: "GET" }
     );
 
@@ -215,9 +333,16 @@ export async function handleCatalog(req: Request, env: Env, ctx?: ExecutionConte
     if (scope === "homepage") {
       products = await listHomepageCards(env);
     } else {
-      const docs = await listDocs(env, PRODUCTS_COLLECTION, {});
+      const [docs, hasSourceById] = await Promise.all([
+        listDocs(env, PRODUCTS_COLLECTION, {}),
+        loadHasSourceMap(env),
+      ]);
       products = docs
-        .map((d) => ({ id: d.id, ...safeProduct(d.data) }))
+        .map((d) => ({
+          id: d.id,
+          ...safeProduct(d.data),
+          hasSource: hasSourceById.get(d.id) === true,
+        }))
         .filter((p) => p.status === "published");
     }
 

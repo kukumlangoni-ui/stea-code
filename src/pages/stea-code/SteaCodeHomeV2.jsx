@@ -1275,7 +1275,14 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
     const query = q.trim().toLowerCase();
     return products
       .filter((p) => {
-        if (activeTab === "components") return p.tab === "components" || p.tab === undefined;
+        // `featured` products are hand-picked to be showcased on the homepage,
+        // but they are authored in whatever tab they belong to — all four
+        // currently featured ones live in layouts/kits/library, none in
+        // components. Without `|| p.featured === true` the tab filter drops
+        // them here, so no amount of sorting downstream could ever surface them
+        // in the main "All" grid. The catalog (ORDER BY featured DESC) and the
+        // sort below both already put featured first, ahead of the slice.
+        if (activeTab === "components") return p.tab === "components" || p.tab === undefined || p.featured === true;
         if (activeTab === "layouts") return p.tab === "layouts";
         if (activeTab === "kits") return p.tab === "kits";
         if (activeTab === "library") return p.tab === "library";
@@ -4034,6 +4041,31 @@ function ProductDetail({
         )
       : included;
 
+  // eBooks describe what the buyer gets with the book's own wording ("7 days",
+  // "106-tag cheat sheet") instead of the component feature list. Authored per
+  // book in Admin → eBook Settings and stored in the products.extraData JSON
+  // column; extraData is flattened onto the product on read, so the value
+  // normally arrives as product.ebookFeatures — accept the nested shape too, and
+  // a newline-delimited string, so a row saved either way still renders.
+  //
+  // Falls back to an explicitly authored `included` list, because that is where
+  // these lines live today (e.g. the 7-day book's "106-tag cheat sheet"), but
+  // never to the hardcoded component list — "Ready-to-use component" and
+  // "Responsive design" are meaningless for a book.
+  const ebookFeatures = useMemo(() => {
+    const raw = product?.extraData?.ebookFeatures ?? product?.ebookFeatures;
+    const list = Array.isArray(raw)
+      ? raw
+      : typeof raw === "string"
+      ? raw.split("\n")
+      : [];
+    const features = list.map((item) => String(item).trim()).filter(Boolean);
+    if (features.length) return features;
+    return Array.isArray(product?.included)
+      ? product.included.map((item) => String(item).trim()).filter(Boolean)
+      : [];
+  }, [product?.extraData, product?.ebookFeatures, product?.included]);
+
   const hasLiveDemo = Boolean(
     product.preview?.enabled ||
     NATIVE_PRODUCT_PREVIEWS[getProductIdentity(product)]
@@ -4735,31 +4767,64 @@ function ProductDetail({
             </div>
           )}
 
-          {safeIncluded.length > 0 && (
-            <div className="sc-product-detail-section">
-              <div className="sc-product-detail-heading">
-                <span>
-                  {tLocal({
-                    en: "What you get",
-                    zhCN: "包含内容" })}
-                </span>
+          {/* What you get — eBooks list their own copy (Admin → eBook Settings),
+              components keep the derived feature list. The generic entries
+              ("Ready-to-use component", "Responsive design") never apply to a
+              book, so for eBooks the block is replaced or hidden outright. */}
+          {isLibraryProduct ? (
+            ebookFeatures.length > 0 && (
+              <div className="sc-product-detail-section">
+                <div className="sc-product-detail-heading">
+                  <span>
+                    {tLocal({
+                      en: "What you get",
+                      zhCN: "包含内容" })}
+                  </span>
 
-                <small>
-                  {tLocal({
-                    en: "Everything needed to start quickly.",
-                    zhCN: "快速开始所需的核心内容。" })}
-                </small>
-              </div>
+                  <small>
+                    {tLocal({
+                      en: "Everything needed to start quickly.",
+                      zhCN: "快速开始所需的核心内容。" })}
+                  </small>
+                </div>
 
-              <div className="sc-product-included-grid">
-                {safeIncluded.map((item, idx) => (
-                  <div key={`${idx}-${item}`}>
-                    <Check size={14} />
-                    <span>{item}</span>
-                  </div>
-                ))}
+                <div className="sc-product-included-grid sc-ebook-features">
+                  {ebookFeatures.map((item, idx) => (
+                    <div key={`${idx}-${item}`}>
+                      <Check size={14} />
+                      <span>{item}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
+            )
+          ) : (
+            safeIncluded.length > 0 && (
+              <div className="sc-product-detail-section">
+                <div className="sc-product-detail-heading">
+                  <span>
+                    {tLocal({
+                      en: "What you get",
+                      zhCN: "包含内容" })}
+                  </span>
+
+                  <small>
+                    {tLocal({
+                      en: "Everything needed to start quickly.",
+                      zhCN: "快速开始所需的核心内容。" })}
+                  </small>
+                </div>
+
+                <div className="sc-product-included-grid">
+                  {safeIncluded.map((item, idx) => (
+                    <div key={`${idx}-${item}`}>
+                      <Check size={14} />
+                      <span>{item}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )
           )}
 
           {/* ===== ACTION BUTTONS — Read / Copy Image / Copy Prompt / Copy Code / Download ===== */}
@@ -4913,21 +4978,25 @@ function ProductDetail({
             </div>
 
             
-            {/* Custom Service Callout */}
-            <div className="sc-custom-service-section">
-              <div className="sc-custom-service-text">
-                <h4>Need this customized?</h4>
-                <p>Our team can adapt this product for your specific needs.</p>
+            {/* Custom Service Callout — UI components only. "Book a Call" /
+                "Request Customization" make no sense next to a book, whose
+                primary action is the reader. */}
+            {!isLibraryProduct && (
+              <div className="sc-custom-service-section">
+                <div className="sc-custom-service-text">
+                  <h4>Need this customized?</h4>
+                  <p>Our team can adapt this product for your specific needs.</p>
+                </div>
+                <div className="sc-custom-service-buttons">
+                  <a href="/services" className="sc-btn-service">
+                    Book a Call
+                  </a>
+                  <a href="/services" className="sc-btn-service primary">
+                    Request Customization
+                  </a>
+                </div>
               </div>
-              <div className="sc-custom-service-buttons">
-                <a href="/services" className="sc-btn-service">
-                  Book a Call
-                </a>
-                <a href="/services" className="sc-btn-service primary">
-                  Request Customization
-                </a>
-              </div>
-            </div>
+            )}
 
             {/* You Might Also Like */}
             {relatedProducts.length > 0 && (
