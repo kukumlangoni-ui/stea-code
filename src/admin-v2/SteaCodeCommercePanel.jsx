@@ -4049,6 +4049,14 @@ export default function SteaCodeCommercePanel({ isSuperAdmin, initialTab = "prod
     archived: products.filter((p) => p.status === "archived").length,
   }), [products]);
 
+  // Category filter pills — derived from the loaded product list so any
+  // category present in the database shows up without a code change.
+  const uniqueCategories = useMemo(() => {
+    if (!products || products.length === 0) return [];
+    const cats = new Set(products.map((p) => p.category).filter(Boolean));
+    return Array.from(cats).sort();
+  }, [products]);
+
   const visibleProducts = useMemo(() => {
     const needle = debouncedQuery.trim().toLowerCase();
     return products.filter((p) => {
@@ -4526,7 +4534,7 @@ export default function SteaCodeCommercePanel({ isSuperAdmin, initialTab = "prod
 
             {/* Category filter row */}
             <div className="sc-admin-filter-row">
-              {["All", ...PRODUCT_CATEGORIES].map((c) => (
+              {["All", ...uniqueCategories].map((c) => (
                 <button
                   key={c}
                   className={activeCategory === c ? "is-active" : ""}

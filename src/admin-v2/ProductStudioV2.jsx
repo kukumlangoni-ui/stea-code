@@ -344,7 +344,7 @@ export function ProductStudioV2({
         preview: previewSettings,
         aiPrompt: String(form.aiPrompt || "").trim(),
         status: isPublishing ? "published" : form.status || "draft",
-        homepageVisible: isPublishing ? true : Boolean(form.homepageVisible),
+        homepageVisible: Boolean(form.homepageVisible),
       };
 
       let result;

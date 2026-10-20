@@ -1192,7 +1192,7 @@ export function ProductStudioV3({
           : isPublishing
           ? "published"
           : form.status || "draft",
-        homepageVisible: isPublishing ? true : Boolean(form.homepageVisible),
+        homepageVisible: Boolean(form.homepageVisible),
         sortOrder: Number(form.sortOrder) || 0,
       };
 
@@ -1720,6 +1720,18 @@ export function ProductStudioV3({
                     placeholder="React, Vue, Vanilla JS"
                   />
                 </Field>
+              </div>
+              <div className="psv3-publish-row">
+                <div>
+                  <div className="psv3-publish-row-label">Show on Homepage</div>
+                  <div className="psv3-publish-row-hint">
+                    Appears in the main product grid on the homepage
+                  </div>
+                </div>
+                <Toggle
+                  value={Boolean(form.homepageVisible)}
+                  onChange={(v) => updateForm("homepageVisible", v)}
+                />
               </div>
             </Section>
 
