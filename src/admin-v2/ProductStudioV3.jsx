@@ -89,6 +89,7 @@ const EMPTY_PRODUCT = {
   previewVideoUrl: "",
   productType: "component",
   salesPageHtml: "",
+  cardCoverHtml: "",
   bookContentHtml: "",
   bookDownloadUrl: "",
   tags: "",
@@ -596,6 +597,11 @@ export function ProductStudioV3({
           : [];
         return list.map((s) => String(s).trim()).filter(Boolean).join("\n");
       })(),
+      // Optional standalone 3D book document for the homepage card, so the card
+      // does not have to crop the full sales page. Persisted the same way as
+      // `ebookFeatures` (an extra field → products.extraData JSON), which is why
+      // it is read from both the flattened row and a nested extraData object.
+      cardCoverHtml: String(product?.extraData?.cardCoverHtml ?? product?.cardCoverHtml ?? ""),
     };
   });
 
@@ -2389,8 +2395,37 @@ export function ProductStudioV3({
             </Section>
 
             <Section
+              title="Card Cover HTML (3D Book Only)"
+              subtitle="Optional — the standalone 3D book shown on the homepage card"
+            >
+              <Field
+                label="Card Cover HTML (3D Book Only)"
+                full
+                hint="Paste the standalone 3D book HTML here. This will be shown on the homepage card. Leave empty to reuse the Sales Page HTML below on the card as well."
+              >
+                <TextArea
+                  value={form.cardCoverHtml}
+                  onChange={(v) => updateForm("cardCoverHtml", v)}
+                  placeholder="<!DOCTYPE html> ... just the 3D book, no sales copy ..."
+                  rows={12}
+                  spellCheck={false}
+                />
+                {String(form.cardCoverHtml || "").trim() ? (
+                  <p className="psv3-field-hint">
+                    {String(form.cardCoverHtml).length.toLocaleString()} characters pasted — used on the
+                    homepage card only. The modal still uses the Sales Page HTML below.
+                  </p>
+                ) : (
+                  <p className="psv3-field-hint">
+                    Empty — the homepage card reuses the Sales Page HTML below.
+                  </p>
+                )}
+              </Field>
+            </Section>
+
+            <Section
               title="Sales Page HTML"
-              subtitle="Paste the 3D cover code — shown on the Library card and in the product modal"
+              subtitle="Paste the 3D cover code — shown in the product modal, and on the Library card when no Card Cover HTML is set"
             >
               <Field
                 label="Sales Page HTML"

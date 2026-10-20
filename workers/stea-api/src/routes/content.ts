@@ -291,12 +291,13 @@ export async function handleContent(req: Request, env: Env, productId: string): 
  * GET /products/:id/sales-page
  *
  * PUBLIC. Returns the eBook's `salesPageHtml` — the 3D cover / sales page the
- * card and product modal render. This is marketing material shown to
- * non-buyers, so no auth is required.
+ * product modal renders — plus the optional `cardCoverHtml`, a standalone 3D
+ * book document used by the homepage card.
  *
- * It is served from its own endpoint rather than inlined into the catalog so
- * the homepage card list stays small: a sales page is ~130KB of HTML, and the
- * platform is expected to host several books.
+ * Both are served from their own endpoint rather than inlined into the catalog
+ * so the homepage card list stays small: a sales page is ~130KB of HTML, and the
+ * platform is expected to host several books. Serving them together also means
+ * the card and the modal cost one request between them.
  */
 export async function handleSalesPage(req: Request, env: Env, productId: string): Promise<Response> {
   try {
@@ -319,6 +320,11 @@ export async function handleSalesPage(req: Request, env: Env, productId: string)
         titleEn: doc.data.titleEn,
         productType: doc.data.productType || "component",
         salesPageHtml: doc.data.salesPageHtml || null,
+        // Optional standalone 3D book document for the homepage card. Authored
+        // in Admin → eBook Settings → "Card Cover HTML". Null when the author
+        // has not split the preview, in which case the card falls back to
+        // salesPageHtml as before.
+        cardCoverHtml: doc.data.cardCoverHtml || null,
       }),
       {
         status: 200,

@@ -7,13 +7,19 @@ import { getSteaCodeEbookSalesPage } from "../../services/steaCodeCommerce.js";
  * ------------------
  * Renders an eBook's 3D cover / sales page inside a responsive iframe.
  *
- * The cover HTML comes from the product's `salesPageHtml` column, fetched from
- * the public GET /api/stea-code/products/:id/sales-page endpoint. It is NOT
- * inlined into the catalog because a sales page is ~130KB of HTML and the
- * platform hosts several books — the card grid would balloon.
+ * The cover HTML comes from the product's `salesPageHtml` / `cardCoverHtml`
+ * columns, fetched from the public GET /api/stea-code/products/:id/sales-page
+ * endpoint. Neither is inlined into the catalog because a sales page is ~130KB
+ * of HTML and the platform hosts several books — the card grid would balloon.
+ *
+ * Choosing a document:
+ *   - mode="card"   → `cardCoverHtml` when the author has pasted one (a
+ *     standalone 3D book, so nothing has to be cropped host-side), otherwise
+ *     `salesPageHtml` as before.
+ *   - mode="detail" → always `salesPageHtml` (the full landing page).
  *
  * Resolution order:
- *   1. salesPageHtml from the endpoint  — the cover the author pasted.
+ *   1. The chosen document from the endpoint — what the author pasted.
  *   2. "Preview coming soon" placeholder — the endpoint answered, but this
  *      eBook has no cover authored yet.
  *   3. ./book-preview.html              — the official STEACODE 3D cover,
@@ -42,6 +48,7 @@ export default function BookProductPreview({ product, onBuy, mode = "detail", cl
   // "loading" → "ready" (author HTML) | "empty" (no cover) | "offline" (fallback)
   const [state, setState] = useState("loading");
   const [salesPageHtml, setSalesPageHtml] = useState("");
+  const [cardCoverHtml, setCardCoverHtml] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -53,9 +60,11 @@ export default function BookProductPreview({ product, onBuy, mode = "detail", cl
     getSteaCodeEbookSalesPage(identity)
       .then((res) => {
         if (cancelled) return;
-        const html = res?.salesPageHtml;
-        if (typeof html === "string" && html.trim()) {
-          setSalesPageHtml(html);
+        const page = typeof res?.salesPageHtml === "string" ? res.salesPageHtml : "";
+        const card = typeof res?.cardCoverHtml === "string" ? res.cardCoverHtml : "";
+        setSalesPageHtml(page);
+        setCardCoverHtml(card);
+        if (page.trim() || card.trim()) {
           setState("ready");
         } else {
           setState("empty");
@@ -67,8 +76,12 @@ export default function BookProductPreview({ product, onBuy, mode = "detail", cl
     return () => { cancelled = true; };
   }, [identity]);
 
+  // The card prefers the standalone cover; the modal always gets the full sales
+  // page. Evaluated at render time so switching `mode` picks the other document
+  // without refetching.
+  const chosenHtml = mode === "card" && cardCoverHtml.trim() ? cardCoverHtml : salesPageHtml;
   const useBundledCover = state === "offline";
-  const srcDoc = useBundledCover ? bookPreviewHtml : salesPageHtml;
+  const srcDoc = useBundledCover ? bookPreviewHtml : chosenHtml;
 
   // Host → iframe: tell the embedded page which layout mode to use.
   const applyMode = () => {
@@ -105,7 +118,9 @@ export default function BookProductPreview({ product, onBuy, mode = "detail", cl
     );
   }
 
-  if (state === "empty") {
+  // No document for THIS mode → placeholder. Covers both "author pasted
+  // nothing" and "author pasted only a card cover, this is the modal".
+  if (state === "empty" || (state === "ready" && !chosenHtml.trim())) {
     return <BookPreviewPlaceholder product={product} className={className} style={style} />;
   }
 
