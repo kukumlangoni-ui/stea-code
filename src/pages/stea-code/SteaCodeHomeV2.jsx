@@ -41,7 +41,6 @@ import SteaCodeProductLivePreview from "../../components/stea-code/SteaCodeProdu
 import BookProductPreview from "../../components/stea-code/BookProductPreview.jsx";
 import SteaCodeProductSkeleton from "../../components/stea-code/SteaCodeProductSkeleton.jsx";
 import PreviewErrorBoundary from "../../components/stea-code/PreviewErrorBoundary.jsx";
-import HeroPendulum from "../../components/stea-code/HeroPendulum.jsx";
 import SteaCodeCheckoutPage from "./SteaCodeCheckoutPage.jsx";
 import SteaCodePurchasesPage from "./SteaCodePurchasesPage.jsx";
 import {
@@ -1341,10 +1340,20 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
     .filter((p) => p?.slug !== SERVICE_CARD_PRODUCT_SLUG)
     .slice(0, Math.min(visibleProductCount, 50));
 
-  // The hardcoded "steacode services" banner is the first tile of the main
-  // grid. It belongs to the unfiltered "All" view only — never to category,
-  // subcategory, pricing, framework or search results.
+  // The "steacode services" banner is the first tile of the main grid. It is
+  // the premium-website-hero product rendered through the normal card, so it
+  // keeps its authored swinging-pendulum preview, its logo pill and its gold
+  // "Book a Call" CTA. It is not part of the mapped list below — it is placed
+  // explicitly so it is always first.
+  const serviceProduct = products.find(
+    (p) => p?.slug === SERVICE_CARD_PRODUCT_SLUG
+  );
+
+  // Strictly the unfiltered first page: any tab, category, subcategory,
+  // pricing, framework or search filter hides the banner.
   const showServiceBanner =
+    Boolean(serviceProduct) &&
+    activeTab === DEFAULT_TAB &&
     category === "All" &&
     activeSubcategory === "All" &&
     pricing === "All" &&
@@ -2048,33 +2057,26 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
                 </div>
               ) : homepageProducts.length > 0 ? (
                 <div className={`sc-product-grid ${isGridSwitching ? "is-switching" : ""}`}>
-                  {/* Hardcoded "steacode services" banner — first tile, not a DB product. */}
+                  {/* "steacode services" banner — first tile of the unfiltered
+                      "All" view. It is rendered through the same card
+                      component as every other product so it keeps its authored
+                      swinging-pendulum preview, its logo pill and its gold
+                      "Book a Call" CTA. It is placed here explicitly rather
+                      than in homepageProducts. */}
                   {showServiceBanner && (
-                    <a
-                      href="/services"
-                      className="sc-code-card sc-code-card--service"
-                      aria-label="steacode services — Book a Call"
-                      style={{ display: "block", textDecoration: "none", border: "none", background: "transparent" }}
-                    >
-                      <div
-                        className="sc-code-card__preview-wrap"
-                        style={{ position: "relative", aspectRatio: "4/3", overflow: "hidden", borderRadius: "0" }}
-                      >
-                        <HeroPendulum interactive={false} />
-                      </div>
-                      <div
-                        className="sc-code-card__meta"
-                        style={{ padding: "16px 0", display: "flex", justifyContent: "space-between", alignItems: "center" }}
-                      >
-                        <div>
-                          <span style={{ fontSize: "12px", color: "#888" }}>{"</>"}</span>
-                          <h3 style={{ margin: "4px 0 0", fontSize: "18px", fontWeight: "bold", color: "#111" }}>
-                            steacode services
-                          </h3>
-                        </div>
-                        <span style={{ color: "#f5a623", fontWeight: "bold" }}>Book a Call</span>
-                      </div>
-                    </a>
+                    <Reveal delay={0}>
+                      <TiltCard>
+                        <PreviewErrorBoundary>
+                          <CodeProductCard
+                            product={serviceProduct}
+                            tLocal={tLocal}
+                            onOpen={() => openProduct(serviceProduct)}
+                            isFavorited={favorites.has(getProductIdentity(serviceProduct))}
+                            onToggleFavorite={handleToggleFavorite}
+                          />
+                        </PreviewErrorBoundary>
+                      </TiltCard>
+                    </Reveal>
                   )}
 
                   {homepageProducts.map((product, index) => (
