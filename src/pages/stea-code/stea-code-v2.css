@@ -21989,6 +21989,18 @@ html body .sc-topbar {
   display: block !important;
 }
 
+/* The rule above sets `max-height: 62vh` at (0,3,0), but the shell's height is
+   driven by `aspect-ratio: var(--preview-aspect)` (4/5) at a full-width 1080px,
+   which resolves to 1350px — the book preview swallowed the whole modal and
+   pushed the info card far below the fold. `html body` (0,3,2) outranks both
+   that rule and `.sc-premium-product-detail .sc-product-detail-preview-shell`
+   (0,2,0), so the cap actually lands. */
+html body .sc-premium-product-detail .sc-product-detail-preview-shell.is-library-preview {
+  height: auto !important;
+  max-height: 70vh !important;
+  min-height: 380px !important;
+}
+
 /* =========================================
    EBOOK "READ" ACTION BUTTON
    ========================================= */
@@ -22003,4 +22015,140 @@ html body .sc-topbar {
 }
 .sc-premium-product-detail .sc-detail-action--read .sc-detail-action-icon svg {
   stroke: #0b0e14 !important;
+}
+
+/* =========================================
+   EBOOK READER — /library/read/:slug
+   Fixed top bar + full-screen book stage.
+   ========================================= */
+
+.sc-reader-root {
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.sc-reader-topbar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 56px;
+  padding: 0 16px;
+  background: #0f131c;
+  border-bottom: 1px solid #1e2430;
+  color: #e7e9ee;
+  z-index: 2;
+}
+
+.sc-reader-topbar__back,
+.sc-reader-topbar__download {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+}
+
+.sc-reader-topbar__back {
+  background: transparent;
+  color: #aab2c0;
+  border: 1px solid #262d3b;
+}
+
+.sc-reader-topbar__back:hover {
+  background: #1a2130;
+  color: #ffffff;
+  border-color: #333c4d;
+}
+
+.sc-reader-topbar__title {
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sc-reader-topbar__download {
+  background: linear-gradient(135deg, #d89a2b, #e0a63c);
+  color: #0b0e14;
+  border: 1px solid transparent;
+  box-shadow: 0 6px 18px -8px rgba(216, 154, 43, 0.55);
+}
+
+.sc-reader-topbar__download:hover {
+  filter: brightness(1.06);
+}
+
+.sc-reader-stage {
+  flex: 1 1 auto;
+  min-height: 0;
+  position: relative;
+  background: #0b0e14;
+}
+
+/* =========================================
+   EBOOK PRINT — only the book content prints.
+   The top bar and all marketplace chrome are
+   hidden; the reader iframe is expanded to the
+   full sheet.
+   ========================================= */
+
+@media print {
+  /* Reader chrome */
+  .sc-reader-topbar {
+    display: none !important;
+  }
+
+  /* Marketplace / product-modal chrome */
+  .sc-header,
+  .sc-navbar,
+  .sc-footer,
+  .sc-sidebar,
+  .sc-tabbar,
+  .sc-tabs,
+  .sc-product-detail-actions,
+  .sc-detail-actions,
+  .sc-modal-close,
+  .sc-toast,
+  button {
+    display: none !important;
+  }
+
+  /* Reset page backgrounds so the book prints on white */
+  html,
+  body,
+  .sc-reader-root,
+  .sc-reader-stage {
+    background: #ffffff !important;
+    overflow: visible !important;
+    height: auto !important;
+    position: static !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .sc-reader-root {
+    position: static !important;
+    z-index: auto !important;
+  }
+
+  /* Let the book iframe fill the sheet */
+  .sc-reader-frame {
+    position: static !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 100vh !important;
+    border: 0 !important;
+    display: block !important;
+  }
 }

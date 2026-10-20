@@ -11,7 +11,7 @@
 
 import { corsHeaders, isPreflight, preflightResponse } from "./cors";
 import { handleCatalog, handleProduct } from "./routes/catalog";
-import { handlePreview, handleFreeContent, handleContent, handleProductPreviewCard } from "./routes/content";
+import { handlePreview, handleFreeContent, handleContent, handleProductPreviewCard, handleSalesPage, handleBookContent } from "./routes/content";
 import { handleCheckout } from "./routes/checkout";
 import { handleCheckoutProduct } from "./routes/checkout-product";
 import { handleEntitlementsMe, handlePurchases, handleProductAccess } from "./routes/entitlements";
@@ -38,6 +38,7 @@ import {
   handleAdminGetPreview,
   handleAdminPackageUpload,
   handleAdminPreviewUpload,
+  handleAdminBookUpload,
   handleAdminOrders,
   handleAdminEntitlements,
   handleAdminUsers,
@@ -173,6 +174,18 @@ export default {
         return handleContent(request, env, contentMatch[1]);
       }
 
+      // eBook 3D cover / sales page (public)
+      const salesPageMatch = apiPath.match(/^\/stea-code\/products\/([^/]+)\/sales-page$/);
+      if (salesPageMatch && method === "GET") {
+        return handleSalesPage(request, env, salesPageMatch[1]);
+      }
+
+      // eBook full chapters + download URL (auth + entitlement required)
+      const bookContentMatch = apiPath.match(/^\/stea-code\/products\/([^/]+)\/book-content$/);
+      if (bookContentMatch && method === "GET") {
+        return handleBookContent(request, env, bookContentMatch[1]);
+      }
+
       const downloadMatch = apiPath.match(/^\/stea-code\/products\/([^/]+)\/download$/);
       if (downloadMatch && method === "GET") {
         return handleDownload(request, env, downloadMatch[1]);
@@ -306,6 +319,11 @@ export default {
       const adminPreviewMatch = apiPath.match(/^\/admin\/stea-code\/products\/([^/]+)\/preview\/upload$/);
       if (adminPreviewMatch && method === "POST") {
         return handleAdminPreviewUpload(request, env, adminPreviewMatch[1]);
+      }
+
+      const adminBookMatch = apiPath.match(/^\/admin\/stea-code\/products\/([^/]+)\/book\/upload$/);
+      if (adminBookMatch && method === "POST") {
+        return handleAdminBookUpload(request, env, adminBookMatch[1]);
       }
 
       const adminProductMatch = apiPath.match(/^\/admin\/stea-code\/products\/([^/]+)$/);

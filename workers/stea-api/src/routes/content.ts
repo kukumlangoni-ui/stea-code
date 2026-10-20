@@ -253,6 +253,144 @@ export async function handleContent(req: Request, env: Env, productId: string): 
 }
 
 /**
+ * GET /products/:id/sales-page
+ *
+ * PUBLIC. Returns the eBook's `salesPageHtml` — the 3D cover / sales page the
+ * card and product modal render. This is marketing material shown to
+ * non-buyers, so no auth is required.
+ *
+ * It is served from its own endpoint rather than inlined into the catalog so
+ * the homepage card list stays small: a sales page is ~130KB of HTML, and the
+ * platform is expected to host several books.
+ */
+export async function handleSalesPage(req: Request, env: Env, productId: string): Promise<Response> {
+  try {
+    let doc = await getDoc(env, PRODUCTS_COLLECTION, productId);
+    if (!doc) {
+      const all = await listDocs(env, PRODUCTS_COLLECTION, {});
+      doc = all.find((d) => d.data.slug === productId) || null;
+    }
+    if (!doc) {
+      return new Response(JSON.stringify({ error: "Product not found" }), {
+        status: 404,
+        headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) },
+      });
+    }
+
+    return new Response(
+      JSON.stringify({
+        id: doc.id,
+        slug: doc.data.slug,
+        titleEn: doc.data.titleEn,
+        productType: doc.data.productType || "component",
+        salesPageHtml: doc.data.salesPageHtml || null,
+      }),
+      {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+          "Cache-Control": "public, max-age=60, s-maxage=300, stale-while-revalidate=600",
+          ...corsHeaders(req.headers.get("origin")),
+        },
+      }
+    );
+  } catch (e: any) {
+    return new Response(JSON.stringify({ error: e?.message || "Sales page fetch failed", code: "SALES_PAGE_FAILED" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) },
+    });
+  }
+}
+
+/**
+ * GET /products/:id/book-content
+ *
+ * PAID. Returns the eBook's full chapter HTML plus the optional pre-built
+ * PDF/ZIP URL. Requires a valid Firebase ID token AND an entitlement
+ * (per-product purchase OR pro-lifetime) unless the book is free.
+ *
+ * This is the ONLY route that ever returns `bookContentHtml` /
+ * `bookDownloadUrl` — the public catalog and product endpoints strip both.
+ */
+export async function handleBookContent(req: Request, env: Env, productId: string): Promise<Response> {
+  try {
+    let doc = await getDoc(env, PRODUCTS_COLLECTION, productId);
+    if (!doc) {
+      const all = await listDocs(env, PRODUCTS_COLLECTION, {});
+      doc = all.find((d) => d.data.slug === productId) || null;
+    }
+    if (!doc) {
+      return new Response(JSON.stringify({ error: "Product not found" }), {
+        status: 404,
+        headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) },
+      });
+    }
+
+    // Fail closed: anything that is not explicitly free needs auth+entitlement.
+    const isFree = doc.data.pricingType === "free";
+    if (!isFree) {
+      const token = extractBearerToken(req);
+      if (!token) {
+        return new Response(JSON.stringify({ error: "Authentication required", code: "AUTH_REQUIRED" }), {
+          status: 401,
+          headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) },
+        });
+      }
+
+      const decoded = await verifyFirebaseToken(env, token);
+      if (!decoded) {
+        return new Response(JSON.stringify({ error: "Invalid or expired session", code: "AUTH_REQUIRED" }), {
+          status: 401,
+          headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) },
+        });
+      }
+
+      // Entitlement: per-product OR pro-lifetime (same check as /content).
+      const entitlementRow = await env.DB.prepare(
+        "SELECT orderId, licenseType FROM entitlements WHERE userId = ? AND (productId = ? OR productId = 'pro-lifetime') LIMIT 1"
+      )
+        .bind(decoded.uid, doc.id)
+        .first();
+
+      if (!entitlementRow) {
+        return new Response(
+          JSON.stringify({ error: "Premium access required", code: "ACCESS_DENIED" }),
+          { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) } }
+        );
+      }
+    }
+
+    return new Response(
+      JSON.stringify({
+        access: true,
+        product: {
+          id: doc.id,
+          slug: doc.data.slug,
+          titleEn: doc.data.titleEn,
+          price: Number(doc.data.price) || 0,
+          bookContentHtml: doc.data.bookContentHtml || null,
+          bookDownloadUrl: doc.data.bookDownloadUrl || null,
+        },
+      }),
+      {
+        status: 200,
+        headers: {
+          // Private: this is paid content, never let a shared cache store it.
+          "Content-Type": "application/json",
+          "Cache-Control": "private, no-store",
+          ...corsHeaders(req.headers.get("origin")),
+        },
+      }
+    );
+  } catch (e: any) {
+    return new Response(JSON.stringify({ error: e?.message || "Book content fetch failed", code: "BOOK_CONTENT_FAILED" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) },
+    });
+  }
+}
+
+/**
  * Card preview endpoint — returns a sanitized preview for grid cards.
  *
  * Security model:

@@ -7,6 +7,7 @@ import {
   Download,
   Eye,
   FileText,
+  BookOpen,
   Loader2,
   Package,
   Plus,
@@ -26,6 +27,7 @@ import {
   saveAdminSteaCodeSource,
   updateAdminSteaCodeProduct,
   uploadSteaCodePackage,
+  uploadSteaCodeBookFile,
 } from "../services/steaCodeAdmin.js";
 import {
   invalidateSteaCodeCatalogCache,
@@ -84,7 +86,10 @@ const EMPTY_PRODUCT = {
   liveUrl: "",
   repoUrl: "",
   previewVideoUrl: "",
-  productType: "Code Product",
+  productType: "component",
+  salesPageHtml: "",
+  bookContentHtml: "",
+  bookDownloadUrl: "",
   tags: "",
   frameworks: "",
   included: "",
@@ -227,7 +232,21 @@ const TABS = [
   { id: "basic", label: "Basic", icon: FileText },
   { id: "preview", label: "Preview", icon: Eye },
   { id: "deliverables", label: "Deliverables", icon: Package },
+  { id: "ebook", label: "eBook Settings", icon: BookOpen },
   { id: "publish", label: "Publish", icon: Sparkles },
+];
+
+/**
+ * Product kinds. Stored on `products.productType`:
+ *   component — copy-paste component / layout / kit (the default)
+ *   ebook     — a book; unlocks the "eBook Settings" tab, the 3D cover card
+ *               preview and the /library/read/:slug reader
+ *   course    — reserved for a future course product
+ */
+const PRODUCT_TYPES = [
+  { id: "component", label: "Component", hint: "Copy-paste component, layout or kit" },
+  { id: "ebook", label: "eBook", hint: "A book with a 3D cover sales page and chapters" },
+  { id: "course", label: "Course", hint: "Multi-lesson course (reserved)" },
 ];
 
 const PREVIEW_MODES = [
@@ -739,6 +758,10 @@ export function ProductStudioV3({
   const [packageUploadProgress, setPackageUploadProgress] = useState(0);
   const [packageError, setPackageError] = useState("");
   const [packageDragging, setPackageDragging] = useState(false);
+  // eBook download (PDF/ZIP) upload state.
+  const [bookUploading, setBookUploading] = useState(false);
+  const [bookUploadProgress, setBookUploadProgress] = useState(0);
+  const bookInputRef = useRef(null);
 
   // XHR upload with real progress — fetch() cannot report upload progress,
   // which is why uploads sat at 0%. Same contract as uploadSteaCodePreviewAssets:
@@ -992,6 +1015,46 @@ export function ProductStudioV3({
     } finally {
       setPackageUploading(false);
       setPackageUploadProgress(0);
+    }
+  };
+
+  // Optional pre-built eBook download (PDF or ZIP) → R2, stored as
+  // products.bookDownloadUrl. The reader prefers this over window.print().
+  const uploadBookFile = async (file) => {
+    if (!file) return;
+    setError("");
+    const isPdf = /\.pdf$/i.test(file.name) || file.type === "application/pdf";
+    const isZip = /\.zip$/i.test(file.name) || file.type === "application/zip";
+    if (!isPdf && !isZip) {
+      setError("Only .pdf or .zip files are accepted for the eBook download.");
+      return;
+    }
+    if (file.size > 100 * 1024 * 1024) {
+      setError("Book file must be under 100 MB.");
+      return;
+    }
+    const pid = uploadId || product?.id;
+    if (!pid) {
+      setError("Save the product first before uploading the book file.");
+      return;
+    }
+    setBookUploading(true);
+    setBookUploadProgress(0);
+    try {
+      const result = await uploadSteaCodeBookFile(pid, file, {
+        onProgress: (p) => setBookUploadProgress(p),
+      });
+      if (!result?.url) throw new Error(result?.error || "Upload failed");
+      // The worker already persisted bookDownloadUrl; mirror it into the form
+      // so a subsequent product save keeps the same value.
+      setForm((prev) => ({ ...prev, bookDownloadUrl: result.url }));
+      setNotice("Book file uploaded");
+      setTimeout(() => setNotice(""), 2000);
+    } catch (err) {
+      setError(err?.message || "Book upload failed.");
+    } finally {
+      setBookUploading(false);
+      setBookUploadProgress(0);
     }
   };
 
@@ -1358,8 +1421,22 @@ export function ProductStudioV3({
       form.previewVideoUrl ||
       form.posterImageUrl;
     const deliver = true; // deliverables are optional
-    return { basic, preview: previewOk, deliverables: deliver, publish: canPublish };
+    const ebook = Boolean(String(form.salesPageHtml || "").trim());
+    return { basic, preview: previewOk, deliverables: deliver, ebook, publish: canPublish };
   }, [form, preview, canPublish]);
+
+  // The "eBook Settings" tab only exists for eBook products.
+  const isEbook = form.productType === "ebook";
+  const visibleTabs = useMemo(
+    () => (isEbook ? TABS : TABS.filter((t) => t.id !== "ebook")),
+    [isEbook]
+  );
+
+  // If the type is switched away from eBook while that tab is open, fall back
+  // to Basic so the user is never stranded on a hidden tab.
+  useEffect(() => {
+    if (!isEbook && tab === "ebook") setTab("basic");
+  }, [isEbook, tab]);
 
   // Code tabs based on runtime
   const codeTabs = useMemo(() => {
@@ -1406,6 +1483,11 @@ export function ProductStudioV3({
   const fullHtmlPresent = fullDocumentSource.trim().length > 0;
 
   const previewDocument = useMemo(() => {
+    // eBooks preview their authored sales page (the 3D cover) — that is what
+    // buyers see on the card and in the modal, not the component runtime.
+    if (form.productType === "ebook" && String(form.salesPageHtml || "").trim()) {
+      return String(form.salesPageHtml);
+    }
     // If fullDocument has content, use it verbatim (authoritative)
     if (fullHtmlPresent) {
       const url = String(preview.baseUrl || "").trim();
@@ -1421,6 +1503,8 @@ export function ProductStudioV3({
     if (preview.runtime === "external") return "";
     return generatedPreviewDocument;
   }, [
+    form.productType,
+    form.salesPageHtml,
     preview.runtime,
     preview.baseUrl,
     fullHtmlPresent,
@@ -1504,7 +1588,7 @@ export function ProductStudioV3({
 
       {/* Tab Bar */}
       <div className="psv3-tabbar">
-        {TABS.map((t) => {
+        {visibleTabs.map((t) => {
           const Icon = t.icon;
           return (
             <button
@@ -1560,6 +1644,17 @@ export function ProductStudioV3({
                       updateForm("subcategory", "");
                     }}
                     options={Object.values(TAXONOMY_TABS).map((t) => ({ id: t.id, label: t.label }))}
+                  />
+                </Field>
+                <Field
+                  label="Product Type"
+                  required
+                  hint="eBook unlocks the eBook Settings tab, the 3D cover card preview and the reader route"
+                >
+                  <RadioGroup
+                    value={form.productType || "component"}
+                    onChange={(v) => updateForm("productType", v)}
+                    options={PRODUCT_TYPES.map((p) => ({ id: p.id, label: p.label }))}
                   />
                 </Field>
                 <Field label="Category" required>
@@ -1709,6 +1804,51 @@ export function ProductStudioV3({
         {/* TAB 2 — PREVIEW */}
         {tab === "preview" && (
           <>
+            {/* eBooks preview their authored sales page (the 3D cover), which
+                is independent of the component runtime / preview mode. */}
+            {isEbook && (
+              <Section
+                title="Sales Page Preview"
+                subtitle="Exactly what buyers see on the Library card and in the product modal"
+                action={
+                  <button
+                    type="button"
+                    className="psv3-btn psv3-btn--ghost"
+                    onClick={() => selectTab("ebook")}
+                  >
+                    <BookOpen size={14} /> Edit eBook Settings
+                  </button>
+                }
+              >
+                {String(form.salesPageHtml || "").trim() ? (
+                  <div className="psv3-preview-panel">
+                    <div className="psv3-preview-header">
+                      <span className="psv3-preview-dot r" />
+                      <span className="psv3-preview-dot y" />
+                      <span className="psv3-preview-dot g" />
+                      <span className="psv3-preview-label">Sales Page</span>
+                    </div>
+                    <div
+                      className="psv3-preview-frame"
+                      style={{ aspectRatio: `${form.designWidth || 1440} / ${form.designHeight || 900}` }}
+                    >
+                      <iframe
+                        title="steacode eBook sales page preview"
+                        sandbox="allow-scripts"
+                        srcDoc={String(form.salesPageHtml)}
+                        className="psv3-preview-iframe"
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <p className="psv3-field-hint" style={{ margin: 0 }}>
+                    No Sales Page HTML yet — the card will show a “Preview coming soon”
+                    placeholder. Paste the 3D cover in eBook Settings.
+                  </p>
+                )}
+              </Section>
+            )}
+
             {previewMode === "live" && (
               <Section
                 title="Live Preview"
@@ -2167,6 +2307,152 @@ export function ProductStudioV3({
                   />
                 </Field>
               </div>
+            </Section>
+          </>
+        )}
+
+        {/* TAB — EBOOK SETTINGS (only for productType === "ebook") */}
+        {tab === "ebook" && (
+          <>
+            <Section
+              title="Sales Page HTML"
+              subtitle="Paste the 3D cover code — shown on the Library card and in the product modal"
+            >
+              <Field
+                label="Sales Page HTML"
+                full
+                hint="Public marketing page. Rendered inside a sandboxed iframe, so include a full HTML document (<!DOCTYPE html> … </html>)."
+              >
+                <TextArea
+                  value={form.salesPageHtml}
+                  onChange={(v) => updateForm("salesPageHtml", v)}
+                  placeholder="<!DOCTYPE html> ... the 3D book cover markup ..."
+                  rows={12}
+                  spellCheck={false}
+                />
+                {String(form.salesPageHtml || "").trim() ? (
+                  <p className="psv3-field-hint">
+                    {String(form.salesPageHtml).length.toLocaleString()} characters pasted
+                  </p>
+                ) : (
+                  <p className="psv3-field-hint">
+                    Empty — the card will show a “Preview coming soon” placeholder.
+                  </p>
+                )}
+              </Field>
+            </Section>
+
+            <Section
+              title="Book Content HTML"
+              subtitle="Paste the chapters — this is the paid reader payload"
+            >
+              <Field
+                label="Book Content HTML"
+                full
+                hint="Private. Served only to buyers through the entitlement-gated endpoint at /library/read/:slug — never returned by the public catalog."
+              >
+                <TextArea
+                  value={form.bookContentHtml}
+                  onChange={(v) => updateForm("bookContentHtml", v)}
+                  placeholder="<!DOCTYPE html> ... the full book chapters ..."
+                  rows={12}
+                  spellCheck={false}
+                />
+                {String(form.bookContentHtml || "").trim() ? (
+                  <p className="psv3-field-hint">
+                    {String(form.bookContentHtml).length.toLocaleString()} characters pasted
+                  </p>
+                ) : (
+                  <p className="psv3-field-hint">
+                    Empty — the reader falls back to the bundled reader shell.
+                  </p>
+                )}
+              </Field>
+            </Section>
+
+            <Section
+              title="Downloadable PDF / ZIP"
+              subtitle="Optional — buyers get this as a direct download instead of printing the page"
+            >
+              <Field label="Book File" full hint="PDF or ZIP · up to 100 MB">
+                <input
+                  ref={bookInputRef}
+                  type="file"
+                  accept=".pdf,.zip,application/pdf,application/zip"
+                  style={{ display: "none" }}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    e.target.value = "";
+                    if (file) uploadBookFile(file);
+                  }}
+                />
+
+                {!form.bookDownloadUrl && !bookUploading && (
+                  <div className="psv3-upload" onClick={() => bookInputRef.current?.click()}>
+                    <Upload size={24} className="psv3-upload-icon" />
+                    <p className="psv3-upload-text">Upload PDF or ZIP</p>
+                    <p className="psv3-upload-hint">Optional · buyers can always print the book</p>
+                  </div>
+                )}
+
+                {bookUploading && (
+                  <div className="psv3-upload is-uploading">
+                    <Upload size={24} className="psv3-upload-icon" />
+                    <p className="psv3-upload-text">Uploading… {bookUploadProgress}%</p>
+                    <div className="psv3-progress-track">
+                      <div
+                        className="psv3-progress-fill"
+                        style={{ width: `${bookUploadProgress}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {form.bookDownloadUrl && !bookUploading && (
+                  <div className="psv3-file-row">
+                    <span className="psv3-file-name" title={form.bookDownloadUrl}>
+                      <CheckCircle2 size={14} /> {String(form.bookDownloadUrl).split("/").pop()}
+                    </span>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <button
+                        type="button"
+                        className="psv3-btn psv3-btn--ghost"
+                        onClick={() => window.open(form.bookDownloadUrl, "_blank")}
+                      >
+                        <Download size={14} /> Preview
+                      </button>
+                      <button
+                        type="button"
+                        className="psv3-btn psv3-btn--ghost"
+                        onClick={() => setForm((prev) => ({ ...prev, bookDownloadUrl: "" }))}
+                      >
+                        <Trash2 size={14} /> Remove
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </Field>
+
+              <Field
+                label="Download URL"
+                full
+                hint="Set automatically by the uploader. You can also paste an external URL."
+              >
+                <TextInput
+                  value={form.bookDownloadUrl}
+                  onChange={(v) => updateForm("bookDownloadUrl", v)}
+                  placeholder="/api/stea-code/media/products/<id>/book/book.pdf?download=1"
+                />
+              </Field>
+            </Section>
+
+            <Section title="Reader & Card" subtitle="How this book behaves once published">
+              <p className="psv3-field-hint" style={{ margin: 0 }}>
+                Card — renders the Sales Page HTML (3D cover) on the Library tab.
+                <br />
+                Reader — <code>/library/read/{form.slug || form.id || "<slug>"}</code>, gated on
+                purchase, with a “Download PDF” button.
+              </p>
             </Section>
           </>
         )}

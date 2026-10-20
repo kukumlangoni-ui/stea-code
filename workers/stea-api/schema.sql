@@ -41,6 +41,10 @@ CREATE TABLE IF NOT EXISTS products (
   price                 REAL,
   pricingType           TEXT,
   category              TEXT,
+  productType           TEXT DEFAULT 'component',  -- 'component' | 'ebook' | 'course'
+  salesPageHtml         TEXT,       -- eBook only: PUBLIC 3D cover / sales page
+  bookContentHtml       TEXT,       -- eBook only: PAID full book chapters (never public)
+  bookDownloadUrl       TEXT,       -- eBook only: optional pre-built PDF/ZIP (gated)
   status                TEXT,
   featured              INTEGER DEFAULT 0,
   homepageVisible       INTEGER DEFAULT 0,

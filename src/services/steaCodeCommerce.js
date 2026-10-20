@@ -166,6 +166,33 @@ export async function getSteaCodeProductContent(productId) {
   return parseResponse(response);
 }
 
+/**
+ * eBook 3D cover / sales page. PUBLIC — no auth needed, safe to render for
+ * non-buyers on cards and in the product modal.
+ */
+export async function getSteaCodeEbookSalesPage(productId) {
+  const response = await fetch(
+    `${API_BASE}/api/stea-code/products/${encodeURIComponent(productId)}/sales-page`
+  );
+
+  return parseResponse(response);
+}
+
+/**
+ * eBook full chapters + optional PDF/ZIP URL. Auth + entitlement enforced
+ * server-side — throws when the signed-in user has not bought the book.
+ */
+export async function getSteaCodeEbookContent(productId) {
+  const headers = await authHeaders();
+
+  const response = await fetch(
+    `${API_BASE}/api/stea-code/products/${encodeURIComponent(productId)}/book-content`,
+    { headers }
+  );
+
+  return parseResponse(response);
+}
+
 export async function getSteaCodeProductStats(productIds = []) {
   const ids = [...new Set(productIds.map((id) => String(id || "").trim()).filter(Boolean))];
   if (!ids.length) return { stats: {} };

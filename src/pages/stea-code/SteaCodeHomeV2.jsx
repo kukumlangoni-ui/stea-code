@@ -19,6 +19,7 @@ import {
   Image,
   Layers,
   Lock,
+  Download,
   Mail,
   Package,
   Palette,
@@ -59,6 +60,7 @@ import {
   getSteaCodeFreeProductContent,
   getSteaCodeProductAccess,
   getSteaCodeProductContent,
+  getSteaCodeEbookContent,
   registerSteaCodeProductView,
   recordSteaCodeCopy,
   toggleSteaCodeFavorite,
@@ -2719,8 +2721,10 @@ function CodeProductCard({ product, tLocal, onOpen, isFavorited, onToggleFavorit
           </div>
         ) : (
           <div className="sc-code-card__preview">
-            {product?.tab === "library" ? (
+            {product?.productType === "ebook" || product?.tab === "library" ? (
               <div className="sc-product-preview-art" style={{ width: "100%", height: "100%" }}>
+                {/* Renders the product's Sales Page HTML (3D cover); falls back
+                    to a "Preview coming soon" placeholder when it has none. */}
                 <BookProductPreview product={product} mode="card" />
               </div>
             ) : (
@@ -3542,6 +3546,10 @@ function ProductDetail({
   const [freeRemoteError, setFreeRemoteError] = useState("");
   const [aiPromptCopied, setAiPromptCopied] = useState(false);
   const [toast, setToast] = useState(null);
+  // eBook buyers: the optional pre-built PDF/ZIP URL. It is PAID data, so it is
+  // not part of the public product payload — it is fetched from the
+  // entitlement-gated /book-content endpoint once the user has access.
+  const [ebookDownloadUrl, setEbookDownloadUrl] = useState("");
   const [detailMediaMode, setDetailMediaMode] = useState(
     getPreviewVideoUrl(product) ? "video" : "demo"
   );
@@ -3616,8 +3624,10 @@ function ProductDetail({
     ? `${product?.preview?.width || product?.designWidth || 1440} / ${product?.preview?.height || product?.designHeight || 1200}`
     : `${product?.designWidth || product?.preview?.width || (product?.tab === "kits" ? 1600 : 640)} / ${product?.designHeight || product?.preview?.height || (product?.tab === "kits" ? 1100 : 480)}`;
 
-  // eBook / Library products render the 3D book sales page (BookProductPreview).
-  const isLibraryProduct = product?.tab === "library";
+  // eBook products render the 3D book sales page (BookProductPreview).
+  // `tab === "library"` is the legacy signal, kept so a stale cached catalog
+  // response (which may predate the productType column) still renders right.
+  const isLibraryProduct = product?.productType === "ebook" || product?.tab === "library";
 
   // Default to video tab when product has a video, otherwise live demo.
   // Reset when the product changes (user clicks a different card).
@@ -4241,6 +4251,40 @@ function ProductDetail({
     [hasAccess, onOpenUnlockModal, onReadEbook, product]
   );
 
+  // eBook buyers: resolve the optional pre-built PDF/ZIP. Quietly no-ops for
+  // non-eBooks or users without access (the endpoint returns 403/401).
+  useEffect(() => {
+    let cancelled = false;
+    if (!isLibraryProduct || !hasAccess) {
+      setEbookDownloadUrl("");
+      return;
+    }
+    const identity = product?.slug || product?.id;
+    if (!identity) return;
+    getSteaCodeEbookContent(identity)
+      .then((res) => {
+        if (!cancelled) setEbookDownloadUrl(res?.product?.bookDownloadUrl || "");
+      })
+      .catch(() => {
+        if (!cancelled) setEbookDownloadUrl("");
+      });
+    return () => { cancelled = true; };
+  }, [isLibraryProduct, hasAccess, product?.slug, product?.id]);
+
+  // "Download Book" — direct download when a pre-built file exists, otherwise
+  // fall back to printing the page.
+  const handleDownloadBook = useCallback(
+    (e) => {
+      e.stopPropagation();
+      if (ebookDownloadUrl) {
+        window.location.href = ebookDownloadUrl;
+        return;
+      }
+      window.print();
+    },
+    [ebookDownloadUrl]
+  );
+
   // Resume pending action on mount or when user authenticates
   useEffect(() => {
     if (!currentUser) return;
@@ -4502,7 +4546,7 @@ function ProductDetail({
                   </small>
                 </div>
               </div>
-            ) : isPremium ? (
+            ) : isPremium && !isLibraryProduct ? (
             <div className="sc-product-action-box is-premium">
               <div className="sc-product-action-copy">
                 <span className="sc-product-action-icon">
@@ -4633,6 +4677,22 @@ function ProductDetail({
                     ? `Get the book — $${productPrice.toFixed(2)}`
                     : 'Read now →'}
                 </span>
+              </button>
+            )}
+
+            {/* Download Book — eBooks only, for buyers. Downloads the
+                pre-built PDF/ZIP when one was uploaded, otherwise prints. */}
+            {isLibraryProduct && hasAccess && (
+              <button
+                type="button"
+                className="sc-detail-action sc-detail-action--download-book"
+                onClick={handleDownloadBook}
+                title={ebookDownloadUrl ? "Download the PDF/ZIP" : "Print / save as PDF"}
+              >
+                <span className="sc-detail-action-icon" aria-hidden="true">
+                  <Download size={18} />
+                </span>
+                <span className="sc-detail-action-label">Download Book</span>
               </button>
             )}
 

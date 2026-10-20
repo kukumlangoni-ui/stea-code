@@ -53,6 +53,7 @@ const SCHEMAS: Record<string, TableSchema> = {
       "id", "slug", "titleEn", "titleZh", "shortDescriptionEn",
       "shortDescriptionZh", "price", "pricingType", "category", "subcategory",
       "tab", "gallery",
+      "productType", "salesPageHtml", "bookContentHtml", "bookDownloadUrl",
       "status", "featured", "homepageVisible", "tags", "frameworks",
       "languages", "craftNoteEn", "aiPrompt", "previewVideoUrl",
       "posterImageUrl", "previewMode", "preview", "designWidth", "designHeight",

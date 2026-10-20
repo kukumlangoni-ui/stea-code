@@ -91,10 +91,20 @@ export async function handleMedia(req: Request, env: any, key: string): Promise<
         png: "image/png",
         gif: "image/gif",
         webp: "image/webp",
+        pdf: "application/pdf",
+        zip: "application/zip",
       };
       if (ext && types[ext]) {
         headers.set("Content-Type", types[ext]);
       }
+    }
+
+    // ?download=1 forces a download instead of an inline render. The HTML
+    // `download` attribute is ignored cross-origin, so this is what makes the
+    // eBook "Download PDF/ZIP" button actually save the file.
+    if (new URL(req.url).searchParams.get("download") === "1") {
+      const filename = cleanKey.split("/").pop() || "download";
+      headers.set("Content-Disposition", `attachment; filename="${filename}"`);
     }
 
     // Handle range responses

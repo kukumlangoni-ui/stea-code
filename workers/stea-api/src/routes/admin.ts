@@ -499,6 +499,70 @@ export async function handleAdminPreviewUpload(
   }
 }
 
+/**
+ * POST /admin/stea-code/products/:productId/book/upload
+ *
+ * Uploads the optional pre-built eBook download (PDF or ZIP) to R2 and stores
+ * its public media URL on the product as `bookDownloadUrl`. The DB column is
+ * read back only by the entitlement-gated /book-content endpoint, so the URL
+ * never reaches a non-buyer.
+ */
+export async function handleAdminBookUpload(
+  req: Request,
+  env: RouteEnv,
+  productId: string
+): Promise<Response> {
+  const admin = await requireAdmin(req, env);
+  if (!admin) return admin403(req);
+
+  try {
+    const form = await req.formData();
+    const file = form.get("book") as File | null;
+    if (!file || typeof file === "string") {
+      return new Response(JSON.stringify({ error: "No book file uploaded", code: "NO_FILE" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) },
+      });
+    }
+
+    const isPdf = file.type === "application/pdf" || /\.pdf$/i.test(file.name);
+    const isZip = /\.zip$/i.test(file.name) || file.type === "application/zip";
+    if (!isPdf && !isZip) {
+      return new Response(
+        JSON.stringify({ error: "Only .pdf or .zip files are accepted for the eBook download", code: "BAD_TYPE" }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) } }
+      );
+    }
+    if (file.size > 100 * 1024 * 1024) {
+      return new Response(JSON.stringify({ error: "File too large (max 100MB)", code: "TOO_LARGE" }), {
+        status: 413,
+        headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) },
+      });
+    }
+
+    const safeName = file.name.replace(/[^a-z0-9._-]+/gi, "-").toLowerCase();
+    const key = `products/${productId}/book/${safeName}`;
+    const buffer = await file.arrayBuffer();
+    await putObject(
+      env.STEA_BUCKET,
+      key,
+      buffer,
+      isPdf ? "application/pdf" : "application/zip"
+    );
+
+    // ?download=1 forces Content-Disposition: attachment on the media route.
+    const url = `/api/stea-code/media/${key}?download=1`;
+    await setDoc(env, PRODUCTS_COLLECTION, productId, { bookDownloadUrl: url }, true);
+
+    return new Response(
+      JSON.stringify({ success: true, key, url, filename: safeName, size: buffer.byteLength }),
+      { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) } }
+    );
+  } catch (e: any) {
+    return admin500(req, e, "BOOK_UPLOAD_FAILED", "Book upload failed");
+  }
+}
+
 function admin403(req: Request): Response {
   return new Response(JSON.stringify({ error: "Admin access required" }), {
     status: 403,

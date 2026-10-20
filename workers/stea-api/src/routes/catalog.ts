@@ -10,13 +10,26 @@ const PRODUCTS_COLLECTION = "stea_code_products";
 /** Fields stripped from catalog responses to keep payloads small.
  *  The full product detail endpoint (/products/:id) returns everything.
  *  sourceCode and publicFiles are stripped — they're fetched per-product
- *  on modal open via /api/stea-code/products/:id. */
+ *  on modal open via /api/stea-code/products/:id.
+ *
+ *  bookContentHtml and bookDownloadUrl are the PAID eBook payload. They are
+ *  stripped here (and never re-added anywhere public) — buyers fetch them
+ *  from GET /api/stea-code/products/:id/book-content, which enforces auth +
+ *  entitlement.
+ *
+ *  salesPageHtml (the eBook 3D cover) is public marketing, but it is also
+ *  ~130KB of HTML, so it is stripped from every list/detail response too and
+ *  served from its own GET /api/stea-code/products/:id/sales-page endpoint —
+ *  one source of truth, and the catalog stays small as books are added. */
 const CATALOG_STRIP_FIELDS = [
   "protectedFiles",
   "sourceFiles",
   "sourceCode",           // huge — fetched per-product on modal open
   "publicFiles",          // huge — fetched per-product on modal open
   "deliverablesSource",   // huge authoring payload — never rendered publicly
+  "bookContentHtml",      // PAID eBook chapters — entitlement-gated endpoint only
+  "bookDownloadUrl",      // PAID PDF/ZIP — entitlement-gated endpoint only
+  "salesPageHtml",        // public, but heavy — dedicated /sales-page endpoint
   "tags",
   "languages",
   "fileNames",
@@ -65,6 +78,7 @@ const HOMEPAGE_CARD_COLUMNS = [
   "previewMode",
   "preview",
   "gallery",
+  "productType",
   "designWidth",
   "designHeight",
   "createdAt",
@@ -116,6 +130,7 @@ async function listHomepageCards(env: Env): Promise<any[]> {
     previewMode: row.previewMode,
     preview: parseJsonColumn(row.preview, null),
     gallery: parseJsonColumn(row.gallery, []),
+    productType: row.productType,
     designWidth: row.designWidth === null ? null : Number(row.designWidth),
     designHeight: row.designHeight === null ? null : Number(row.designHeight),
     createdAt: row.createdAt,

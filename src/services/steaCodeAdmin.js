@@ -487,6 +487,28 @@ export async function uploadSteaCodePackage(productId, file, options = {}) {
 }
 
 /**
+ * Upload the optional pre-built eBook download (PDF or ZIP) to R2.
+ * The worker stores the resulting media URL on the product as
+ * `bookDownloadUrl` and returns it.
+ *
+ * @param {string} productId
+ * @param {File} file
+ * @param {Object} [options]
+ * @param {function(number):void} [options.onProgress] - Progress callback (0-100)
+ * @returns {Promise<{success: boolean, key: string, url: string, filename: string, size: number}>}
+ */
+export async function uploadSteaCodeBookFile(productId, file, options = {}) {
+  const formData = new FormData();
+  formData.append("book", file);
+
+  return uploadWithProgress(
+    `/api/admin/stea-code/products/${encodeURIComponent(productId)}/book/upload`,
+    formData,
+    { timeoutMs: 600000, totalBytes: file?.size || 0, ...options }
+  );
+}
+
+/**
  * Upload preview video and/or poster image to Cloudflare R2.
  * @param {string} productId
  * @param {{video?: File, poster?: File}} files
