@@ -36,6 +36,7 @@ import { onAuthStateChanged, signOut, sendEmailVerification } from "firebase/aut
 import SteaCodeMemberGate from "../../components/stea-code/SteaCodeMemberGate.jsx";
 import SteaCodeUnlockModal from "../../components/stea-code/SteaCodeUnlockModal.jsx";
 import SteaCodeProductLivePreview from "../../components/stea-code/SteaCodeProductLivePreview.jsx";
+import BookProductPreview from "../../components/stea-code/BookProductPreview.jsx";
 import SteaCodeProductSkeleton from "../../components/stea-code/SteaCodeProductSkeleton.jsx";
 import PreviewErrorBoundary from "../../components/stea-code/PreviewErrorBoundary.jsx";
 import SteaCodeCheckoutPage from "./SteaCodeCheckoutPage.jsx";
@@ -1265,6 +1266,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
         if (activeTab === "components") return p.tab === "components" || p.tab === undefined;
         if (activeTab === "layouts") return p.tab === "layouts";
         if (activeTab === "kits") return p.tab === "kits";
+        if (activeTab === "library") return p.tab === "library";
         return true;
       })
       .filter((p) => category === "All" || p.category === category)
@@ -1319,7 +1321,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
     return counts;
   }, [products]);
 
-  // Catalog already contains only homepage-approved products (scope=homepage).
+  // Catalog already contains only homepage-approved products (scope=homepage&t=${Date.now()}).
   // Filters refine the approved set. Publishing and homepage approval remain
   // separate controls in Admin — new products must be explicitly approved.
   const homepageProducts = filtered.slice(
@@ -2215,6 +2217,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
             onToggleFavorite={handleToggleFavorite}
             entitlements={entitlements}
             onOpenUnlockModal={() => setUnlockModalProduct(selected)}
+            onReadEbook={(book) => navigate(`/library/read/${book?.slug || book?.id || getProductIdentity(book)}`)}
           />
         )}
       </AnimatePresence>
@@ -2677,9 +2680,6 @@ function CodeProductCard({ product, tLocal, onOpen, isFavorited, onToggleFavorit
       <div
         className={`sc-code-card__preview-wrap ${isPosterCard ? "is-poster-card" : ""}`}
       >
-        {/* Kit badge on top-left corner */}
-        {isKit && <span className="sc-kit-badge">Kit</span>}
-
         {isPosterCard ? (
           <div
             className="sc-card-poster-preview"
@@ -2719,9 +2719,15 @@ function CodeProductCard({ product, tLocal, onOpen, isFavorited, onToggleFavorit
           </div>
         ) : (
           <div className="sc-code-card__preview">
-            <div className="sc-product-preview-art">
-              <ProductPreview product={product} fillMode="cover" cardZoom={product.cardZoom || "full"} offsetX={product.cardOffsetX || 0} offsetY={product.cardOffsetY || 0} interactive={false} preferVideo={true} cardPreview={true} />
-            </div>
+            {product?.tab === "library" ? (
+              <div className="sc-product-preview-art" style={{ width: "100%", height: "100%" }}>
+                <BookProductPreview product={product} mode="card" />
+              </div>
+            ) : (
+              <div className="sc-product-preview-art">
+                <ProductPreview product={product} fillMode="cover" cardZoom={product.cardZoom || "full"} offsetX={product.cardOffsetX || 0} offsetY={product.cardOffsetY || 0} interactive={false} preferVideo={true} cardPreview={true} />
+              </div>
+            )}
           </div>
         )}
 
@@ -2779,7 +2785,7 @@ function CodeProductCard({ product, tLocal, onOpen, isFavorited, onToggleFavorit
 
 /*
  * Homepage approval is driven by the product homepageVisible field
- * (saved via Admin and filtered by GET /api/stea-code/catalog?scope=homepage).
+ * (saved via Admin and filtered by GET /api/stea-code/catalog?scope=homepage&t=${Date.now()}).
  */
 const NATIVE_PRODUCT_PREVIEWS = Object.freeze({});
 
@@ -3497,6 +3503,7 @@ function ProductDetail({
   onToggleFavorite,
   entitlements,
   onOpenUnlockModal,
+  onReadEbook,
 }) {
   // "You might also like" — up to 4 real products from the same category,
   // excluding the currently opened product.
@@ -3608,6 +3615,9 @@ function ProductDetail({
   const livePreviewAspect = isLayoutFullPreview
     ? `${product?.preview?.width || product?.designWidth || 1440} / ${product?.preview?.height || product?.designHeight || 1200}`
     : `${product?.designWidth || product?.preview?.width || (product?.tab === "kits" ? 1600 : 640)} / ${product?.designHeight || product?.preview?.height || (product?.tab === "kits" ? 1100 : 480)}`;
+
+  // eBook / Library products render the 3D book sales page (BookProductPreview).
+  const isLibraryProduct = product?.tab === "library";
 
   // Default to video tab when product has a video, otherwise live demo.
   // Reset when the product changes (user clicks a different card).
@@ -4218,6 +4228,19 @@ function ProductDetail({
     executeDownload();
   }, [isSignedIn, hasAccess, handleGateAction, onOpenUnlockModal, executeDownload]);
 
+  // eBooks (Library) — "Read" opens the dark reader; non-owners hit the unlock modal.
+  const handleReadClick = useCallback(
+    (e) => {
+      e.stopPropagation();
+      if (!hasAccess) {
+        onOpenUnlockModal?.();
+        return;
+      }
+      onReadEbook?.(product);
+    },
+    [hasAccess, onOpenUnlockModal, onReadEbook, product]
+  );
+
   // Resume pending action on mount or when user authenticates
   useEffect(() => {
     if (!currentUser) return;
@@ -4292,11 +4315,20 @@ function ProductDetail({
           </div>
 
           <div
-            className={`sc-product-detail-preview-shell ${isPosterOnly ? "is-poster-preview" : ""} ${livePreviewActive ? "is-live-preview" : ""}`}
-            style={livePreviewActive ? { "--preview-aspect": livePreviewAspect } : undefined}
+            className={`sc-product-detail-preview-shell ${isPosterOnly ? "is-poster-preview" : ""} ${livePreviewActive ? "is-live-preview" : ""} ${isLibraryProduct ? "is-library-preview" : ""}`}
+            style={isLibraryProduct ? { "--preview-aspect": "4 / 5" } : livePreviewActive ? { "--preview-aspect": livePreviewAspect } : undefined}
           >
             <PreviewErrorBoundary>
-              {galleryImages.length > 1 ? (
+              {isLibraryProduct ? (
+                <div className="sc-ebook-detail-preview">
+                  <BookProductPreview
+                    key={`detail-ebook-${getProductIdentity(product)}`}
+                    product={product}
+                    mode="detail"
+                    onBuy={() => onOpenUnlockModal?.()}
+                  />
+                </div>
+              ) : galleryImages.length > 1 ? (
                 <GalleryCarousel
                   images={galleryImages}
                   title={product?.titleEn || product?.titleZh || ""}
@@ -4577,8 +4609,32 @@ function ProductDetail({
             </div>
           )}
 
-          {/* ===== ACTION BUTTONS — Copy Image / Copy Prompt / Copy Code / Download ===== */}
+          {/* ===== ACTION BUTTONS — Read / Copy Image / Copy Prompt / Copy Code / Download ===== */}
           <div className="sc-detail-actions">
+
+            {/* Read — eBooks (Library products) */}
+            {isLibraryProduct && (
+              <button
+                type="button"
+                className="sc-detail-action sc-detail-action--read"
+                onClick={handleReadClick}
+              >
+                <span className="sc-detail-action-icon" aria-hidden="true">
+                  {!hasAccess ? (
+                    <Lock size={18} />
+                  ) : (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M2 4h6a4 4 0 0 1 4 4 4 4 0 0 1 4-4h6v16h-6a4 4 0 0 0-4 4 4 4 0 0 0-4-4H2z"/>
+                    </svg>
+                  )}
+                </span>
+                <span className="sc-detail-action-label">
+                  {!hasAccess
+                    ? `Get the book — $${productPrice.toFixed(2)}`
+                    : 'Read now →'}
+                </span>
+              </button>
+            )}
 
             {/* Copy Image — Layouts (poster-based) products and any product with a gallery cover */}
             {(product?.tab === "layouts" || galleryImages.length > 0) && getCopyImageUrl(product) && (
@@ -4637,7 +4693,7 @@ function ProductDetail({
             )}
 
             {/* Copy Source Code — free products always, premium when buyer has access */}
-            {true && (
+            {!isLibraryProduct && (
               <button
                 type="button"
                 className={`sc-detail-action sc-detail-action--code sc-btn-copy-primary ${copiedCode ? 'is-copied' : ''}`}
@@ -4687,10 +4743,7 @@ function ProductDetail({
                 <h3 className="sc-also-like-title">You might also like</h3>
                 <div className="sc-also-like-grid">
                   {relatedProducts.map((relatedProduct) => (
-                    <div
-                      key={getProductIdentity(relatedProduct)}
-                      style={{ transform: "scale(0.85)", transformOrigin: "top left", minWidth: 0 }}
-                    >
+                    <div key={getProductIdentity(relatedProduct)} style={{ minWidth: 0 }}>
                       <PreviewErrorBoundary>
                         <CodeProductCard
                           product={relatedProduct}

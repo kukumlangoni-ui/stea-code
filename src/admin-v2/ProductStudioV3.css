@@ -1051,3 +1051,24 @@
 }
 .psv3-gallery-slot--filled:hover .psv3-gallery-remove { opacity: 1; }
 .psv3-gallery-remove:hover { background: #e5484d; }
+
+
+/* =========================================
+   LIVE PREVIEW STAGE — MATCH THE HOMEPAGE
+   The frame keeps the product's own design ratio (inline aspect-ratio from
+   designWidth/designHeight, 640/480 fallback) — the same formula the homepage
+   cards and modal use. The inline `maxHeight: 600px` was removed in
+   ProductStudioV3.jsx: once the column grew wider than `ratio x 600` it
+   clamped the height while the width kept growing, so the iframe viewport no
+   longer matched the authored ratio and the component looked oversized/cut off.
+   These overrides win on source order at equal specificity (0,1,0).
+   ========================================= */
+
+.psv3-preview-frame {
+  background: #f4f4f5;
+  border-radius: 16px;
+}
+
+.psv3-preview-iframe {
+  background: #f4f4f5;
+}

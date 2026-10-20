@@ -1774,7 +1774,6 @@ export function ProductStudioV3({
                     className="psv3-preview-frame"
                     style={{
                       aspectRatio: `${form.designWidth || 640} / ${form.designHeight || 480}`,
-                      maxHeight: "600px",
                     }}
                   >
                     <iframe
@@ -2180,7 +2179,6 @@ export function ProductStudioV3({
                 className="psv3-preview-frame"
                 style={{
                   aspectRatio: `${form.designWidth || 640} / ${form.designHeight || 480}`,
-                  maxHeight: "600px",
                 }}
               >
                 <iframe

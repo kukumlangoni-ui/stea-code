@@ -21672,3 +21672,335 @@ html body .sc-market-hero.sc-home-hero.sc-hero-twocol h1.sc-hero-title > .sc-her
   box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.15) !important; /* Subtle floating shadow */
   border: none !important; /* Remove any border that makes it look like a box */
 }
+
+
+/* =========================================
+   SEPARATE LIVE PREVIEW FROM INFO CARD
+   ========================================= */
+
+/* 1. The container holding the live iframe */
+.sc-premium-product-detail .sc-product-detail-media,
+.sc-product-modal-panel .sc-product-detail-media {
+  margin-bottom: 32px !important; /* The gap */
+  border-radius: 24px !important; /* Rounded corners like the poster */
+  overflow: hidden !important; /* Keeps the iframe inside the rounded box */
+  background: #f4f4f5 !important; /* Soft grey background */
+}
+
+/* 2. The white info card must sit strictly below the preview */
+.sc-premium-product-detail .sc-product-detail-copy,
+.sc-product-modal-panel .sc-product-detail-copy {
+  margin-top: 0 !important;
+  border-top: none !important; /* Remove the separation line */
+  background: #ffffff !important;
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+/* 3. Ensure the iframe fills the rounded box */
+.sc-premium-product-detail .sc-product-detail-media iframe,
+.sc-premium-product-detail .sc-live-preview-iframe,
+.sc-premium-product-detail .sc-product-detail-preview-shell {
+  width: 100% !important;
+  height: 100% !important;
+  border: none !important;
+  display: block !important;
+}
+
+
+/* =========================================
+   PREMIUM TAB & CATEGORY PILLS
+   The originals at L16293+ / L3207+ were authored for a DARK page
+   (color: rgba(255,255,255,0.55); pills `:hover { color: #fff }`), but the
+   homepage is light — so the labels read as washed-out and went fully
+   invisible on hover. These force solid ink on a white surface.
+   Selector note: the pills are `.sc-homepage-pill` (the `.sc-category-pill`
+   name does not exist in this codebase).
+   ========================================= */
+
+/* 1. The Tab Container */
+.sc-tabs {
+  display: flex !important;
+  gap: 8px !important;
+  padding: 4px !important;
+  background: #ffffff !important;
+  border: 1px solid #e5e5e5 !important;
+}
+
+/* 2. The Tabs (Components, Layouts, Kits) */
+.sc-tabs__item {
+  background: #ffffff !important;
+  border: 1px solid #e5e5e5 !important;
+  color: #111111 !important; /* Solid black text */
+  font-weight: 600 !important;
+  padding: 10px 24px !important;
+  border-radius: 8px !important;
+  transition: all 0.2s ease !important;
+}
+
+/* 3. Tab Hover State - slightly darker bg, solid text.
+   `:not(.is-active)` is load-bearing: a bare `:hover` (0,2,1) outranks
+   `.sc-tabs__item.is-active` (0,2,0), so hovering the SELECTED tab would
+   repaint it grey-on-white and it would stop reading as selected. The
+   original rule used the same guard. */
+.sc-tabs__item:hover:not(.is-active) {
+  background: #f4f4f5 !important;
+  color: #111111 !important;
+  border-color: #d4d4d8 !important;
+}
+
+/* 4. Active Tab State - Dark background, white text */
+.sc-tabs__item.is-active {
+  background: #111111 !important;
+  color: #ffffff !important;
+  border-color: #111111 !important;
+}
+
+/* 5. Category Sub-pills (Buttons, Inputs, etc.) — `.sc-homepage-pill`
+   Must carry the `.sc-market-home` prefix: the effective rules are
+   `.sc-market-home .sc-homepage-pill` (0,2,0) at L18609 and
+   `.sc-market-home .sc-homepage-pill.is-active` (0,3,0) at L18619, which
+   beat a bare `.sc-homepage-pill` (0,1,0) no matter how late it is appended.
+   Padding / border-radius are intentionally NOT set here: the pills already
+   resolve to 8px 16px / 999px, and forcing them would flatten the compact
+   `.sc-homepage-pill--sub` variant used by the Layout sub-row. */
+.sc-market-home .sc-homepage-pill {
+  background: #ffffff !important;
+  border: 1px solid #e5e5e5 !important;
+  color: #111111 !important; /* Solid black */
+  font-weight: 600 !important;
+  transition: all 0.2s ease !important;
+}
+
+.sc-market-home .sc-homepage-pill:hover:not(.is-active) {
+  background: #f4f4f5 !important;
+  border-color: #d4d4d8 !important;
+  color: #111111 !important;
+}
+
+.sc-market-home .sc-homepage-pill.is-active {
+  background: #111111 !important;
+  color: #ffffff !important;
+  border-color: #111111 !important;
+  /* Kill the orange halo inherited from the dark-theme rule at L13060 */
+  box-shadow: none !important;
+}
+
+
+/* Hide the KIT badge on product cards */
+.sc-code-card__kit-badge,
+.sc-card-kit-badge,
+.sc-kit-badge {
+  display: none !important;
+}
+
+
+/* =========================================
+   FIX HEADER PROFILE HUB ("DROPDOWN") VISIBILITY
+   The real classes are .sc-account-hub / .sc-hub-*. The supplied names —
+   .sc-profile-dropdown, .sc-user-menu, .sc-account-hub-menu,
+   div[class*="profile-menu"], div[class*="account-menu"], .email, .badge,
+   .sign-out, .sc-navbar — do not exist in this codebase, so that block was
+   fully inert.
+   The effective rules at L13787-L13824 are DARK-theme: the open hub is a
+   near-transparent gradient and the labels are near-white, which is invisible
+   on the white header. The `html body` prefix outranks them at (0,2,2)/(0,3,2).
+   ========================================= */
+
+html body .sc-account-hub.is-open {
+  background: #ffffff !important;
+  border: 1px solid #e5e5e5 !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12) !important;
+  border-radius: 12px !important;
+  padding: 8px 12px !important;
+}
+
+/* Email — was rgba(255,255,255,0.94) */
+html body .sc-account-hub .sc-hub-email {
+  color: #18181b !important;
+  font-weight: 600 !important;
+  font-size: 13px !important;
+}
+
+/* MEMBER / ADMIN badge — was pale gold on a transparent gradient */
+html body .sc-account-hub .sc-hub-badge {
+  background: #f4f4f5 !important;
+  color: #52525b !important;
+  border: 1px solid #e5e5e5 !important;
+  border-radius: 4px !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  box-shadow: none !important;
+}
+
+/* Sign out — scoped to this one button; a bare `button` selector would also
+   have repainted the avatar toggle red. */
+html body .sc-account-hub .sc-hub-signout {
+  background: #ffffff !important;
+  color: #ef4444 !important;
+  border: 1px solid #fecaca !important;
+  border-radius: 6px !important;
+  padding: 8px 16px !important;
+  font-weight: 600 !important;
+  box-shadow: none !important;
+}
+html body .sc-account-hub .sc-hub-signout:hover {
+  background: #fef2f2 !important;
+}
+
+/* Keep the header above page content (`.sc-navbar` does not exist here) */
+html body .sc-header,
+html body .sc-topbar {
+  z-index: 1000 !important;
+}
+
+
+/* =========================================
+   FIX "YOU MIGHT ALSO LIKE" CARDS
+   These already render <CodeProductCard> (SteaCodeHomeV2.jsx L4686-L4699), so
+   the card chrome is shared with the homepage. The difference is context: the
+   homepage override `.sc-market-home .sc-code-card__preview-wrap { background:
+   #fff }` (L18626) does NOT apply inside the modal, so the cards kept the base
+   `.sc-code-card__preview-wrap { background: #0a0a0f }` -> the near-black
+   corners/edges. Layout was also skewed by a `transform: scale(0.85)` wrapper
+   (now removed), which shrank the visuals while the layout box stayed full size.
+   `.sc-also-like-card` is dead CSS — no element uses it.
+   ========================================= */
+
+.sc-also-like-grid .sc-code-card {
+  background: transparent !important;
+  border-radius: 16px !important;
+  overflow: hidden !important;
+  min-width: 0 !important;
+}
+
+.sc-also-like-grid .sc-code-card__preview-wrap,
+.sc-also-like-grid .sc-card-poster-preview {
+  background-color: #f4f4f5 !important;
+  border-radius: 16px 16px 0 0 !important;
+  overflow: hidden !important;
+}
+
+.sc-also-like-grid .sc-code-card__meta {
+  padding: 16px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+}
+
+.sc-also-like-grid .sc-code-card__title {
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  color: #111111 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  margin: 0 !important;
+}
+
+/* KIT badge backstop. The `span:contains("KIT")` from the supplied block is NOT
+   valid CSS (a Sizzle/jQuery-only pseudo-class) and would make the browser drop
+   the whole rule, so it is deliberately omitted. The badge is already removed at
+   the source and hidden globally above. */
+.sc-also-like-grid .sc-kit-badge {
+  display: none !important;
+}
+
+/* =========================================
+   FIX PREVIEW AND INFO CARD OVERLAP
+   ========================================= */
+/* 1. Force the panel to be a strict vertical stack */
+.sc-product-modal-panel.sc-premium-product-detail {
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100% !important;
+  max-height: 90vh !important;
+  overflow-y: auto !important; /* Allow scrolling for the whole modal */
+  background: #ffffff !important;
+}
+/* 2. The preview media: let it grow naturally, but never overlap */
+.sc-premium-product-detail .sc-product-detail-media {
+  flex: 0 0 auto !important; /* Do not shrink or grow unexpectedly */
+  position: relative !important;
+  width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  background: #f4f4f5 !important;
+  overflow: hidden !important;
+  display: block !important;
+  z-index: 1 !important; /* Keep it above any accidental negative margins */
+}
+/* 3. The info card: strictly below the preview */
+.sc-premium-product-detail .sc-product-detail-copy {
+  flex: 1 1 auto !important; /* Take remaining space */
+  position: relative !important;
+  width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  background: #ffffff !important;
+  border-top: none !important; /* Remove separation line as requested previously */
+  box-shadow: none !important;
+  z-index: 2 !important;
+  padding: 40px !important;
+}
+/* 4. Ensure the iframe inside the preview doesn't overflow its container */
+.sc-premium-product-detail .sc-product-detail-preview-shell {
+  height: 100% !important;
+  max-height: 60vh !important; /* Cap the preview height so it doesn't push the info card off-screen */
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  overflow: hidden !important;
+}
+.sc-premium-product-detail .sc-product-detail-preview-shell iframe,
+.sc-premium-product-detail .sc-live-preview-iframe {
+  width: 100% !important;
+  height: 100% !important;
+  border: none !important;
+  display: block !important;
+}
+
+/* =========================================
+   EBOOK / LIBRARY PREVIEW
+   ========================================= */
+/* The eBook preview fills the media shell on a white canvas */
+.sc-premium-product-detail .sc-product-detail-preview-shell.is-library-preview {
+  height: 100% !important;
+  max-height: 62vh !important;
+  background: #ffffff !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  overflow: hidden !important;
+}
+.sc-premium-product-detail .sc-ebook-detail-preview {
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 420px !important;
+  background: #ffffff !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+}
+.sc-premium-product-detail .sc-ebook-detail-preview iframe {
+  width: 100% !important;
+  height: 100% !important;
+  border: none !important;
+  background: transparent !important;
+  display: block !important;
+}
+
+/* =========================================
+   EBOOK "READ" ACTION BUTTON
+   ========================================= */
+.sc-premium-product-detail .sc-detail-action--read {
+  background: linear-gradient(135deg, #d89a2b, #e0a63c) !important;
+  color: #0b0e14 !important;
+  border: 1px solid transparent !important;
+  box-shadow: 0 6px 18px -8px rgba(216, 154, 43, 0.55) !important;
+}
+.sc-premium-product-detail .sc-detail-action--read:hover {
+  filter: brightness(1.06) !important;
+}
+.sc-premium-product-detail .sc-detail-action--read .sc-detail-action-icon svg {
+  stroke: #0b0e14 !important;
+}

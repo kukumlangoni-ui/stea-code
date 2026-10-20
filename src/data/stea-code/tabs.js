@@ -50,6 +50,17 @@ export const TABS = {
       { id: "Games", label: "Games", tooltip: null },
     ],
   },
+  library: {
+    id: "library",
+    label: "Library",
+    description: "eBooks & learning",
+    categories: [
+      { id: "All", label: "All", tooltip: null },
+      { id: "Ebooks", label: "Ebooks", tooltip: "Premium eBooks & masterclasses" },
+      { id: "Courses", label: "Courses", tooltip: "Guided learning tracks" },
+      { id: "Cheat Sheets", label: "Cheat Sheets", tooltip: "Quick references" },
+    ],
+  },
 };
 
 export const SUBCATEGORIES = {

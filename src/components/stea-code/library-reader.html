@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>STEACODE Reader</title>
+<style>
+  :root{
+    --bg:#0b0e14;
+    --panel:#12161f;
+    --panel-2:#0f131c;
+    --line:#1e2430;
+    --line-2:#262d3b;
+    --text:#e7e9ee;
+    --muted:#8b93a3;
+    --faint:#5c6474;
+    --gold:#d89a2b;
+    --gold-soft:rgba(216,154,43,.14);
+    --green:#34d399;
+    --danger:#f87171;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Inter",system-ui,sans-serif;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;background:var(--bg);color:var(--text);font:400 15px/1.65 var(--sans);overflow:hidden}
+  button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+
+  /* ---------- App shell ---------- */
+  .app{display:flex;flex-direction:column;height:100%}
+  .topbar{display:flex;align-items:center;gap:14px;padding:0 18px;height:60px;flex:none;border-bottom:1px solid var(--line);background:rgba(11,14,20,.92);backdrop-filter:blur(10px);z-index:20}
+  .topbar .brand{display:flex;align-items:center;gap:10px;min-width:0}
+  .topbar .logo{width:26px;height:26px;flex:none}
+  .topbar .bt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font:700 14px/1.3 var(--sans)}
+  .topbar .bt small{display:block;font:600 10px/1.4 var(--sans);letter-spacing:.12em;text-transform:uppercase;color:var(--gold)}
+  .topbar .spacer{flex:1}
+  .btn-back{display:inline-flex;align-items:center;gap:8px;color:var(--muted);font:600 13px var(--sans);padding:8px 12px;border-radius:10px;border:1px solid var(--line);background:var(--panel);transition:.15s}
+  .btn-back:hover{color:var(--text);border-color:var(--line-2)}
+  .progress-pill{display:inline-flex;align-items:center;gap:8px;font:700 12px var(--mono);color:var(--gold);background:var(--gold-soft);border:1px solid rgba(216,154,43,.28);padding:6px 12px;border-radius:99px}
+
+  .body{flex:1;display:flex;min-height:0}
+
+  /* ---------- Stage rail ---------- */
+  .rail{width:280px;flex:none;border-right:1px solid var(--line);background:var(--panel-2);display:flex;flex-direction:column;min-height:0}
+  .rail-head{padding:16px 16px 10px;font:700 11px var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
+  .stages{flex:1;overflow-y:auto;padding:0 10px 16px}
+  .stage-item{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:10px 12px;border-radius:10px;color:var(--muted);transition:.15s;border:1px solid transparent}
+  .stage-item:hover{background:rgba(255,255,255,.03);color:var(--text)}
+  .stage-item.current{background:var(--gold-soft);border-color:rgba(216,154,43,.35);color:#f2c878}
+  .stage-item .num{flex:none;width:26px;height:26px;border-radius:8px;display:grid;place-items:center;font:700 11px var(--mono);background:var(--panel);border:1px solid var(--line-2);color:var(--muted)}
+  .stage-item.current .num{background:var(--gold);color:#0b0e14;border-color:var(--gold)}
+  .stage-item .name{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font:600 13px var(--sans)}
+  .stage-item .tick{flex:none;color:var(--green);font:800 13px var(--sans)}
+  .stage-item.done .num{background:rgba(52,211,153,.14);border-color:rgba(52,211,153,.4);color:var(--green)}
+
+  /* ---------- Content ---------- */
+  .content{flex:1;min-width:0;overflow-y:auto;background:var(--bg);position:relative}
+  .content-inner{max-width:760px;margin:0 auto;padding:44px 32px 120px}
+  .stage-kicker{font:700 11px var(--sans);letter-spacing:.16em;text-transform:uppercase;color:var(--gold)}
+  h1{font:800 clamp(26px,4vw,34px)/1.25 var(--sans);margin:10px 0 14px;letter-spacing:-.02em}
+  .lead{color:var(--muted);font-size:15.5px;max-width:640px}
+  .rule{height:1px;background:linear-gradient(90deg,var(--gold),transparent);margin:28px 0}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px 24px;margin-bottom:18px}
+  .card h2{font:700 15px var(--sans);margin-bottom:10px;display:flex;align-items:center;gap:9px}
+  .card h2 .dot{width:8px;height:8px;border-radius:50%;background:var(--gold);flex:none}
+  .card p{color:var(--muted);font-size:14.5px;margin-bottom:8px}
+  .card p:last-child{margin-bottom:0}
+  .code{background:#0a0d13;border:1px solid var(--line);border-radius:12px;padding:18px 20px;font:500 13px/1.7 var(--mono);color:#c9d4e3;overflow-x:auto;white-space:pre;margin-bottom:18px}
+  .code .ph{color:#3d4557}
+  .empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;border:1.5px dashed var(--line-2);border-radius:14px;padding:34px 20px;color:var(--faint)}
+  .empty b{color:var(--muted);font-size:14px}
+  .empty span{font-size:12.5px}
+
+  /* ---------- Bottom controls ---------- */
+  .bottom-nav{position:fixed;bottom:0;left:280px;right:0;display:flex;align-items:center;gap:12px;padding:14px 32px;background:rgba(11,14,20,.94);backdrop-filter:blur(10px);border-top:1px solid var(--line);z-index:15}
+  .btn{display:inline-flex;align-items:center;gap:8px;font:700 13.5px var(--sans);padding:11px 18px;border-radius:11px;transition:.15s;border:1px solid transparent}
+  .btn.ghost{color:var(--muted);border-color:var(--line-2);background:var(--panel)}
+  .btn.ghost:hover{color:var(--text);border-color:var(--line-2)}
+  .btn.primary{background:linear-gradient(135deg,#d89a2b,#e0a63c);color:#0b0e14;box-shadow:0 6px 18px -8px rgba(216,154,43,.55)}
+  .btn.primary:hover{filter:brightness(1.06)}
+  .btn.primary:disabled{opacity:.45;cursor:not-allowed;box-shadow:none}
+  .btn.complete{background:linear-gradient(135deg,#34d399,#2dd4bf);color:#06231c;box-shadow:0 6px 18px -8px rgba(52,211,153,.5)}
+  .bottom-nav .spacer{flex:1}
+  .stage-count{font:600 12px var(--sans);color:var(--muted)}
+
+  /* ---------- Gate screen (no access) ---------- */
+  .gate{height:100%;display:flex;align-items:center;justify-content:center;padding:24px}
+  .gate-card{max-width:420px;width:100%;background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:36px;text-align:center}
+  .gate-card .em{font-size:34px;margin-bottom:14px}
+  .gate-card h1{font-size:22px;margin-bottom:10px}
+  .gate-card p{color:var(--muted);font-size:14px;margin-bottom:22px}
+  .gate-card .price{font:800 26px var(--sans);color:var(--gold);margin-bottom:22px}
+  .gate-card .btn{width:100%;justify-content:center;margin-bottom:10px}
+
+  /* ---------- Responsive ---------- */
+  @media(max-width:860px){
+    .rail{position:fixed;left:0;top:60px;bottom:74px;width:250px;transform:translateX(-105%);transition:.22s;z-index:25;box-shadow:20px 0 60px rgba(0,0,0,.5)}
+    .rail.open{transform:none}
+    .bottom-nav{left:0}
+    .rail-toggle{display:inline-flex!important}
+    .content-inner{padding:28px 20px 120px}
+  }
+  .rail-toggle{display:none}
+  .scrim{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:24;opacity:0;pointer-events:none;transition:.2s}
+  .scrim.show{opacity:1;pointer-events:auto}
+  @media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <button class="btn-back" id="backBtn" type="button" aria-label="Back to library">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      <span>Library</span>
+    </button>
+    <div class="brand">
+      <svg class="logo" viewBox="0 0 512 512" aria-hidden="true"><path d="M71 460L30 0h452l-41 460-185 52z" fill="#d89a2b"/><path d="M256 472l149-41 35-392H256z" fill="#e0a63c"/><path d="M256 208h-75l-5-62h80V94H119l15 166h122zm0 134l-62-17-4-45h-50l8 91 108 30z" fill="#0b0e14"/></svg>
+      <div class="bt">Stop Letting AI Break Your Pages<small id="bookTitle">STEACODE eBooks · Learning</small></div>
+    </div>
+    <div class="spacer"></div>
+    <button class="rail-toggle btn-back" id="railToggle" type="button">Stages</button>
+    <div class="progress-pill" id="progressPill">0 / 15</div>
+  </header>
+
+  <div class="scrim" id="scrim"></div>
+
+  <div class="body">
+    <aside class="rail" id="rail">
+      <div class="rail-head">The 7-Day Masterclass · 15 Stages</div>
+      <div class="stages" id="stageList"></div>
+    </aside>
+
+    <main class="content">
+      <div class="content-inner">
+        <div class="stage-kicker" id="stageKicker">Stage 01</div>
+        <h1 id="stageTitle">Stage placeholder</h1>
+        <p class="lead" id="stageLead">Lesson content for this stage appears here.</p>
+        <div class="rule"></div>
+
+        <div class="card">
+          <h2><span class="dot"></span>Key ideas</h2>
+          <p id="keyIdeas">The lesson notes for this stage will load here once the manuscript is attached.</p>
+        </div>
+
+        <div class="empty" id="codeSlot">
+          <b>Code example</b>
+          <span>The hands-on code sample for this stage appears here.</span>
+        </div>
+
+        <div class="card">
+          <h2><span class="dot"></span>Fix it — exercise</h2>
+          <p id="exercise">A bug-hunt exercise on real AI code will appear here — you inspect, diagnose and fix it.</p>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <nav class="bottom-nav">
+    <button class="btn ghost" id="prevBtn" type="button">← Previous</button>
+    <div class="spacer"></div>
+    <span class="stage-count" id="stageCount">Stage 1 of 15</span>
+    <button class="btn complete" id="completeBtn" type="button">✓ Mark complete</button>
+    <button class="btn primary" id="nextBtn" type="button">Next stage →</button>
+  </nav>
+</div>
+
+<script>
+(function () {
+  var SLUG = "stop-letting-ai-break-your-pages";
+  var TITLES = [];
+  var STAGE_COUNT = 15;
+
+  // Generic stage shells — the manuscript fills in the copy per stage.
+  for (var i = 1; i <= STAGE_COUNT; i++) {
+    TITLES.push("Stage " + String(i).padStart(2, "0") + " — Lesson placeholder");
+  }
+
+  var storageKey = "stea_library_" + SLUG + "_progress";
+  var state = { current: 0, done: [] };
+
+  function load() {
+    try {
+      var raw = localStorage.getItem(storageKey);
+      if (raw) state = JSON.parse(raw);
+    } catch (_) {}
+    if (!state || typeof state.current !== "number") state = { current: 0, done: [] };
+    if (!Array.isArray(state.done)) state.done = [];
+    state.current = Math.max(0, Math.min(STAGE_COUNT - 1, state.current || 0));
+  }
+  function save() { try { localStorage.setItem(storageKey, JSON.stringify(state)); } catch (_) {} }
+
+  var rail = document.getElementById("stageList");
+  function buildRail() {
+    rail.innerHTML = "";
+    TITLES.forEach(function (t, i) {
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "stage-item" + (i === state.current ? " current" : "") + (state.done.indexOf(i) >= 0 ? " done" : "");
+      btn.dataset.index = i;
+      var num = document.createElement("span"); num.className = "num"; num.textContent = String(i + 1).padStart(2, "0");
+      var name = document.createElement("span"); name.className = "name"; name.textContent = t;
+      var tick = document.createElement("span"); tick.className = "tick"; tick.textContent = state.done.indexOf(i) >= 0 ? "✓" : "";
+      btn.appendChild(num); btn.appendChild(name); btn.appendChild(tick);
+      btn.addEventListener("click", function () { state.current = Number(this.dataset.index); save(); render(); closeRail(); });
+      rail.appendChild(btn);
+    });
+  }
+
+  function render() {
+    var i = state.current;
+    var doneCount = state.done.filter(function (d) { return d >= 0 && d < STAGE_COUNT; }).length;
+    document.getElementById("stageKicker").textContent = "Stage " + String(i + 1).padStart(2, "0") + " of " + STAGE_COUNT;
+    document.getElementById("stageTitle").textContent = TITLES[i];
+    document.getElementById("stageCount").textContent = "Stage " + (i + 1) + " of " + STAGE_COUNT;
+    document.getElementById("progressPill").textContent = doneCount + " / " + STAGE_COUNT;
+    document.getElementById("prevBtn").disabled = i === 0;
+    var last = i === STAGE_COUNT - 1;
+    document.getElementById("nextBtn").textContent = last ? "Finish ✓" : "Next stage →";
+    document.getElementById("completeBtn").textContent = state.done.indexOf(i) >= 0 ? "✓ Completed" : "✓ Mark complete";
+    document.getElementById("completeBtn").classList.toggle("is-done", state.done.indexOf(i) >= 0);
+    buildRail();
+  }
+
+  document.getElementById("prevBtn").addEventListener("click", function () {
+    if (state.current > 0) { state.current--; save(); render(); }
+  });
+  document.getElementById("nextBtn").addEventListener("click", function () {
+    if (state.current < STAGE_COUNT - 1) { state.current++; save(); render(); }
+    else { try { parent.postMessage({ type: "stea-reader-finish" }, "*"); } catch (_) {} }
+  });
+  document.getElementById("completeBtn").addEventListener("click", function () {
+    var i = state.current, idx = state.done.indexOf(i);
+    if (idx >= 0) state.done.splice(idx, 1); else state.done.push(i);
+    save(); render();
+  });
+  document.getElementById("backBtn").addEventListener("click", function () {
+    try { parent.postMessage({ type: "stea-reader-back" }, "*"); } catch (_) {}
+  });
+
+  // Mobile rail
+  var railEl = document.getElementById("rail"), scrim = document.getElementById("scrim");
+  function closeRail() { railEl.classList.remove("open"); scrim.classList.remove("show"); }
+  document.getElementById("railToggle").addEventListener("click", function () { railEl.classList.toggle("open"); scrim.classList.toggle("show"); });
+  scrim.addEventListener("click", closeRail);
+
+  // Host bridge: slug + title (supports multiple books later)
+  window.addEventListener("message", function (e) {
+    if (!e.data || e.data.type !== "stea-reader-init") return;
+    if (e.data.slug) SLUG = e.data.slug;
+    storageKey = "stea_library_" + SLUG + "_progress";
+    if (e.data.title) document.querySelector(".bt").firstChild.textContent = e.data.title;
+    if (Array.isArray(e.data.stageTitles) && e.data.stageTitles.length === STAGE_COUNT) TITLES = e.data.stageTitles;
+    load(); render();
+  });
+
+  load();
+  render();
+})();
+</script>
+</body>
+</html>

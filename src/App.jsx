@@ -21,6 +21,7 @@ const StaffLoginPage = lazy(() => import("./admin-v2/StaffLoginPage.jsx"));
 const SteaCodeNotFoundPage = lazy(() => import("./pages/stea-code/SteaCodeNotFoundPage.jsx"));
 const SteaCodeCheckoutSuccessPage = lazy(() => import("./pages/stea-code/SteaCodeCheckoutSuccessPage.jsx"));
 const SteaCodeUpgradePage = lazy(() => import("./pages/stea-code/SteaCodeUpgradePage.jsx"));
+const LibraryReader = lazy(() => import("./pages/stea-code/LibraryReader.jsx"));
 
 // Shared
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy.jsx"));
@@ -158,6 +159,7 @@ export default function App() {
                   <Route path="/code" element={<Navigate to={{ pathname: "/", search: location.search }} replace />} />
                   <Route path="/code/products/:slug" element={<SteaCodeHomeV2 user={user} authLoading={authLoading} />} />
                   <Route path="/products/:slug" element={<SteaCodeHomeV2 user={user} authLoading={authLoading} />} />
+                  <Route path="/library/read/:slug" element={<LibraryReader user={user} authLoading={authLoading} />} />
                   <Route path="/code/*" element={<SteaCodeNotFoundPage />} />
                   <Route path="/products/*" element={<SteaCodeNotFoundPage />} />
                   <Route path="/daily" element={<Navigate to={{ pathname: "/", search: location.search }} replace />} />
