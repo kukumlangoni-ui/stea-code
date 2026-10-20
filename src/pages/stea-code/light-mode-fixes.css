@@ -1,0 +1,63 @@
+/* ==========================================================================
+   ISOLATED OVERRIDES (Wins the CSS war using #root)
+   ========================================================================== */
+
+/* 1. FORCE FULL WIDTH/HEIGHT ON ALL PREVIEWS (No borders, no gray boxes) */
+#root .sc-product-preview,
+#root .sc-code-card__preview .sc-product-preview,
+#root .sc-product-detail-preview-shell {
+  aspect-ratio: auto !important; 
+  min-height: 500px !important; 
+  width: 100% !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* 2. FORCE THE IFRAME TO FILL THE SPACE */
+#root .sc-live-preview,
+#root .sc-live-preview-iframe,
+#root .sc-product-preview-art iframe,
+#root .sc-product-preview iframe {
+  width: 100% !important;
+  height: 100% !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background: #ffffff !important;
+  display: block !important;
+  border-radius: 0 !important;
+}
+
+/* 3. KILL THE ART WRAPPER PADDING */
+#root .sc-product-preview-art {
+  position: relative !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+}
+
+/* 4. FIX THE HEADER HIDING BUG */
+#root .sc-topbar { 
+  z-index: 100000 !important; 
+  position: relative !important; 
+}
+
+/* 5. FIX THE COPY BUTTONS STACKING */
+#root .sc-copy-actions-row {
+  display: flex !important;
+  flex-direction: row !important;
+  width: 100% !important;
+  gap: 16px !important;
+  justify-content: space-between !important;
+  align-items: stretch !important;
+  margin: 28px 0 !important;
+}
+#root .sc-copy-actions-row > .sc-detail-action {
+  flex: 1 1 0 !important;
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: none !important;
+}

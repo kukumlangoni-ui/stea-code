@@ -1,4 +1,5 @@
 import React, { forwardRef, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import './light-mode-fixes.css';
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence, useMotionValue, useSpring, useTransform, useReducedMotion } from "framer-motion";
 import SEO from "../../components/SEO.jsx";
