@@ -22251,3 +22251,136 @@ html body .sc-premium-product-detail .sc-product-detail-preview-shell.is-library
 .sc-also-like-card .sc-code-card__preview img {
   border-radius: 0 !important;
 }
+
+/* =========================================
+   VISIT WEBSITE — card pill + modal action
+   =========================================
+   Renders only when products.websiteUrl is set. The card pill sits inside
+   .sc-code-card__caption-main, which the home theme turns into a flex column
+   and orders its children explicitly (category order:0, title order:1) — so
+   the pill pins itself to the end with order:2 instead of landing between
+   the category and the title. */
+
+.sc-code-card__site-link {
+  order: 2;
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 6px;
+  padding: 5px 10px;
+  border: 1px solid rgba(17, 17, 17, 0.08);
+  border-radius: 999px;
+  background: rgba(17, 17, 17, 0.05);
+  color: #1a1a1a;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background 160ms ease, color 160ms ease, border-color 160ms ease;
+}
+
+.sc-code-card__site-link:hover,
+.sc-code-card__site-link:focus-visible {
+  background: #111111;
+  border-color: #111111;
+  color: #ffffff;
+}
+
+.sc-code-card__site-link svg {
+  flex: 0 0 auto;
+}
+
+/* Modal — neutral companion to the gold "View Live Site" action. */
+.sc-detail-action--site {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  text-decoration: none;
+}
+.sc-detail-action--site:hover {
+  background: rgba(255, 255, 255, 0.10);
+}
+
+
+/* =========================================
+   FIX EBOOK LIVE PREVIEW BORDERS & SCALING
+   ========================================= */
+
+/* 1. Remove the weird dark borders and make the background white */
+.sc-product-preview {
+  background: #ffffff !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* 2. Force the preview container to fill the card properly */
+.sc-live-preview,
+.sc-live-preview-iframe,
+.sc-product-preview-art iframe {
+  width: 100% !important;
+  height: 100% !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background: #ffffff !important;
+  transform: none !important; /* Prevents weird scaling issues */
+}
+
+/* 3. Adjust the card aspect ratio to match the book's landscape/portrait needs */
+/* If the book is cut off, this changes the height of the preview box */
+.sc-code-card__preview .sc-product-preview {
+  aspect-ratio: 16 / 9 !important; /* Change to 4/3 or 1/1 if the book is still cut off */
+  min-height: 320px !important;
+}
+
+/* 4. Remove the inner padding that causes the gap */
+.sc-product-preview-art {
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* =========================================
+   FINAL FIX: EBOOK FULL PREVIEW (NO CROPPING)
+   ========================================= */
+
+/* 1. Remove all borders, shadows, and dark 3D edges from the preview wrapper */
+.sc-product-preview,
+.sc-code-card__preview .sc-product-preview,
+.sc-product-detail-preview-shell {
+  border: none !important;
+  box-shadow: none !important;
+  background: #ffffff !important;
+  /* Change to 4/3 or 1/1 so the book is taller and shows the full HTML */
+  aspect-ratio: 4 / 3 !important; 
+  min-height: 450px !important; 
+}
+
+/* 2. Force the iframe to fill the entire new container without borders */
+.sc-live-preview,
+.sc-live-preview-iframe,
+.sc-product-preview-art iframe,
+.sc-product-preview iframe {
+  width: 100% !important;
+  height: 100% !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background: #ffffff !important;
+  transform: none !important;
+  border-radius: 0 !important;
+}
+
+/* 3. Kill the dark overlay/art layers that cause the "3D" edge effect */
+.sc-product-preview-art {
+  padding: 0 !important;
+  margin: 0 !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+.sc-product-preview-art::before,
+.sc-product-preview-art::after {
+  display: none !important;
+}
