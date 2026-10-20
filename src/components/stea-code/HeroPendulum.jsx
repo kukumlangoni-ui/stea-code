@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 
 const PERIOD = 6200;
 
-export default function HeroPendulum() {
+export default function HeroPendulum({ interactive = true }) {
   const navigate = useNavigate();
   const stageRef = useRef(null);
   const rigRef = useRef(null);
@@ -63,9 +63,16 @@ export default function HeroPendulum() {
   }, []);
 
   const handleBobClick = (e) => {
+    if (!interactive) return;
     e.stopPropagation();
     navigate("/services/website");
   };
+
+  // When embedded as a decorative background (the "steacode services" grid
+  // banner) the bob must not be a nested interactive element: the banner is an
+  // <a>, and a <button> inside an <a> is invalid markup that would also hijack
+  // the click and navigate somewhere else.
+  const Bob = interactive ? "button" : "div";
 
   return (
     <div ref={stageRef} className="sc-hero-pendulum" aria-hidden="true">
@@ -73,17 +80,21 @@ export default function HeroPendulum() {
         <div className="sc-hp-cord" />
         <div className="sc-hp-bob-wrap">
           <div className="sc-hp-attachment" />
-          <button
+          <Bob
             ref={bobRef}
-            type="button"
             className="sc-hp-bob"
-            onClick={handleBobClick}
-            aria-label="Need a website? Click to learn more"
-            title="Need a website?"
+            {...(interactive
+              ? {
+                  type: "button",
+                  onClick: handleBobClick,
+                  "aria-label": "Need a website? Click to learn more",
+                  title: "Need a website?",
+                }
+              : {})}
           >
             <img src="/images/steacode-logo.png" alt="" draggable={false} />
             <div className="sc-hp-gloss" />
-          </button>
+          </Bob>
         </div>
       </div>
     </div>
