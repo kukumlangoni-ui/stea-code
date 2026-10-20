@@ -1,38 +1,42 @@
 /* =========================================
-   FORCE FULL HEIGHT ON EBOOK PREVIEWS
+   ISOLATED OVERRIDES (Wins the CSS war using #root)
    ========================================= */
-
-/* Remove aspect-ratio from the container so it grows with the iframe */
+/* 1. FORCE PERFECT SQUARE CORNERS ON HOMEPAGE CARDS */
+#root .sc-code-card,
+#root .sc-code-card__preview,
 #root .sc-product-preview,
-#root .sc-code-card__preview .sc-product-preview,
-#root .sc-product-detail-preview-shell {
-  aspect-ratio: auto !important; 
-  min-height: auto !important; 
-  height: auto !important;
-  padding: 0 !important;
-  margin: 0 !important;
-  background: transparent !important;
+#root .sc-product-preview-art {
+  border-radius: 0 !important;       /* Forces perfect square */
   border: none !important;
   box-shadow: none !important;
+  overflow: hidden !important;
 }
-
-/* Ensure the iframe fills the space and expands naturally */
+/* 2. FORCE THE PREVIEW IFRAME TO BE FULL WIDTH AND SQUARE */
 #root .sc-live-preview,
 #root .sc-live-preview-iframe,
+#root .sc-product-preview-art iframe,
 #root .sc-product-preview iframe {
   width: 100% !important;
-  height: 600px !important; /* Forces a tall enough height to show the whole book */
+  height: 100% !important;
+  min-height: 250px !important;      /* Prevents the blank/collapsed look */
   border: none !important;
   outline: none !important;
   box-shadow: none !important;
   background: #ffffff !important;
   display: block !important;
-  border-radius: 0 !important;
+  border-radius: 0 !important;       /* Stops the inner image from being rounded */
+  transform: none !important;
 }
-
+/* 3. KILL ANY PADDING THAT PUSHES THE IFRAME DOWN */
 #root .sc-product-preview-art {
   position: relative !important;
   padding: 0 !important;
   margin: 0 !important;
-  overflow: hidden !important;
+}
+/* 4. FORCE THE CARD GRID TO BEHAVE */
+#root .sc-code-card__preview {
+  aspect-ratio: 16 / 9 !important;
+  display: flex !important;
+  align-items: stretch !important;
+  justify-content: stretch !important;
 }

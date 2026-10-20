@@ -443,36 +443,50 @@ export default forwardRef(function SteaCodeProductLivePreview({
     const previewFetcher = cardPreview
       ? getSteaCodeProductCardPreview
       : getSteaCodeProductPreview;
-    previewFetcher(requestProductId, { signal: controller.signal })
-      .then((result) => {
-        if (controller.signal.aborted) return;
-        if (requestProductId !== currentProductIdRef.current) return;
-        // Resolve: use API preview if it has renderable content, otherwise
-        // fall back to the polished seed demo so the card never goes blank.
-        const resolved = resolvePreviewWithFallback(result?.preview || null, requestProductId);
-        setPreview(resolved);
-        setPreviewProductId(requestProductId);
-      })
-      .catch((err) => {
-        if (controller.signal.aborted) return;
-        if (requestProductId !== currentProductIdRef.current) return;
-        // API failed (e.g. backend not deployed, network error). Fall back
-        // to the seed demo instead of showing an error — a live seed demo
-        // is strictly better than a blank/error card for conversion.
-        const resolved = resolvePreviewWithFallback(null, requestProductId);
-        if (resolved) {
+
+    // Transient upstream failures (Worker connection resets / timeouts) are
+    // common enough that one silent retry turns a blank "Preview unavailable"
+    // card into a rendered preview. Only retries genuine errors — aborts and
+    // stale products never retry.
+    let attempt = 0;
+    const attemptFetch = () => {
+      previewFetcher(requestProductId, { signal: controller.signal })
+        .then((result) => {
+          if (controller.signal.aborted) return;
+          if (requestProductId !== currentProductIdRef.current) return;
+          // Resolve: use API preview if it has renderable content, otherwise
+          // fall back to the polished seed demo so the card never goes blank.
+          const resolved = resolvePreviewWithFallback(result?.preview || null, requestProductId);
           setPreview(resolved);
           setPreviewProductId(requestProductId);
-        } else {
-          console.warn(`[STEA Code] Live preview unavailable for ${requestProductId}:`, err?.message || err);
-          setError(err?.message || "Could not load preview.");
-        }
-      })
-      .finally(() => {
-        if (controller.signal.aborted) return;
-        if (requestProductId !== currentProductIdRef.current) return;
-        setLoading(false);
-      });
+        })
+        .catch((err) => {
+          if (controller.signal.aborted) return;
+          if (requestProductId !== currentProductIdRef.current) return;
+          if (attempt === 0) {
+            attempt++;
+            attemptFetch();
+            return;
+          }
+          // API failed (e.g. backend not deployed, network error). Fall back
+          // to the seed demo instead of showing an error — a live seed demo
+          // is strictly better than a blank/error card for conversion.
+          const resolved = resolvePreviewWithFallback(null, requestProductId);
+          if (resolved) {
+            setPreview(resolved);
+            setPreviewProductId(requestProductId);
+          } else {
+            console.warn(`[STEA Code] Live preview unavailable for ${requestProductId}:`, err?.message || err);
+            setError(err?.message || "Could not load preview.");
+          }
+        })
+        .finally(() => {
+          if (controller.signal.aborted) return;
+          if (requestProductId !== currentProductIdRef.current) return;
+          setLoading(false);
+        });
+    };
+    attemptFetch();
     return () => {
       controller.abort();
     };

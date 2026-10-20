@@ -451,8 +451,13 @@ export async function getSteaCodeProductPreview(productId, options = {}) {
     if (hit && hit.data && hit.expiresAt > Date.now()) {
       return hit.data;
     }
-    // 2. Reuse an in-flight request so parallel callers don't double-fetch.
-    if (hit && hit.inFlight) {
+    // 2. Reuse an in-flight request so parallel callers don't double-fetch —
+    //    but only when the caller does NOT pass its own AbortSignal. Sharing a
+    //    promise across two controllers lets one caller's abort (e.g. React
+    //    StrictMode dev double-invoke, or a navigation cleanup) reject the
+    //    other caller's request with an AbortError that isn't tied to its own
+    //    signal, which surfaces as a spurious "Preview unavailable" card.
+    if (hit && hit.inFlight && !options?.signal) {
       return hit.inFlight;
     }
   }
@@ -524,7 +529,9 @@ export async function getSteaCodeProductCardPreview(productId, options = {}) {
     if (hit && hit.data && hit.expiresAt > Date.now()) {
       return hit.data;
     }
-    if (hit && hit.inFlight) {
+    // Share an in-flight request only for signal-less callers — see the
+    // comment in getSteaCodeProductPreview for the cross-controller abort race.
+    if (hit && hit.inFlight && !options?.signal) {
       return hit.inFlight;
     }
   }
