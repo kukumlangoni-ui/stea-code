@@ -83,13 +83,49 @@ export default function BookProductPreview({ product, onBuy, mode = "detail", cl
   const useBundledCover = state === "offline";
   const srcDoc = useBundledCover ? bookPreviewHtml : chosenHtml;
 
-  // Host → iframe: tell the embedded page which layout mode to use.
+  // Host → iframe: tell the embedded page which layout mode to use, and force the
+  // mode if the cover does not listen for the message.
+  //
+  // Not every authored cover handles `stea-preview-mode`. The STEACODE covers
+  // detect the card themselves with a viewport heuristic (roughly
+  // `innerWidth < 640 || innerHeight < 520`) and only re-run their sizing on a
+  // window `resize`. Inside a card frame both can misfire in ways that crop the
+  // book: the heuristic can pick the full sales-page layout, and a `fit()` that
+  // measured before layout settled keeps a stale, too-large scale — which shows
+  // up as the book running past the right/bottom edge of the card.
+  //
+  // So after the message: mirror the mode onto the document classes those covers
+  // key off, then dispatch `resize` so any resize-bound `fit()` re-measures
+  // against the settled layout. All of it is inside one try/catch because a cover
+  // served from another origin would make `contentDocument` throw.
   const applyMode = () => {
-    const win = iframeRef.current?.contentWindow;
+    const frame = iframeRef.current;
+    const win = frame?.contentWindow;
     if (!win) return;
     try {
       win.postMessage({ type: "stea-preview-mode", mode }, "*");
     } catch (_) {}
+    try {
+      const doc = frame.contentDocument;
+      if (!doc?.documentElement) return;
+      const card = mode === "card";
+      doc.documentElement.classList.toggle("card", card);
+      doc.documentElement.classList.toggle("modal", !card);
+      if (doc.body) {
+        doc.body.classList.toggle("mode-card", card);
+        doc.body.classList.toggle("mode-detail", !card);
+      }
+      win.dispatchEvent(new Event("resize"));
+      // A cover usually exposes its own fit() — the STEACODE covers publish it as
+      // `window.__fit`, authored ones as a top-level `function fit()`. Calling it
+      // directly is stronger than relying on the `resize` listener above, because
+      // several authored covers never register one. `win.fit` is guarded by the
+      // typeof check so an unrelated global of that name is not invoked.
+      const refit = win.__fit || win.fit;
+      if (typeof refit === "function") refit.call(win);
+    } catch (_) {
+      /* cross-origin cover — the postMessage above is all we can do */
+    }
   };
 
   // iframe → host: forward the "Get the book" CTA.
@@ -108,6 +144,19 @@ export default function BookProductPreview({ product, onBuy, mode = "detail", cl
   useEffect(() => {
     applyMode();
     // Mode only matters while mounted; no external deps needed beyond mode.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, srcDoc]);
+
+  // The grid reflows the card after load (breakpoints, sidebar, font swap), which
+  // changes the iframe's viewport. A cover that measured itself once keeps the
+  // old scale, so re-apply whenever the frame actually changes size. The iframe is
+  // sized 100% by CSS, so content cannot feed back into this observer.
+  useEffect(() => {
+    const el = iframeRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(() => applyMode());
+    observer.observe(el);
+    return () => observer.disconnect();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, srcDoc]);
 
