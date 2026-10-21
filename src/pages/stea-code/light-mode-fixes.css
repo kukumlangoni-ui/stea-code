@@ -482,3 +482,26 @@ body .sc-also-like-grid .sc-code-card--ebook .sc-code-card__preview-wrap:not(.is
   aspect-ratio: 4 / 5 !important;
 }
 
+/* =========================================================================
+   eBook CARD IFRAME — STATIC PREVIEW, NOT A CLICK TARGET
+   =========================================================================
+   A card is one click target: the card <button> opens the detail modal, and the
+   cover iframe must stay transparent to clicks or the modal stops opening.
+   That already holds twice over —
+     .sc-code-card__preview { pointer-events: none }   (stea-code-v2.css)
+     BookProductPreview   pointerEvents: "none"        (inline, card mode)
+   — so this rule changes nothing today and exists only so the guarantee does
+   not depend on an inline style on the component.
+
+   Deliberately NOT added: `pointer-events: auto` on .sc-code-card__preview.
+   That would undo the parent rule above and hand the media area to the iframe.
+
+   The cover's Front/Spine/Back/Pages row and its "Drag to rotate" hint are
+   hidden in card mode from the host (hideCardChrome in BookProductPreview),
+   since CSS out here cannot reach inside the iframe. They stay live in the
+   detail modal. */
+#root .sc-code-card--ebook .sc-product-preview-art iframe,
+body .sc-also-like-grid .sc-code-card--ebook .sc-product-preview-art iframe {
+  pointer-events: none !important;
+}
+

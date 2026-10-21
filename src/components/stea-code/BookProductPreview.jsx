@@ -41,7 +41,36 @@ import { getSteaCodeEbookSalesPage } from "../../services/steaCodeCommerce.js";
  *  - onBuy   : () => void — fired when the in-page CTA is clicked
  *  - mode    : "detail" | "card"
  *  - className / style : forwarded to the iframe
+ *
+ * Card mode is a static preview on purpose: the iframe is `pointer-events: none`
+ * so the whole card is one click target that opens the modal, and the cover's
+ * own controls are hidden there (see hideCardChrome) rather than left dead.
+ * Clicking inside an iframe never bubbles to the parent document, so if the
+ * iframe were interactive the card's modal would silently stop opening.
  */
+const CARD_CHROME_STYLE_ID = "stea-card-static";
+
+/**
+ * A card is a single click target: the card's button opens the detail modal and
+ * the iframe is transparent to clicks (see the `pointerEvents` below), so the
+ * cover's own interactivity cannot work there. Its control row ("Front / Spine /
+ * Back / Pages") and its "Drag to rotate" hint are only *shrunk* by the covers in
+ * card mode, never hidden — so the card advertises buttons that do nothing.
+ * Hide exactly those affordances, and only in card mode, so the book still fills
+ * the card. The controls stay live inside the detail modal.
+ *
+ * Same document as the host (srcdoc + allow-same-origin), so a <style> tag is
+ * enough and no Admin re-paste is needed for covers already in the database.
+ * Idempotent: applyMode runs again on every resize / mode change.
+ */
+function hideCardChrome(doc) {
+  if (doc.getElementById(CARD_CHROME_STYLE_ID)) return;
+  const el = doc.createElement("style");
+  el.id = CARD_CHROME_STYLE_ID;
+  el.textContent = "body.mode-card .ctrl,body.mode-card .hint{display:none !important}";
+  (doc.head || doc.documentElement).appendChild(el);
+}
+
 export default function BookProductPreview({ product, onBuy, mode = "detail", className = "", style, ...rest }) {
   const iframeRef = useRef(null);
   const identity = product?.slug || product?.id || "";
@@ -115,6 +144,9 @@ export default function BookProductPreview({ product, onBuy, mode = "detail", cl
         doc.body.classList.toggle("mode-card", card);
         doc.body.classList.toggle("mode-detail", !card);
       }
+      // Before measuring: hiding the control row / hint frees vertical space, so
+      // the fit below must see the final layout.
+      if (card) hideCardChrome(doc);
       win.dispatchEvent(new Event("resize"));
       // A cover usually exposes its own fit() — the STEACODE covers publish it as
       // `window.__fit`, authored ones as a top-level `function fit()`. Calling it
