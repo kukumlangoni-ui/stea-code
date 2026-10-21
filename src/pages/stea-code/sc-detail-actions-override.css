@@ -1,0 +1,72 @@
+/* Batch 1 — Bug 3a: detail-modal action buttons on one line.
+   Imported AFTER stea-code-v2.css (see the import order in SteaCodeHomeV2.jsx).
+
+   WHAT THE MONOLITH DOES (stea-code-v2.css):
+     L17255  .sc-detail-actions      { flex-direction: row !important }
+     L19026  .sc-copy-actions-row    { display: flex !important; gap: 16px;
+                                       width: 100% }
+     L19406  .sc-detail-actions-row  { flex-wrap: wrap; align-items: center }
+     L19941  .sc-copy-actions-row    { flex-wrap: wrap }        <- last, wins
+     L19945  .sc-copy-actions-row .sc-detail-action
+                                     { min-width: 220px; max-width: 300px }
+             .sc-detail-action-label{ white-space: nowrap }
+             .sc-detail-action      { padding: 14px 28px; overflow: hidden }
+   Measured at 390px: the row is 308px, but two 220px minimums need 456px, so
+   flexbox wrapped the second button onto its own line.
+
+   Specificity: `.sc-copy-actions-row > .sc-detail-action` is (0,2,0) and beats
+   both `.sc-detail-action` (0,1,0) and `.sc-copy-actions-row .sc-detail-action`
+   (0,2,0 — equal, but this file is imported later so it wins), so these
+   declarations hold without escalating beyond the monolith's own !important. */
+
+.sc-copy-actions-row {
+  flex-wrap: nowrap !important;
+  justify-content: center !important;
+  align-items: stretch !important;
+}
+
+/* Share the row instead of sitting at the monolith's 220px floor. The 220px
+   floor plus flex-wrap is what forced the second button onto a new line; both
+   are overridden here. */
+.sc-copy-actions-row > .sc-detail-action {
+  flex: 1 1 0 !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  width: auto !important;
+}
+
+/* A lone button keeps the monolith's 300px cap (its L19948 comment: do not let
+   one button stretch across the whole modal). With two buttons the row is split
+   evenly instead, which also removes the 48.6% of dead space that the 300px cap
+   left on the right at 1280px. */
+.sc-copy-actions-row > .sc-detail-action:only-child {
+  max-width: 300px !important;
+}
+
+/* Below ~560px two side-by-side pills cannot hold a full label ("Sign in to copy
+   source code") on one text line: the label is nowrap and the button is
+   overflow: hidden, so the text was cut mid-word. Let the label wrap inside the
+   pill and trim the 28px side padding — the buttons stay on one row and no text
+   is clipped. */
+@media (max-width: 560px) {
+  .sc-copy-actions-row {
+    gap: 8px !important;
+  }
+
+  .sc-copy-actions-row > .sc-detail-action {
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+    gap: 6px !important;
+  }
+
+  .sc-copy-actions-row .sc-detail-action-icon {
+    flex: 0 0 auto !important;
+  }
+
+  .sc-copy-actions-row .sc-detail-action-label {
+    white-space: normal !important;
+    line-height: 1.2 !important;
+    font-size: 14px !important;
+    text-align: center !important;
+  }
+}

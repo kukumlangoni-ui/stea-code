@@ -45,7 +45,10 @@ export default function LibraryReader({ user, authLoading }) {
   // True while the 1-page Reading Pass is mounted for printing.
   const [isPrintingPass, setIsPrintingPass] = useState(false);
 
-  // Resolve the product from the catalog by slug.
+  // Resolve the product from the catalog by slug OR id. The two can differ
+  // (this book's id is "the-7-day-html-masterclass" while its slug is
+  // "...-masterclass-2") and /book-content accepts either, so an id-based
+  // reader URL must not dead-end in "Book not found".
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
@@ -54,7 +57,7 @@ export default function LibraryReader({ user, authLoading }) {
         const data = await getSteaCodeCatalog({});
         const list = Array.isArray(data?.products) ? data.products : [];
         const match = list.find(
-          (p) => String(p.slug || p.id || "") === String(slug)
+          (p) => String(p.slug || "") === String(slug) || String(p.id || "") === String(slug)
         ) || null;
         if (!cancelled) setProduct(match);
       } catch (e) {
