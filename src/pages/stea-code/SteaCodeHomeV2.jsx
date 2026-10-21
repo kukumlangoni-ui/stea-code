@@ -2642,6 +2642,10 @@ function CodeProductCard({ product, tLocal, onOpen, isFavorited, onToggleFavorit
   const isFree = product.pricingType === "free";
   const productId = getProductIdentity(product);
   const isKit = product?.tab === "kits";
+  // eBooks render a 3D book (BookProductPreview) instead of a fill-cover
+  // screenshot. A book is a portrait object, so its card gets a taller
+  // portrait media box — see `sc-code-card--ebook` in light-mode-fixes.css.
+  const isLibraryProduct = product?.productType === "ebook" || product?.tab === "library";
   const title = tLocal({
     en: product.titleEn || product.title || "Untitled",
     zhCN: product.titleZh || product.titleEn || product.title || "未命名" });
@@ -2725,7 +2729,7 @@ function CodeProductCard({ product, tLocal, onOpen, isFavorited, onToggleFavorit
   return (
     <motion.button
       type="button"
-      className={`sc-code-card sc-code-card--v2 ${isFree ? "is-free" : "is-premium"}`}
+      className={`sc-code-card sc-code-card--v2 ${isFree ? "is-free" : "is-premium"}${isLibraryProduct ? " sc-code-card--ebook" : ""}`}
       onClick={(event) => {
         event.preventDefault();
         openModal();
@@ -2780,10 +2784,11 @@ function CodeProductCard({ product, tLocal, onOpen, isFavorited, onToggleFavorit
           </div>
         ) : (
           <div className="sc-code-card__preview">
-            {product?.productType === "ebook" || product?.tab === "library" ? (
+            {isLibraryProduct ? (
               <div className="sc-product-preview-art" style={{ width: "100%", height: "100%" }}>
-                {/* Renders the product's Sales Page HTML (3D cover); falls back
-                    to a "Preview coming soon" placeholder when it has none. */}
+                {/* Renders the product's Card Cover HTML when the author pasted
+                    one, otherwise its Sales Page HTML; falls back to a
+                    "Preview coming soon" placeholder when it has neither. */}
                 <BookProductPreview product={product} mode="card" />
               </div>
             ) : (

@@ -444,3 +444,41 @@ html body .sc-product-modal-panel.sc-premium-product-detail .sc-product-detail-p
   max-height: none !important;
 }
 
+/* =========================================================================
+   eBook CARDS — TALLER (PORTRAIT) MEDIA BOX
+   =========================================================================
+   The card media box is 4/3 for every product (.sc-code-card--v2
+   .sc-code-card__preview-wrap in stea-code-v2.css). That ratio is right for a
+   screenshot, but an eBook card renders BookProductPreview — a 3D book, which
+   is a portrait object. Inside a 4/3 box the cover's own fit() is height-bound
+   and the book ends up small: measured with the live Card Cover HTML, the
+   painted book was 52×80 px in a 240×180 box and 128×194 px in a 423×317 box —
+   roughly 30% of the card width, letterboxed.
+
+   Padding the frame (the previous attempt) cannot help: the book is already
+   contained, so extra side room is unused — only the box's HEIGHT grows the
+   book. Measured at 4/5 with the same cover, no clipping at any size:
+
+     frame 240×180 (4/3)  book  52×80    k 0.150   margins l94 t40 r94 b60
+     frame 240×300 (4/5)  book 118×180   k 0.339   margins l61 t51 r61 b69
+     frame 423×317 (4/3)  book 128×194   k 0.366   margins l148 t52 r147 b71
+     frame 423×529 (4/5)  book 242×368   k 0.692   margins l91 t73 r90 b88
+     frame 510×638 (4/5)  book 299×456   k 0.858   margins l106 t85 r105 b97
+
+   So 4/5 ≈ doubles the book and the cover's min(...) fit keeps ~60-100px of
+   clearance on every edge — no cropping, at any rotation (a −180°…180° sweep of
+   --ry found zero overflow).
+
+   SCOPE: `sc-code-card--ebook` is only added for productType "ebook" / tab
+   "library" (SteaCodeHomeV2 CodeProductCard), so every other card keeps 4/3.
+   `:not(.is-poster-card)` leaves a poster-mode eBook card alone — that variant
+   is sized by an inline aspect-ratio on its inner .sc-card-poster-preview and
+   would otherwise sit in a taller white box. Only the ratio is touched — no
+   height / min-height, which would fight the aspect-ratio at narrow card
+   widths. Both scopes are needed because related cards live in a portal outside
+   #root; the second selector's (0,4,0) beats rule 7's (0,3,0) above. */
+#root .sc-code-card--ebook .sc-code-card__preview-wrap:not(.is-poster-card),
+body .sc-also-like-grid .sc-code-card--ebook .sc-code-card__preview-wrap:not(.is-poster-card) {
+  aspect-ratio: 4 / 5 !important;
+}
+
