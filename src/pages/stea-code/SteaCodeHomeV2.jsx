@@ -3994,30 +3994,6 @@ function ProductDetail({
     product.craftNote ||
     "";
 
-  const usageGuide =
-    tLocal(label(product, "usageGuideEn", "usageGuideZh")) ||
-    product.usageGuideEn ||
-    product.usageGuide ||
-    product.howToUse ||
-    "Add the files to your project, follow the included setup instructions and customize the component for your interface.";
-
-  const usageSteps = useMemo(() => {
-    const raw = String(usageGuide || "").trim();
-    if (!raw) return [];
-    return raw
-      .split(/\n+/)
-      .map((line) => line.trim())
-      .filter((line) => line.length > 0)
-      .filter((line) => !/^#{1,6}\s/.test(line))          // drop markdown headings
-      .map((line) =>
-        line
-          .replace(/^\d+[\.\)]\s*/, "")                   // drop "1. " or "2) "
-          .replace(/^[-*•]\s*/, "")                       // drop bullets
-          .trim()
-      )
-      .filter((line) => line.length > 0);
-  }, [usageGuide]);
-
   const included =
     Array.isArray(product.included) && product.included.length
       ? product.included
@@ -5130,40 +5106,6 @@ function ProductDetail({
             )}
 
           </div>
-
-          {(!isPremium || hasAccess) && (
-            <div className="sc-product-detail-section">
-              <div className="sc-product-detail-heading">
-                <span>
-                  {tLocal({
-                    en: "How to use",
-                    zhCN: "如何使用" })}
-                </span>
-
-                <small>
-                  {tLocal({
-                    en: "Simple setup. No unnecessary documentation.",
-                    zhCN: "简单设置，无需冗长文档。" })}
-                </small>
-              </div>
-
-              <div className="sc-product-usage-steps">
-                {(usageSteps.length
-                  ? usageSteps
-                  : [
-                      tLocal({
-                        en: "Add the component to your project.",
-                        zhCN: "将组件添加到你的项目。" }),
-                    ]
-                ).map((step, index) => (
-                  <div key={`${index}-${step}`}>
-                    <span>{index + 1}</span>
-                    <p>{step}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       </motion.section>
 
