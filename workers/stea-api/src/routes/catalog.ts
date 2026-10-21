@@ -184,6 +184,9 @@ const HOMEPAGE_CARD_COLUMNS = [
   "gallery",
   "productType",
   "websiteUrl",
+  // The admin save payload stores liveUrl in extraData (it is not in the
+  // products column whitelist), so the card payload reads it from there.
+  "extraData",
   "designWidth",
   "designHeight",
   "createdAt",
@@ -244,40 +247,46 @@ async function listHomepageCards(env: Env): Promise<any[]> {
       ORDER BY featured DESC, createdAt DESC`
   ).all();
 
-  return (result.results || []).map((row: any) => ({
-    id: row.id,
-    slug: row.slug,
-    titleEn: row.titleEn,
-    titleZh: row.titleZh,
-    shortDescriptionEn: row.shortDescriptionEn,
-    shortDescriptionZh: row.shortDescriptionZh,
-    price: Number(row.price) || 0,
-    pricingType: row.pricingType,
-    category: row.category,
-    subcategory: row.subcategory,
-    tab: row.tab,
-    status: row.status,
-    featured: row.featured === 1 || row.featured === true,
-    homepageVisible: row.homepageVisible === 1 || row.homepageVisible === true,
-    frameworks: parseJsonColumn(row.frameworks, []),
-    posterImageUrl: row.posterImageUrl,
-    previewVideoUrl: row.previewVideoUrl,
-    previewMode: row.previewMode,
-    preview: parseJsonColumn(row.preview, null),
-    gallery: parseJsonColumn(row.gallery, []),
-    productType: row.productType,
-    websiteUrl: row.websiteUrl,
-    designWidth: row.designWidth === null ? null : Number(row.designWidth),
-    designHeight: row.designHeight === null ? null : Number(row.designHeight),
-    createdAt: row.createdAt,
-    updatedAt: row.updatedAt,
-    // Same meaning as the flag handleProduct() sends: false when "Copy Source
-    // Code" would come back empty (poster-only layouts, ebooks without code).
-    hasSource: row.hasSource === 1 || row.hasSource === true,
-    // eBook-only: the book's authored "What you get" lines, so the modal can
-    // render them on first paint instead of after the detail hydration.
-    ebookFeatures: parseStringList(row.ebookFeatures),
-  }));
+  return (result.results || []).map((row: any) => {
+    const extra = parseJsonColumn(row.extraData, null);
+    return {
+      id: row.id,
+      slug: row.slug,
+      titleEn: row.titleEn,
+      titleZh: row.titleZh,
+      shortDescriptionEn: row.shortDescriptionEn,
+      shortDescriptionZh: row.shortDescriptionZh,
+      price: Number(row.price) || 0,
+      pricingType: row.pricingType,
+      category: row.category,
+      subcategory: row.subcategory,
+      tab: row.tab,
+      status: row.status,
+      featured: row.featured === 1 || row.featured === true,
+      homepageVisible: row.homepageVisible === 1 || row.homepageVisible === true,
+      frameworks: parseJsonColumn(row.frameworks, []),
+      posterImageUrl: row.posterImageUrl,
+      previewVideoUrl: row.previewVideoUrl,
+      previewMode: row.previewMode,
+      preview: parseJsonColumn(row.preview, null),
+      gallery: parseJsonColumn(row.gallery, []),
+      productType: row.productType,
+      websiteUrl: row.websiteUrl,
+      // Portfolio "Live URL". The admin saves it via extraData; the real column
+      // is a fallback for rows written before that path existed.
+      liveUrl: (extra && typeof extra === "object" ? extra.liveUrl : "") || row.liveUrl || "",
+      designWidth: row.designWidth === null ? null : Number(row.designWidth),
+      designHeight: row.designHeight === null ? null : Number(row.designHeight),
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+      // Same meaning as the flag handleProduct() sends: false when "Copy Source
+      // Code" would come back empty (poster-only layouts, ebooks without code).
+      hasSource: row.hasSource === 1 || row.hasSource === true,
+      // eBook-only: the book's authored "What you get" lines, so the modal can
+      // render them on first paint instead of after the detail hydration.
+      ebookFeatures: parseStringList(row.ebookFeatures),
+    };
+  });
 }
 
 /**
@@ -309,8 +318,9 @@ export async function handleCatalog(req: Request, env: Env, ctx?: ExecutionConte
     // change to the card payload would otherwise sit behind the 5-minute
     // s-maxage below; bump this when the shape of a card changes.
     // v3: added hasSource + ebookFeatures.
+    // v4: added liveUrl (card falls back to it when websiteUrl is empty).
     const homepageCacheKey = new Request(
-      "https://stea-code.internal/catalog/homepage-v3",
+      "https://stea-code.internal/catalog/homepage-v4",
       { method: "GET" }
     );
 

@@ -2799,7 +2799,9 @@ function CodeProductCard({ product, tLocal, onOpen, isFavorited, onToggleFavorit
     "premium-website-hero": "/start-project.html",
   };
   const externalUrl = EXTERNAL_REDIRECTS[product.slug] || EXTERNAL_REDIRECTS[productId];
-  const siteUrl = normalizeExternalUrl(product?.websiteUrl);
+  // Fall back to the portfolio "Live URL" when the dedicated Website URL is
+  // empty, so a product with either field set shows the Visit Website link.
+  const siteUrl = normalizeExternalUrl(product?.websiteUrl || product?.liveUrl);
 
   const openModal = useCallback(() => {
     if (externalUrl) {
