@@ -211,21 +211,30 @@ export default function LibraryReader({ user, authLoading }) {
   };
 
   // Print once the pass has actually painted. A fixed timer races React's
-  // commit; a double rAF lands after layout. window.print() blocks until the
-  // dialog is dismissed, so clearing the flag straight after is safe.
+  // commit, so the trigger stays on a double rAF. `afterprint` is the browser's
+  // authoritative "dialog is closed" signal — the backstop that guarantees the
+  // full-screen overlay is dismissed even in browsers that return from print()
+  // before the user has finished, so the reader is never left stranded behind a
+  // pass the user already saved. Clearing the flag twice is harmless.
   useEffect(() => {
     if (!isPrintingPass) return;
     let cancelled = false;
+
+    const finish = () => setIsPrintingPass(false);
+    window.addEventListener("afterprint", finish);
+
     const raf = requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         if (cancelled) return;
         window.print();
-        setIsPrintingPass(false);
+        finish();
       });
     });
+
     return () => {
       cancelled = true;
       cancelAnimationFrame(raf);
+      window.removeEventListener("afterprint", finish);
     };
   }, [isPrintingPass]);
 
@@ -358,8 +367,13 @@ export default function LibraryReader({ user, authLoading }) {
             position: static !important;
             inset: auto !important;
             display: flex !important;
-            min-height: 100vh !important;
             background: #ffffff !important;
+            /* No min-height: 100vh here. On paper 100vh is the full sheet while
+               the printable area is smaller (default print margins), so the
+               pass overflowed and pushed out a blank second page — measured
+               2 pages. Top padding gives the certificate its breathing room
+               without ever exceeding one sheet. */
+            padding: 96px 40px !important;
           }
         }
       `}</style>

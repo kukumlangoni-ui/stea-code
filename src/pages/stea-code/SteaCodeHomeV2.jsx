@@ -4486,8 +4486,11 @@ function ProductDetail({
     return () => { cancelled = true; };
   }, [isLibraryProduct, hasAccess, product?.slug, product?.id]);
 
-  // "Download Book" — direct download when a pre-built file exists, otherwise
-  // fall back to printing the page.
+  // "Save Offline" — a pre-built file downloads directly. Otherwise there is
+  // nothing to hand over: the book is an interactive course rendered one stage
+  // at a time, so printing this page would only ever capture the product page.
+  // Send the user to the reader instead, where "Save Book" prints the pass.
+  // Mirrors handleReadClick, so non-owners still get the unlock modal.
   const handleDownloadBook = useCallback(
     (e) => {
       e.stopPropagation();
@@ -4495,9 +4498,13 @@ function ProductDetail({
         window.location.href = ebookDownloadUrl;
         return;
       }
-      window.print();
+      if (!hasAccess) {
+        onOpenUnlockModal?.();
+        return;
+      }
+      onReadEbook?.(product);
     },
-    [ebookDownloadUrl]
+    [ebookDownloadUrl, hasAccess, onOpenUnlockModal, onReadEbook, product]
   );
 
   // Resume pending action on mount or when user authenticates
