@@ -3829,6 +3829,12 @@ function ProductDetail({
   // Public marketing site for this product, set in the admin panel.
   const modalSiteUrl = normalizeExternalUrl(product?.websiteUrl);
 
+  // Portfolio "Live URL" — a separate admin field. Hidden when it points at the
+  // same address as Website URL, otherwise the action list shows two identical
+  // links ("Visit Website" + "View Live Site").
+  const modalLiveUrl = normalizeExternalUrl(product?.liveUrl);
+  const showLiveSiteAction = Boolean(modalLiveUrl) && modalLiveUrl !== modalSiteUrl;
+
   // "Copy Source Code" is only meaningful when the product actually has code.
   // The public product payload strips sourceCode / publicFiles / preview HTML,
   // so the client cannot detect this itself — the worker resolves it and sends
@@ -4959,6 +4965,24 @@ function ProductDetail({
               </a>
             )}
 
+            {/* View Live Site — portfolio "Live URL" (falls back to this when
+                Website URL is empty). Part of the action row so it aligns with
+                the other buttons instead of floating over the content. */}
+            {showLiveSiteAction && (
+              <a
+                href={modalLiveUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="sc-detail-action sc-detail-action--live"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <span className="sc-detail-action-icon" aria-hidden="true">
+                  <ExternalLink size={18} />
+                </span>
+                <span className="sc-detail-action-label">View Live Site</span>
+              </a>
+            )}
+
             {/* Copy Image — Layouts (poster-based) products and any product with a gallery cover */}
             {(product?.tab === "layouts" || galleryImages.length > 0) && getCopyImageUrl(product) && (
               <button
@@ -5115,28 +5139,6 @@ function ProductDetail({
                     : 'Download Source Code'}
                 </span>
               </button>
-            )}
-
-            {/* View Live Site */}
-            {typeof product?.liveUrl === "string" && product.liveUrl.trim() && (
-              <a
-                href={product.liveUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="sc-detail-action sc-detail-action--live"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <span className="sc-detail-action-icon" aria-hidden="true">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-                       stroke="currentColor" strokeWidth="2" strokeLinecap="round"
-                       strokeLinejoin="round">
-                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-                    <polyline points="15 3 21 3 21 9" />
-                    <line x1="10" y1="14" x2="21" y2="3" />
-                  </svg>
-                </span>
-                <span className="sc-detail-action-label">View Live Site</span>
-              </a>
             )}
 
             {/* Copy Repo URL */}
