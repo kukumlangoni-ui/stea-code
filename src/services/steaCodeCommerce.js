@@ -21,6 +21,24 @@ async function authHeaders({ optional = false } = {}) {
     throw error;
   }
 
+  // Optional callers must never wait for auth. A free book has to paint in
+  // milliseconds, and Firebase session restore can take seconds — the reader
+  // retries once auth settles, so a missing token here is not a problem.
+  if (optional) {
+    const current = auth.currentUser;
+    if (!current) return { "Content-Type": "application/json" };
+    try {
+      const token = await current.getIdToken(true);
+      return {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      };
+    } catch {
+      // Token refresh failed — the Worker decides; paid routes still fail closed.
+      return { "Content-Type": "application/json" };
+    }
+  }
+
   if (typeof auth.authStateReady === "function") {
     await auth.authStateReady();
   }

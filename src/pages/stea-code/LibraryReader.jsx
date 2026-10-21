@@ -85,14 +85,18 @@ export default function LibraryReader({ user, authLoading }) {
     product?.pricingType === "premium" && Number(product?.price || 0) > 0;
   const hasAccess = !serverDenied && (!isPremium || entitlements.hasProLifetime || entitlements.productIds.has(product?.id));
 
-  // Fetch the book chapters once access is established.
+  // Fetch the book immediately — free books need no session, and a paid book
+  // answers 401/403, which only locks the reader once Firebase has settled.
+  // The effect re-runs when auth resolves so a buyer's token is applied.
   useEffect(() => {
     let cancelled = false;
-    if (!product || !hasAccess) {
+    if (!product) {
       setContentState("idle");
       return;
     }
-    setContentState("loading");
+    setServerDenied(false);
+    // Keep an already-loaded book on screen during the auth-settled refetch.
+    setContentState((prev) => (prev === "ready" ? prev : "loading"));
     getSteaCodeEbookContent(slug)
       .then((res) => {
         if (cancelled) return;
@@ -110,18 +114,38 @@ export default function LibraryReader({ user, authLoading }) {
       .catch((err) => {
         if (cancelled) return;
         const code = err?.code || err?.body?.code;
-        if (code === "ACCESS_DENIED" || code === "AUTH_REQUIRED") {
+        const status = err?.status;
+        // Explicit auth denial from the API — 401/403, or the Worker's named
+        // codes. Nothing else is allowed to lock the reader.
+        const authBlocked =
+          code === "ACCESS_DENIED" ||
+          code === "AUTH_REQUIRED" ||
+          status === 401 ||
+          status === 403;
+        if (authBlocked) {
+          // Auth is still resolving — wait for it rather than locking the
+          // reader; the retry below runs as soon as auth settles.
+          if (authLoading) {
+            setContentState("idle");
+            return;
+          }
           setServerDenied(true);
           setContentState("denied");
           return;
         }
-        // Endpoint unreachable — keep the shipped reader shell working.
+        // Endpoint unreachable. A signed-out visitor never gets the shell for a
+        // paid book; a signed-in reader keeps the shipped shell usable.
+        if (isPremium && !effectiveUser) {
+          setContentState("idle");
+          return;
+        }
+        // Keep the shipped reader shell working.
         console.warn("[library] book content unavailable, using bundled reader", err);
         setContentSource("bundled");
         setContentState("ready");
       });
     return () => { cancelled = true; };
-  }, [product?.id, hasAccess, slug]);
+  }, [product?.id, slug, authLoading, effectiveUser?.uid, isPremium]);
 
   const srcDoc = contentSource === "api" && bookContentHtml ? bookContentHtml : libraryReaderHtml;
 
@@ -135,6 +159,19 @@ export default function LibraryReader({ user, authLoading }) {
         "*"
       );
     } catch (_) {}
+
+    // Authored book HTML fits itself on DOMContentLoaded, which can run before
+    // the iframe has its final size (it starts at the 150px default). Re-run
+    // its fit hook once layout settles so the canvas scales to the real frame
+    // instead of staying tiny.
+    const refit = () => {
+      try {
+        win.dispatchEvent(new Event("resize"));
+      } catch (_) {}
+    };
+    requestAnimationFrame(refit);
+    setTimeout(refit, 250);
+    setTimeout(refit, 800);
   };
 
   useEffect(() => {
@@ -166,13 +203,17 @@ export default function LibraryReader({ user, authLoading }) {
     window.print();
   };
 
-  if (loading || authLoading || (hasAccess && (contentState === "idle" || contentState === "loading"))) {
-    return (
-      <div style={{ minHeight: "100vh", background: "#0b0e14", display: "grid", placeItems: "center", color: "#8b93a3", font: "600 14px system-ui" }}>
-        Loading library…
-      </div>
-    );
-  }
+  // White splash — the reader is a light surface, so a dark splash would flash
+  // black before the book paints.
+  const loadingScreen = (
+    <div style={{ minHeight: "100vh", background: "#ffffff", display: "grid", placeItems: "center", color: "#111111", font: "600 14px system-ui" }}>
+      Loading library…
+    </div>
+  );
+
+  // Only the catalog lookup blocks the UI. Book content loads independently of
+  // Firebase, so a free book paints as soon as its HTML arrives.
+  if (loading) return loadingScreen;
 
   if (!product) {
     return (
@@ -193,8 +234,12 @@ export default function LibraryReader({ user, authLoading }) {
     );
   }
 
-  // Gate: premium book not owned.
-  if (!hasAccess) {
+  // Book content is not loaded yet: wait while auth resolves, and only show the
+  // paywall once the server has actually denied a settled session.
+  if (contentState !== "ready") {
+    if (authLoading) return loadingScreen;
+
+    if (!hasAccess && (!effectiveUser || contentState === "denied")) {
     return (
       <div style={{ minHeight: "100vh", background: "#0b0e14", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
         <div style={{ maxWidth: 440, width: "100%", background: "#12161f", border: "1px solid #1e2430", borderRadius: 18, padding: 36, textAlign: "center", color: "#e7e9ee" }}>
@@ -223,14 +268,24 @@ export default function LibraryReader({ user, authLoading }) {
         </div>
       </div>
     );
+    }
+
+    return loadingScreen;
   }
 
   return (
-    <div className="sc-reader-root" style={{ position: "fixed", inset: 0, background: "#0b0e14", zIndex: 9999 }}>
-      <div className="sc-reader-topbar">
+    <div
+      className="sc-reader-root"
+      style={{ position: "fixed", inset: 0, display: "flex", flexDirection: "column", background: "#ffffff", zIndex: 9999 }}
+    >
+      <div
+        className="sc-reader-topbar"
+        style={{ background: "#ffffff", borderBottom: "1px solid #e5e7eb", color: "#111111" }}
+      >
         <button
           type="button"
           className="sc-reader-topbar__back"
+          style={{ color: "#111827", background: "#ffffff", borderColor: "#e5e7eb" }}
           onClick={() => (window.history.length > 1 ? navigate(-1) : navigate("/"))}
         >
           ← Back to Library
@@ -242,14 +297,17 @@ export default function LibraryReader({ user, authLoading }) {
           Download PDF
         </button>
       </div>
-      <div className="sc-reader-stage">
+      <div
+        className="sc-reader-stage"
+        style={{ flex: "1 1 auto", minHeight: 0, position: "relative", background: "#ffffff" }}
+      >
         <iframe
           ref={iframeRef}
           title={`Read — ${product.titleEn || "STEACODE eBook"}`}
           srcDoc={srcDoc}
           onLoad={sendInit}
           className="sc-reader-frame"
-          style={{ width: "100%", height: "100%", border: "none", background: "#0b0e14", display: "block" }}
+          style={{ width: "100%", height: "100%", border: "none", background: "#ffffff", display: "block" }}
           sandbox="allow-scripts allow-same-origin"
         />
       </div>
