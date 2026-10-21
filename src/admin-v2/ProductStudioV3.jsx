@@ -1336,6 +1336,12 @@ export function ProductStudioV3({
       };
       if (Object.keys(sourceCode).length === 0) sourceCode = undefined;
     }
+    // Pricing must be perfectly synchronized: a "Free" product always stores
+    // price 0, so a leftover price from an earlier premium edit can never
+    // survive in the database.
+    const finalPricingType = form.pricingType === "premium" ? "premium" : "free";
+    const finalPrice = finalPricingType === "free" ? 0 : Number(form.price) || 0;
+
     return {
       id: product.id,
       slug: form.slug || product.id,
@@ -1343,8 +1349,8 @@ export function ProductStudioV3({
       titleZh: form.titleZh,
       shortDescriptionEn: form.shortDescriptionEn,
       shortDescriptionZh: form.shortDescriptionZh,
-      price: form.price,
-      pricingType: form.pricingType,
+      price: finalPrice,
+      pricingType: finalPricingType,
       category: form.category,
       subcategory: String(form.subcategory || ""),
       status: form.status || "draft",

@@ -368,7 +368,10 @@ export async function handleBookContent(req: Request, env: Env, productId: strin
     }
 
     // Fail closed: anything that is not explicitly free needs auth+entitlement.
-    const isFree = doc.data.pricingType === "free";
+    // A premium flag with no price is treated as free too — that is the same
+    // rule the reader applies, so a 0-price book never hits a paywall.
+    const isFree =
+      doc.data.pricingType === "free" || !(Number(doc.data.price) > 0);
     if (!isFree) {
       const token = extractBearerToken(req);
       if (!token) {

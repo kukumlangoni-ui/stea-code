@@ -3,10 +3,19 @@ import { getFirebaseAuth } from "../firebase.js";
 
 const API_BASE = ""; // same-origin — Cloudflare Worker Route handles /api/*
 
-async function authHeaders() {
+/**
+ * Build request headers with the signed-in user's Firebase ID token.
+ *
+ * `optional` — send the token when there is a session, otherwise send no
+ * Authorization header and let the Worker decide. That is what free books
+ * need: the /book-content route serves `pricingType === "free"` without auth,
+ * so throwing AUTH_REQUIRED client-side would wrongly gate a free product.
+ */
+async function authHeaders({ optional = false } = {}) {
   const auth = getFirebaseAuth();
 
   if (!auth) {
+    if (optional) return { "Content-Type": "application/json" };
     const error = new Error("AUTH_REQUIRED");
     error.code = "AUTH_REQUIRED";
     throw error;
@@ -54,6 +63,7 @@ async function authHeaders() {
   }
 
   if (!user) {
+    if (optional) return { "Content-Type": "application/json" };
     const error = new Error("AUTH_REQUIRED");
     error.code = "AUTH_REQUIRED";
     throw error;
@@ -179,11 +189,15 @@ export async function getSteaCodeEbookSalesPage(productId) {
 }
 
 /**
- * eBook full chapters + optional PDF/ZIP URL. Auth + entitlement enforced
- * server-side — throws when the signed-in user has not bought the book.
+ * eBook full chapters + optional PDF/ZIP URL.
+ *
+ * Auth + entitlement are enforced server-side. The call itself uses optional
+ * auth because the Worker serves free books (`pricingType === "free"`) without
+ * a token — throwing AUTH_REQUIRED here would wrongly gate a free product.
+ * Paid books still come back 401/403 for signed-out or unentitled users.
  */
 export async function getSteaCodeEbookContent(productId) {
-  const headers = await authHeaders();
+  const headers = await authHeaders({ optional: true });
 
   const response = await fetch(
     `${API_BASE}/api/stea-code/products/${encodeURIComponent(productId)}/book-content`,
@@ -325,7 +339,9 @@ export function downloadSteaCodePdf(productId) {
 
 // LocalStorage cache for catalog responses. Always served instantly on repeat
 // visits; stale entries are refreshed in the background.
-const CATALOG_CACHE_KEY_PREFIX = "stea_code_catalog_v1_";
+// Bumping the version forces every browser to discard a previously cached
+// catalog (e.g. one that still listed a now-free book as premium).
+const CATALOG_CACHE_KEY_PREFIX = "stea_code_catalog_v2_";
 const CATALOG_CACHE_TTL = 30 * 1000;
 
 function getCatalogCacheKey(scope) {

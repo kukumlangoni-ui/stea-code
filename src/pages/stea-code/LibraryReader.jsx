@@ -78,7 +78,11 @@ export default function LibraryReader({ user, authLoading }) {
     return () => { cancelled = true; };
   }, [effectiveUser?.uid]);
 
-  const isPremium = product?.pricingType === "premium";
+  // A book is only premium when it is explicitly flagged premium AND carries
+  // a real price. `pricingType: "free"` (or a stale premium flag on a 0-price
+  // row) grants instant access — no sign-in, no purchase.
+  const isPremium =
+    product?.pricingType === "premium" && Number(product?.price || 0) > 0;
   const hasAccess = !serverDenied && (!isPremium || entitlements.hasProLifetime || entitlements.productIds.has(product?.id));
 
   // Fetch the book chapters once access is established.
