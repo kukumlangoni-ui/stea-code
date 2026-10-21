@@ -5,6 +5,7 @@ import { motion, AnimatePresence, useMotionValue, useSpring, useTransform, useRe
 import SEO from "../../components/SEO.jsx";
 import "./stea-code.css";
 import "./stea-code-v2.css";
+import "./sc-detail-actions-override.css";
 import {
   ArrowLeft,
   ArrowRight,
