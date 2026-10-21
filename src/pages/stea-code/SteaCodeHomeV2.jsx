@@ -4940,7 +4940,7 @@ function ProductDetail({
                 <span className="sc-detail-action-icon" aria-hidden="true">
                   <Download size={18} />
                 </span>
-                <span className="sc-detail-action-label">Download Book</span>
+                <span className="sc-detail-action-label">Save Offline</span>
               </button>
             )}
 

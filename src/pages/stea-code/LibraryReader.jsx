@@ -19,9 +19,10 @@ import libraryReaderHtml from "../../components/stea-code/library-reader.html?ra
  * unreachable — e.g. a worker deployment older than this page — it falls back
  * to the bundled reader shell so existing buyers never lose access.
  *
- * "Download PDF" calls window.print(). The `@media print` block in
- * stea-code-v2.css hides the top bar and chrome so only the book prints; the
- * chapters inside the iframe are part of this document, so they print too.
+ * "Save Book" downloads the pre-built PDF/ZIP when one was uploaded. Otherwise
+ * it prints a 1-page "Reading Pass" holding the link back to the book: the book
+ * is an interactive 15-stage course rendered one stage at a time, so printing
+ * the reader could only ever capture the stage on screen — never the whole book.
  */
 export default function LibraryReader({ user, authLoading }) {
   const { slug } = useParams();
@@ -41,6 +42,8 @@ export default function LibraryReader({ user, authLoading }) {
   const [serverDenied, setServerDenied] = useState(false);
 
   const iframeRef = useRef(null);
+  // True while the 1-page Reading Pass is mounted for printing.
+  const [isPrintingPass, setIsPrintingPass] = useState(false);
 
   // Resolve the product from the catalog by slug.
   useEffect(() => {
@@ -149,6 +152,10 @@ export default function LibraryReader({ user, authLoading }) {
 
   const srcDoc = contentSource === "api" && bookContentHtml ? bookContentHtml : libraryReaderHtml;
 
+  // Canonical reader URL for the pass. Built from the resolved product slug so
+  // a stray query string or hash in the address bar never ends up printed.
+  const passUrl = `https://steacode.com/library/read/${product?.slug || slug}`;
+
   // Host → iframe init + iframe → host navigation bridge.
   const sendInit = () => {
     const win = iframeRef.current?.contentWindow;
@@ -194,14 +201,33 @@ export default function LibraryReader({ user, authLoading }) {
     return () => window.removeEventListener("message", handler);
   }, [navigate]);
 
-  // Direct download when a pre-built PDF/ZIP exists, otherwise print the book.
+  // Direct download when a pre-built PDF/ZIP exists, otherwise print the pass.
   const handleDownload = () => {
     if (downloadUrl) {
       window.location.href = downloadUrl;
       return;
     }
-    window.print();
+    setIsPrintingPass(true);
   };
+
+  // Print once the pass has actually painted. A fixed timer races React's
+  // commit; a double rAF lands after layout. window.print() blocks until the
+  // dialog is dismissed, so clearing the flag straight after is safe.
+  useEffect(() => {
+    if (!isPrintingPass) return;
+    let cancelled = false;
+    const raf = requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (cancelled) return;
+        window.print();
+        setIsPrintingPass(false);
+      });
+    });
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(raf);
+    };
+  }, [isPrintingPass]);
 
   // White splash — the reader is a light surface, so a dark splash would flash
   // black before the book paints.
@@ -294,7 +320,7 @@ export default function LibraryReader({ user, authLoading }) {
           {product.titleEn || "STEACODE eBook"}
         </div>
         <button type="button" className="sc-reader-topbar__download" onClick={handleDownload}>
-          Download PDF
+          Save Book
         </button>
       </div>
       <div
@@ -311,6 +337,79 @@ export default function LibraryReader({ user, authLoading }) {
           sandbox="allow-scripts allow-same-origin"
         />
       </div>
+
+      {/* Reading Pass print rules. Kept inline as a <style> tag because this page
+          is its own lazy chunk: light-mode-fixes.css and stea-code-v2.css are
+          only pulled in by the home-page bundle, so a direct link to the reader
+          would print the course UI along with the pass. */}
+      <style>{`
+        @media print {
+          body .sc-reader-root {
+            position: static !important;
+            inset: auto !important;
+            display: block !important;
+            height: auto !important;
+            overflow: visible !important;
+          }
+          body .sc-reader-root > *:not(#reading-pass-view) {
+            display: none !important;
+          }
+          #reading-pass-view {
+            position: static !important;
+            inset: auto !important;
+            display: flex !important;
+            min-height: 100vh !important;
+            background: #ffffff !important;
+          }
+        }
+      `}</style>
+
+      {isPrintingPass && (
+        <div
+          id="reading-pass-view"
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "white",
+            zIndex: 10000,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "40px",
+            textAlign: "center",
+            fontFamily: "system-ui, sans-serif",
+          }}
+        >
+          <div style={{ fontSize: "48px", marginBottom: "20px" }}>📖</div>
+          <h1 style={{ fontSize: "32px", fontWeight: "bold", color: "#111", marginBottom: "10px" }}>
+            SteaCode Reading Pass
+          </h1>
+          <p style={{ fontSize: "18px", color: "#555", marginBottom: "30px" }}>
+            This is your access pass for
+            <br />
+            <strong>{product?.titleEn}</strong>
+          </p>
+          <p style={{ fontSize: "16px", color: "#333", marginBottom: "20px" }}>
+            eBooks are accessible online. Click the link below to read the full book in your browser:
+          </p>
+          <a
+            href={passUrl}
+            style={{
+              fontSize: "20px",
+              color: "#F5A623",
+              fontWeight: "bold",
+              textDecoration: "underline",
+              wordBreak: "break-all",
+            }}
+          >
+            {passUrl}
+          </a>
+          <p style={{ fontSize: "14px", color: "#999", marginTop: "40px" }}>
+            Keep this pass safe. You can return to this link anytime to continue reading.
+          </p>
+        </div>
+      )}
     </div>
   );
 }
