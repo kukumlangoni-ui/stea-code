@@ -240,14 +240,17 @@ const TABS = [
 
 /**
  * Product kinds. Stored on `products.productType`:
- *   component — copy-paste component / layout / kit (the default)
- *   ebook     — a book; unlocks the "eBook Settings" tab, the 3D cover card
- *               preview and the /library/read/:slug reader
- *   course    — reserved for a future course product
+ *   component  — copy-paste component / layout / kit (the default)
+ *   ebook      — a book; unlocks the "eBook Settings" tab, the 3D cover card
+ *                preview and the /library/read/:slug reader
+ *   cheatsheet — a Library quick-reference sheet; same HTML pipeline as an
+ *                eBook (eBook Settings tab, 3D cover card, reader route)
+ *   course     — reserved for a future course product
  */
 const PRODUCT_TYPES = [
   { id: "component", label: "Component", hint: "Copy-paste component, layout or kit" },
   { id: "ebook", label: "eBook", hint: "A book with a 3D cover sales page and chapters" },
+  { id: "cheatsheet", label: "Cheat Sheet", hint: "Quick-reference sheet — 3D cover, chapters and the reader route" },
   { id: "course", label: "Course", hint: "Multi-lesson course (reserved)" },
 ];
 
@@ -1453,11 +1456,13 @@ export function ProductStudioV3({
     return { basic, preview: previewOk, deliverables: deliver, ebook, publish: canPublish };
   }, [form, preview, canPublish]);
 
-  // The "eBook Settings" tab only exists for eBook products.
-  const isEbook = form.productType === "ebook";
+  // The "eBook Settings" tab exists for both book kinds — eBooks and Cheat
+  // Sheets share the same authored-HTML pipeline.
+  const isBook =
+    form.productType === "ebook" || form.productType === "cheatsheet";
   const visibleTabs = useMemo(
-    () => (isEbook ? TABS : TABS.filter((t) => t.id !== "ebook")),
-    [isEbook]
+    () => (isBook ? TABS : TABS.filter((t) => t.id !== "ebook")),
+    [isBook]
   );
 
   // How many "What you get" lines the book page will render — drives the
@@ -1470,8 +1475,8 @@ export function ProductStudioV3({
   // If the type is switched away from eBook while that tab is open, fall back
   // to Basic so the user is never stranded on a hidden tab.
   useEffect(() => {
-    if (!isEbook && tab === "ebook") setTab("basic");
-  }, [isEbook, tab]);
+    if (!isBook && tab === "ebook") setTab("basic");
+  }, [isBook, tab]);
 
   // Code tabs based on runtime
   const codeTabs = useMemo(() => {
@@ -1518,9 +1523,13 @@ export function ProductStudioV3({
   const fullHtmlPresent = fullDocumentSource.trim().length > 0;
 
   const previewDocument = useMemo(() => {
-    // eBooks preview their authored sales page (the 3D cover) — that is what
-    // buyers see on the card and in the modal, not the component runtime.
-    if (form.productType === "ebook" && String(form.salesPageHtml || "").trim()) {
+    // eBooks / Cheat Sheets preview their authored sales page (the 3D cover) —
+    // that is what buyers see on the card and in the modal, not the component
+    // runtime.
+    if (
+      (form.productType === "ebook" || form.productType === "cheatsheet") &&
+      String(form.salesPageHtml || "").trim()
+    ) {
       return String(form.salesPageHtml);
     }
     // If fullDocument has content, use it verbatim (authoritative)
@@ -1684,11 +1693,20 @@ export function ProductStudioV3({
                 <Field
                   label="Product Type"
                   required
-                  hint="eBook unlocks the eBook Settings tab, the 3D cover card preview and the reader route"
+                  hint="eBook / Cheat Sheet unlock the eBook Settings tab, the 3D cover card preview and the reader route"
                 >
                   <RadioGroup
                     value={form.productType || "component"}
-                    onChange={(v) => updateForm("productType", v)}
+                    onChange={(v) => {
+                      updateForm("productType", v);
+                      // Cheat Sheets are a Library product by definition — file
+                      // them there (with the matching pill) on selection.
+                      if (v === "cheatsheet") {
+                        updateForm("tab", "library");
+                        updateForm("category", "Cheat Sheets");
+                        updateForm("subcategory", "");
+                      }
+                    }}
                     options={PRODUCT_TYPES.map((p) => ({ id: p.id, label: p.label }))}
                   />
                 </Field>
@@ -1864,7 +1882,7 @@ export function ProductStudioV3({
           <>
             {/* eBooks preview their authored sales page (the 3D cover), which
                 is independent of the component runtime / preview mode. */}
-            {isEbook && (
+            {isBook && (
               <Section
                 title="Sales Page Preview"
                 subtitle="Exactly what buyers see on the Library card and in the product modal"
@@ -2369,7 +2387,7 @@ export function ProductStudioV3({
           </>
         )}
 
-        {/* TAB — EBOOK SETTINGS (only for productType === "ebook") */}
+        {/* TAB — EBOOK SETTINGS (ebook and cheatsheet products) */}
         {tab === "ebook" && (
           <>
             <Section

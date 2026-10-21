@@ -200,7 +200,20 @@ const CATEGORY_LABELS = {
   Components: { en: "Components", zhCN: "组件" },
   Portfolio: { en: "Portfolio", zhCN: "作品集" },
   "Toggle Switches": { en: "Toggle Switches", zhCN: "切换开关" },
-  "Inputs": { en: "Inputs", zhCN: "输入框" } };
+  "Inputs": { en: "Inputs", zhCN: "输入框" },
+  "Cheat Sheets": { en: "Cheat Sheets", zhCN: "速查表" } };
+
+// Book-backed products (eBooks and Cheat Sheets) share one authored-HTML
+// pipeline: the 3D cover card preview, the detail modal and the reader route.
+// `tab === "library"` is the legacy signal, kept so a stale cached catalog
+// response (which may predate the productType column) still renders right.
+const isBookProduct = (p) =>
+  p?.productType === "ebook" || p?.productType === "cheatsheet" || p?.tab === "library";
+
+// The pill a product belongs to. Cheat Sheets are categorised by type rather
+// than by whatever `category` an older record happens to carry.
+const effectiveCategory = (p) =>
+  p?.productType === "cheatsheet" ? "Cheat Sheets" : p?.category;
 
 const BROWSE_CATEGORIES = [
   "Animations",
@@ -534,6 +547,52 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
     // payment-return (old purchased-workspace code-view) removed — users see the product page with copy buttons instead
     return viewMode;
   }, [location.pathname, viewParam, viewMode]);
+
+  // ---------------------------------------------------------------------------
+  // Tab / category / subcategory ⇄ query string
+  //
+  // A filtered view has to be shareable, so the three filter values live in the
+  // URL: /?tab=library&category=Ebooks. Defaults (the "components" tab, "All")
+  // are omitted so plain steacode.com/ stays clean.
+  //
+  // Everything is validated against TABS before it reaches state — a hand-edited
+  // or stale link (?tab=nope) falls back to the default instead of rendering an
+  // empty grid, because `TABS[activeTab].categories` would throw on an unknown
+  // tab.
+  const filterParams = useMemo(() => {
+    const tabParam = searchParams.get("tab");
+    const tab = tabParam && TABS[tabParam] ? tabParam : DEFAULT_TAB;
+    const catParam = searchParams.get("category");
+    const catIds = TABS[tab].categories.map((c) => c.id);
+    const cat = catParam && catIds.includes(catParam) ? catParam : "All";
+    const subParam = searchParams.get("sub");
+    const subs = SUBCATEGORIES[cat] || [];
+    const sub = subParam && subs.includes(subParam) ? subParam : "All";
+    return { tab, cat, sub };
+  }, [searchParams]);
+
+  const filterSignature = `${filterParams.tab}|${filterParams.cat}|${filterParams.sub}`;
+
+  // Write the filters into the URL. Goes through the router rather than
+  // window.history so `location` — which effectiveView and the product modal
+  // routes depend on — stays in sync. Existing params are preserved.
+  const syncFilterUrl = useCallback(
+    ({ tab: nextTab, cat: nextCat, sub: nextSub }) => {
+      const params = new URLSearchParams(location.search);
+      const put = (key, value, fallback) => {
+        if (value && value !== fallback) params.set(key, value);
+        else params.delete(key);
+      };
+      put("tab", nextTab, DEFAULT_TAB);
+      put("category", nextCat, "All");
+      put("sub", nextSub, "All");
+
+      const nextSearch = params.toString();
+      if (nextSearch === location.search.replace(/^\?/, "")) return; // no-op → no history entry
+      navigate(nextSearch ? `${location.pathname}?${nextSearch}` : location.pathname);
+    },
+    [location.pathname, location.search, navigate]
+  );
 
   const [selected, setSelected] = useState(null);
   const [unlockModalProduct, setUnlockModalProduct] = useState(null);
@@ -1285,10 +1344,10 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
         if (activeTab === "components") return p.tab === "components" || p.tab === undefined || p.featured === true;
         if (activeTab === "layouts") return p.tab === "layouts";
         if (activeTab === "kits") return p.tab === "kits";
-        if (activeTab === "library") return p.tab === "library";
+        if (activeTab === "library") return isBookProduct(p);
         return true;
       })
-      .filter((p) => category === "All" || p.category === category)
+      .filter((p) => category === "All" || effectiveCategory(p) === category)
       .filter((p) => {
         // Layout-only subcategory filter. Skipped for every other category.
         if (activeSubcategory === "All" || !SUBCATEGORIES[category]) return true;
@@ -1380,6 +1439,23 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
   useEffect(() => {
     setActiveSubcategory("All");
   }, [category]);
+
+  // Open on the filters the URL asks for — on first paint (a pasted link) and on
+  // browser back/forward. Keyed by a signature of the three filter params only,
+  // so an unrelated search change (opening a product writes ?view=product&
+  // product=… ) never re-applies stale filters over a newer in-page choice.
+  //
+  // Declared AFTER the category→subcategory reset above on purpose: both run in
+  // the same commit, in declaration order, so hydrating `sub` here is not then
+  // clobbered by that reset.
+  const appliedFiltersRef = useRef(null);
+  useEffect(() => {
+    if (appliedFiltersRef.current === filterSignature) return;
+    appliedFiltersRef.current = filterSignature;
+    setActiveTab(filterParams.tab);
+    setCategory(filterParams.cat);
+    setActiveSubcategory(filterParams.sub);
+  }, [filterSignature, filterParams]);
 
   const submit = (event) => {
     event?.preventDefault?.();
@@ -1708,6 +1784,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
               framework={framework}
               setFramework={setFramework}
               setActiveSubcategory={setActiveSubcategory}
+              syncFilterUrl={syncFilterUrl}
             />
             {isFallbackCatalog && (
               <div
@@ -1961,6 +2038,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
                       setActiveSubcategory("All");
                       setPricing("All");
                       setFramework("All Frameworks");
+                      syncFilterUrl({ tab: tab.id, cat: "All", sub: "All" });
                     }}
                   >
                     {tab.label}
@@ -1983,6 +2061,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
                       setActiveSubcategory("All");
                       setPricing("All");
                       setFramework("All Frameworks");
+                      syncFilterUrl({ tab: activeTab, cat: cat.id, sub: "All" });
                     }}
                   >
                     {cat.label}
@@ -2001,7 +2080,10 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
                       role="tab"
                       aria-selected={activeSubcategory === sub}
                       className={`sc-homepage-pill sc-homepage-pill--sub ${activeSubcategory === sub ? "is-active" : ""}`}
-                      onClick={() => setActiveSubcategory(sub)}
+                      onClick={() => {
+                        setActiveSubcategory(sub);
+                        syncFilterUrl({ tab: activeTab, cat: category, sub });
+                      }}
                     >
                       {sub}
                     </button>
@@ -2512,7 +2594,7 @@ function SectionHead({ title, sub, action }) {
   );
 }
 
-function ProductControls({ tLocal, uiLocale = "en", activeTab, setActiveTab, category, setCategory, pricing, setPricing, framework, setFramework, setActiveSubcategory }) {
+function ProductControls({ tLocal, uiLocale = "en", activeTab, setActiveTab, category, setCategory, pricing, setPricing, framework, setFramework, setActiveSubcategory, syncFilterUrl }) {
   return (
     <div className="sc-market-controls">
       <div
@@ -2549,6 +2631,7 @@ function ProductControls({ tLocal, uiLocale = "en", activeTab, setActiveTab, cat
                 setActiveTab(tab.id);
                 setCategory("All");
                 setActiveSubcategory("All");
+                syncFilterUrl({ tab: tab.id, cat: "All", sub: "All" });
               }}
             >
               {tab.label}
@@ -2565,6 +2648,7 @@ function ProductControls({ tLocal, uiLocale = "en", activeTab, setActiveTab, cat
               onClick={() => {
                 setCategory(cat.id);
                 setActiveSubcategory("All");
+                syncFilterUrl({ tab: activeTab, cat: cat.id, sub: "All" });
               }}
             >
               {cat.label}
@@ -2642,10 +2726,10 @@ function CodeProductCard({ product, tLocal, onOpen, isFavorited, onToggleFavorit
   const isFree = product.pricingType === "free";
   const productId = getProductIdentity(product);
   const isKit = product?.tab === "kits";
-  // eBooks render a 3D book (BookProductPreview) instead of a fill-cover
-  // screenshot. A book is a portrait object, so its card gets a taller
-  // portrait media box — see `sc-code-card--ebook` in light-mode-fixes.css.
-  const isLibraryProduct = product?.productType === "ebook" || product?.tab === "library";
+  // eBooks / Cheat Sheets render a 3D book (BookProductPreview) instead of a
+  // fill-cover screenshot. A book is a portrait object, so its card gets a
+  // taller portrait media box — see `sc-code-card--ebook` in light-mode-fixes.css.
+  const isLibraryProduct = isBookProduct(product);
   const title = tLocal({
     en: product.titleEn || product.title || "Untitled",
     zhCN: product.titleZh || product.titleEn || product.title || "未命名" });
@@ -3734,10 +3818,11 @@ function ProductDetail({
     ? `${product?.preview?.width || product?.designWidth || 1440} / ${product?.preview?.height || product?.designHeight || 1200}`
     : `${product?.designWidth || product?.preview?.width || (product?.tab === "kits" ? 1600 : 640)} / ${product?.designHeight || product?.preview?.height || (product?.tab === "kits" ? 1100 : 480)}`;
 
-  // eBook products render the 3D book sales page (BookProductPreview).
-  // `tab === "library"` is the legacy signal, kept so a stale cached catalog
-  // response (which may predate the productType column) still renders right.
-  const isLibraryProduct = product?.productType === "ebook" || product?.tab === "library";
+  // eBook / Cheat Sheet products render the 3D book sales page
+  // (BookProductPreview). `tab === "library"` is the legacy signal, kept so a
+  // stale cached catalog response (which may predate the productType column)
+  // still renders right.
+  const isLibraryProduct = isBookProduct(product);
 
   // Public marketing site for this product, set in the admin panel.
   const modalSiteUrl = normalizeExternalUrl(product?.websiteUrl);
