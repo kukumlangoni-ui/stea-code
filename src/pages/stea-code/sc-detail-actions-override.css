@@ -73,19 +73,26 @@
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Batch 3 — Premium 3-button overlay (Refresh / Like / Save) in the
-   ProductDetail modal's preview shell. Homepage cards stay clean; the
-   actions live only on the full preview. Imported AFTER stea-code-v2.css.
+   ProductDetail modal, floated in the top-right white space of the media
+   column (outside the preview shell). Homepage cards stay clean.
+   Imported AFTER stea-code-v2.css.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-/* Button group — pinned to the top-right of .sc-product-detail-preview-shell
-   (the shell gets position: relative inline in the JSX). Always visible. */
+/* Anchor: the media wrapper holds the Back button and the preview shell;
+   making it the positioning context lets the actions float in the modal's
+   top-right white space, clear of the preview frame. */
+.sc-product-detail-media {
+  position: relative;
+}
+
+/* Button group — modal top-right corner, OUTSIDE the preview shell. */
 .sc-detail-preview-actions {
   position: absolute;
-  top: 16px;
-  right: 16px;
+  top: 24px;
+  right: 24px;
   z-index: 50;
   display: flex;
-  gap: 8px;
+  gap: 12px;
 }
 
 /* The Buttons — frosted-glass circles. */

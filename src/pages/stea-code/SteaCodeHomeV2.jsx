@@ -4588,53 +4588,55 @@ function ProductDetail({
             </button>
           </div>
 
+          {/* Preview actions: Refresh / Like / Save — floated in the modal's
+              top-right white space (anchored to .sc-product-detail-media),
+              OUTSIDE the preview shell so they never cover the template UI.
+              Refresh remounts the preview via the key on PreviewErrorBoundary. */}
+          <div className="sc-detail-preview-actions">
+            <button
+              type="button"
+              className="sc-preview-action-btn"
+              aria-label="Refresh preview"
+              onClick={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                setPreviewRefreshKey((k) => k + 1);
+              }}
+            >
+              <RotateCw size={16} />
+            </button>
+            <button
+              type="button"
+              className={`sc-preview-action-btn${isFavorited ? " is-liked" : ""}`}
+              aria-pressed={isFavorited}
+              aria-label={isFavorited ? "Remove from favorites" : "Add to favorites"}
+              onClick={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                onToggleFavorite?.(getProductIdentity(product));
+              }}
+            >
+              <Heart size={16} fill={isFavorited ? "currentColor" : "none"} />
+            </button>
+            <button
+              type="button"
+              className={`sc-preview-action-btn${detailSaved ? " is-saved" : ""}`}
+              aria-pressed={detailSaved}
+              aria-label={detailSaved ? "Remove from saved" : "Save"}
+              onClick={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                setDetailSaved((v) => !v);
+              }}
+            >
+              <Bookmark size={16} fill={detailSaved ? "currentColor" : "none"} />
+            </button>
+          </div>
+
           <div
             className={`sc-product-detail-preview-shell ${isPosterOnly ? "is-poster-preview" : ""} ${livePreviewActive ? "is-live-preview" : ""} ${isLibraryProduct ? "is-library-preview" : ""}`}
-            style={{ position: "relative", ...(isLibraryProduct ? { "--preview-aspect": "4 / 5" } : livePreviewActive ? { "--preview-aspect": livePreviewAspect } : {}) }}
+            style={isLibraryProduct ? { "--preview-aspect": "4 / 5" } : livePreviewActive ? { "--preview-aspect": livePreviewAspect } : undefined}
           >
-            {/* Preview overlay: Refresh / Like / Save — top-right frosted
-                circles over the preview, clear of the Back button. Refresh
-                remounts the preview via the key on PreviewErrorBoundary. */}
-            <div className="sc-detail-preview-actions">
-              <button
-                type="button"
-                className="sc-preview-action-btn"
-                aria-label="Refresh preview"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  e.preventDefault();
-                  setPreviewRefreshKey((k) => k + 1);
-                }}
-              >
-                <RotateCw size={16} />
-              </button>
-              <button
-                type="button"
-                className={`sc-preview-action-btn${isFavorited ? " is-liked" : ""}`}
-                aria-pressed={isFavorited}
-                aria-label={isFavorited ? "Remove from favorites" : "Add to favorites"}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  e.preventDefault();
-                  onToggleFavorite?.(getProductIdentity(product));
-                }}
-              >
-                <Heart size={16} fill={isFavorited ? "currentColor" : "none"} />
-              </button>
-              <button
-                type="button"
-                className={`sc-preview-action-btn${detailSaved ? " is-saved" : ""}`}
-                aria-pressed={detailSaved}
-                aria-label={detailSaved ? "Remove from saved" : "Save"}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  e.preventDefault();
-                  setDetailSaved((v) => !v);
-                }}
-              >
-                <Bookmark size={16} fill={detailSaved ? "currentColor" : "none"} />
-              </button>
-            </div>
             <PreviewErrorBoundary key={previewRefreshKey}>
               {isLibraryProduct ? (
                 <div className="sc-ebook-detail-preview">
