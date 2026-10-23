@@ -4410,6 +4410,9 @@ function ProductDetail({
     setToast({ type: "success", message: "Image copied to clipboard" });
     setTimeout(() => setCopiedImage(false), 2200);
     setTimeout(() => setToast(null), 2600);
+    // Affiliate funnel: prompt the user to build with Runable AI
+    setCopiedType("image");
+    setShowAffiliateModal(true);
   }, [product, currentUser]);
 
   const executeCopyImage = useCallback(async () => {
@@ -5300,7 +5303,7 @@ function ProductDetail({
         </div>
       )}
 
-      {/* Affiliate funnel: Runable AI bottom-sheet, shown after a successful copy */}
+      {/* Affiliate funnel: Runable AI light modal, shown after a successful copy */}
       <AnimatePresence>
         {showAffiliateModal && (
           <motion.div
@@ -5308,15 +5311,15 @@ function ProductDetail({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.25 }}
+            transition={{ duration: 0.2 }}
             onClick={() => setShowAffiliateModal(false)}
           >
             <motion.div
               className="sc-affiliate-sheet"
-              initial={{ y: "100%" }}
-              animate={{ y: 0 }}
-              exit={{ y: "100%" }}
-              transition={{ type: "spring", stiffness: 320, damping: 32 }}
+              initial={{ opacity: 0, scale: 0.94, y: 12 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.94, y: 12 }}
+              transition={{ type: "spring", stiffness: 360, damping: 28 }}
               onClick={(e) => e.stopPropagation()}
               role="dialog"
               aria-modal="true"
@@ -5336,19 +5339,23 @@ function ProductDetail({
 
               <div className="sc-affiliate-success">
                 <span className="sc-affiliate-check">
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="20 6 9 17 4 12" />
                   </svg>
                 </span>
                 <span className="sc-affiliate-success-text">
-                  {copiedType === "prompt" ? "Prompt Copied Successfully!" : "Code Copied Successfully!"}
+                  {copiedType === "prompt"
+                    ? "Prompt Copied Successfully!"
+                    : copiedType === "image"
+                    ? "Image Link Copied Successfully!"
+                    : "Source Code Copied Successfully!"}
                 </span>
               </div>
 
               <div className="sc-affiliate-divider" />
 
               <div className="sc-affiliate-brand">
-                <svg className="sc-affiliate-logo" width="34" height="34" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+                <svg className="sc-affiliate-logo" width="32" height="32" viewBox="0 0 40 40" fill="none" aria-hidden="true">
                   <circle cx="8" cy="20" r="4" fill="currentColor" />
                   <circle cx="32" cy="8" r="4" fill="currentColor" />
                   <circle cx="32" cy="32" r="4" fill="currentColor" />
@@ -5362,14 +5369,14 @@ function ProductDetail({
               <p className="sc-affiliate-subtext">
                 {copiedType === "prompt"
                   ? "Paste this prompt into Runable AI to generate it instantly."
+                  : copiedType === "image"
+                  ? "Turn this design into a live app instantly with Runable AI."
                   : "Runable AI lets you build full apps from this code instantly."}
               </p>
 
-              <a
-                className="sc-affiliate-cta"
-                href={`https://runable.link/steacode?utm_source=steacode&utm_medium=modal&utm_campaign=copy_to_build&utm_content=${copiedType}`}
-                target="_blank"
-                rel="noopener noreferrer"
+              <button
+                className="cssbuttons-io-button"
+                type="button"
                 onClick={() => {
                   void trackUserEvent("affiliate_click", {
                     provider: "runable",
@@ -5378,10 +5385,20 @@ function ProductDetail({
                     productId: getProductIdentity(product),
                     productSlug: product?.slug || "",
                   });
+                  window.open(
+                    `https://runable.link/steacode?utm_source=steacode&utm_medium=modal&utm_campaign=copy_to_build&utm_content=${copiedType}`,
+                    "_blank",
+                    "noopener,noreferrer"
+                  );
                 }}
               >
-                Try Runable AI →
-              </a>
+                Try Runable AI
+                <span className="icon" aria-hidden="true">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+                    <path fill="currentColor" d="M16.172 11l-5.364-5.364 1.414-1.414L20 12l-7.778 7.778-1.414-1.414L16.172 13H4v-2z" />
+                  </svg>
+                </span>
+              </button>
             </motion.div>
           </motion.div>
         )}
