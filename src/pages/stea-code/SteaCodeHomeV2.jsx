@@ -3762,6 +3762,10 @@ function ProductDetail({
   // onToggleFavorite); Save is local to the modal.
   const [previewRefreshKey, setPreviewRefreshKey] = useState(0);
   const [detailSaved, setDetailSaved] = useState(false);
+  // Affiliate funnel: after a successful copy, slide up the Runable AI
+  // bottom-sheet. copiedType drives the dynamic subtext ("code" | "prompt").
+  const [showAffiliateModal, setShowAffiliateModal] = useState(false);
+  const [copiedType, setCopiedType] = useState("code");
 
   useEffect(() => {
     if (!sourceMenuOpen) return;
@@ -4235,6 +4239,9 @@ function ProductDetail({
     setToast({ type: "success", message: "AI Prompt copied" });
     setTimeout(() => setCopiedPrompt(false), 2200);
     setTimeout(() => setToast(null), 2600);
+    // Affiliate funnel: prompt the user to build with Runable AI.
+    setCopiedType("prompt");
+    setShowAffiliateModal(true);
   }, [product, currentUser]);
 
   const handleCopySourceSuccess = useCallback(() => {
@@ -4248,6 +4255,9 @@ function ProductDetail({
     setToast({ type: "success", message: "Source code copied" });
     setTimeout(() => setCopiedCode(false), 2200);
     setTimeout(() => setToast(null), 2600);
+    // Affiliate funnel: prompt the user to build with Runable AI.
+    setCopiedType("code");
+    setShowAffiliateModal(true);
   }, [product, currentUser]);
 
   const handleDownloadSuccess = useCallback((pid) => {
@@ -4593,18 +4603,22 @@ function ProductDetail({
               OUTSIDE the preview shell so they never cover the template UI.
               Refresh remounts the preview via the key on PreviewErrorBoundary. */}
           <div className="sc-detail-preview-actions">
-            <button
-              type="button"
-              className="sc-preview-action-btn"
-              aria-label="Refresh preview"
-              onClick={(e) => {
-                e.stopPropagation();
-                e.preventDefault();
-                setPreviewRefreshKey((k) => k + 1);
-              }}
-            >
-              <RotateCw size={16} />
-            </button>
+            {/* Refresh only makes sense for live/HTML previews — hide it
+                for static poster images, which have nothing to restart. */}
+            {!isPosterOnly && (
+              <button
+                type="button"
+                className="sc-preview-action-btn"
+                aria-label="Refresh preview"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  setPreviewRefreshKey((k) => k + 1);
+                }}
+              >
+                <RotateCw size={16} />
+              </button>
+            )}
             <button
               type="button"
               className={`sc-preview-action-btn${isFavorited ? " is-liked" : ""}`}
@@ -5285,6 +5299,93 @@ function ProductDetail({
           <span className="sc-toast-message">{toast.message}</span>
         </div>
       )}
+
+      {/* Affiliate funnel: Runable AI bottom-sheet, shown after a successful copy */}
+      <AnimatePresence>
+        {showAffiliateModal && (
+          <motion.div
+            className="sc-affiliate-backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25 }}
+            onClick={() => setShowAffiliateModal(false)}
+          >
+            <motion.div
+              className="sc-affiliate-sheet"
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", stiffness: 320, damping: 32 }}
+              onClick={(e) => e.stopPropagation()}
+              role="dialog"
+              aria-modal="true"
+              aria-label="Build with Runable AI"
+            >
+              <button
+                type="button"
+                className="sc-affiliate-close"
+                aria-label="Close"
+                onClick={() => setShowAffiliateModal(false)}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+
+              <div className="sc-affiliate-success">
+                <span className="sc-affiliate-check">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                </span>
+                <span className="sc-affiliate-success-text">
+                  {copiedType === "prompt" ? "Prompt Copied Successfully!" : "Code Copied Successfully!"}
+                </span>
+              </div>
+
+              <div className="sc-affiliate-divider" />
+
+              <div className="sc-affiliate-brand">
+                <svg className="sc-affiliate-logo" width="34" height="34" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+                  <circle cx="8" cy="20" r="4" fill="currentColor" />
+                  <circle cx="32" cy="8" r="4" fill="currentColor" />
+                  <circle cx="32" cy="32" r="4" fill="currentColor" />
+                  <circle cx="20" cy="20" r="4.5" fill="currentColor" />
+                  <path d="M11 18.6 16.6 19.7 M23.6 18 28.8 10.4 M23.6 22 28.8 29.6" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+                </svg>
+                <span className="sc-affiliate-brand-name">Runable AI</span>
+              </div>
+
+              <h3 className="sc-affiliate-headline">Want to build this in seconds?</h3>
+              <p className="sc-affiliate-subtext">
+                {copiedType === "prompt"
+                  ? "Paste this prompt into Runable AI to generate it instantly."
+                  : "Runable AI lets you build full apps from this code instantly."}
+              </p>
+
+              <a
+                className="sc-affiliate-cta"
+                href={`https://runable.link/steacode?utm_source=steacode&utm_medium=modal&utm_campaign=copy_to_build&utm_content=${copiedType}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => {
+                  void trackUserEvent("affiliate_click", {
+                    provider: "runable",
+                    source: "copy_modal",
+                    copiedType,
+                    productId: getProductIdentity(product),
+                    productSlug: product?.slug || "",
+                  });
+                }}
+              >
+                Try Runable AI →
+              </a>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>,
     document.body
   );
