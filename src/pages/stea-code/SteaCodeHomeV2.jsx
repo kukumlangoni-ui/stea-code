@@ -9,6 +9,7 @@ import "./sc-detail-actions-override.css";
 import {
   ArrowLeft,
   ArrowRight,
+  Bookmark,
   BookOpen,
   Boxes,
   Check,
@@ -18,6 +19,7 @@ import {
   Copy,
   ExternalLink,
   Globe2,
+  Heart,
   Image,
   Layers,
   Lock,
@@ -2775,6 +2777,12 @@ function CodeProductCard({ product, tLocal, onOpen, isFavorited, onToggleFavorit
     return posterUrl ? [posterUrl] : [];
   }, [product?.gallery, posterUrl]);
   const [cardImageIndex, setCardImageIndex] = useState(0);
+  // Premium overlay state: Refresh remounts the preview via the `key` prop;
+  // Save is local card state. Like is driven by the real favorites system
+  // (isFavorited / onToggleFavorite) so it persists across renders.
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [isSaved, setIsSaved] = useState(false);
+  const actionsActive = isFavorited || isSaved;
   const cardTouchX = useRef(null);
   const activePoster = cardGallery[cardImageIndex] || posterUrl;
   const cycleCardImage = useCallback(
@@ -2832,84 +2840,112 @@ function CodeProductCard({ product, tLocal, onOpen, isFavorited, onToggleFavorit
       <div
         className={`sc-code-card__preview-wrap ${isPosterCard ? "is-poster-card" : ""}`}
       >
-        {isPosterCard ? (
-          <div
-            className="sc-card-poster-preview"
-            style={{ aspectRatio: previewAspect }}
-            onTouchStart={(e) => {
-              cardTouchX.current = e.touches[0].clientX;
-            }}
-            onTouchEnd={(e) => {
-              if (cardTouchX.current == null) return;
-              const dx = e.changedTouches[0].clientX - cardTouchX.current;
-              if (Math.abs(dx) > 40) cycleCardImage(dx < 0 ? 1 : -1);
-              cardTouchX.current = null;
+        {/* ── Premium 3-button overlay: Refresh / Like / Save ────────────
+            White frosted-glass circles in the top-right. Hidden until the
+            card is hovered (or one action is active), keeping the preview
+            clean at rest. `stopPropagation` prevents the card click from
+            opening the detail modal. */}
+        <div className={`sc-card-preview-actions${actionsActive ? " is-active" : ""}`}>
+          <button
+            type="button"
+            className="sc-preview-action-btn"
+            aria-label="Refresh preview"
+            onClick={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              setRefreshKey((k) => k + 1);
             }}
           >
-            <img
-              src={activePoster}
-              alt={title}
-              loading="lazy"
-              decoding="async"
-              draggable={false}
-            />
-            {cardGallery.length > 1 && (
-              <div className="sc-card-gallery-dots" aria-hidden="true">
-                {cardGallery.map((_, i) => (
-                  <span
-                    key={i}
-                    className={`sc-card-gallery-dot ${i === cardImageIndex ? "is-active" : ""}`}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      e.preventDefault();
-                      setCardImageIndex(i);
-                    }}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="sc-code-card__preview">
-            {isLibraryProduct ? (
-              <div className="sc-product-preview-art" style={{ width: "100%", height: "100%" }}>
-                {/* Renders the product's Card Cover HTML when the author pasted
-                    one, otherwise its Sales Page HTML; falls back to a
-                    "Preview coming soon" placeholder when it has neither. */}
-                <BookProductPreview product={product} mode="card" />
-              </div>
-            ) : (
-              <div className="sc-product-preview-art">
-                <ProductPreview product={product} fillMode="cover" cardZoom={product.cardZoom || "full"} offsetX={product.cardOffsetX || 0} offsetY={product.cardOffsetY || 0} interactive={false} preferVideo={true} cardPreview={true} />
-              </div>
-            )}
-          </div>
-        )}
+            <RotateCw size={16} />
+          </button>
 
-        {/* Favorite button */}
-        <button
-          type="button"
-          className={`sc-card-favorite ${isFavorited ? 'is-active' : ''}`}
-          onClick={(e) => {
-            e.stopPropagation();
-            e.preventDefault();
-            if (onToggleFavorite) onToggleFavorite(productId);
-          }}
-          aria-label={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
-        >
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill={isFavorited ? "currentColor" : "none"}
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
+          <button
+            type="button"
+            className={`sc-preview-action-btn${isFavorited ? " is-liked" : ""}`}
+            aria-pressed={isFavorited}
+            aria-label={isFavorited ? "Remove from favorites" : "Add to favorites"}
+            onClick={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              if (onToggleFavorite) onToggleFavorite(productId);
+            }}
           >
-            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-          </svg>
-        </button>
+            <Heart size={16} fill={isFavorited ? "currentColor" : "none"} />
+          </button>
+
+          <button
+            type="button"
+            className={`sc-preview-action-btn${isSaved ? " is-saved" : ""}`}
+            aria-pressed={isSaved}
+            aria-label={isSaved ? "Remove from saved" : "Save"}
+            onClick={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              setIsSaved((v) => !v);
+            }}
+          >
+            <Bookmark size={16} fill={isSaved ? "currentColor" : "none"} />
+          </button>
+        </div>
+
+        {/* ── Preview content — keyed so Refresh destroys & remounts it.
+            The stage fills the wrap so the absolute-positioned
+            .sc-code-card__preview still sizes correctly. */}
+        <div key={refreshKey} className="sc-card-preview-stage">
+          {isPosterCard ? (
+            <div
+              className="sc-card-poster-preview"
+              style={{ aspectRatio: previewAspect }}
+              onTouchStart={(e) => {
+                cardTouchX.current = e.touches[0].clientX;
+              }}
+              onTouchEnd={(e) => {
+                if (cardTouchX.current == null) return;
+                const dx = e.changedTouches[0].clientX - cardTouchX.current;
+                if (Math.abs(dx) > 40) cycleCardImage(dx < 0 ? 1 : -1);
+                cardTouchX.current = null;
+              }}
+            >
+              <img
+                src={activePoster}
+                alt={title}
+                loading="lazy"
+                decoding="async"
+                draggable={false}
+              />
+              {cardGallery.length > 1 && (
+                <div className="sc-card-gallery-dots" aria-hidden="true">
+                  {cardGallery.map((_, i) => (
+                    <span
+                      key={i}
+                      className={`sc-card-gallery-dot ${i === cardImageIndex ? "is-active" : ""}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        setCardImageIndex(i);
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="sc-code-card__preview">
+              {isLibraryProduct ? (
+                <div className="sc-product-preview-art" style={{ width: "100%", height: "100%" }}>
+                  {/* Renders the product's Card Cover HTML when the author pasted
+                      one, otherwise its Sales Page HTML; falls back to a
+                      "Preview coming soon" placeholder when it has neither. */}
+                  <BookProductPreview product={product} mode="card" />
+                </div>
+              ) : (
+                <div className="sc-product-preview-art">
+                  <ProductPreview product={product} fillMode="cover" cardZoom={product.cardZoom || "full"} offsetX={product.cardOffsetX || 0} offsetY={product.cardOffsetY || 0} interactive={false} preferVideo={true} cardPreview={true} />
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Caption — category + title left, price/free right */}
