@@ -72,38 +72,23 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   Batch 3 — Premium 3-button overlay on homepage card previews.
-
-   Replaces the old dark `.sc-card-favorite` with a frosted-glass group
-   (Refresh / Like / Save) pinned to the top-right of every preview.
-   Imported AFTER stea-code-v2.css, so these win over the monolith's
-   `.sc-card-favorite` rules (which are now unused — the JSX no longer
-   renders that button).
+   Batch 3 — Premium 3-button overlay (Refresh / Like / Save) in the
+   ProductDetail modal's preview shell. Homepage cards stay clean; the
+   actions live only on the full preview. Imported AFTER stea-code-v2.css.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-/* Button Group Container — direct child of .sc-code-card__preview-wrap
-   (which carries position: relative + overflow: hidden), so it clips to
-   the image frame. Hidden until hover or an active action. */
-.sc-card-preview-actions {
+/* Button group — pinned to the top-right of .sc-product-detail-preview-shell
+   (the shell gets position: relative inline in the JSX). Always visible. */
+.sc-detail-preview-actions {
   position: absolute;
-  top: 12px;
-  right: 12px;
+  top: 16px;
+  right: 16px;
   z-index: 50;
   display: flex;
   gap: 8px;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  pointer-events: none;
 }
 
-/* Show buttons on hover */
-.sc-code-card--v2:hover .sc-card-preview-actions,
-.sc-code-card--v2 .sc-card-preview-actions.is-active {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-/* The Buttons */
+/* The Buttons — frosted-glass circles. */
 .sc-preview-action-btn {
   display: flex;
   align-items: center;
@@ -128,5 +113,6 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
 }
 
+/* Active states — Lucide icons use fill="currentColor" when active. */
 .sc-preview-action-btn.is-liked { color: #ef4444; }
 .sc-preview-action-btn.is-saved { color: #111827; }
