@@ -88,7 +88,7 @@
 /* Button group — modal top-right corner, OUTSIDE the preview shell. */
 .sc-detail-preview-actions {
   position: absolute;
-  top: 24px;
+  top: 12px;
   right: 24px;
   z-index: 50;
   display: flex;
