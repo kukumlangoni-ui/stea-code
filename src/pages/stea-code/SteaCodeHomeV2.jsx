@@ -2889,9 +2889,10 @@ function CodeProductCard({ product, tLocal, onOpen, isFavorited, onToggleFavorit
         </div>
 
         {/* ── Preview content — keyed so Refresh destroys & remounts it.
-            The stage fills the wrap so the absolute-positioned
-            .sc-code-card__preview still sizes correctly. */}
-        <div key={refreshKey} className="sc-card-preview-stage">
+            No stage wrapper: the original card shapes and image sizing are
+            preserved; w-full h-full lets the absolute-positioned
+            .sc-code-card__preview fill the wrap as before. */}
+        <div key={refreshKey} className="w-full h-full">
           {isPosterCard ? (
             <div
               className="sc-card-poster-preview"
