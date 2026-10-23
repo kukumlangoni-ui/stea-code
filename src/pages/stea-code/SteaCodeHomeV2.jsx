@@ -4197,7 +4197,8 @@ function ProductDetail({
     return () => unsub();
   }, []);
 
-  const isSignedIn = Boolean(currentUser);
+  const activeUser = currentUser || getFirebaseAuth()?.currentUser || null;
+  const isSignedIn = Boolean(activeUser);
 
   // Premium access gating (entitlements)
   const productPrice = Number(product?.price || 0);
@@ -4229,12 +4230,17 @@ function ProductDetail({
 
   // Shared success handlers — fire ONLY when copy/download succeeds
   const handleCopyPromptSuccess = useCallback(() => {
+    const user = currentUser || getFirebaseAuth()?.currentUser;
+    if (!user) {
+      handleGateAction("copy-prompt");
+      return;
+    }
     setCopiedPrompt(true);
     recordSteaCodeCopy(getProductIdentity(product));
     void trackUserEvent("copy", {
       productId: getProductIdentity(product),
       productSlug: product?.slug || "",
-      email: currentUser?.email || "",
+      email: user?.email || "",
     });
     setToast({ type: "success", message: "AI Prompt copied" });
     setTimeout(() => setCopiedPrompt(false), 2200);
@@ -4242,15 +4248,20 @@ function ProductDetail({
     // Affiliate funnel: prompt the user to build with Runable AI.
     setCopiedType("prompt");
     setShowAffiliateModal(true);
-  }, [product, currentUser]);
+  }, [product, currentUser, handleGateAction]);
 
   const handleCopySourceSuccess = useCallback(() => {
+    const user = currentUser || getFirebaseAuth()?.currentUser;
+    if (!user) {
+      handleGateAction("copy-source");
+      return;
+    }
     setCopiedCode(true);
     recordSteaCodeCopy(getProductIdentity(product));
     void trackUserEvent("copy", {
       productId: getProductIdentity(product),
       productSlug: product?.slug || "",
-      email: currentUser?.email || "",
+      email: user?.email || "",
     });
     setToast({ type: "success", message: "Source code copied" });
     setTimeout(() => setCopiedCode(false), 2200);
@@ -4258,19 +4269,24 @@ function ProductDetail({
     // Affiliate funnel: prompt the user to build with Runable AI.
     setCopiedType("code");
     setShowAffiliateModal(true);
-  }, [product, currentUser]);
+  }, [product, currentUser, handleGateAction]);
 
   const handleDownloadSuccess = useCallback((pid) => {
     const cleanId = pid || getProductIdentity(product);
     void trackUserEvent("download", {
       productId: cleanId,
       productSlug: product?.slug || "",
-      email: currentUser?.email || "",
+      email: (currentUser || getFirebaseAuth()?.currentUser)?.email || "",
     });
   }, [product, currentUser]);
 
   // Action executors
   const executeCopyPrompt = useCallback(async () => {
+    const user = currentUser || getFirebaseAuth()?.currentUser;
+    if (!user) {
+      handleGateAction("copy-prompt");
+      return;
+    }
     try {
       const text = String(product?.aiPrompt || "");
       await safeCopyToClipboard(text);
@@ -4280,7 +4296,7 @@ function ProductDetail({
       setToast({ type: "error", message: "Copy failed" });
       setTimeout(() => setToast(null), 2600);
     }
-  }, [product?.aiPrompt, safeCopyToClipboard, handleCopyPromptSuccess]);
+  }, [currentUser, handleGateAction, product?.aiPrompt, safeCopyToClipboard, handleCopyPromptSuccess]);
 
   // Source blobs are stripped from the catalog payload (see
   // workers/stea-api/src/routes/catalog.ts) and fetched per product on demand,
@@ -4321,6 +4337,11 @@ function ProductDetail({
   }, [product?.id, product?.slug, isFree]);
 
   const executeCopySource = useCallback(async () => {
+    const user = currentUser || getFirebaseAuth()?.currentUser;
+    if (!user) {
+      handleGateAction("copy-source");
+      return;
+    }
     try {
       let text = sourceCodeHtml;
       // The catalog payload omits the heavy source blobs, so fetch the
@@ -4340,9 +4361,14 @@ function ProductDetail({
       setToast({ type: "error", message: "Copy failed" });
       setTimeout(() => setToast(null), 2600);
     }
-  }, [sourceCodeHtml, fetchCopyableSource, safeCopyToClipboard, handleCopySourceSuccess]);
+  }, [currentUser, handleGateAction, sourceCodeHtml, fetchCopyableSource, safeCopyToClipboard, handleCopySourceSuccess]);
 
   const executeDownload = useCallback(async (pid) => {
+    const user = currentUser || getFirebaseAuth()?.currentUser;
+    if (!user) {
+      handleGateAction("download");
+      return;
+    }
     const cleanId = pid || getProductIdentity(product);
     setDownloading(true);
     try {
@@ -4355,7 +4381,7 @@ function ProductDetail({
     } finally {
       setTimeout(() => setDownloading(false), 1500);
     }
-  }, [product, handleDownloadSuccess, setToast]);
+  }, [currentUser, handleGateAction, product, handleDownloadSuccess, setToast]);
 
   // Gate click handler — saves pending action and opens auth without tracking
   const handleGateAction = useCallback((actionType) => {
@@ -4374,7 +4400,8 @@ function ProductDetail({
   // Button click handlers
   const handleCopyPromptClick = useCallback((e) => {
     e.stopPropagation();
-    if (!isSignedIn) {
+    const user = currentUser || getFirebaseAuth()?.currentUser;
+    if (!user) {
       handleGateAction("copy-prompt");
       return;
     }
@@ -4383,11 +4410,12 @@ function ProductDetail({
       return;
     }
     executeCopyPrompt();
-  }, [isSignedIn, hasAccess, handleGateAction, onOpenUnlockModal, executeCopyPrompt]);
+  }, [currentUser, hasAccess, handleGateAction, onOpenUnlockModal, executeCopyPrompt]);
 
   const handleCopySourceClick = useCallback((e) => {
     e.stopPropagation();
-    if (!isSignedIn) {
+    const user = currentUser || getFirebaseAuth()?.currentUser;
+    if (!user) {
       handleGateAction("copy-source");
       return;
     }
@@ -4396,16 +4424,21 @@ function ProductDetail({
       return;
     }
     executeCopySource();
-  }, [isSignedIn, hasAccess, handleGateAction, onOpenUnlockModal, executeCopySource]);
+  }, [currentUser, hasAccess, handleGateAction, onOpenUnlockModal, executeCopySource]);
 
   // ── Copy Image (Layouts / poster-based + free products) ──────────
   const handleCopyImageSuccess = useCallback(() => {
+    const user = currentUser || getFirebaseAuth()?.currentUser;
+    if (!user) {
+      handleGateAction("copy-image");
+      return;
+    }
     setCopiedImage(true);
     recordSteaCodeCopy(getProductIdentity(product));
     void trackUserEvent("copy", {
       productId: getProductIdentity(product),
       productSlug: product?.slug || "",
-      email: currentUser?.email || "",
+      email: user?.email || "",
     });
     setToast({ type: "success", message: "Image copied to clipboard" });
     setTimeout(() => setCopiedImage(false), 2200);
@@ -4413,9 +4446,14 @@ function ProductDetail({
     // Affiliate funnel: prompt the user to build with Runable AI
     setCopiedType("image");
     setShowAffiliateModal(true);
-  }, [product, currentUser]);
+  }, [product, currentUser, handleGateAction]);
 
   const executeCopyImage = useCallback(async () => {
+    const user = currentUser || getFirebaseAuth()?.currentUser;
+    if (!user) {
+      handleGateAction("copy-image");
+      return;
+    }
     const imageUrl = getCopyImageUrl(product);
     if (!imageUrl) {
       setToast({ type: "error", message: "No image available for this product." });
@@ -4440,26 +4478,21 @@ function ProductDetail({
       });
       setTimeout(() => setToast(null), 3200);
     }
-  }, [product, handleCopyImageSuccess]);
+  }, [currentUser, handleGateAction, product, handleCopyImageSuccess]);
 
   const handleCopyImageClick = useCallback((e) => {
     e.stopPropagation();
-    // Free products copy without sign-in (per product spec).
-    if (isFree) {
-      executeCopyImage();
-      return;
-    }
-    // Paid products: sign-in gate + entitlement gate.
-    if (!isSignedIn) {
+    const user = currentUser || getFirebaseAuth()?.currentUser;
+    if (!user) {
       handleGateAction("copy-image");
       return;
     }
-    if (!hasAccess) {
+    if (!isFree && !hasAccess) {
       onOpenUnlockModal?.();
       return;
     }
     executeCopyImage();
-  }, [isFree, isSignedIn, hasAccess, handleGateAction, onOpenUnlockModal, executeCopyImage]);
+  }, [currentUser, isFree, hasAccess, handleGateAction, onOpenUnlockModal, executeCopyImage]);
 
   const handleDownloadClick = useCallback((e) => {
     e.stopPropagation();
@@ -5068,7 +5101,7 @@ function ProductDetail({
                 onClick={handleCopyImageClick}
               >
                 <span className="sc-detail-action-icon" aria-hidden="true">
-                  {(!isFree && (!isSignedIn || !hasAccess)) ? (
+                  {(!isSignedIn || (!isFree && !hasAccess)) ? (
                     <Lock size={18} />
                   ) : copiedImage ? (
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -5079,7 +5112,7 @@ function ProductDetail({
                   )}
                 </span>
                 <span className="sc-detail-action-label">
-                  {!isFree && !isSignedIn
+                  {!isSignedIn
                     ? 'Sign in to copy image'
                     : !isFree && !hasAccess
                     ? `Unlock for $${productPrice.toFixed(2)}`
