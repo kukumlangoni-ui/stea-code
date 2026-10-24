@@ -1359,7 +1359,19 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
         if (activeTab === "notes") return p.tab === "notes" || p.productType === "note";
         return true;
       })
-      .filter((p) => category === "All" || effectiveCategory(p) === category)
+      .filter((p) => {
+        if (category === "All") return true;
+        // The combined Library pill uses the stable "Cheat Sheets" id and
+        // intentionally includes both authored cheat sheets and Notes.
+        if (activeTab === "library" && category === "Cheat Sheets") {
+          return (
+            p.productType === "cheatsheet" ||
+            p.productType === "note" ||
+            p.category === "Cheat Sheets"
+          );
+        }
+        return effectiveCategory(p) === category;
+      })
       .filter((p) => {
         // Layout-only subcategory filter. Skipped for every other category.
         if (activeSubcategory === "All" || !SUBCATEGORIES[category]) return true;

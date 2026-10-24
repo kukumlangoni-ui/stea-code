@@ -250,7 +250,7 @@ const TABS = [
 const PRODUCT_TYPES = [
   { id: "component", label: "Component", hint: "Copy-paste component, layout or kit" },
   { id: "ebook", label: "eBook", hint: "A book with a 3D cover sales page and chapters" },
-  { id: "cheatsheet", label: "Cheat Sheets & Notes", hint: "Quick-reference sheet — 3D cover, chapters and the reader route" },
+  { id: "cheatsheet", label: "Cheat Sheet", hint: "Quick-reference sheet — 3D cover, chapters and the reader route" },
   { id: "note", label: "Note", hint: "Text-based study material with the same 3D cover and reader flow as an eBook" },
   { id: "course", label: "Course", hint: "Multi-lesson course (reserved)" },
 ];
@@ -1463,7 +1463,7 @@ export function ProductStudioV3({
     return { basic, preview: previewOk, deliverables: deliver, ebook, publish: canPublish };
   }, [form, preview, canPublish]);
 
-  // eBooks, Cheat Sheets & Notes and Notes share the same authored-HTML pipeline.
+  // eBooks, Cheat Sheets and Notes share the same authored-HTML pipeline.
   const isBook =
     form.productType === "ebook" ||
     form.productType === "cheatsheet" ||
@@ -1531,7 +1531,7 @@ export function ProductStudioV3({
   const fullHtmlPresent = fullDocumentSource.trim().length > 0;
 
   const previewDocument = useMemo(() => {
-    // eBooks / Cheat Sheets & Notes preview their authored sales page (the 3D cover) —
+    // eBooks / Cheat Sheets / Notes preview their authored sales page (the 3D cover) —
     // that is what buyers see on the card and in the modal, not the component
     // runtime.
     if (
@@ -1701,13 +1701,13 @@ export function ProductStudioV3({
                 <Field
                   label="Product Type"
                   required
-                  hint="eBook / Cheat Sheets & Notes / Note unlock the eBook Settings tab, the 3D cover card preview and the reader route"
+                  hint="eBook / Cheat Sheet / Note unlock the eBook Settings tab, the 3D cover card preview and the reader route"
                 >
                   <RadioGroup
                     value={form.productType || "component"}
                     onChange={(v) => {
                       updateForm("productType", v);
-                      // Cheat Sheets & Notes are a Library product by definition — file
+                      // Cheat Sheets and Notes are Library products by definition — file
                       // them there (with the matching pill) on selection.
                       if (v === "cheatsheet") {
                         updateForm("tab", "library");
@@ -1716,7 +1716,7 @@ export function ProductStudioV3({
                       }
                       if (v === "note") {
                         updateForm("tab", "library");
-                        updateForm("category", "Notes");
+                        updateForm("category", "Cheat Sheets");
                         updateForm("subcategory", "");
                       }
                     }}

@@ -90,6 +90,10 @@ export default function LibraryReader({ user, authLoading }) {
   const isPremium =
     product?.pricingType === "premium" && Number(product?.price || 0) > 0;
   const hasAccess = !serverDenied && (!isPremium || entitlements.hasProLifetime || entitlements.productIds.has(product?.id));
+  const normalizedProductType = String(product?.productType || "").trim().toLowerCase();
+  const isReaderProduct =
+    ["ebook", "cheatsheet", "note"].includes(normalizedProductType) ||
+    product?.tab === "library";
 
   // Fetch the book immediately — free books need no session, and a paid book
   // answers 401/403, which only locks the reader once Firebase has settled.
@@ -98,6 +102,10 @@ export default function LibraryReader({ user, authLoading }) {
     let cancelled = false;
     if (!product) {
       setContentState("idle");
+      return;
+    }
+    if (!isReaderProduct) {
+      navigate(`/products/${product.slug || product.id}`, { replace: true });
       return;
     }
     setServerDenied(false);
@@ -151,7 +159,7 @@ export default function LibraryReader({ user, authLoading }) {
         setContentState("ready");
       });
     return () => { cancelled = true; };
-  }, [product?.id, slug, authLoading, effectiveUser?.uid, isPremium]);
+  }, [product?.id, slug, authLoading, effectiveUser?.uid, isPremium, isReaderProduct, navigate]);
 
   const srcDoc = contentSource === "api" && bookContentHtml ? bookContentHtml : libraryReaderHtml;
 
