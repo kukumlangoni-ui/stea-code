@@ -5514,7 +5514,22 @@ function ProductDetail({
                   <path d="M11 18.6 16.6 19.7 M23.6 18 28.8 10.4 M23.6 22 28.8 29.6" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
                 </svg>
                 <span className="sc-affiliate-brand-name">Runable AI</span>
-              </div>
+              
+        {/* Load More Button */}
+        {catalogHasMore && (
+          <div style={{ display: 'flex', justifyContent: 'center', width: '100%', marginTop: '40px', gridColumn: '1 / -1' }}>
+            <button 
+              onClick={loadMoreHomepageProducts} 
+              disabled={catalogLoadingMore}
+              className="sc-btn-primary" 
+              style={{ padding: '12px 32px', borderRadius: '999px', cursor: 'pointer', backgroundColor: '#000', color: '#fff' }}
+            >
+              {catalogLoadingMore ? 'Loading...' : 'Load More Components'}
+            </button>
+          </div>
+        )}
+
+      </div>
 
               <h3 className="sc-affiliate-headline">Want to build this in seconds?</h3>
               <p className="sc-affiliate-subtext">
