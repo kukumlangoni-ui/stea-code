@@ -4177,15 +4177,6 @@ function ProductDetail({
     ];
   }, [product?.tags, product?.frameworks]);
 
-  const handlePremiumBuy = () => {
-    if (!isSignedIn) {
-      handleGateAction("unlock");
-      return;
-    }
-    onOpenUnlockModal?.();
-  };
-
-
   const [currentUser, setCurrentUser] = useState(() => getFirebaseAuth()?.currentUser || null);
 
   useEffect(() => {
@@ -4199,6 +4190,28 @@ function ProductDetail({
 
   const activeUser = currentUser || getFirebaseAuth()?.currentUser || null;
   const isSignedIn = Boolean(activeUser);
+
+  // Gate click handler — saves pending action and opens auth without tracking
+  const handleGateAction = useCallback((actionType) => {
+    const productId = String(product?.id || product?.slug || "").trim();
+    try {
+      sessionStorage.setItem("stea_pending_action", JSON.stringify({
+        type: actionType,
+        productId,
+      }));
+    } catch (err) {
+      console.warn("Failed saving pending action:", err);
+    }
+    window.dispatchEvent(new Event("open-auth"));
+  }, [product]);
+
+  const handlePremiumBuy = () => {
+    if (!isSignedIn) {
+      handleGateAction("unlock");
+      return;
+    }
+    onOpenUnlockModal?.();
+  };
 
   // Premium access gating (entitlements)
   const productPrice = Number(product?.price || 0);
@@ -4382,20 +4395,6 @@ function ProductDetail({
       setTimeout(() => setDownloading(false), 1500);
     }
   }, [currentUser, handleGateAction, product, handleDownloadSuccess, setToast]);
-
-  // Gate click handler — saves pending action and opens auth without tracking
-  const handleGateAction = useCallback((actionType) => {
-    const productId = String(product?.id || product?.slug || "").trim();
-    try {
-      sessionStorage.setItem("stea_pending_action", JSON.stringify({
-        type: actionType,
-        productId,
-      }));
-    } catch (err) {
-      console.warn("Failed saving pending action:", err);
-    }
-    window.dispatchEvent(new Event("open-auth"));
-  }, [product]);
 
   // Button click handlers
   const handleCopyPromptClick = useCallback((e) => {
