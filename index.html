@@ -99,6 +99,21 @@
           setMeta('meta[name="twitter:title"]', 'content', 'steacode');
           setMeta('meta[name="twitter:description"]', 'content', 'steacode — a marketplace for buying and selling code components.');
           setMeta('meta[name="msapplication-TileImage"]', 'content', '/stea-code-favicon-512.png?v=stea-real-logo-2026');
+
+          // The shell ships a single static canonical pointing at the apex tenant
+          // (stea.africa), because one index.html serves every host. steacode.com
+          // must advertise its own URL instead, or any route that does not mount
+          // <SEO> reports a cross-domain canonical. Two deliberate constraints:
+          //   - scoped to the apex/www hosts: code.stea.africa shares this isCode
+          //     branch but needs its own canonical
+          //   - deferred to DOMContentLoaded: the <link rel="canonical"> is parsed
+          //     later in <head>, so it does not exist yet at this point
+          if (host === 'steacode.com' || host === 'www.steacode.com') {
+            document.addEventListener('DOMContentLoaded', function () {
+              var canonical = document.querySelector('link[rel="canonical"]');
+              if (canonical) canonical.setAttribute('href', 'https://steacode.com/');
+            });
+          }
         }
       })();
     </script>

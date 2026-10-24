@@ -1,13 +1,4 @@
 export const TABS = {
-  notes: {
-    id: "notes",
-    label: "Notes",
-    description: "Text‑based study materials",
-    categories: [
-      { id: "All", label: "All", tooltip: null },
-      { id: "Notes", label: "Notes", tooltip: "Interview questions, docs, etc." }
-    ]
-  },
   components: {
     id: "components",
     label: "Components",
@@ -67,7 +58,17 @@ export const TABS = {
       { id: "All", label: "All", tooltip: null },
       { id: "Ebooks", label: "Ebooks", tooltip: "Premium eBooks & masterclasses" },
       { id: "Courses", label: "Courses", tooltip: "Guided learning tracks" },
-      { id: "Cheat Sheets", label: "Cheat Sheets", tooltip: "Quick references" },
+      { id: "Cheat Sheets & Notes", label: "Cheat Sheets & Notes", tooltip: "Quick references" },
+      { id: "Notes", label: "Notes", tooltip: "Text-based study material and notes" },
+    ],
+  },
+  notes: {
+    id: "notes",
+    label: "Notes",
+    description: "Text-based study materials",
+    categories: [
+      { id: "All", label: "All", tooltip: null },
+      { id: "Notes", label: "Notes", tooltip: "Interview questions, docs, and study notes" },
     ],
   },
 };

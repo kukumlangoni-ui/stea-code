@@ -204,9 +204,10 @@ const CATEGORY_LABELS = {
   Portfolio: { en: "Portfolio", zhCN: "作品集" },
   "Toggle Switches": { en: "Toggle Switches", zhCN: "切换开关" },
   "Inputs": { en: "Inputs", zhCN: "输入框" },
-  "Cheat Sheets": { en: "Cheat Sheets", zhCN: "速查表" } };
+  Notes: { en: "Notes", zhCN: "笔记" },
+  "Cheat Sheets & Notes": { en: "Cheat Sheets & Notes", zhCN: "速查表" } };
 
-// Book-backed products (eBooks and Cheat Sheets) share one authored-HTML
+// Book-backed products (eBooks and Cheat Sheets & Notes) share one authored-HTML
 // pipeline: the 3D cover card preview, the detail modal and the reader route.
 // `tab === "library"` is the legacy signal, kept so a stale cached catalog
 // response (which may predate the productType column) still renders right.
@@ -215,12 +216,15 @@ const isBookProduct = (p) =>
   p?.productType === "cheatsheet" ||
   p?.productType === "note" ||
   p?.tab === "library";
-  p?.productType === "ebook" || p?.productType === "cheatsheet" || p?.tab === "library";
 
-// The pill a product belongs to. Cheat Sheets are categorised by type rather
+// The pill a product belongs to. Cheat Sheets & Notes are categorised by type rather
 // than by whatever `category` an older record happens to carry.
 const effectiveCategory = (p) =>
-  p?.productType === "cheatsheet" ? "Cheat Sheets" : p?.category;
+  p?.productType === "cheatsheet"
+    ? "Cheat Sheets & Notes"
+    : p?.productType === "note"
+    ? "Notes"
+    : p?.category;
 
 const BROWSE_CATEGORIES = [
   "Animations",
@@ -2734,7 +2738,7 @@ function CodeProductCard({ product, tLocal, onOpen, isFavorited, onToggleFavorit
   const isFree = product.pricingType === "free";
   const productId = getProductIdentity(product);
   const isKit = product?.tab === "kits";
-  // eBooks / Cheat Sheets render a 3D book (BookProductPreview) instead of a
+  // eBooks / Cheat Sheets & Notes render a 3D book (BookProductPreview) instead of a
   // fill-cover screenshot. A book is a portrait object, so its card gets a
   // taller portrait media box — see `sc-code-card--ebook` in light-mode-fixes.css.
   const isLibraryProduct = isBookProduct(product);
@@ -3837,7 +3841,7 @@ function ProductDetail({
     ? `${product?.preview?.width || product?.designWidth || 1440} / ${product?.preview?.height || product?.designHeight || 1200}`
     : `${product?.designWidth || product?.preview?.width || (product?.tab === "kits" ? 1600 : 640)} / ${product?.designHeight || product?.preview?.height || (product?.tab === "kits" ? 1100 : 480)}`;
 
-  // eBook / Cheat Sheet products render the 3D book sales page
+  // eBook / Cheat Sheets & Notes products render the 3D book sales page
   // (BookProductPreview). `tab === "library"` is the legacy signal, kept so a
   // stale cached catalog response (which may predate the productType column)
   // still renders right.
