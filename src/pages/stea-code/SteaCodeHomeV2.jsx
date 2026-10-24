@@ -1102,9 +1102,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
     async function loadHomepageCatalog() {
       try {
         const homepageResult = await getSteaCodeCatalog({
-          scope: "homepage",
-          limit: 20,
-        offset: 0,
+          scope: "homepage", limit: 20, offset: 0, category: category,
         category: category,
           onFresh: (fresh) => {
             if (!active) return;
@@ -1160,7 +1158,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
     return () => {
       active = false;
     };
-  }, [catalogReloadToken]);
+  }, [catalogReloadToken, category, activeTab]);
 
     // Explore Code homepage products.
   //
@@ -1422,7 +1420,8 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
             p.category === "Cheat Sheets"
           );
         }
-        return effectiveCategory(p) === category;
+        // Backend already filters by category
+        return true;
       })
       .filter((p) => {
         // Layout-only subcategory filter. Skipped for every other category.
@@ -1560,9 +1559,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
     setCatalogLoadingMore(true);
     try {
       const result = await getSteaCodeCatalog({
-        scope: "homepage",
-        limit: 20,
-        offset: catalogNextOffset,
+        scope: "homepage", limit: 20, offset: catalogNextOffset, category: category,
         category: category,
       });
       const nextProducts = Array.isArray(result?.products) ? result.products : [];

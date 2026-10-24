@@ -404,7 +404,7 @@ export async function handleCatalog(req: Request, env: Env, ctx?: ExecutionConte
       offset,
       limit: limit || total,
       nextOffset,
-      hasMore: nextOffset < total,
+      hasMore: nextOffset < (scope === "homepage" ? homepageTotal : products.length),
     });
     const response = new Response(body, {
       status: 200,
