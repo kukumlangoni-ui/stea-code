@@ -1,4 +1,14 @@
 User-agent: *
 Allow: /
 
+# Explicitly allow AI Crawlers
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
 Sitemap: https://steacode.com/sitemap.xml
