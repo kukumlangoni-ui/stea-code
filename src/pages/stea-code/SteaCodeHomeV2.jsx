@@ -1104,7 +1104,8 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
         const homepageResult = await getSteaCodeCatalog({
           scope: "homepage",
           limit: 20,
-          offset: 0,
+        offset: 0,
+        category: category,
           onFresh: (fresh) => {
             if (!active) return;
             const products = Array.isArray(fresh?.products) ? fresh.products : [];
@@ -1562,6 +1563,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
         scope: "homepage",
         limit: 20,
         offset: catalogNextOffset,
+        category: category,
       });
       const nextProducts = Array.isArray(result?.products) ? result.products : [];
       setLiveCatalog((previous) => {
