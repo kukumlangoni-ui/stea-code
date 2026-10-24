@@ -1711,7 +1711,7 @@ export function ProductStudioV3({
                       // them there (with the matching pill) on selection.
                       if (v === "cheatsheet") {
                         updateForm("tab", "library");
-                        updateForm("category", "Cheat Sheets & Notes");
+                        updateForm("category", "Cheat Sheets");
                         updateForm("subcategory", "");
                       }
                       if (v === "note") {

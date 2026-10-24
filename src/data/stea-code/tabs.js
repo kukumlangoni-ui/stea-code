@@ -58,7 +58,7 @@ export const TABS = {
       { id: "All", label: "All", tooltip: null },
       { id: "Ebooks", label: "Ebooks", tooltip: "Premium eBooks & masterclasses" },
       { id: "Courses", label: "Courses", tooltip: "Guided learning tracks" },
-      { id: "Cheat Sheets & Notes", label: "Cheat Sheets & Notes", tooltip: "Quick references" },
+      { id: "Cheat Sheets", label: "Cheat Sheets & Notes", tooltip: "Quick references" },
       { id: "Notes", label: "Notes", tooltip: "Text-based study material and notes" },
     ],
   },

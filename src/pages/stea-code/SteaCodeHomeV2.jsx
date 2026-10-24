@@ -205,7 +205,7 @@ const CATEGORY_LABELS = {
   "Toggle Switches": { en: "Toggle Switches", zhCN: "切换开关" },
   "Inputs": { en: "Inputs", zhCN: "输入框" },
   Notes: { en: "Notes", zhCN: "笔记" },
-  "Cheat Sheets & Notes": { en: "Cheat Sheets & Notes", zhCN: "速查表" } };
+  "Cheat Sheets": { en: "Cheat Sheets & Notes", zhCN: "速查表" } };
 
 // Book-backed products (eBooks and Cheat Sheets & Notes) share one authored-HTML
 // pipeline: the 3D cover card preview, the detail modal and the reader route.
@@ -221,7 +221,7 @@ const isBookProduct = (p) =>
 // than by whatever `category` an older record happens to carry.
 const effectiveCategory = (p) =>
   p?.productType === "cheatsheet"
-    ? "Cheat Sheets & Notes"
+    ? "Cheat Sheets"
     : p?.productType === "note"
     ? "Notes"
     : p?.category;
