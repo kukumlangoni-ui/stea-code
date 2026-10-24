@@ -73,7 +73,7 @@
             '<link rel="shortcut icon" href="/stea-code-favicon-32.png' + v + '">' +
             '<link rel="manifest" href="' + manifestPath + '">' +
             '<link rel="preload" href="/stea-code-logo.png" as="image">' +
-            '<link rel="preload" href="/api/stea-code/catalog?scope=homepage" as="fetch" type="application/json">'
+            '<link rel="preload" href="/api/stea-code/catalog?scope=homepage&limit=20&offset=0" as="fetch" type="application/json">'
           );
         } else {
           // Non-code tenants keep their own globe branding.
@@ -215,7 +215,7 @@
         font-family: 'Bricolage Grotesque';
         font-style: normal;
         font-weight: 900;
-        font-display: optional;
+        font-display: swap;
         src: url('/fonts/bricolage-grotesque-900.woff2') format('woff2');
       }
     </style>

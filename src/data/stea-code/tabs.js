@@ -61,15 +61,6 @@ export const TABS = {
       { id: "Cheat Sheets", label: "Cheat Sheets & Notes", tooltip: "Quick references" },
     ],
   },
-  notes: {
-    id: "notes",
-    label: "Notes",
-    description: "Text-based study materials",
-    categories: [
-      { id: "All", label: "All", tooltip: null },
-      { id: "Notes", label: "Notes", tooltip: "Interview questions, docs, and study notes" },
-    ],
-  },
 };
 
 export const SUBCATEGORIES = {

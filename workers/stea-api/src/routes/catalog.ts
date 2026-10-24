@@ -238,16 +238,31 @@ function parseStringList(value: any): string[] {
  * columns avoids loading multi-megabyte source/authoring blobs from D1 and
  * keeps the first catalog response small enough to cache effectively.
  */
-async function listHomepageCards(env: Env): Promise<any[]> {
+async function listHomepageCards(
+  env: Env,
+  limit = 0,
+  offset = 0
+): Promise<{ products: any[]; total: number }> {
   const columns = [...new Set(HOMEPAGE_CARD_COLUMNS)].join(", ");
+  const pageClause = limit > 0
+    ? ` LIMIT ${Math.floor(limit)} OFFSET ${Math.floor(Math.max(0, offset))}`
+    : "";
   const result = await env.DB.prepare(
     `SELECT ${columns}, ${HAS_SOURCE_SQL} AS hasSource, ${EBOOK_FEATURES_SQL} AS ebookFeatures
        FROM products
       WHERE status = 'published' AND homepageVisible = 1
-      ORDER BY featured DESC, createdAt DESC`
+      ORDER BY featured DESC, createdAt DESC${pageClause}`
   ).all();
 
-  return (result.results || []).map((row: any) => {
+  let total = (result.results || []).length;
+  if (limit > 0) {
+    const countRow: any = await env.DB.prepare(
+      "SELECT COUNT(*) AS total FROM products WHERE status = 'published' AND homepageVisible = 1"
+    ).first();
+    total = Number(countRow?.total) || 0;
+  }
+
+  const products = (result.results || []).map((row: any) => {
     const extra = parseJsonColumn(row.extraData, null);
     return {
       id: row.id,
@@ -287,6 +302,7 @@ async function listHomepageCards(env: Env): Promise<any[]> {
       ebookFeatures: parseStringList(row.ebookFeatures),
     };
   });
+  return { products, total };
 }
 
 /**
@@ -313,14 +329,19 @@ export async function handleCatalog(req: Request, env: Env, ctx?: ExecutionConte
     const scope = url.searchParams.get("scope") || "";
     const category = url.searchParams.get("category") || "";
     const subcategory = url.searchParams.get("subcategory") || "";
+    const limit = Math.min(
+      50,
+      Math.max(0, Number(url.searchParams.get("limit")) || 0)
+    );
+    const offset = Math.max(0, Number(url.searchParams.get("offset")) || 0);
     const canUseHomepageCache = scope === "homepage" && !category && !subcategory;
     // Version suffix = cache generation. There is no purge route, so a deployed
     // change to the card payload would otherwise sit behind the 5-minute
     // s-maxage below; bump this when the shape of a card changes.
     // v3: added hasSource + ebookFeatures.
-    // v4: added liveUrl (card falls back to it when websiteUrl is empty).
+    // v5: paginated homepage response.
     const homepageCacheKey = new Request(
-      "https://stea-code.internal/catalog/homepage-v4",
+      `https://stea-code.internal/catalog/homepage-v5-${limit}-${offset}`,
       { method: "GET" }
     );
 
@@ -340,8 +361,11 @@ export async function handleCatalog(req: Request, env: Env, ctx?: ExecutionConte
     }
 
     let products: any[];
+    let homepageTotal = 0;
     if (scope === "homepage") {
-      products = await listHomepageCards(env);
+      const page = await listHomepageCards(env, limit, offset);
+      products = page.products;
+      homepageTotal = page.total;
     } else {
       const [docs, hasSourceById] = await Promise.all([
         listDocs(env, PRODUCTS_COLLECTION, {}),
@@ -354,6 +378,7 @@ export async function handleCatalog(req: Request, env: Env, ctx?: ExecutionConte
           hasSource: hasSourceById.get(d.id) === true,
         }))
         .filter((p) => p.status === "published");
+      homepageTotal = products.length;
     }
 
     // Category filter (e.g. ?category=Components)
@@ -371,7 +396,16 @@ export async function handleCatalog(req: Request, env: Env, ctx?: ExecutionConte
     //   - 60s browser cache (max-age) for instant back/forward nav
     //   - 2min CDN edge cache (s-maxage) for fast global response
     //   - 10min stale-while-revalidate — serves old data while refreshing
-    const body = JSON.stringify({ products, total: products.length });
+    const total = scope === "homepage" ? homepageTotal : products.length;
+    const nextOffset = offset + products.length;
+    const body = JSON.stringify({
+      products,
+      total,
+      offset,
+      limit: limit || total,
+      nextOffset,
+      hasMore: nextOffset < total,
+    });
     const response = new Response(body, {
       status: 200,
       headers: {

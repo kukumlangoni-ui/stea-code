@@ -1,7 +1,6 @@
 /* =============================================================
  * steacode — Dedicated Member Gate component
- * Dark, premium, developer-focused. SAME Firebase / Google auth.
- * NOT the generic STEA AuthModal visual design.
+ * Light, premium, developer-focused. SAME Firebase / Google auth.
  * ============================================================= */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -570,7 +569,7 @@ export default function SteaCodeMemberGate({
 
           <div className="sc-member-gate-mark">
             <img
-              src="/stea-apps/stea-code.png"
+              src="/stea-code-logo.png"
               alt=""
               width="72"
               height="48"

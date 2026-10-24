@@ -419,12 +419,24 @@ export async function getSteaCodeCatalog(options = {}) {
    */
   const scope = options?.scope === "homepage" ? "homepage" : "";
   const onFresh = typeof options?.onFresh === "function" ? options.onFresh : null;
+  const limit = scope === "homepage"
+    ? Math.max(0, Number(options?.limit) || 0)
+    : 0;
+  const offset = scope === "homepage"
+    ? Math.max(0, Number(options?.offset) || 0)
+    : 0;
+  const cacheScope = scope === "homepage"
+    ? `${scope}:${limit}:${offset}`
+    : scope;
+  const homepageQuery = limit > 0
+    ? `?scope=homepage&limit=${limit}&offset=${offset}`
+    : "?scope=homepage";
   const baseUrl = scope
-    ? `${API_BASE}/api/stea-code/catalog?scope=${encodeURIComponent(scope)}`
+    ? `${API_BASE}/api/stea-code/catalog${homepageQuery}`
     : `${API_BASE}/api/stea-code/catalog`;
 
   // Try cache first for instant response unless forceFresh is set
-  const cachedEntry = options?.forceFresh ? null : readCatalogCache(scope);
+  const cachedEntry = options?.forceFresh ? null : readCatalogCache(cacheScope);
 
   const fetchFresh = async () => {
     const sep = baseUrl.includes("?") ? "&" : "?";
@@ -441,7 +453,7 @@ export async function getSteaCodeCatalog(options = {}) {
       },
     });
     const data = await parseResponse(response);
-    writeCatalogCache(scope, data);
+    writeCatalogCache(cacheScope, data);
     if (onFresh) onFresh(data);
     return data;
   };

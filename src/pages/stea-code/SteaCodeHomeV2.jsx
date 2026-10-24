@@ -34,14 +34,11 @@ import {
   Search,
   Wrench,
   X } from "lucide-react";
-import SteaCodeLiquidHero from "../../components/SteaCodeLiquidHero.jsx";
 import { useSteaCodeI18n } from "../../components/stea-code/useSteaCodeI18n.js";
 import { createPortal } from "react-dom";
 import { onAuthStateChanged, signOut, sendEmailVerification } from "firebase/auth";
 import SteaCodeMemberGate from "../../components/stea-code/SteaCodeMemberGate.jsx";
 import SteaCodeUnlockModal from "../../components/stea-code/SteaCodeUnlockModal.jsx";
-import SteaCodeProductLivePreview from "../../components/stea-code/SteaCodeProductLivePreview.jsx";
-import BookProductPreview from "../../components/stea-code/BookProductPreview.jsx";
 import SteaCodeProductSkeleton from "../../components/stea-code/SteaCodeProductSkeleton.jsx";
 import PreviewErrorBoundary from "../../components/stea-code/PreviewErrorBoundary.jsx";
 import SteaCodeCheckoutPage from "./SteaCodeCheckoutPage.jsx";
@@ -79,6 +76,40 @@ import { V2_WORLDS } from "../../data/stea-code/v2Worlds.js";
 import { TABS, DEFAULT_TAB, SUBCATEGORIES } from "../../data/stea-code/tabs.js";
 import { useScrollReveal } from "../../hooks/useScrollReveal.js";
 import { useTilt } from "../../hooks/useTilt.js";
+
+const SteaCodeLiquidHeroChunk = React.lazy(() =>
+  import("../../components/SteaCodeLiquidHero.jsx")
+);
+const SteaCodeProductLivePreviewChunk = React.lazy(() =>
+  import("../../components/stea-code/SteaCodeProductLivePreview.jsx")
+);
+const BookProductPreviewChunk = React.lazy(() =>
+  import("../../components/stea-code/BookProductPreview.jsx")
+);
+
+const LazyLivePreview = React.forwardRef(function LazyLivePreview(props, ref) {
+  return (
+    <React.Suspense fallback={<div className="sc-preview-chunk-fallback" aria-hidden="true" />}>
+      <SteaCodeProductLivePreviewChunk ref={ref} {...props} />
+    </React.Suspense>
+  );
+});
+
+function LazyBookPreview(props) {
+  return (
+    <React.Suspense fallback={<div className="sc-preview-chunk-fallback" aria-hidden="true" />}>
+      <BookProductPreviewChunk {...props} />
+    </React.Suspense>
+  );
+}
+
+function LazyLiquidHero(props) {
+  return (
+    <React.Suspense fallback={null}>
+      <SteaCodeLiquidHeroChunk {...props} />
+    </React.Suspense>
+  );
+}
 
 // ---------------------------------------------------------------------------
 // Hardcoded "steacode services" banner — always the first tile of the homepage
@@ -737,6 +768,9 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
   }, [favorites]);
 
   const [liveCatalog, setLiveCatalog] = useState(null);
+  const [catalogNextOffset, setCatalogNextOffset] = useState(0);
+  const [catalogTotal, setCatalogTotal] = useState(0);
+  const [catalogLoadingMore, setCatalogLoadingMore] = useState(false);
   const [isFallbackCatalog, setIsFallbackCatalog] = useState(false);
   // Incrementing this triggers a fresh catalog load (used by the error-state Retry).
   const [catalogReloadToken, setCatalogReloadToken] = useState(0);
@@ -1069,10 +1103,24 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
       try {
         const homepageResult = await getSteaCodeCatalog({
           scope: "homepage",
+          limit: 20,
+          offset: 0,
           onFresh: (fresh) => {
             if (!active) return;
             const products = Array.isArray(fresh?.products) ? fresh.products : [];
-            setLiveCatalog(products);
+            setLiveCatalog((previous) => {
+              const base = Array.isArray(previous) ? previous : [];
+              const byId = new Map();
+              for (const product of [...products, ...base]) {
+                const id = getProductIdentity(product);
+                if (id) byId.set(id, product);
+              }
+              return Array.from(byId.values());
+            });
+            setCatalogTotal(Number(fresh?.total) || products.length);
+            setCatalogNextOffset((current) =>
+              Math.max(current, Number(fresh?.nextOffset) || products.length)
+            );
             setIsLoading(false);
           },
         });
@@ -1086,6 +1134,8 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
 
         setIsFallbackCatalog(false);
         setLiveCatalog(homepageNext);
+        setCatalogTotal(Number(homepageResult?.total) || homepageNext.length);
+        setCatalogNextOffset(Number(homepageResult?.nextOffset) || homepageNext.length);
         setIsLoading(false);
       } catch (error) {
         console.error(
@@ -1097,6 +1147,8 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
         if (active) {
           setIsFallbackCatalog(true);
           setLiveCatalog([]);
+          setCatalogTotal(0);
+          setCatalogNextOffset(0);
           setIsLoading(false);
         }
       }
@@ -1356,7 +1408,6 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
         if (activeTab === "layouts") return p.tab === "layouts";
         if (activeTab === "kits") return p.tab === "kits";
         if (activeTab === "library") return isBookProduct(p);
-        if (activeTab === "notes") return p.tab === "notes" || p.productType === "note";
         return true;
       })
       .filter((p) => {
@@ -1495,13 +1546,51 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
     MAX_HOMEPAGE_PRODUCTS
   );
 
+  const catalogHasMore = catalogNextOffset < catalogTotal;
+
   const hasExpandableProducts =
-    maxVisibleProducts > INITIAL_PRODUCT_COUNT;
+    catalogHasMore || maxVisibleProducts > INITIAL_PRODUCT_COUNT;
 
   const isFullyExpanded =
-    visibleProductCount >= maxVisibleProducts;
+    !catalogHasMore && visibleProductCount >= maxVisibleProducts;
 
-  const handleProductExpansion = () => {
+  const loadMoreHomepageProducts = useCallback(async () => {
+    if (catalogLoadingMore || !catalogHasMore) return false;
+    setCatalogLoadingMore(true);
+    try {
+      const result = await getSteaCodeCatalog({
+        scope: "homepage",
+        limit: 20,
+        offset: catalogNextOffset,
+      });
+      const nextProducts = Array.isArray(result?.products) ? result.products : [];
+      setLiveCatalog((previous) => {
+        const byId = new Map();
+        for (const product of [...(Array.isArray(previous) ? previous : []), ...nextProducts]) {
+          const id = getProductIdentity(product);
+          if (id) byId.set(id, product);
+        }
+        return Array.from(byId.values());
+      });
+      setCatalogTotal(Number(result?.total) || catalogTotal);
+      setCatalogNextOffset(
+        Number(result?.nextOffset) || catalogNextOffset + nextProducts.length
+      );
+      return true;
+    } catch (error) {
+      console.error("[steacode] Failed to load more homepage products:", error);
+      return false;
+    } finally {
+      setCatalogLoadingMore(false);
+    }
+  }, [
+    catalogHasMore,
+    catalogLoadingMore,
+    catalogNextOffset,
+    catalogTotal,
+  ]);
+
+  const handleProductExpansion = async () => {
     if (isFullyExpanded) {
       setVisibleProductCount(INITIAL_PRODUCT_COUNT);
 
@@ -1514,10 +1603,14 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
       return;
     }
 
+    if (catalogHasMore) {
+      await loadMoreHomepageProducts();
+    }
+
     setVisibleProductCount((current) =>
       Math.min(
         current + PRODUCT_INCREMENT,
-        maxVisibleProducts
+        MAX_HOMEPAGE_PRODUCTS
       )
     );
   };
@@ -1556,7 +1649,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
         siteName="steacode"
       />
     <div className="stea-code-app sc-v2 sc-market-home sc-v2-home sc-v2-has-liquid">
-      <div className="sc-v2-liquid-wrap" aria-hidden="true"><PreviewErrorBoundary><SteaCodeLiquidHero theme="light" /></PreviewErrorBoundary></div>
+      <div className="sc-v2-liquid-wrap" aria-hidden="true"><PreviewErrorBoundary><LazyLiquidHero theme="light" /></PreviewErrorBoundary></div>
       <div className="sc-v2-veil" aria-hidden="true" />
 
       <header className="sc-topbar">
@@ -1935,9 +2028,12 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
                   className="sc-market-show-more"
                   onClick={handleProductExpansion}
                   aria-expanded={isFullyExpanded}
+                  disabled={catalogLoadingMore}
                 >
                   <span>
-                    {isFullyExpanded
+                    {catalogLoadingMore
+                      ? (uiLocale === "zhCN" ? "正在加载…" : "Loading…")
+                      : isFullyExpanded
                       ? (uiLocale === "zhCN" ? "收起" : "Show less")
                       : (uiLocale === "zhCN" ? "显示更多" : "Show more")}
                   </span>
@@ -2899,7 +2995,7 @@ function CodeProductCard({ product, tLocal, onOpen, isFavorited, onToggleFavorit
                 {/* Renders the product's Card Cover HTML when the author pasted
                     one, otherwise its Sales Page HTML; falls back to a
                     "Preview coming soon" placeholder when it has neither. */}
-                <BookProductPreview product={product} mode="card" />
+                <LazyBookPreview product={product} mode="card" />
               </div>
             ) : (
               <div className="sc-product-preview-art">
@@ -3442,7 +3538,7 @@ const ProductPreview = forwardRef(function ProductPreview({
         data-preview-product={productId}
       >
         <div className="sc-preview-art" aria-label={categoryLabel}>
-          <SteaCodeProductLivePreview
+          <LazyLivePreview
             ref={ref}
             key={`live-preview-${productId}`}
             product={product}
@@ -3477,7 +3573,7 @@ const ProductPreview = forwardRef(function ProductPreview({
         data-preview-product={productId}
       >
         <div className="sc-preview-art" aria-label={categoryLabel + " video preview"}>
-          <SteaCodeProductLivePreview
+          <LazyLivePreview
             key={`video-preview-${productId}`}
             productId={productId}
             title={product?.titleEn || product?.titleZh || productId}
@@ -3509,7 +3605,7 @@ const ProductPreview = forwardRef(function ProductPreview({
     >
       <div className="sc-preview-art" aria-label={categoryLabel}>
         {useLivePreview ? (
-          <SteaCodeProductLivePreview
+          <LazyLivePreview
             ref={ref}
             key={`live-preview-${productId}`}
             productId={productId}
@@ -4710,7 +4806,7 @@ function ProductDetail({
             <PreviewErrorBoundary key={previewRefreshKey}>
               {isLibraryProduct ? (
                 <div className="sc-ebook-detail-preview">
-                  <BookProductPreview
+                  <LazyBookPreview
                     key={`detail-ebook-${getProductIdentity(product)}`}
                     product={product}
                     mode="detail"
@@ -4750,7 +4846,7 @@ function ProductDetail({
                     overflow: "hidden",
                   }}
                 >
-                  <SteaCodeProductLivePreview
+                  <LazyLivePreview
                     key={`detail-video-${getProductIdentity(product)}`}
                     productId={getProductIdentity(product)}
                     title={product.titleEn || product.titleZh || ""}
