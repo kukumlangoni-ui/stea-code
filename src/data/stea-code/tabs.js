@@ -1,4 +1,13 @@
 export const TABS = {
+  notes: {
+    id: "notes",
+    label: "Notes",
+    description: "Text‑based study materials",
+    categories: [
+      { id: "All", label: "All", tooltip: null },
+      { id: "Notes", label: "Notes", tooltip: "Interview questions, docs, etc." }
+    ]
+  },
   components: {
     id: "components",
     label: "Components",

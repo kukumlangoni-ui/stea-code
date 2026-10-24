@@ -252,6 +252,11 @@ const PRODUCT_TYPES = [
   { id: "ebook", label: "eBook", hint: "A book with a 3D cover sales page and chapters" },
   { id: "cheatsheet", label: "Cheat Sheet", hint: "Quick-reference sheet — 3D cover, chapters and the reader route" },
   { id: "course", label: "Course", hint: "Multi-lesson course (reserved)" },
+  { id: "note", label: "Note", hint: "Text‑based study material (eBook‑style)" },
+  { id: "component", label: "Component", hint: "Copy-paste component, layout or kit" },
+  { id: "ebook", label: "eBook", hint: "A book with a 3D cover sales page and chapters" },
+  { id: "cheatsheet", label: "Cheat Sheet", hint: "Quick-reference sheet — 3D cover, chapters and the reader route" },
+  { id: "course", label: "Course", hint: "Multi-lesson course (reserved)" },
 ];
 
 const PREVIEW_MODES = [

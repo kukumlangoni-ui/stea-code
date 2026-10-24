@@ -211,6 +211,10 @@ const CATEGORY_LABELS = {
 // `tab === "library"` is the legacy signal, kept so a stale cached catalog
 // response (which may predate the productType column) still renders right.
 const isBookProduct = (p) =>
+  p?.productType === "ebook" ||
+  p?.productType === "cheatsheet" ||
+  p?.productType === "note" ||
+  p?.tab === "library";
   p?.productType === "ebook" || p?.productType === "cheatsheet" || p?.tab === "library";
 
 // The pill a product belongs to. Cheat Sheets are categorised by type rather
@@ -1348,6 +1352,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
         if (activeTab === "layouts") return p.tab === "layouts";
         if (activeTab === "kits") return p.tab === "kits";
         if (activeTab === "library") return isBookProduct(p);
+        if (activeTab === "notes") return p.tab === "notes" || p.productType === "note";
         return true;
       })
       .filter((p) => category === "All" || effectiveCategory(p) === category)
