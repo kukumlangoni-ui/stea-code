@@ -305,7 +305,7 @@ async function listHomepageCards(
   limit = 0,
   offset = 0,
   filters: HomepageFilters = {}
-): Promise<{ products: any[]; total: number }> {
+): Promise<{ products: any[]; total: number; globalTotal: number }> {
   const columns = [...new Set(HOMEPAGE_CARD_COLUMNS)].join(", ");
   const { where, params } = buildHomepageWhere(filters);
   const pageClause = limit > 0
@@ -319,6 +319,16 @@ async function listHomepageCards(
   ).bind(...params).all();
 
   let total = (result.results || []).length;
+
+  // Global catalog size for the hero counter: published + homepage-approved
+  // products, INDEPENDENT of the current tab/category/subcategory filters.
+  // `total` stays the filtered count (it drives pagination); `globalTotal` is
+  // the storefront-wide number shown in the UI.
+  const globalCountRow: any = await env.DB.prepare(
+    `SELECT COUNT(*) AS total FROM products WHERE status = 'published' AND homepageVisible = 1`
+  ).first();
+  const globalTotal = Number(globalCountRow?.total) || 0;
+
   if (limit > 0) {
     // COUNT over the SAME filtered WHERE — never the raw table count, or
     // `hasMore`/`total` would describe a different set than the page.
@@ -368,7 +378,7 @@ async function listHomepageCards(
       ebookFeatures: parseStringList(row.ebookFeatures),
     };
   });
-  return { products, total };
+  return { products, total, globalTotal };
 }
 
 /**
@@ -436,6 +446,9 @@ export async function handleCatalog(req: Request, env: Env, ctx?: ExecutionConte
 
     let products: any[];
     let homepageTotal = 0;
+    // Storefront-wide product count (published + homepageVisible), sent to the
+    // hero counter. Independent of the filtered `total` used for pagination.
+    let globalTotalValue = 0;
     if (scope === "homepage") {
       // Filtering happens in SQL (WHERE tab/category/subcategory) so that
       // LIMIT/OFFSET paginate the FILTERED set, and `total` is the filtered
@@ -443,6 +456,7 @@ export async function handleCatalog(req: Request, env: Env, ctx?: ExecutionConte
       const page = await listHomepageCards(env, limit, offset, { tab, category, subcategory });
       products = page.products;
       homepageTotal = page.total;
+      globalTotalValue = page.globalTotal;
     } else {
       const [docs, hasSourceById] = await Promise.all([
         listDocs(env, PRODUCTS_COLLECTION, {}),
@@ -477,6 +491,7 @@ export async function handleCatalog(req: Request, env: Env, ctx?: ExecutionConte
     const body = JSON.stringify({
       products,
       total,
+      globalTotal: scope === "homepage" ? globalTotalValue : products.length,
       offset,
       limit: limit || total,
       nextOffset,

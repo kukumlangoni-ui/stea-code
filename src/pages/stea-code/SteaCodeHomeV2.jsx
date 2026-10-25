@@ -775,6 +775,34 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
   // Incrementing this triggers a fresh catalog load (used by the error-state Retry).
   const [catalogReloadToken, setCatalogReloadToken] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  // Storefront-wide product total (published + homepageVisible), independent of
+  // the current tab/category filters — drives the hero counter. `animatedTotal`
+  // is the same value shown via a count-up animation on load.
+  const [globalCatalogTotal, setGlobalCatalogTotal] = useState(0);
+  const [animatedTotal, setAnimatedTotal] = useState(0);
+
+  // Count-up animation: 0 → globalCatalogTotal over ~1.5s at 60fps.
+  useEffect(() => {
+    if (globalCatalogTotal === 0) return;
+
+    let current = 0;
+    const end = globalCatalogTotal;
+    const duration = 1500; // ms
+    const stepMs = 16; // ~60fps
+    const increment = end / (duration / stepMs);
+
+    const timer = setInterval(() => {
+      current += increment;
+      if (current >= end) {
+        setAnimatedTotal(end);
+        clearInterval(timer);
+      } else {
+        setAnimatedTotal(Math.floor(current));
+      }
+    }, stepMs);
+
+    return () => clearInterval(timer);
+  }, [globalCatalogTotal]);
 
   useEffect(() => {
     if (typeof document === "undefined") return undefined;
@@ -1116,6 +1144,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
           onFresh: (fresh) => {
             if (!active) return;
             const products = Array.isArray(fresh?.products) ? fresh.products : [];
+            setGlobalCatalogTotal(Number(fresh?.globalTotal) || 0);
             setLiveCatalog((previous) => {
               const base = Array.isArray(previous) ? previous : [];
               const byId = new Map();
@@ -1142,6 +1171,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
 
         setIsFallbackCatalog(false);
         setLiveCatalog(homepageNext);
+        setGlobalCatalogTotal(Number(homepageResult?.globalTotal) || 0);
         setCatalogTotal(Number(homepageResult?.total) || homepageNext.length);
         setCatalogNextOffset(Number(homepageResult?.nextOffset) || homepageNext.length);
         setIsLoading(false);
@@ -2096,7 +2126,10 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
                 </div>
                 <div className="sc-trust-bar" role="status" aria-label="steacode stats">
                   <div className="sc-trust-item">
-                    <span className="sc-trust-value">{products.length || 94}+</span>
+                    {/* Global storefront total (published + homepageVisible) from
+                        the API's `globalTotal`, with a count-up animation. Falls
+                        back to the loaded page size (then 94) if unavailable. */}
+                    <span className="sc-trust-value">{(animatedTotal || products.length || 94)}+</span>
                     <span className="sc-trust-label">{uiLocale === "zhCN" ? "组件" : "Components"}</span>
                   </div>
                   <div className="sc-trust-divider" aria-hidden="true" />
