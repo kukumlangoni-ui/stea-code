@@ -414,6 +414,16 @@ export async function getSteaCodeCatalog(options = {}) {
    *                category filtering, direct-link product detail loading,
    *                etc. — so a published-but-not-yet-approved product can
    *                still be reached if you know the link).
+   * category:
+   *   forwarded as `?category=` so the Worker filters in SQL (WHERE category = ?)
+   *   BEFORE LIMIT/OFFSET — server-side pagination is only correct when the
+   *   WHERE clause runs before the page is cut.
+   * activeTab:
+   *   forwarded as `?tab=` (the Worker's parameter name) so the Worker applies
+   *   the matching tab WHERE clause the same way.
+   *   NOTE: category and activeTab MUST be part of the cache key below — a
+   *   cached page fetched for one filter would otherwise be served for another
+   *   (this is what made category clicks appear to do nothing).
    * onFresh: optional callback fired when background refresh completes
    *          (stale-while-revalidate pattern).
    */
@@ -425,12 +435,19 @@ export async function getSteaCodeCatalog(options = {}) {
   const offset = scope === "homepage"
     ? Math.max(0, Number(options?.offset) || 0)
     : 0;
+  // An empty category ("") or "All" simply omits the param — the caller uses
+  // "" for the Library "Cheat Sheets & Notes" combined pill, which the API
+  // cannot express as a single `category = ?` and is filtered client-side
+  // instead; "All" means "no category filter" on both sides.
+  const rawCategory = String(options?.category ?? "").trim();
+  const category = rawCategory && rawCategory !== "All" ? rawCategory : "";
+  const activeTab = String(options?.activeTab ?? "").trim();
   const cacheScope = scope === "homepage"
-    ? `${scope}:${limit}:${offset}`
+    ? `${scope}:${limit}:${offset}:${category}:${activeTab}`
     : scope;
   const homepageQuery = limit > 0
-    ? `?scope=homepage&limit=${limit}&offset=${offset}`
-    : "?scope=homepage";
+    ? `?scope=homepage&limit=${limit}&offset=${offset}${category ? `&category=${encodeURIComponent(category)}` : ""}${activeTab ? `&tab=${encodeURIComponent(activeTab)}` : ""}`
+    : `?scope=homepage${category ? `&category=${encodeURIComponent(category)}` : ""}${activeTab ? `&tab=${encodeURIComponent(activeTab)}` : ""}`;
   const baseUrl = scope
     ? `${API_BASE}/api/stea-code/catalog${homepageQuery}`
     : `${API_BASE}/api/stea-code/catalog`;

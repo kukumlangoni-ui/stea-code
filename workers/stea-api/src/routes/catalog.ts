@@ -233,6 +233,68 @@ function parseStringList(value: any): string[] {
     .filter(Boolean);
 }
 
+interface HomepageFilters {
+  tab?: string;
+  category?: string;
+  subcategory?: string;
+}
+
+/**
+ * Builds the WHERE clause (and bind params) for the homepage card query.
+ *
+ * The homepage grid previously fetched a page of products and then filtered
+ * them in JavaScript — that broke pagination: `LIMIT/OFFSET` ran against the
+ * UNFILTERED set, so every category/tab page returned the same first 20 rows.
+ * All filtering now happens in SQL, BEFORE LIMIT/OFFSET, and the COUNT uses
+ * the exact same WHERE so `total`/`hasMore` reflect the filtered set.
+ *
+ * The tab rules mirror the frontend (SteaCodeHomeV2 `filtered`) EXACTLY so the
+ * server-side page and the client-side grid agree:
+ *   - components → tab = 'components' OR featured = 1. Hand-picked featured
+ *     products are authored in their own tab (layouts/kits/library) but are
+ *     showcased on the homepage "components" view, so they must survive the
+ *     SQL filter just like `p.featured === true` keeps them on the client.
+ *   - library → tab = 'library' OR productType IN ('ebook','cheatsheet','note'),
+ *     matching isBookProduct() (productType is the modern signal, `tab` the
+ *     legacy one).
+ *   - layouts / kits → plain `tab = ?` equality.
+ * Category and subcategory are plain column equalities. The Library
+ * "Cheat Sheets & Notes" pill is intentionally NOT sent here as `category` —
+ * it combines two product types a column equality cannot express, so the
+ * frontend keeps that one filter client-side and requests the whole library
+ * stream instead.
+ */
+function buildHomepageWhere(filters: HomepageFilters): { where: string; params: any[] } {
+  const conditions = ["status = 'published'", "homepageVisible = 1"];
+  const params: any[] = [];
+
+  const tab = filters.tab;
+  if (tab) {
+    if (tab === "components") {
+      conditions.push("(tab = 'components' OR featured = 1)");
+    } else if (tab === "library") {
+      conditions.push("(tab = 'library' OR productType IN ('ebook','cheatsheet','note'))");
+    } else {
+      conditions.push("tab = ?");
+      params.push(tab);
+    }
+  }
+
+  const category = filters.category;
+  if (category && category !== "All") {
+    conditions.push("category = ?");
+    params.push(category);
+  }
+
+  const subcategory = filters.subcategory;
+  if (subcategory && subcategory !== "All") {
+    conditions.push("subcategory = ?");
+    params.push(subcategory);
+  }
+
+  return { where: conditions.join(" AND "), params };
+}
+
 /**
  * Homepage cards only need a small subset of columns. Querying just those
  * columns avoids loading multi-megabyte source/authoring blobs from D1 and
@@ -241,24 +303,28 @@ function parseStringList(value: any): string[] {
 async function listHomepageCards(
   env: Env,
   limit = 0,
-  offset = 0
+  offset = 0,
+  filters: HomepageFilters = {}
 ): Promise<{ products: any[]; total: number }> {
   const columns = [...new Set(HOMEPAGE_CARD_COLUMNS)].join(", ");
+  const { where, params } = buildHomepageWhere(filters);
   const pageClause = limit > 0
     ? ` LIMIT ${Math.floor(limit)} OFFSET ${Math.floor(Math.max(0, offset))}`
     : "";
   const result = await env.DB.prepare(
     `SELECT ${columns}, ${HAS_SOURCE_SQL} AS hasSource, ${EBOOK_FEATURES_SQL} AS ebookFeatures
        FROM products
-      WHERE status = 'published' AND homepageVisible = 1
+      WHERE ${where}
       ORDER BY featured DESC, createdAt DESC${pageClause}`
-  ).all();
+  ).bind(...params).all();
 
   let total = (result.results || []).length;
   if (limit > 0) {
+    // COUNT over the SAME filtered WHERE — never the raw table count, or
+    // `hasMore`/`total` would describe a different set than the page.
     const countRow: any = await env.DB.prepare(
-      "SELECT COUNT(*) AS total FROM products WHERE status = 'published' AND homepageVisible = 1"
-    ).first();
+      `SELECT COUNT(*) AS total FROM products WHERE ${where}`
+    ).bind(...params).first();
     total = Number(countRow?.total) || 0;
   }
 
@@ -329,19 +395,27 @@ export async function handleCatalog(req: Request, env: Env, ctx?: ExecutionConte
     const scope = url.searchParams.get("scope") || "";
     const category = url.searchParams.get("category") || "";
     const subcategory = url.searchParams.get("subcategory") || "";
+    const tab = url.searchParams.get("tab") || "";
     const limit = Math.min(
       50,
       Math.max(0, Number(url.searchParams.get("limit")) || 0)
     );
     const offset = Math.max(0, Number(url.searchParams.get("offset")) || 0);
-    const canUseHomepageCache = scope === "homepage" && !category && !subcategory;
+    // Homepage responses are cacheable for EVERY filter combination — the key
+    // below includes tab/category/subcategory, so a cached page for one filter
+    // can never be served for another (that cross-contamination is exactly what
+    // made category clicks show the unfiltered first page).
+    const canUseHomepageCache = scope === "homepage";
     // Version suffix = cache generation. There is no purge route, so a deployed
     // change to the card payload would otherwise sit behind the 5-minute
     // s-maxage below; bump this when the shape of a card changes.
     // v3: added hasSource + ebookFeatures.
     // v5: paginated homepage response.
+    // v6: filter-aware cache keys (tab/category/subcategory in the key) — old
+    //     v5 unfiltered entries must never be served for filtered requests.
     const homepageCacheKey = new Request(
-      `https://stea-code.internal/catalog/homepage-v5-${limit}-${offset}`,
+      `https://stea-code.internal/catalog/homepage-v6-${limit}-${offset}-` +
+        `${encodeURIComponent(tab)}-${encodeURIComponent(category)}-${encodeURIComponent(subcategory)}`,
       { method: "GET" }
     );
 
@@ -363,7 +437,10 @@ export async function handleCatalog(req: Request, env: Env, ctx?: ExecutionConte
     let products: any[];
     let homepageTotal = 0;
     if (scope === "homepage") {
-      const page = await listHomepageCards(env, limit, offset);
+      // Filtering happens in SQL (WHERE tab/category/subcategory) so that
+      // LIMIT/OFFSET paginate the FILTERED set, and `total` is the filtered
+      // COUNT — not the whole catalog size.
+      const page = await listHomepageCards(env, limit, offset, { tab, category, subcategory });
       products = page.products;
       homepageTotal = page.total;
     } else {
@@ -379,17 +456,16 @@ export async function handleCatalog(req: Request, env: Env, ctx?: ExecutionConte
         }))
         .filter((p) => p.status === "published");
       homepageTotal = products.length;
-    }
 
-    // Category filter (e.g. ?category=Components)
-    if (category) {
-      products = products.filter((p) => p.category === category);
-    }
-
-    // Subcategory filter (e.g. ?subcategory=Pricing Tables). Only meaningful
-    // for Layout; combines with category when both are present.
-    if (subcategory) {
-      products = products.filter((p) => (p.subcategory || "") === subcategory);
+      // Category / subcategory filter for the UNPAGINATED all-products scope
+      // (search, direct links). The homepage scope is filtered in SQL above;
+      // these JS filters only run here, where there is no LIMIT/OFFSET to break.
+      if (category) {
+        products = products.filter((p) => p.category === category);
+      }
+      if (subcategory) {
+        products = products.filter((p) => (p.subcategory || "") === subcategory);
+      }
     }
 
     // Cache strategy:
@@ -404,7 +480,7 @@ export async function handleCatalog(req: Request, env: Env, ctx?: ExecutionConte
       offset,
       limit: limit || total,
       nextOffset,
-      hasMore: nextOffset < (scope === "homepage" ? homepageTotal : products.length),
+      hasMore: nextOffset < total,
     });
     const response = new Response(body, {
       status: 200,

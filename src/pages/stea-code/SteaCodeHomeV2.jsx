@@ -1101,8 +1101,18 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
 
     async function loadHomepageCatalog() {
       try {
+        // The Library "Cheat Sheets & Notes" pill is a combined filter
+        // (cheatsheets + notes) that the API cannot express as a single
+        // `category = ?`, so for that one pill we send NO category and let the
+        // client-side `filtered` below narrow the library stream. Every other
+        // category is filtered in SQL via `category`, and `activeTab` is sent
+        // as `tab` so the Worker paginates the FILTERED set.
         const homepageResult = await getSteaCodeCatalog({
-          scope: "homepage", limit: 20, offset: 0, category: category,
+          scope: "homepage",
+          limit: 20,
+          offset: 0,
+          category: activeTab === "library" && category === "Cheat Sheets" ? "" : category,
+          activeTab,
           onFresh: (fresh) => {
             if (!active) return;
             const products = Array.isArray(fresh?.products) ? fresh.products : [];
@@ -1409,9 +1419,12 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
         return true;
       })
       .filter((p) => {
-        if (category === "All") return true;
-        // The combined Library pill uses the stable "Cheat Sheets" id and
-        // intentionally includes both authored cheat sheets and Notes.
+        // Everything except the combined Library pill is now filtered in SQL
+        // (WHERE category = ? / tab = ? on the Worker, before LIMIT/OFFSET),
+        // so no client-side category filter is needed here. The one exception
+        // is "Cheat Sheets & Notes": it combines two product types that a
+        // plain column equality cannot express, so the API returns the whole
+        // library stream for this pill and this predicate narrows it.
         if (activeTab === "library" && category === "Cheat Sheets") {
           return (
             p.productType === "cheatsheet" ||
@@ -1419,7 +1432,6 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
             p.category === "Cheat Sheets"
           );
         }
-        // Backend already filters by category
         return true;
       })
       .filter((p) => {
@@ -1500,10 +1512,6 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
     framework === "All Frameworks" &&
     !q.trim();
 
-  const canShowMore =
-    homepageProducts.length <
-    Math.min(filtered.length, 50);
-
   useEffect(() => {
     setVisibleProductCount(24);
   }, [activeTab, category, pricing, framework, q]);
@@ -1536,29 +1544,26 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
     if (q.trim()) onOpenSearch({ query: q.trim() });
   };
 
-  const INITIAL_PRODUCT_COUNT = 24;
   const PRODUCT_INCREMENT = 12;
   const MAX_HOMEPAGE_PRODUCTS = 50;
 
-  const maxVisibleProducts = Math.min(
-    filtered.length,
-    MAX_HOMEPAGE_PRODUCTS
-  );
-
   const catalogHasMore = catalogNextOffset < catalogTotal;
-
-  const hasExpandableProducts =
-    catalogHasMore || maxVisibleProducts > INITIAL_PRODUCT_COUNT;
-
-  const isFullyExpanded =
-    !catalogHasMore && visibleProductCount >= maxVisibleProducts;
 
   const loadMoreHomepageProducts = useCallback(async () => {
     if (catalogLoadingMore || !catalogHasMore) return false;
     setCatalogLoadingMore(true);
     try {
+      // Must send the CURRENT category + activeTab: the server paginates the
+      // FILTERED set, so fetching "the next page" with a stale filter would
+      // mix categories (or keep returning the same first-20 homepage rows).
+      // The Library "Cheat Sheets & Notes" pill sends no category — same
+      // rule as the initial fetch (combined filter stays client-side).
       const result = await getSteaCodeCatalog({
-        scope: "homepage", limit: 20, offset: catalogNextOffset, category: category,
+        scope: "homepage",
+        limit: 20,
+        offset: catalogNextOffset,
+        category: activeTab === "library" && category === "Cheat Sheets" ? "" : category,
+        activeTab,
       });
       const nextProducts = Array.isArray(result?.products) ? result.products : [];
       setLiveCatalog((previous) => {
@@ -1585,21 +1590,11 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
     catalogLoadingMore,
     catalogNextOffset,
     catalogTotal,
+    category,
+    activeTab,
   ]);
 
   const handleProductExpansion = async () => {
-    if (isFullyExpanded) {
-      setVisibleProductCount(INITIAL_PRODUCT_COUNT);
-
-      requestAnimationFrame(() => {
-        document.getElementById("explore")?.scrollIntoView({
-          behavior: "smooth",
-          block: "start" });
-      });
-
-      return;
-    }
-
     if (catalogHasMore) {
       await loadMoreHomepageProducts();
     }
@@ -2018,25 +2013,24 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
               </div>
             )}
 
-            {hasExpandableProducts ? (
+            {/* Load More Components — bottom of the grid, only when the server
+                still has a filtered page to return (catalogHasMore). Fetching
+                is server-side pagination of the SQL-filtered set, so clicking
+                it always appends the NEXT page of the current category/tab. */}
+            {catalogHasMore ? (
               <div className="sc-market-show-more-wrap">
                 <button
                   type="button"
                   className="sc-market-show-more"
                   onClick={handleProductExpansion}
-                  aria-expanded={isFullyExpanded}
                   disabled={catalogLoadingMore}
                 >
                   <span>
                     {catalogLoadingMore
                       ? (uiLocale === "zhCN" ? "正在加载…" : "Loading…")
-                      : isFullyExpanded
-                      ? (uiLocale === "zhCN" ? "收起" : "Show less")
-                      : (uiLocale === "zhCN" ? "显示更多" : "Show more")}
+                      : (uiLocale === "zhCN" ? "加载更多组件" : "Load More Components")}
                   </span>
-                  <span aria-hidden="true">
-                    {isFullyExpanded ? "↑" : "→"}
-                  </span>
+                  <span aria-hidden="true">→</span>
                 </button>
               </div>
             ) : null}
@@ -5509,22 +5503,7 @@ function ProductDetail({
                   <path d="M11 18.6 16.6 19.7 M23.6 18 28.8 10.4 M23.6 22 28.8 29.6" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
                 </svg>
                 <span className="sc-affiliate-brand-name">Runable AI</span>
-              
-        {/* Load More Button */}
-        {catalogHasMore && (
-          <div style={{ display: 'flex', justifyContent: 'center', width: '100%', marginTop: '40px', gridColumn: '1 / -1' }}>
-            <button 
-              onClick={loadMoreHomepageProducts} 
-              disabled={catalogLoadingMore}
-              className="sc-btn-primary" 
-              style={{ padding: '12px 32px', borderRadius: '999px', cursor: 'pointer', backgroundColor: '#000', color: '#fff' }}
-            >
-              {catalogLoadingMore ? 'Loading...' : 'Load More Components'}
-            </button>
-          </div>
-        )}
-
-      </div>
+              </div>
 
               <h3 className="sc-affiliate-headline">Want to build this in seconds?</h3>
               <p className="sc-affiliate-subtext">
