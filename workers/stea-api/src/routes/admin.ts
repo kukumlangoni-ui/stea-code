@@ -542,11 +542,13 @@ export async function handleAdminBookUpload(
 
     const safeName = file.name.replace(/[^a-z0-9._-]+/gi, "-").toLowerCase();
     const key = `products/${productId}/book/${safeName}`;
-    const buffer = await file.arrayBuffer();
+    // Stream directly to R2 — never buffer the full file in memory.
+    // Buffering (file.arrayBuffer()) breaks on larger PDFs (Worker memory
+    // limits); file.stream() pipes the body straight into the bucket.
     await putObject(
       env.STEA_BUCKET,
       key,
-      buffer,
+      file.stream(),
       isPdf ? "application/pdf" : "application/zip"
     );
 
@@ -555,7 +557,7 @@ export async function handleAdminBookUpload(
     await setDoc(env, PRODUCTS_COLLECTION, productId, { bookDownloadUrl: url }, true);
 
     return new Response(
-      JSON.stringify({ success: true, key, url, filename: safeName, size: buffer.byteLength }),
+      JSON.stringify({ success: true, key, url, filename: safeName, size: file.size }),
       { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) } }
     );
   } catch (e: any) {

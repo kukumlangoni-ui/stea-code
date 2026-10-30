@@ -1258,8 +1258,19 @@ export function ProductStudioV3({
       invalidateSteaCodeProductPreviewCache(realProductId);
 
       setDirty(false);
-      setNotice(isPublishing ? "Published ✓" : "Saved ✓");
-      setTimeout(() => setNotice(""), 2000);
+      // If we asked to publish but the server kept it a draft (e.g. staff
+      // editor role is forced to draft by the backend), say so instead of
+      // showing a misleading "Published ✓".
+      const serverStatus = result?.product?.status;
+      const publishWasDowngraded = isPublishing && serverStatus && serverStatus !== "published";
+      if (publishWasDowngraded) {
+        setError(
+          "Saved as draft — your staff role cannot publish directly. An approver or owner must publish it."
+        );
+      } else {
+        setNotice(isPublishing ? "Published ✓" : "Saved ✓");
+        setTimeout(() => setNotice(""), 2000);
+      }
 
       if (isPublishing && typeof onPublished === "function") {
         onPublished(result?.product || result);
@@ -1290,8 +1301,17 @@ export function ProductStudioV3({
         }));
       }
     } catch (err) {
-      console.error("[PSV3] Save error:", err?.message || err);
-      setError(err?.message || "Save failed.");
+      // Log the full structured error (code/status/backendMessage come from
+      // the worker's JSON error body) so the real cause is visible in the
+      // browser console, not just the generic message.
+      console.error("[PSV3] Save error:", {
+        message: err?.message,
+        code: err?.code,
+        status: err?.status,
+        backendMessage: err?.backendMessage,
+        raw: err,
+      });
+      setError(err?.backendMessage || err?.message || "Save failed.");
     } finally {
       setSaving(false);
     }
