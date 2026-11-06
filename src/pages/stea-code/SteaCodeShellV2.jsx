@@ -37,7 +37,7 @@ import {
   makePurchasesAction,
   setSteaCodePendingAction,
 } from "../../services/steaCodeResumeAction.js";
-import { getFirebaseAuth, onAuthStateChanged } from "../../firebase.js";
+import { useCloudflareAuth } from "../../hooks/useCloudflareAuth.js";
 
 import {
   v2IdleSnapshot,
@@ -106,22 +106,8 @@ export default function SteaCodeShellV2() {
   const navigate = useNavigate();
   const { uiLocale } = useSteaCodeI18n();
 
-  /* -------- Auth state — maintained locally so HomeV2 gets user/authLoading -------- */
-  const [user, setUser] = useState(null);
-  const [authLoading, setAuthLoading] = useState(true);
-
-  useEffect(() => {
-    const auth = getFirebaseAuth();
-    if (!auth) {
-      setAuthLoading(false);
-      return undefined;
-    }
-    const unsub = onAuthStateChanged(auth, (firebaseUser) => {
-      setUser(firebaseUser || null);
-      setAuthLoading(false);
-    });
-    return () => unsub();
-  }, []);
+  /* -------- Auth state — Cloudflare Access session -------- */
+  const { user, loading: authLoading } = useCloudflareAuth();
 
   /* -------- Routing (legacy 8 → new 5, canonical view id) ---------- */
   const params = useMemo(() => new URLSearchParams(location.search), [location.search]);
@@ -346,24 +332,14 @@ export default function SteaCodeShellV2() {
     }
   };
 
-  // Resume from sessionStorage if authenticated via cross-tab or reload after auth.
+  // Resume from sessionStorage after returning from the Access login screen.
   useEffect(() => {
-    const auth = getFirebaseAuth();
-    if (!auth) return undefined;
-    let handled = false;
-    const unsub = onAuthStateChanged(auth, (user) => {
-      if (user && !handled) {
-        const pending = getSteaCodePendingAction();
-        if (pending) {
-          handled = true;
-          setMemberGateOpen(false);
-          resumePendingShellAction(pending);
-        }
-      }
-      if (!user) handled = false;
-    });
-    return () => unsub();
-  }, []);
+    if (!user) return;
+    const pending = getSteaCodePendingAction();
+    if (!pending) return;
+    setMemberGateOpen(false);
+    resumePendingShellAction(pending);
+  }, [user?.email]);
 
   const requireAuth = (action) => {
     if (!action) return;
@@ -379,7 +355,6 @@ export default function SteaCodeShellV2() {
 
   const handleShellGateClose = () => {
     setMemberGateOpen(false);
-    const user = getFirebaseAuth()?.currentUser;
     if (!user) {
       clearSteaCodePendingAction();
       setMemberGateAction(null);
@@ -388,7 +363,6 @@ export default function SteaCodeShellV2() {
 
   // Pre-check direct views that need authentication → open gate immediately.
   useEffect(() => {
-    const user = getFirebaseAuth()?.currentUser;
     if (user) return;
     if (commerceView === "purchases") {
       requireAuth(makePurchasesAction());

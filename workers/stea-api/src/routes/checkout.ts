@@ -9,15 +9,15 @@
  */
 
 import { corsHeaders } from "../cors";
-import { verifyFirebaseToken, extractBearerToken } from "../auth";
+import { resolveRequestUser } from "../auth";
 import type { WorkerEnv } from "../index";
 
 const STRIPE_API_BASE = "https://api.stripe.com/v1";
 
 export async function handleCheckout(req: Request, env: WorkerEnv): Promise<Response> {
   try {
-    const token = extractBearerToken(req);
-    if (!token) {
+    const user = await resolveRequestUser(req, env);
+    if (!user?.email) {
       return new Response(
         JSON.stringify({ error: "Unauthorized" }),
         {
@@ -27,20 +27,8 @@ export async function handleCheckout(req: Request, env: WorkerEnv): Promise<Resp
       );
     }
 
-    let decoded;
-    try {
-      decoded = await verifyFirebaseToken(env, token);
-    } catch {
-      return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
-        {
-          status: 401,
-          headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) },
-        }
-      );
-    }
-
-    const { uid, email } = decoded;
+    const uid = user.uid;
+    const email = user.email;
 
     const stripeSecretKey = (env as any).STRIPE_SECRET_KEY;
     const priceId = (env as any).STRIPE_PRICE_PRO_LIFETIME;

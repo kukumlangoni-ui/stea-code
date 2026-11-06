@@ -617,3 +617,143 @@
 .sc-footer {
   position: relative;
 }
+
+/* =============================================================
+ * LIGHT THEME OVERRIDES
+ * The page mounts as `.stea-code-app.sc-v2 sc-market-home`, so the
+ * storefront theme (.stea-code-app.sc-v2 => background #fff / color #111)
+ * wins over `.sc-upgrade-page` (single class). Every rule above was
+ * authored for a dark canvas, which left white headings on a white page.
+ * These overrides re-map each text/surface token for a light canvas.
+ * Scoped to .sc-upgrade-page so nothing else in the app is touched.
+ * ============================================================= */
+.sc-upgrade-page {
+  background: #ffffff !important;
+  color: #111827 !important;
+}
+
+/* --- Hero --- */
+.sc-upgrade-page .sc-upgrade-eyebrow {
+  color: #4f46e5;
+  background: rgba(99, 102, 241, 0.08);
+  border-color: rgba(99, 102, 241, 0.22);
+}
+
+.sc-upgrade-page .sc-upgrade-heading {
+  color: #0b1020;
+}
+
+.sc-upgrade-page .sc-upgrade-subheading {
+  color: #5b6472;
+}
+
+.sc-upgrade-page .sc-upgrade-price-line {
+  color: #6b7280;
+}
+
+.sc-upgrade-page .sc-upgrade-price-line strong {
+  color: #111827;
+}
+
+.sc-upgrade-page .sc-upgrade-trust,
+.sc-upgrade-page .sc-upgrade-trust-item svg {
+  color: #6b7280;
+}
+
+/* --- Section headings --- */
+.sc-upgrade-page .sc-upgrade-section-label {
+  color: #6b7280;
+}
+
+.sc-upgrade-page .sc-upgrade-section-title {
+  color: #0b1020;
+}
+
+/* --- Value math panel --- */
+.sc-upgrade-page .sc-upgrade-math {
+  background: #fafafa;
+  border-color: #e5e7eb;
+}
+
+.sc-upgrade-page .sc-upgrade-math-row {
+  color: #4b5563;
+}
+
+.sc-upgrade-page .sc-upgrade-math-row + .sc-upgrade-math-row,
+.sc-upgrade-page .sc-upgrade-math-row.total {
+  border-top-color: #e5e7eb;
+}
+
+.sc-upgrade-page .sc-upgrade-math-row .value {
+  color: #111827;
+}
+
+.sc-upgrade-page .sc-upgrade-math-row.total {
+  color: #0b1020;
+}
+
+.sc-upgrade-page .sc-upgrade-math-row.savings,
+.sc-upgrade-page .sc-upgrade-math-row.savings .value {
+  color: #b45309;
+}
+
+/* --- Feature list --- */
+.sc-upgrade-page .sc-upgrade-feature-icon {
+  color: #059669;
+}
+
+.sc-upgrade-page .sc-upgrade-feature-text {
+  color: #4b5563;
+}
+
+.sc-upgrade-page .sc-upgrade-feature-text strong {
+  color: #111827;
+}
+
+/* --- FAQ --- */
+.sc-upgrade-page .sc-upgrade-faq-item {
+  background: #ffffff;
+  border-color: #e5e7eb;
+}
+
+.sc-upgrade-page .sc-upgrade-faq-q {
+  color: #111827;
+}
+
+.sc-upgrade-page .sc-upgrade-faq-a {
+  color: #5b6472;
+}
+
+/* --- Final CTA --- */
+.sc-upgrade-page .sc-upgrade-final-title {
+  color: #0b1020;
+}
+
+.sc-upgrade-page .sc-upgrade-final-sub {
+  color: #6b7280;
+}
+
+.sc-upgrade-page .sc-upgrade-divider {
+  border-top-color: #e5e7eb;
+}
+
+/* --- Header back link --- */
+.sc-upgrade-page .sc-upgrade-back-link {
+  color: #4b5563;
+  border-color: #e5e7eb;
+  background: #ffffff;
+}
+
+.sc-upgrade-page .sc-upgrade-back-link:hover {
+  color: #111827;
+  border-color: #d1d5db;
+  background: #f9fafb;
+}
+
+.sc-upgrade-page .sc-upgrade-back-link svg {
+  color: #9ca3af;
+}
+
+.sc-upgrade-page .sc-upgrade-back-link:hover svg {
+  color: #111827;
+}

@@ -81,9 +81,9 @@ export function AdminTopbar({ onMenu, isSuperAdmin, user }) {
       </div>
 
       <div className="admin-v2-topbar-right">
-        <button onClick={() => window.location.href = '/'} className="admin-v2-home-btn" aria-label="Go to Main Site">
+        <Link to="/" className="admin-v2-home-btn" aria-label="Go to Main Site">
           <Icons.Home size={16} />
-        </button>
+        </Link>
         {isSuperAdmin ? (
           <div className="admin-v2-super-admin-badge-premium">
             <Icons.Shield size={14} /> <span>SUPER ADMIN</span>

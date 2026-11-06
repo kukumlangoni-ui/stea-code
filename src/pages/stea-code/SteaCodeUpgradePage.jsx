@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowRight, Check, Shield, Zap, RefreshCcw } from "lucide-react";
 import { getSteaCodePublicUrl } from "../../utils/subdomains.js";
-import { getFirebaseAuth } from "../../firebase.js";
+import { fetchCloudflareSession } from "../../hooks/useCloudflareAuth.js";
 import { getSteaCodeCatalog } from "../../services/steaCodeCommerce.js";
 import SEO from "../../components/SEO.jsx";
 import SteaCodeMemberGate from "../../components/stea-code/SteaCodeMemberGate.jsx";
@@ -114,12 +114,11 @@ export default function SteaCodeUpgradePage() {
 
   const handleUpgradeClick = async () => {
     setError("");
-    const auth = getFirebaseAuth();
-    const currentUser = auth?.currentUser;
+    const email = await fetchCloudflareSession();
 
-    if (!currentUser) {
-      // Not signed in — open the member auth gate. After sign-in the pending
-      // action ("upgrade") is resumed and checkout continues.
+    if (!email) {
+      // Not signed in — open the member gate. The pending action is stored so
+      // it can be resumed after the Access login redirect.
       try {
         sessionStorage.setItem("stea_pending_action", JSON.stringify({ type: "upgrade" }));
       } catch {
@@ -131,13 +130,10 @@ export default function SteaCodeUpgradePage() {
 
     setCheckoutLoading(true);
     try {
-      const token = await currentUser.getIdToken();
       const res = await fetch("/api/stea-code/checkout", {
         method: "POST",
-        headers: {
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
         body: "{}",
       });
       const data = await res.json();
@@ -148,6 +144,32 @@ export default function SteaCodeUpgradePage() {
       setCheckoutLoading(false);
     }
   };
+
+  // Resume checkout after returning from the Cloudflare Access login screen.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const email = await fetchCloudflareSession();
+      if (!email || cancelled) return;
+      let pending = null;
+      try {
+        pending = JSON.parse(sessionStorage.getItem("stea_pending_action") || "null");
+      } catch {
+        pending = null;
+      }
+      if (pending?.type === "upgrade") {
+        try {
+          sessionStorage.removeItem("stea_pending_action");
+        } catch {
+          /* ignore */
+        }
+        void handleUpgradeClick();
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleMemberGateAuthenticated = () => {
     setMemberGateOpen(false);

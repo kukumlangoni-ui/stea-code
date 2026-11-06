@@ -502,10 +502,18 @@ export async function handleAdminPreviewUpload(
 /**
  * POST /admin/stea-code/products/:productId/book/upload
  *
- * Uploads the optional pre-built eBook download (PDF or ZIP) to R2 and stores
- * its public media URL on the product as `bookDownloadUrl`. The DB column is
- * read back only by the entitlement-gated /book-content endpoint, so the URL
- * never reaches a non-buyer.
+ * Uploads one eBook asset to R2 and stores its public media URL on the
+ * product. Which column is written is chosen by the form-data `field`
+ * parameter (default "book", backwards compatible):
+ *
+ *   field    form file key  accepts     writes           URL mode
+ *   book     book           PDF / ZIP   bookDownloadUrl  ?download=1 (buyers)
+ *   pdf      book           PDF         pdfUrl           ?download=1 (premium)
+ *   sample   book           PDF         samplePdfUrl     inline (public sample)
+ *   cover    book           image/*     coverImageUrl    inline (store grid)
+ *
+ * The paid columns (bookDownloadUrl, pdfUrl) are read back only by
+ * entitlement-gated endpoints, so those URLs never reach a non-buyer.
  */
 export async function handleAdminBookUpload(
   req: Request,
@@ -525,11 +533,29 @@ export async function handleAdminBookUpload(
       });
     }
 
+    const field = String(form.get("field") || "book").trim().toLowerCase();
+    const FIELD_MAP: Record<string, { column: string; kinds: Array<"pdf" | "zip" | "image">; download: boolean }> = {
+      book:   { column: "bookDownloadUrl", kinds: ["pdf", "zip"], download: true },
+      pdf:    { column: "pdfUrl",          kinds: ["pdf"],        download: true },
+      sample: { column: "samplePdfUrl",    kinds: ["pdf"],        download: false },
+      cover:  { column: "coverImageUrl",   kinds: ["image"],      download: false },
+    };
+    const cfg = FIELD_MAP[field] || FIELD_MAP.book;
+
     const isPdf = file.type === "application/pdf" || /\.pdf$/i.test(file.name);
     const isZip = /\.zip$/i.test(file.name) || file.type === "application/zip";
-    if (!isPdf && !isZip) {
+    const isImage = file.type.startsWith("image/") || /\.(png|jpe?g|webp|gif|avif|svg)$/i.test(file.name);
+    const kindOk =
+      (cfg.kinds.includes("pdf") && isPdf) ||
+      (cfg.kinds.includes("zip") && isZip) ||
+      (cfg.kinds.includes("image") && isImage);
+    if (!kindOk) {
+      const label =
+        cfg.kinds.includes("image") ? "an image (PNG, JPG, WebP)"
+        : cfg.kinds.includes("zip") ? "a .pdf or .zip file"
+        : "a .pdf file";
       return new Response(
-        JSON.stringify({ error: "Only .pdf or .zip files are accepted for the eBook download", code: "BAD_TYPE" }),
+        JSON.stringify({ error: `Only ${label} is accepted for the "${field}" upload`, code: "BAD_TYPE" }),
         { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) } }
       );
     }
@@ -541,23 +567,21 @@ export async function handleAdminBookUpload(
     }
 
     const safeName = file.name.replace(/[^a-z0-9._-]+/gi, "-").toLowerCase();
-    const key = `products/${productId}/book/${safeName}`;
+    const key = `products/${productId}/${field}/${safeName}`;
     // Stream directly to R2 — never buffer the full file in memory.
     // Buffering (file.arrayBuffer()) breaks on larger PDFs (Worker memory
     // limits); file.stream() pipes the body straight into the bucket.
-    await putObject(
-      env.STEA_BUCKET,
-      key,
-      file.stream(),
-      isPdf ? "application/pdf" : "application/zip"
-    );
+    const contentType =
+      file.type ||
+      (isPdf ? "application/pdf" : isZip ? "application/zip" : "application/octet-stream");
+    await putObject(env.STEA_BUCKET, key, file.stream(), contentType);
 
     // ?download=1 forces Content-Disposition: attachment on the media route.
-    const url = `/api/stea-code/media/${key}?download=1`;
-    await setDoc(env, PRODUCTS_COLLECTION, productId, { bookDownloadUrl: url }, true);
+    const url = `/api/stea-code/media/${key}${cfg.download ? "?download=1" : ""}`;
+    await setDoc(env, PRODUCTS_COLLECTION, productId, { [cfg.column]: url }, true);
 
     return new Response(
-      JSON.stringify({ success: true, key, url, filename: safeName, size: file.size }),
+      JSON.stringify({ success: true, key, url, field, column: cfg.column, filename: safeName, size: file.size }),
       { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) } }
     );
   } catch (e: any) {
@@ -966,6 +990,124 @@ export async function handleAdminEntitlements(req: Request, env: Env): Promise<R
 }
 
 /**
+ * GET /api/admin/users
+ *
+ * Owner-only directory of EVERY person in the database — merges `users`
+ * (email-gate signups, Firebase customers) with `staff_users` (team
+ * members). No filters are applied to the total, so the header count in the
+ * Admin panel stays consistent with the visible list.
+ *
+ * Query params: ?q=<search> (email filter) · ?page=1&pageSize=50 (max 200)
+ */
+export async function handleAdminUsersList(req: Request, env: Env): Promise<Response> {
+  const admin = await requireOwner(req, env);
+  if (!admin) {
+    return new Response(JSON.stringify({ error: "Owner only", code: "OWNER_ONLY" }), {
+      status: 403,
+      headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) },
+    });
+  }
+  try {
+    const url = new URL(req.url);
+    const q = (url.searchParams.get("q") || "").trim().toLowerCase();
+    const page = Math.max(1, parseInt(url.searchParams.get("page") || "1", 10) || 1);
+    const pageSize = Math.min(200, Math.max(1, parseInt(url.searchParams.get("pageSize") || "50", 10) || 50));
+
+    // 1. Order aggregates (by users.id AND staff_users.id — staff never buy,
+    //    but join with COALESCE keeps the shape uniform).
+    const aggRows = await env.DB.prepare(
+      `SELECT userId, COUNT(*) AS cnt, COALESCE(SUM(amount), 0) AS spent
+         FROM orders
+        WHERE status IN ('paid','complete','succeeded')
+        GROUP BY userId`
+    ).all();
+    const orderAgg: Record<string, { count: number; total: number }> = {};
+    for (const r of (aggRows.results || []) as any[]) {
+      const uid = String(r.userId || "");
+      if (!uid) continue;
+      orderAgg[uid] = { count: Number(r.cnt || 0), total: Number(r.spent || 0) };
+    }
+
+    // 2. Staff first — we remember their emails so we skip duplicate rows
+    //    from the `users` table (a staff member may also have an email-gate
+    //    row). Staff get `provider: "staff"` so the UI can label them.
+    const staffRows = await env.DB.prepare(
+      `SELECT id, email, display_name, role, status, created_at, last_login_at
+         FROM staff_users ORDER BY created_at DESC`
+    ).all();
+    const staffEmails = new Set<string>();
+    const staff: any[] = ((staffRows.results || []) as any[]).map((r) => {
+      const email = String(r.email || "");
+      staffEmails.add(email.toLowerCase());
+      return {
+        id: String(r.id),
+        email,
+        displayName: r.display_name || email.split("@")[0] || null,
+        role: r.role || "member",
+        status: r.status || "active",
+        disabled: r.status === "revoked" ? 1 : 0,
+        provider: "staff",
+        createdAt: r.created_at || null,
+        lastLoginAt: r.last_login_at || null,
+        lastActiveAt: r.last_login_at || null,
+        orderCount: 0,
+        totalSpent: 0,
+      };
+    });
+
+    // 3. Everybody from `users` — every provider, no role filter.
+    const userRows = await env.DB.prepare(
+      `SELECT id, email, displayName, role, status, disabled, provider,
+              createdAt, lastLoginAt, lastActiveAt
+         FROM users ORDER BY createdAt DESC`
+    ).all();
+    const customers: any[] = ((userRows.results || []) as any[])
+      .filter((u) => !staffEmails.has(String(u.email || "").toLowerCase()))
+      .map((u) => {
+        const id = String(u.id || "");
+        const agg = orderAgg[id] || { count: 0, total: 0 };
+        return {
+          id,
+          email: String(u.email || ""),
+          displayName: u.displayName || null,
+          role: u.role || "user",
+          status: u.status || "active",
+          disabled: u.disabled ? 1 : 0,
+          provider: u.provider || "unknown",
+          createdAt: u.createdAt || null,
+          lastLoginAt: u.lastLoginAt || u.lastActiveAt || null,
+          lastActiveAt: u.lastActiveAt || null,
+          orderCount: agg.count,
+          totalSpent: agg.total,
+        };
+      });
+
+    // 4. Merge, sort newest first. This is the COMPLETE directory.
+    const merged = [...staff, ...customers].sort((a, b) =>
+      String(b.createdAt || "").localeCompare(String(a.createdAt || ""))
+    );
+
+    // 5. Search filter + pagination (client-side over the merged set).
+    const filtered = q
+      ? merged.filter((u) => String(u.email || "").toLowerCase().includes(q))
+      : merged;
+    const total = filtered.length;
+    const start = (page - 1) * pageSize;
+    const rows = filtered.slice(start, start + pageSize);
+
+    return new Response(
+      JSON.stringify({ ok: true, users: rows, total, page, pageSize }),
+      { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) } }
+    );
+  } catch (e: any) {
+    return new Response(JSON.stringify({ error: e?.message || "Failed to list users" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) },
+    });
+  }
+}
+
+/**
  * GET /admin/stea-code/users
  *
  * Returns a combined list of:
@@ -1042,7 +1184,8 @@ export async function handleAdminUsers(req: Request, env: Env): Promise<Response
         disabled: u.disabled ?? 0,
         role: u.role || "member",
         source: String(u.provider || "") === "firebase" ? "firebase" : "unknown",
-        lastLoginAt: u.lastLoginAt || null,
+        lastLoginAt: u.lastLoginAt || u.lastActiveAt || null,
+        lastActiveAt: u.lastActiveAt || null,
         createdAt: u.createdAt || null,
         orderCount: agg.count,
         totalSpent: agg.total,

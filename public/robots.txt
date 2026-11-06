@@ -1,14 +1,32 @@
+# Block API paths for every crawler — these are JSON endpoints, not pages,
+# and they waste crawl budget / pollute AI crawl stats.
 User-agent: *
+Disallow: /api/
 Allow: /
 
-# Explicitly allow AI Crawlers
+# Explicitly allow AI Crawlers (content pages only, not API)
 User-agent: GPTBot
+Disallow: /api/
 Allow: /
 
 User-agent: ChatGPT-User
+Disallow: /api/
 Allow: /
 
 User-agent: PerplexityBot
+Disallow: /api/
+Allow: /
+
+User-agent: Google-Extended
+Disallow: /api/
+Allow: /
+
+User-agent: Bytespider
+Disallow: /api/
+Allow: /
+
+User-agent: Baiduspider
+Disallow: /api/
 Allow: /
 
 Sitemap: https://steacode.com/sitemap.xml

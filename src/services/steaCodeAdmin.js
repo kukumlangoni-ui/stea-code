@@ -487,24 +487,31 @@ export async function uploadSteaCodePackage(productId, file, options = {}) {
 }
 
 /**
- * Upload the optional pre-built eBook download (PDF or ZIP) to R2.
- * The worker stores the resulting media URL on the product as
- * `bookDownloadUrl` and returns it.
+ * Upload one eBook asset (PDF / ZIP / cover image) to R2.
+ * The worker stores the resulting media URL on the product column chosen by
+ * `options.field` and returns it:
+ *   "book"   (default) → bookDownloadUrl  (PDF/ZIP, buyers' download)
+ *   "pdf"              → pdfUrl           (PDF, premium full download)
+ *   "sample"           → samplePdfUrl     (PDF, public sample)
+ *   "cover"            → coverImageUrl    (image, store grid cover)
  *
  * @param {string} productId
  * @param {File} file
  * @param {Object} [options]
+ * @param {"book"|"pdf"|"sample"|"cover"} [options.field="book"]
  * @param {function(number):void} [options.onProgress] - Progress callback (0-100)
- * @returns {Promise<{success: boolean, key: string, url: string, filename: string, size: number}>}
+ * @returns {Promise<{success: boolean, key: string, url: string, field: string, column: string, filename: string, size: number}>}
  */
 export async function uploadSteaCodeBookFile(productId, file, options = {}) {
+  const { field = "book", ...rest } = options;
   const formData = new FormData();
   formData.append("book", file);
+  formData.append("field", field);
 
   return uploadWithProgress(
     `/api/admin/stea-code/products/${encodeURIComponent(productId)}/book/upload`,
     formData,
-    { timeoutMs: 600000, totalBytes: file?.size || 0, ...options }
+    { timeoutMs: 600000, totalBytes: file?.size || 0, ...rest }
   );
 }
 
@@ -569,14 +576,14 @@ export async function getAdminSteaCodeEntitlements(options = {}) {
 }
 
 /**
- * Combined Firebase customers + staff members from the `users` list
- * endpoint (owner-only on the backend).
+ * Customer directory from the D1 `users` table (email-gate signups +
+ * synced Firebase customers), with order aggregates. Owner-only backend.
  */
 export async function getAdminSteaCodeUsers(options = {}) {
   const force = options?.force || false;
   const t = force ? `?t=${Date.now()}` : "";
   try {
-    return await request(`/api/admin/stea-code/users${t}`);
+    return await request(`/api/admin/users${t}`);
   } catch (err) {
     if (err?.code === "AUTH_REQUIRED") throw err;
     return { users: [], _fallback: true };

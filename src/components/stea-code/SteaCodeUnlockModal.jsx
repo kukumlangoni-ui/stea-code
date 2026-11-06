@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, useReducedMotion } from "framer-motion";
-import { getFirebaseAuth } from "../../firebase.js";
+import { fetchCloudflareSession, getCloudflareLoginUrl } from "../../hooks/useCloudflareAuth.js";
 import SteaCodeLogo from "./SteaCodeLogo.jsx";
 
 /**
@@ -151,11 +151,10 @@ export default function SteaCodeUnlockModal({ product, onClose, onPurchased }) {
     setError("");
     setLoading("product");
     try {
-      const auth = getFirebaseAuth();
-      const user = auth.currentUser;
-      if (!user) {
+      const email = await fetchCloudflareSession();
+      if (!email) {
         // Edge case: user reached modal while signed out.
-        // Save intent, close modal, open sign-in instead of showing error.
+        // Save intent, then send them through Cloudflare Access.
         try {
           sessionStorage.setItem("stea_pending_action", JSON.stringify({
             type: "unlock",
@@ -165,17 +164,14 @@ export default function SteaCodeUnlockModal({ product, onClose, onPurchased }) {
           // sessionStorage may be unavailable in private browsing
         }
         onClose?.();
-        window.dispatchEvent(new Event("open-auth"));
+        window.location.assign(getCloudflareLoginUrl());
         return;
       }
-      const token = await user.getIdToken(true);
 
       const res = await fetch("/api/stea-code/checkout-product", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ productId }),
       });
 
@@ -196,17 +192,16 @@ export default function SteaCodeUnlockModal({ product, onClose, onPurchased }) {
     setError("");
     setLoading("pro");
     try {
-      const auth = getFirebaseAuth();
-      const user = auth.currentUser;
-      if (!user) throw new Error("Not signed in");
-      const token = await user.getIdToken(true);
+      const email = await fetchCloudflareSession();
+      if (!email) {
+        window.location.assign(getCloudflareLoginUrl());
+        return;
+      }
 
       const res = await fetch("/api/stea-code/checkout", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({}),
       });
 

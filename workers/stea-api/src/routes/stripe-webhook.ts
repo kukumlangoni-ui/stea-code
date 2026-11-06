@@ -173,6 +173,26 @@ export async function handleStripeWebhook(req: Request, env: WorkerEnv): Promise
           )
           .run();
 
+        // Email-keyed purchase row — this is what the Cloudflare Access
+        // download gate reads (see routes/download.ts).
+        if (email) {
+          const purchaseExtra = JSON.stringify({ email, uid, purchaseType });
+          await env.DB.prepare(
+            `INSERT OR REPLACE INTO purchases
+               (id, email, productId, orderId, status, grantedAt, expiresAt, extraData)
+             VALUES (?, ?, ?, ?, 'paid', ?, NULL, ?)`
+          )
+            .bind(
+              sessionId,
+              email.trim().toLowerCase(),
+              productId,
+              sessionId,
+              now,
+              purchaseExtra
+            )
+            .run();
+        }
+
         console.log(`[stripe-webhook] Granted ${productId} (${purchaseType === "product" ? "single" : "lifetime"}) to ${email} (${uid})`);
       } catch (dbErr: any) {
         console.error("[stripe-webhook] DB insert failed:", dbErr?.message || dbErr);

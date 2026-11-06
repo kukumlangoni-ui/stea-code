@@ -1,770 +1,473 @@
-/* =============================================================
- * steacode — Dedicated Member Gate component
- * Light, premium, developer-focused. SAME Firebase / Google auth.
- * ============================================================= */
-
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Check, X, Loader2 } from "lucide-react";
-import {
-  GoogleAuthProvider,
-  getFirebaseAuth,
-  signInWithPopup,
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  sendPasswordResetEmail,
-} from "../../firebase.js";
-import { sendEmailVerification } from "firebase/auth";
-import { useSteaCodeI18n } from "./useSteaCodeI18n.js";
-import { touchSteaCodeMemberProfile } from "../../services/steaCodeMemberService.js";
-import {
-  clearSteaCodePendingAction,
-  getSteaCodePendingAction,
-  setSteaCodePendingAction,
-} from "../../services/steaCodeResumeAction.js";
-import { trackUserEvent } from "../../services/analytics.js";
-import { getSteaCodeProduct, getSteaCodeProductPreview } from "../../services/steaCodeCommerce.js";
-import { fetchEntitlements } from "../../services/steaCodeEntitlements.js";
+import "./stea-code-member-gate.css";
 
-const I18N = {
-  en: {
-    title: "Join steacode",
-    subtitle: "Save your purchases and access them anywhere.",
-    googleButton: "Continue with Google",
-    connecting: "Connecting…",
-    featureAccount: "Free developer account",
-    featureAccess: "Access your purchased code",
-    featureSame: "Same STEA account everywhere",
-    alreadyMember: "Already a STEA member?",
-    sameAccount: "Continue using the same Google account.",
-    close: "Close member gate",
-    cancelError: "Google sign-in was cancelled.",
-    connectError: "We couldn't connect your account. Please try again.",
-    providerError: "This Google account could not be used right now.",
-    emailLabel: "Email",
-    emailPlaceholder: "you@example.com",
-    passwordLabel: "Password",
-    passwordPlaceholder: "••••••••",
-    confirmPasswordLabel: "Confirm password",
-    orDivider: "or",
-    signInBtn: "Sign in",
-    signingIn: "Signing in…",
-    signUpBtn: "Create account",
-    signingUp: "Creating account…",
-    toggleToSignUp: "New to steacode?",
-    toggleToSignUpLink: "Create an account",
-    toggleToSignIn: "Already have an account?",
-    toggleToSignInLink: "Sign in",
-    forgotPassword: "Forgot password?",
-    resetSent: "Password reset email sent.",
-    resetHint: "Enter your email and we'll send you a reset link.",
-    emailRequired: "Please enter your email.",
-    passwordRequired: "Please enter your password.",
-    passwordTooShort: "Password must be at least 6 characters.",
-    passwordMismatch: "Passwords do not match.",
-    invalidEmail: "That email doesn't look right.",
-    wrongPassword: "Wrong email or password.",
-    emailInUse: "That email is already registered.",
-    weakPassword: "Password is too weak.",
-    genericAuthError: "Something went wrong. Please try again.",
-  },
-  zhCN: {
-    title: "加入 steacode",
-    subtitle: "保存购买记录，随时随地访问。",
-    googleButton: "使用 Google 继续",
-    connecting: "正在连接…",
-    featureAccount: "免费开发者账户",
-    featureAccess: "访问你已购买的代码",
-    featureSame: "同一个 STEA 账户，随处使用",
-    alreadyMember: "已经是 STEA 成员？",
-    sameAccount: "继续使用同一个 Google 账户。",
-    close: "关闭会员入口",
-    cancelError: "Google 登录已取消。",
-    connectError: "我们无法连接你的账户。请重试。",
-    providerError: "该 Google 账户暂时无法使用。",
-    emailLabel: "邮箱",
-    emailPlaceholder: "you@example.com",
-    passwordLabel: "密码",
-    passwordPlaceholder: "••••••••",
-    confirmPasswordLabel: "确认密码",
-    orDivider: "或",
-    signInBtn: "登录",
-    signingIn: "登录中…",
-    signUpBtn: "创建账户",
-    signingUp: "创建中…",
-    toggleToSignUp: "新用户？",
-    toggleToSignUpLink: "创建账户",
-    toggleToSignIn: "已有账户？",
-    toggleToSignInLink: "登录",
-    forgotPassword: "忘记密码？",
-    resetSent: "密码重置邮件已发送。",
-    resetHint: "请输入邮箱，我们会发送重置链接。",
-    emailRequired: "请输入邮箱。",
-    passwordRequired: "请输入密码。",
-    passwordTooShort: "密码至少需要 6 位。",
-    passwordMismatch: "两次密码不一致。",
-    invalidEmail: "邮箱格式不正确。",
-    wrongPassword: "邮箱或密码错误。",
-    emailInUse: "该邮箱已注册。",
-    weakPassword: "密码强度过低。",
-    genericAuthError: "出错了，请重试。",
-  },
-  sw: {
-    title: "Join steacode",
-    subtitle: "Save your purchases and access them anywhere.",
-    googleButton: "Continue with Google",
-    connecting: "Connecting…",
-    featureAccount: "Free developer account",
-    featureAccess: "Access your purchased code",
-    featureSame: "Same STEA account everywhere",
-    alreadyMember: "Already a STEA member?",
-    sameAccount: "Continue using the same Google account.",
-    close: "Close member gate",
-    cancelError: "Google sign-in was cancelled.",
-    connectError: "We couldn't connect your account. Please try again.",
-    providerError: "This Google account could not be used right now.",
-    emailLabel: "Email",
-    emailPlaceholder: "you@example.com",
-    passwordLabel: "Password",
-    passwordPlaceholder: "••••••••",
-    confirmPasswordLabel: "Confirm password",
-    orDivider: "or",
-    signInBtn: "Sign in",
-    signingIn: "Signing in…",
-    signUpBtn: "Create account",
-    signingUp: "Creating account…",
-    toggleToSignUp: "New to steacode?",
-    toggleToSignUpLink: "Create an account",
-    toggleToSignIn: "Already have an account?",
-    toggleToSignInLink: "Sign in",
-    forgotPassword: "Forgot password?",
-    resetSent: "Password reset email sent.",
-    resetHint: "Enter your email and we'll send you a reset link.",
-    emailRequired: "Please enter your email.",
-    passwordRequired: "Please enter your password.",
-    passwordTooShort: "Password must be at least 6 characters.",
-    passwordMismatch: "Passwords do not match.",
-    invalidEmail: "That email doesn't look right.",
-    wrongPassword: "Wrong email or password.",
-    emailInUse: "That email is already registered.",
-    weakPassword: "Password is too weak.",
-    genericAuthError: "Something went wrong. Please try again.",
-  },
-};
+const CODE_LENGTH = 6;
 
-function tField(uiLocale, key) {
-  const locale = uiLocale === "zhCN" ? "zhCN" : uiLocale === "sw" ? "sw" : "en";
-  return I18N[locale]?.[key] ?? I18N.en[key] ?? key;
+/**
+ * POST JSON and surface the Worker's `error` string, its `detail`, and the
+ * HTTP status. A 200 response that is NOT JSON (e.g. the SPA fallback page)
+ * is treated as a failure instead of silently "succeeding".
+ */
+async function postJson(url, payload) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 15000);
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    });
+
+    const text = await res.text();
+    let data = null;
+    if (text) {
+      try {
+        data = JSON.parse(text);
+      } catch {
+        data = null;
+      }
+    }
+
+    if (!res.ok) {
+      const err = new Error((data && data.error) || `Request failed (${res.status})`);
+      err.detail = (data && data.detail) || (data ? null : text.slice(0, 160));
+      err.status = res.status;
+      throw err;
+    }
+    if (!data) {
+      const err = new Error("The sign-in API returned an unexpected response.");
+      err.detail = `HTTP ${res.status} but the body was not JSON — check that /api/* is routed to the stea-api Worker.`;
+      err.status = res.status;
+      throw err;
+    }
+    return data;
+  } catch (e) {
+    if (e.name === "AbortError") {
+      const err = new Error("Request timed out. Please try again.");
+      err.detail = "No response from /api/auth within 15s.";
+      throw err;
+    }
+    throw e;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
-function humanAuthError(error, uiLocale) {
-  const code = String(error?.code || "").toLowerCase();
-  const message = String(error?.message || "").toLowerCase();
-  if (
-    code.includes("popup-closed-by-user") ||
-    code.includes("cancelled-popup") ||
-    code.includes("auth/cancelled") ||
-    message.includes("popup closed") ||
-    message.includes("closed by user")
-  ) {
-    return tField(uiLocale, "cancelError");
-  }
-  if (
-    code.includes("network") ||
-    code.includes("timeout") ||
-    code.includes("unavailable")
-  ) {
-    return tField(uiLocale, "connectError");
-  }
-  if (
-    code.includes("invalid") ||
-    code.includes("disabled") ||
-    code.includes("operation-not-allowed") ||
-    code.includes("provider") ||
-    code.includes("credential")
-  ) {
-    return tField(uiLocale, "providerError");
-  }
-  return tField(uiLocale, "connectError");
-}
-
-function humanEmailAuthError(error, uiLocale) {
-  const code = String(error?.code || "").toLowerCase();
-  const map = {
-    "auth/invalid-email": "invalidEmail",
-    "auth/wrong-password": "wrongPassword",
-    "auth/user-not-found": "wrongPassword",
-    "auth/invalid-credential": "wrongPassword",
-    "auth/email-already-in-use": "emailInUse",
-    "auth/weak-password": "weakPassword",
-    "auth/too-many-requests": "genericAuthError",
-    "auth/network-request-failed": "genericAuthError",
-  };
-  const key = map[code] || "genericAuthError";
-  return tField(uiLocale, key);
-}
+const emptyDigits = () => Array(CODE_LENGTH).fill("");
 
 export default function SteaCodeMemberGate({
-  open = false,
-  pendingAction = null,
-  locale: localeProp,
+  open,
+  pendingAction,
   onClose,
   onAuthenticated,
+  // Accepted for callers that already pass a locale; the copy stays English
+  // like the rest of the auth surface.
+  locale: _locale,
 }) {
-  const { uiLocale: hookLocale } = useSteaCodeI18n();
-  const uiLocale = localeProp || hookLocale || "en";
-
-  const [loading, setLoading] = useState(false);
-  const [authMessage, setAuthMessage] = useState("");
-  const [error, setError] = useState("");
-
-  const [mode, setMode] = useState("signIn"); // "signIn" | "signUp"
+  const [step, setStep] = useState(1);
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [emailLoading, setEmailLoading] = useState(false);
-  const [emailError, setEmailError] = useState("");
-  const [showReset, setShowReset] = useState(false);
-  const [resetSuccess, setResetSuccess] = useState(false);
+  const [digits, setDigits] = useState(emptyDigits);
+  const [feedback, setFeedback] = useState(null); // { message, detail }
+  const [notice, setNotice] = useState("");
+  const [loading, setLoading] = useState(false); // send-code / resend in flight
+  const [phase, setPhase] = useState("entry"); // entry -> orbit -> spinner -> success
+  const [errorFlash, setErrorFlash] = useState(false);
 
-  const dialogRef = useRef(null);
-  const closeBtnRef = useRef(null);
-  const googleBtnRef = useRef(null);
+  const emailRef = useRef(null);
+  const digitRefs = useRef([]);
+  const startedAtRef = useRef(0);
+  const timersRef = useRef([]);
 
-  const resolvedPending = useMemo(() => {
-    if (pendingAction) return pendingAction;
-    return getSteaCodePendingAction();
-  }, [pendingAction, open]);
+  const code = useMemo(() => digits.join(""), [digits]);
+  const busy = phase === "orbit" || phase === "spinner" || phase === "success";
 
-  useEffect(() => {
-    if (open) {
-      setError("");
-      setEmailError("");
-      setResetSuccess(false);
-      setShowReset(false);
-      if (pendingAction) {
-        setSteaCodePendingAction(pendingAction);
-      }
-    }
-  }, [open, pendingAction]);
-
-  // Resume pending action on modal mount if user is authenticated
-  useEffect(() => {
-    try {
-      const raw = typeof window !== "undefined" ? window.sessionStorage.getItem("stea_pending_action") : null;
-      if (!raw) return;
-      const pending = JSON.parse(raw);
-      const auth = getFirebaseAuth();
-      const currentUser = auth?.currentUser;
-      if (currentUser && pending && pending.productId) {
-        window.sessionStorage.removeItem("stea_pending_action");
-        if (pending.type === "download") {
-          window.location.href = `/api/stea-code/products/${encodeURIComponent(pending.productId)}/download`;
-          void trackUserEvent("download", { productId: pending.productId, email: currentUser?.email || "" });
-        } else if (pending.type === "copy-source" || pending.type === "copy-prompt") {
-          void (async () => {
-            try {
-              // Fetch the product to check if it's premium
-              const prod = await getSteaCodeProduct(pending.productId);
-              const isPremium = String(prod?.pricingType || "").toLowerCase() === "premium";
-
-              // For premium products, verify the user has access before copying
-              if (isPremium) {
-                const entitlements = await fetchEntitlements();
-                const hasProLifetime = entitlements?.hasProLifetime === true;
-                const ownsProduct = entitlements?.productIds?.has?.(pending.productId) === true;
-                if (!hasProLifetime && !ownsProduct) {
-                  // No access — open the unlock modal instead of copying
-                  try {
-                    sessionStorage.removeItem("stea_pending_action");
-                  } catch {
-                    /* sessionStorage may be unavailable */
-                  }
-                  window.dispatchEvent(
-                    new CustomEvent("stea:open-unlock", {
-                      detail: { productId: pending.productId },
-                    })
-                  );
-                  return;
-                }
-              }
-
-              let text = "";
-              if (pending.type === "copy-prompt") {
-                text = String(prod?.aiPrompt || "");
-              } else {
-                const preview = await getSteaCodeProductPreview(pending.productId);
-                text = String(preview?.sourceCodeHtml || preview?.preview || "");
-                if (!text) {
-                  text = String(prod?.sourceCode || "");
-                }
-              }
-              if (text && navigator.clipboard && window.isSecureContext) {
-                await navigator.clipboard.writeText(text);
-                void trackUserEvent("copy", { productId: pending.productId, email: currentUser?.email || "" });
-              }
-            } catch (err) {
-              console.warn("[MemberGate] Resumed copy failed:", err);
-            }
-          })();
-        }
-      }
-    } catch (e) {
-      console.warn("[MemberGate] failed to resume pending action on mount:", e);
-    }
+  const clearTimers = useCallback(() => {
+    timersRef.current.forEach((id) => window.clearTimeout(id));
+    timersRef.current = [];
   }, []);
 
+  // Reset the flow every time the modal opens; focus the right field.
   useEffect(() => {
-    if (!open) return undefined;
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    const initialFocusTimer = window.setTimeout(() => {
-      if (closeBtnRef.current) closeBtnRef.current.focus();
-      else if (googleBtnRef.current) googleBtnRef.current.focus();
-    }, 40);
-    const onKey = (e) => {
-      if (e.key === "Escape") {
-        e.preventDefault();
-        onClose?.();
-      } else if (e.key === "Tab") {
-        const container = dialogRef.current;
-        if (!container) return;
-        const focusables = container.querySelectorAll(
-          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-        );
-        if (!focusables.length) return;
-        const first = focusables[0];
-        const last = focusables[focusables.length - 1];
-        if (e.shiftKey && document.activeElement === first) {
-          e.preventDefault();
-          last.focus();
-        } else if (!e.shiftKey && document.activeElement === last) {
-          e.preventDefault();
-          first.focus();
-        }
-      }
-    };
-    window.addEventListener("keydown", onKey, true);
-    return () => {
-      window.clearTimeout(initialFocusTimer);
-      window.removeEventListener("keydown", onKey, true);
-      document.body.style.overflow = prevOverflow;
-    };
-  }, [open, onClose]);
-
-  const handleClose = useCallback(() => {
-    if (loading || emailLoading) return;
-    const user = getFirebaseAuth()?.currentUser;
-    if (!user) {
-      clearSteaCodePendingAction();
-    }
-    onClose?.();
-  }, [loading, emailLoading, onClose]);
-
-  const doGoogle = useCallback(async () => {
-    const auth = getFirebaseAuth();
-
-    if (!auth) {
-      setError(tField(uiLocale, "connectError"));
+    if (!open) {
+      clearTimers();
       return;
     }
+    setStep(1);
+    setDigits(emptyDigits());
+    setFeedback(null);
+    setNotice("");
+    setLoading(false);
+    setPhase("entry");
+    setErrorFlash(false);
+    const id = window.setTimeout(() => emailRef.current?.focus(), 50);
+    timersRef.current.push(id);
+    return () => clearTimers();
+  }, [open, clearTimers]);
 
-    if (loading || emailLoading) return;
+  // Escape closes the modal — but never mid-verification.
+  useEffect(() => {
+    if (!open) return undefined;
+    const onKey = (e) => {
+      if (e.key === "Escape" && !loading && !busy) onClose && onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, loading, busy, onClose]);
 
+  const focusDigit = (index) => {
+    const el = digitRefs.current[index];
+    if (el) {
+      el.focus();
+      el.select && el.select();
+    }
+  };
+
+  const handleSendCode = async (e) => {
+    e.preventDefault();
+    const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail) {
+      setFeedback({ message: "Enter your email address.", detail: null });
+      return;
+    }
     setLoading(true);
-    setError("");
-    setEmailError("");
-    setAuthMessage("");
-
+    setFeedback(null);
+    setNotice("");
     try {
-      const provider = new GoogleAuthProvider();
-
-      provider.setCustomParameters({
-        prompt: "select_account",
-      });
-
-      const result = await signInWithPopup(auth, provider);
-
-      if (!result?.user) {
-        throw new Error("Google authentication returned no user.");
+      const data = await postJson("/api/auth/send-code", { email: cleanEmail });
+      setEmail(cleanEmail);
+      setDigits(emptyDigits());
+      setPhase("entry");
+      setStep(2);
+      if (data && data.emailSent === false) {
+        setNotice(data.warning || "The email could not be sent, but a code was created.");
       }
-
-      void touchSteaCodeMemberProfile().catch((profileError) => {
-        console.warn(
-          "[STEA CODE] Member profile sync failed after successful authentication:",
-          profileError?.code || profileError?.message || "unknown"
-        );
-      });
-
-      const action = getSteaCodePendingAction();
-      clearSteaCodePendingAction();
-      onAuthenticated?.(result.user, action);
+      const id = window.setTimeout(() => focusDigit(0), 60);
+      timersRef.current.push(id);
     } catch (err) {
-      console.error("[STEA CODE MEMBER AUTH]", {
-        code: err?.code || null,
-        message: err?.message || "Unknown authentication error",
-      });
-
-      setError(humanAuthError(err, uiLocale));
+      setFeedback({ message: err.message, detail: err.detail || null });
     } finally {
       setLoading(false);
     }
-  }, [loading, emailLoading, onAuthenticated, uiLocale]);
+  };
 
-  const doEmailAuth = useCallback(async () => {
-    const auth = getFirebaseAuth();
-    if (!auth) {
-      setEmailError(tField(uiLocale, "connectError"));
-      return;
-    }
+  const verify = useCallback(
+    async (fullCode) => {
+      if (phase !== "entry") return;
+      startedAtRef.current = Date.now();
+      setFeedback(null);
+      setPhase("orbit");
+      // Orbit masks the network round-trip; a spinner takes over if the API is
+      // slower than the animation.
+      const orbitTimer = window.setTimeout(() => {
+        setPhase((p) => (p === "orbit" ? "spinner" : p));
+      }, 900);
+      timersRef.current.push(orbitTimer);
 
-    const cleanEmail = email.trim().toLowerCase();
-    if (!cleanEmail) {
-      setEmailError(tField(uiLocale, "emailRequired"));
-      return;
+      try {
+        await postJson("/api/auth/verify-code", { email: email.trim().toLowerCase(), code: fullCode });
+        window.dispatchEvent(new Event("stea-auth-changed"));
+
+        // Let the orbit finish so success never snaps in mid-animation.
+        const elapsed = Date.now() - startedAtRef.current;
+        const wait = Math.max(0, 900 - elapsed);
+        const successTimer = window.setTimeout(() => {
+          setPhase("success");
+          const finishTimer = window.setTimeout(() => {
+            if (onAuthenticated) onAuthenticated({ email }, pendingAction);
+            else if (onClose) onClose();
+          }, 1100);
+          timersRef.current.push(finishTimer);
+        }, wait);
+        timersRef.current.push(successTimer);
+      } catch (err) {
+        clearTimers();
+        setPhase("entry");
+        setDigits(emptyDigits());
+        setFeedback({ message: err.message, detail: err.detail || null });
+        setErrorFlash(true);
+        const id = window.setTimeout(() => {
+          setErrorFlash(false);
+          focusDigit(0);
+        }, 550);
+        timersRef.current.push(id);
+      }
+    },
+    [clearTimers, email, onAuthenticated, onClose, pendingAction, phase]
+  );
+
+  // Auto-submit the moment the sixth digit lands — no Verify button.
+  useEffect(() => {
+    if (step !== 2 || phase !== "entry") return;
+    if (code.length === CODE_LENGTH) verify(code);
+  }, [code, phase, step, verify]);
+
+  const applyDigits = (next) => {
+    setDigits(next);
+    const firstEmpty = next.findIndex((d) => !d);
+    focusDigit(firstEmpty === -1 ? CODE_LENGTH - 1 : firstEmpty);
+  };
+
+  const handleDigitChange = (index, raw) => {
+    if (phase !== "entry") return;
+    const cleaned = raw.replace(/\D/g, "");
+    const next = [...digits];
+    if (cleaned.length > 1) {
+      // Autofill / fast paste into one box: spread it across the row.
+      cleaned
+        .slice(0, CODE_LENGTH - index)
+        .split("")
+        .forEach((d, i) => {
+          next[index + i] = d;
+        });
+    } else {
+      next[index] = cleaned;
     }
-    if (!cleanEmail.includes("@") || !cleanEmail.includes(".")) {
-      setEmailError(tField(uiLocale, "invalidEmail"));
-      return;
-    }
-    if (!password) {
-      setEmailError(tField(uiLocale, "passwordRequired"));
-      return;
-    }
-    if (mode === "signUp") {
-      if (password.length < 6) {
-        setEmailError(tField(uiLocale, "passwordTooShort"));
+    applyDigits(next);
+  };
+
+  const handleDigitKeyDown = (index, e) => {
+    if (phase !== "entry") return;
+    if (e.key === "Backspace") {
+      if (digits[index]) {
+        const next = [...digits];
+        next[index] = "";
+        setDigits(next);
         return;
       }
-      if (password !== confirmPassword) {
-        setEmailError(tField(uiLocale, "passwordMismatch"));
-        return;
+      if (index > 0) {
+        const next = [...digits];
+        next[index - 1] = "";
+        setDigits(next);
+        focusDigit(index - 1);
       }
     }
+    if (e.key === "ArrowLeft" && index > 0) {
+      e.preventDefault();
+      focusDigit(index - 1);
+    }
+    if (e.key === "ArrowRight" && index < CODE_LENGTH - 1) {
+      e.preventDefault();
+      focusDigit(index + 1);
+    }
+  };
 
-    if (emailLoading || loading) return;
+  const handlePaste = (e) => {
+    if (phase !== "entry") return;
+    const pasted = (e.clipboardData || window.clipboardData)?.getData("text") || "";
+    const cleaned = pasted.replace(/\D/g, "").slice(0, CODE_LENGTH);
+    if (!cleaned) return;
+    e.preventDefault();
+    const next = emptyDigits();
+    cleaned.split("").forEach((d, i) => {
+      next[i] = d;
+    });
+    applyDigits(next);
+  };
 
-    setEmailLoading(true);
-    setEmailError("");
-    setError("");
+  const resetToEmail = () => {
+    clearTimers();
+    setStep(1);
+    setDigits(emptyDigits());
+    setFeedback(null);
+    setNotice("");
+    setPhase("entry");
+    const id = window.setTimeout(() => emailRef.current?.focus(), 50);
+    timersRef.current.push(id);
+  };
 
+  const handleResend = async () => {
+    setLoading(true);
+    setFeedback(null);
+    setNotice("");
     try {
-      let result;
-      if (mode === "signIn") {
-        result = await signInWithEmailAndPassword(auth, cleanEmail, password);
-      } else {
-        result = await createUserWithEmailAndPassword(auth, cleanEmail, password);
-      }
-
-      if (!result?.user) {
-        throw new Error("Authentication returned no user.");
-      }
-
-      // New password accounts: fire the verification email immediately.
-      // Non-blocking — failure here never blocks sign-up.
-      let verificationSent = false;
-      if (mode === "signUp") {
-        try {
-          await sendEmailVerification(result.user);
-          verificationSent = true;
-        } catch (verifyError) {
-          console.warn(
-            "[STEA CODE] Verification email failed:",
-            verifyError?.code || verifyError?.message || "unknown"
-          );
-        }
-      }
-
-      void touchSteaCodeMemberProfile().catch((profileError) => {
-        console.warn(
-          "[STEA CODE] Member profile sync failed after successful authentication:",
-          profileError?.code || profileError?.message || "unknown"
-        );
-      });
-
-      const action = getSteaCodePendingAction();
-      clearSteaCodePendingAction();
-      onAuthenticated?.(result.user, action, { isNewUser: mode === "signUp", verificationSent });
+      const data = await postJson("/api/auth/send-code", { email });
+      setDigits(emptyDigits());
+      setPhase("entry");
+      setNotice(data.emailSent === false ? data.warning || "Code re-created." : "A new code is on its way.");
+      const id = window.setTimeout(() => focusDigit(0), 60);
+      timersRef.current.push(id);
     } catch (err) {
-      console.error("[STEA CODE MEMBER EMAIL AUTH]", {
-        code: err?.code || null,
-        message: err?.message || "Unknown error",
-      });
-      setEmailError(humanEmailAuthError(err, uiLocale));
+      setFeedback({ message: err.message, detail: err.detail || null });
     } finally {
-      setEmailLoading(false);
+      setLoading(false);
     }
-  }, [email, password, confirmPassword, mode, emailLoading, loading, onAuthenticated, uiLocale]);
-
-  const doForgotPassword = useCallback(async () => {
-    const auth = getFirebaseAuth();
-    if (!auth) {
-      setEmailError(tField(uiLocale, "connectError"));
-      return;
-    }
-
-    const cleanEmail = email.trim().toLowerCase();
-    if (!cleanEmail) {
-      setEmailError(tField(uiLocale, "emailRequired"));
-      return;
-    }
-    if (!cleanEmail.includes("@") || !cleanEmail.includes(".")) {
-      setEmailError(tField(uiLocale, "invalidEmail"));
-      return;
-    }
-
-    if (emailLoading || loading) return;
-
-    setEmailLoading(true);
-    setEmailError("");
-    setResetSuccess(false);
-
-    try {
-      await sendPasswordResetEmail(auth, cleanEmail);
-      setResetSuccess(true);
-    } catch (err) {
-      console.error("[STEA CODE PASSWORD RESET]", err);
-      setEmailError(humanEmailAuthError(err, uiLocale));
-    } finally {
-      setEmailLoading(false);
-    }
-  }, [email, emailLoading, loading, uiLocale]);
+  };
 
   if (!open) return null;
 
-  const t = (k) => tField(uiLocale, k);
-  const isBusy = loading || emailLoading;
-
-  return createPortal(
-    <div className="sc-member-gate-root" data-open="1">
-      <div
-        className="sc-member-gate-backdrop"
-        onClick={handleClose}
-        aria-hidden="true"
-      />
-      <div
-        className="sc-member-gate-centered"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="sc-member-gate-title"
-        ref={dialogRef}
-      >
-        <div className="sc-member-gate-panel">
+  const dialog = (
+    <div
+      className="sc-gate"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="sc-gate-title"
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget && !loading && !busy) onClose && onClose();
+      }}
+    >
+      <div className={`sc-gate__panel${errorFlash ? " is-shaking" : ""}`}>
+        <div className="sc-gate__head">
+          <h2 className="sc-gate__title" id="sc-gate-title">
+            {step === 1 ? "Sign in to SteaCode" : phase === "success" ? "You're in" : "Check your email"}
+          </h2>
           <button
-            ref={closeBtnRef}
             type="button"
-            className="sc-member-gate-close"
-            onClick={handleClose}
-            aria-label={t("close")}
-            disabled={isBusy}
+            className="sc-gate__close"
+            onClick={onClose}
+            aria-label="Close"
+            disabled={busy}
           >
-            <X size={16} />
+            ✕
           </button>
+        </div>
 
-          {authMessage ? (
-            <div className="sc-member-gate-auth-message" role="status">
-              {authMessage}
-            </div>
-          ) : null}
+        {feedback ? (
+          <div className="sc-gate__error" role="alert">
+            {feedback.message}
+            {feedback.detail ? <span className="sc-gate__error-detail">{feedback.detail}</span> : null}
+          </div>
+        ) : null}
 
-          <div className="sc-member-gate-mark">
-            <img
-              src="/stea-code-logo.png"
-              alt=""
-              width="72"
-              height="48"
-              className="sc-member-gate-mark-img"
+        {notice ? (
+          <div className="sc-gate__notice" role="status">
+            {notice}
+          </div>
+        ) : null}
+
+        {step === 1 ? (
+          <form onSubmit={handleSendCode}>
+            <p className="sc-gate__copy">
+              Enter your email and we&apos;ll send a 6-digit login code. No password, no account to create.
+            </p>
+            <label className="sc-gate__label" htmlFor="sc-gate-email">
+              Email
+            </label>
+            <input
+              id="sc-gate-email"
+              ref={emailRef}
+              type="email"
+              required
+              autoComplete="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@example.com"
+              className="sc-gate__input"
             />
-          </div>
-
-          <h1 id="sc-member-gate-title" className="sc-member-gate-title">
-            {t("title")}
-          </h1>
-
-          <p className="sc-member-gate-subtitle">
-            {t("subtitle")}
-          </p>
-
-          <button
-            ref={googleBtnRef}
-            type="button"
-            className="sc-member-gate-google-btn"
-            onClick={doGoogle}
-            disabled={isBusy}
-          >
-            {loading ? (
-              <>
-                <Loader2 size={18} className="sc-member-gate-spinner" />
-                <span>{t("connecting")}</span>
-              </>
+            <button type="submit" disabled={loading} className="sc-gate__submit">
+              {loading ? "Sending…" : "Send code"}
+            </button>
+            <p className="sc-gate__footnote">We only use this address to sign you in and link your purchases.</p>
+          </form>
+        ) : (
+          <div className="sc-gate__otp">
+            {phase !== "success" ? (
+              <p className="sc-gate__copy">
+                We sent a 6-digit code to <strong>{email}</strong>. It expires in 10 minutes.
+              </p>
             ) : (
-              <>
-                <span className="sc-member-gate-google-icon" aria-hidden="true">
-                  <svg viewBox="0 0 48 48" width="18" height="18">
-                    <path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303C33.65 32.881 29.219 36 24 36c-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z" />
-                    <path fill="#FF3D00" d="m6.306 14.691 6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z" />
-                    <path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238C29.211 35.091 26.715 36 24 36c-5.195 0-9.603-3.291-11.182-7.813l-6.548 5.059C9.5 40.367 16.221 44 24 44z" />
-                    <path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303c-.792 2.237-2.231 4.166-4.084 5.57l6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z" />
-                  </svg>
-                </span>
-                <span>{t("googleButton")}</span>
-              </>
+              <p className="sc-gate__copy">Code verified. Welcome back — setting things up.</p>
             )}
-          </button>
 
-          {error ? (
-            <div className="sc-member-gate-error" role="alert">{error}</div>
-          ) : null}
+            <div className="sc-gate__stage" aria-live="polite">
+              <div
+                className={`sc-gate__digits${phase !== "entry" ? " is-dimmed" : ""}`}
+                role="group"
+                aria-label="6 digit verification code"
+              >
+                {digits.map((digit, index) => (
+                  <input
+                    key={index}
+                    ref={(el) => {
+                      digitRefs.current[index] = el;
+                    }}
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    maxLength={CODE_LENGTH}
+                    value={digit}
+                    disabled={phase !== "entry"}
+                    onChange={(e) => handleDigitChange(index, e.target.value)}
+                    onKeyDown={(e) => handleDigitKeyDown(index, e)}
+                    onPaste={handlePaste}
+                    onFocus={(e) => e.target.select && e.target.select()}
+                    autoComplete={index === 0 ? "one-time-code" : "off"}
+                    aria-label={`Digit ${index + 1} of ${CODE_LENGTH}`}
+                    className={`sc-gate__pill${digit ? " is-filled" : ""}${feedback ? " is-error" : ""}`}
+                  />
+                ))}
+              </div>
 
-          <div className="sc-member-gate-or">
-            <span className="sc-member-gate-or-line" />
-            <span className="sc-member-gate-or-text">{t("orDivider")}</span>
-            <span className="sc-member-gate-or-line" />
-          </div>
-
-          {showReset ? (
-            <>
-              <p className="sc-member-gate-reset-hint">{t("resetHint")}</p>
-              <input
-                type="email"
-                className="sc-member-gate-input"
-                placeholder={t("emailPlaceholder")}
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                autoComplete="email"
-                inputMode="email"
-                disabled={isBusy}
-              />
-              {resetSuccess ? (
-                <div className="sc-member-gate-success" role="status">
-                  {t("resetSent")}
+              {phase === "orbit" ? (
+                <div className="sc-orbit" aria-hidden="true">
+                  <div className="sc-orbit__ring">
+                    {digits.map((digit, i) => {
+                      const angle = (i / CODE_LENGTH) * Math.PI * 2 - Math.PI / 2;
+                      return (
+                        <span
+                          key={i}
+                          className="sc-orbit__node"
+                          style={{
+                            "--dx": `${Math.cos(angle) * 76}px`,
+                            "--dy": `${Math.sin(angle) * 76}px`,
+                            animationDelay: `${i * 45}ms`,
+                          }}
+                        >
+                          {digit || "•"}
+                        </span>
+                      );
+                    })}
+                  </div>
                 </div>
               ) : null}
-              <button
-                type="button"
-                className="sc-member-gate-submit"
-                onClick={doForgotPassword}
-                disabled={isBusy}
-              >
-                {emailLoading ? t("signingIn") : t("forgotPassword")}
-              </button>
-              <button
-                type="button"
-                className="sc-member-gate-link"
-                onClick={() => { setShowReset(false); setEmailError(""); setResetSuccess(false); }}
-                disabled={isBusy}
-              >
-                {t("toggleToSignInLink")}
-              </button>
-            </>
-          ) : (
-            <>
-              <input
-                type="email"
-                className="sc-member-gate-input"
-                placeholder={t("emailPlaceholder")}
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                autoComplete="email"
-                inputMode="email"
-                disabled={isBusy}
-              />
-              <input
-                type="password"
-                className="sc-member-gate-input"
-                placeholder={t("passwordPlaceholder")}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                autoComplete={mode === "signUp" ? "new-password" : "current-password"}
-                disabled={isBusy}
-              />
-              {mode === "signUp" && (
-                <input
-                  type="password"
-                  className="sc-member-gate-input"
-                  placeholder={t("confirmPasswordLabel")}
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  autoComplete="new-password"
-                  disabled={isBusy}
-                />
-              )}
-              <button
-                type="button"
-                className="sc-member-gate-submit"
-                onClick={doEmailAuth}
-                disabled={isBusy}
-              >
-                {emailLoading
-                  ? t(mode === "signUp" ? "signingUp" : "signingIn")
-                  : t(mode === "signUp" ? "signUpBtn" : "signInBtn")}
-              </button>
-              <div className="sc-member-gate-row">
-                <button
-                  type="button"
-                  className="sc-member-gate-link"
-                  onClick={() => { setShowReset(true); setEmailError(""); }}
-                  disabled={isBusy}
-                >
-                  {t("forgotPassword")}
+
+              {phase === "spinner" ? (
+                <div className="sc-gate-spinner" aria-hidden="true">
+                  <span className="sc-gate-spinner__ring" />
+                  <span className="sc-gate-spinner__core">•••</span>
+                </div>
+              ) : null}
+
+              {phase === "success" ? (
+                <div className="sc-gate-success" aria-hidden="true">
+                  <div className="sc-gate-success__vault">
+                    <svg className="sc-gate-success__check" viewBox="0 0 24 24">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  </div>
+                </div>
+              ) : null}
+            </div>
+
+            {phase === "entry" ? (
+              <p className="sc-gate__hint">
+                {code.length === 0
+                  ? "Type the code — it signs you in automatically."
+                  : `${code.length} of ${CODE_LENGTH} digits entered`}
+              </p>
+            ) : null}
+
+            {phase === "entry" ? (
+              <>
+                <button type="button" className="sc-gate__link" onClick={handleResend} disabled={loading}>
+                  {loading ? "Sending a new code…" : "Resend code"}
                 </button>
-              </div>
-              {mode === "signIn" ? (
-                <p className="sc-member-gate-toggle">
-                  {t("toggleToSignUp")}{" "}
-                  <button
-                    type="button"
-                    className="sc-member-gate-link"
-                    onClick={() => { setMode("signUp"); setEmailError(""); }}
-                    disabled={isBusy}
-                  >
-                    {t("toggleToSignUpLink")}
-                  </button>
-                </p>
-              ) : (
-                <p className="sc-member-gate-toggle">
-                  {t("toggleToSignIn")}{" "}
-                  <button
-                    type="button"
-                    className="sc-member-gate-link"
-                    onClick={() => { setMode("signIn"); setEmailError(""); }}
-                    disabled={isBusy}
-                  >
-                    {t("toggleToSignInLink")}
-                  </button>
-                </p>
-              )}
-            </>
-          )}
-
-          {emailError ? (
-            <div className="sc-member-gate-error" role="alert">{emailError}</div>
-          ) : null}
-
-          <ul className="sc-member-gate-features">
-            <li>
-              <span className="sc-member-gate-check"><Check size={12} /></span>
-              <span>{t("featureAccount")}</span>
-            </li>
-            <li>
-              <span className="sc-member-gate-check"><Check size={12} /></span>
-              <span>{t("featureAccess")}</span>
-            </li>
-            <li>
-              <span className="sc-member-gate-check"><Check size={12} /></span>
-              <span>{t("featureSame")}</span>
-            </li>
-          </ul>
-
-          <div className="sc-member-gate-already">
-            <strong>{t("alreadyMember")}</strong>
-            <span>{t("sameAccount")}</span>
+                <button type="button" className="sc-gate__link" onClick={resetToEmail} disabled={loading}>
+                  Use a different email
+                </button>
+              </>
+            ) : null}
           </div>
-        </div>
+        )}
       </div>
-    </div>,
-    document.body
+    </div>
   );
-}
 
-export { I18N as STEA_CODE_MEMBER_GATE_I18N };
+  // Portal to <body>: storefront roots (e.g. `.sc-v2-home.sc-v2-has-liquid`)
+  // force `position: relative` on direct children with higher specificity,
+  // which would turn this overlay into an inline block far down the page.
+  if (typeof document === "undefined") return dialog;
+  return createPortal(dialog, document.body);
+}

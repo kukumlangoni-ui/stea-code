@@ -16,6 +16,8 @@ import { handleCheckout } from "./routes/checkout";
 import { handleCheckoutProduct } from "./routes/checkout-product";
 import { handleEntitlementsMe, handlePurchases, handleProductAccess } from "./routes/entitlements";
 import { handleDownload } from "./routes/download";
+import { handleAuthMe, handleLoginEmail, handleAccessLogin, handleAccessLogout, handleAuthSendCode, handleAuthVerifyCode } from "./routes/auth";
+import { handleStoreLead } from "./routes/leads";
 import { handleMedia, handleMediaUpload } from "./routes/media";
 import { handleStripeWebhook } from "./routes/stripe-webhook";
 import {
@@ -42,6 +44,7 @@ import {
   handleAdminOrders,
   handleAdminEntitlements,
   handleAdminUsers,
+  handleAdminUsersList,
   handleAdminSyncFirebaseUsers,
   handleAdminStats,
 } from "./routes/admin";
@@ -82,6 +85,13 @@ export interface WorkerEnv {
   // Staff auth bootstrap (optional — only used when staff_users is empty)
   STAFF_BOOTSTRAP_EMAIL?: string;
   STAFF_BOOTSTRAP_PASSWORD?: string;
+  // Resend (optional — needed for OTP email delivery). Bind as secret.
+  RESEND_API_KEY?: string;
+  RESEND_FROM?: string;
+  /** Display name for the sender, e.g. "SteaCode". */
+  RESEND_FROM_NAME?: string;
+  /** Set to "true" only on dev/staging to return the OTP in the API body. */
+  ALLOW_DEBUG_OTP?: string;
   // R2
   R2_ACCOUNT_ID: string;
   R2_ACCESS_KEY_ID: string;
@@ -106,6 +116,39 @@ export default {
 
     try {
       // ============ Public routes ============
+
+      // Cloudflare Access session check — must be excluded from the Access app
+      if (apiPath === "/auth/me" && method === "GET") {
+        return handleAuthMe(request, env);
+      }
+
+      // First-party email login (soft gate) — sets the `stea_session` cookie
+      if (apiPath === "/auth/login-email" && method === "POST") {
+        return handleLoginEmail(request, env);
+      }
+
+            // POST /api/auth/send-code — issue 6‑digit OTP
+      if (apiPath === "/auth/send-code" && method === "POST") {
+        return handleAuthSendCode(request, env);
+      }
+
+      // POST /api/auth/verify-code — consume OTP, mint session
+      if (apiPath === "/auth/verify-code" && method === "POST") {
+        return handleAuthVerifyCode(request, env);
+      }
+
+      // Cloudflare Access login / logout entry points
+      if (apiPath === "/auth/login" && method === "GET") {
+        return handleAccessLogin(request);
+      }
+      if (apiPath === "/auth/logout" && method === "GET") {
+        return handleAccessLogout(request);
+      }
+
+      // Public lead capture for the premium soft gate (no auth by design)
+      if (apiPath === "/store/lead" && method === "POST") {
+        return handleStoreLead(request, env);
+      }
 
       // POST /api/log-error — receive frontend error logs
       if (apiPath === "/log-error" && method === "POST") {
@@ -186,9 +229,14 @@ export default {
         return handleBookContent(request, env, bookContentMatch[1]);
       }
 
+      // Product download — Cloudflare Access email required
       const downloadMatch = apiPath.match(/^\/stea-code\/products\/([^/]+)\/download$/);
       if (downloadMatch && method === "GET") {
         return handleDownload(request, env, downloadMatch[1]);
+      }
+      const downloadAliasMatch = apiPath.match(/^\/download\/([^/]+)$/);
+      if (downloadAliasMatch && method === "GET") {
+        return handleDownload(request, env, downloadAliasMatch[1]);
       }
 
       // Public media (video, poster, images) from R2
@@ -279,6 +327,10 @@ export default {
 
       if (apiPath === "/admin/stea-code/entitlements" && method === "GET") {
         return handleAdminEntitlements(request, env);
+      }
+
+      if (apiPath === "/admin/users" && method === "GET") {
+        return handleAdminUsersList(request, env);
       }
 
       if (apiPath === "/admin/stea-code/users" && method === "GET") {

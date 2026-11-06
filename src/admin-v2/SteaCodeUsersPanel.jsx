@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { RefreshCw, Search, Users } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Copy, RefreshCw, Search, Users } from "lucide-react";
 import { getAdminSteaCodeUsers, syncAdminSteaCodeUsers } from "../services/steaCodeAdmin.js";
+
+const PAGE_SIZE = 25;
 
 // ---- helpers ----
 function timeAgo(value) {
@@ -23,14 +25,17 @@ function formatMoney(value) {
   return n.toLocaleString("en-US", { style: "currency", currency: "USD" });
 }
 
-function sourceBadge(source) {
-  if (source === "firebase") {
+function providerBadge(provider) {
+  if (provider === "staff") {
+    return <span className="sc-users-badge" style={{ background: "#fef3c7", color: "#92400e" }}>Staff</span>;
+  }
+  if (provider === "email") {
+    return <span className="sc-users-badge" style={{ background: "#dcfce7", color: "#15803d" }}>Email</span>;
+  }
+  if (provider === "firebase") {
     return <span className="sc-users-badge sc-users-badge-firebase">Firebase</span>;
   }
-  if (source === "staff") {
-    return <span className="sc-users-badge sc-users-badge-staff">Staff</span>;
-  }
-  return <span className="sc-users-badge sc-users-badge-unknown">Unknown</span>;
+  return <span className="sc-users-badge sc-users-badge-unknown">{provider || "Unknown"}</span>;
 }
 
 export default function SteaCodeUsersPanel() {
@@ -39,14 +44,23 @@ export default function SteaCodeUsersPanel() {
   const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
-  const [filters, setFilters] = useState({ search: "", source: "", status: "" });
+  const [filters, setFilters] = useState({ search: "", provider: "", status: "" });
+  const [page, setPage] = useState(1);
+  const [copied, setCopied] = useState(0);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
       const data = await getAdminSteaCodeUsers({ force: true });
-      setUsers(data.users || []);
+      if (data?._fallback) {
+        // The service swallows non-auth API errors into this sentinel —
+        // surface them instead of silently rendering an empty table.
+        setUsers([]);
+        setError("Couldn't load users from the API. Try again.");
+      } else {
+        setUsers(data.users || []);
+      }
     } catch (err) {
       setError(err?.message || "Couldn't load users. Try again.");
     } finally {
@@ -73,8 +87,8 @@ export default function SteaCodeUsersPanel() {
     }
   };
 
-  const sourceOptions = useMemo(
-    () => [...new Set(users.map((u) => u.source || "unknown").filter(Boolean))].sort(),
+  const providerOptions = useMemo(
+    () => [...new Set(users.map((u) => u.provider || "unknown").filter(Boolean))].sort(),
     [users]
   );
 
@@ -86,7 +100,7 @@ export default function SteaCodeUsersPanel() {
           const haystack = `${u.email || ""} ${u.displayName || ""} ${u.id || ""}`.toLowerCase();
           if (!haystack.includes(search)) return false;
         }
-        if (filters.source && String(u.source || "unknown") !== filters.source) return false;
+        if (filters.provider && String(u.provider || "unknown") !== filters.provider) return false;
         if (filters.status) {
           const disabled = Number(u.disabled) === 1 || String(u.status).toLowerCase() === "disabled";
           if (filters.status === "active" && disabled) return false;
@@ -97,10 +111,38 @@ export default function SteaCodeUsersPanel() {
       .sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
   }, [filters, users]);
 
+  const pageCount = Math.max(1, Math.ceil(visibleUsers.length / PAGE_SIZE));
+  const safePage = Math.min(page, pageCount);
+  const pageRows = visibleUsers.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
+  const handleCopyEmails = async () => {
+    const emails = visibleUsers.map((u) => u.email).filter(Boolean);
+    if (!emails.length) return;
+    const text = emails.join("\n");
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      const area = document.createElement("textarea");
+      area.value = text;
+      area.style.position = "fixed";
+      area.style.opacity = "0";
+      document.body.appendChild(area);
+      area.select();
+      try { document.execCommand("copy"); } catch { /* ignore */ }
+      area.remove();
+    }
+    setCopied(emails.length);
+    setMessage(`Copied ${emails.length} email${emails.length === 1 ? "" : "s"} to the clipboard.`);
+    window.setTimeout(() => setCopied(0), 2500);
+  };
+
   const isDisabled = (u) =>
     Number(u.disabled) === 1 || String(u.status).toLowerCase() === "disabled";
 
-  const setFilter = (key, value) => setFilters((current) => ({ ...current, [key]: value }));
+  const setFilter = (key, value) => {
+    setFilters((current) => ({ ...current, [key]: value }));
+    setPage(1);
+  };
 
   return (
     <div className="sc-admin-panel">
@@ -116,12 +158,12 @@ export default function SteaCodeUsersPanel() {
         <div className="sc-admin-filter-row">
           <select
             className="sc-users-select"
-            value={filters.source}
-            onChange={(e) => setFilter("source", e.target.value)}
+            value={filters.provider}
+            onChange={(e) => setFilter("provider", e.target.value)}
           >
-            <option value="">All sources</option>
-            {sourceOptions.map((s) => (
-              <option key={s} value={s}>{s === "firebase" ? "Firebase" : s === "staff" ? "Staff" : s}</option>
+            <option value="">All providers</option>
+            {providerOptions.map((p) => (
+              <option key={p} value={p}>{p === "firebase" ? "Firebase" : p === "email" ? "Email" : p}</option>
             ))}
           </select>
           <select
@@ -133,6 +175,10 @@ export default function SteaCodeUsersPanel() {
             <option value="active">Active</option>
             <option value="disabled">Disabled</option>
           </select>
+          <button className="sc-users-sync-btn" onClick={handleCopyEmails} disabled={!visibleUsers.length}>
+            {copied ? <Check size={14} /> : <Copy size={14} />}
+            {copied ? `Copied ${copied}` : "Copy Emails"}
+          </button>
           <button className="sc-users-sync-btn" onClick={handleSync} disabled={syncing}>
             {syncing ? <RefreshCw size={14} className="sc-spin" /> : <RefreshCw size={14} />}
             {syncing ? "Syncing…" : "Sync Firebase users"}
@@ -152,7 +198,7 @@ export default function SteaCodeUsersPanel() {
         {loading ? (
           <table className="admin-v2-table">
             <thead>
-              <tr><th>User</th><th>Email</th><th>Source</th><th>Orders</th><th>Total spent</th><th>Last login</th><th>Joined</th><th>Status</th></tr>
+              <tr><th>User</th><th>Email</th><th>Provider</th><th>Orders</th><th>Total spent</th><th>Last active</th><th>Joined</th><th>Status</th></tr>
             </thead>
             <tbody>
               {[0, 1, 2, 3, 4].map((i) => (
@@ -167,10 +213,10 @@ export default function SteaCodeUsersPanel() {
         ) : (
           <table className="admin-v2-table">
             <thead>
-              <tr><th>User</th><th>Email</th><th>Source</th><th>Orders</th><th>Total spent</th><th>Last login</th><th>Joined</th><th>Status</th></tr>
+              <tr><th>User</th><th>Email</th><th>Provider</th><th>Orders</th><th>Total spent</th><th>Last active</th><th>Joined</th><th>Status</th></tr>
             </thead>
             <tbody>
-              {visibleUsers.map((u) => {
+              {pageRows.map((u) => {
                 const initials = (u.displayName || u.email || "U").slice(0, 2).toUpperCase();
                 return (
                   <tr key={u.id || u.email}>
@@ -181,10 +227,10 @@ export default function SteaCodeUsersPanel() {
                       </div>
                     </td>
                     <td>{u.email || "—"}</td>
-                    <td>{sourceBadge(u.source)}</td>
+                    <td>{providerBadge(u.provider)}</td>
                     <td><strong>{u.orderCount ?? 0}</strong></td>
                     <td><span className="sc-admin-price">{formatMoney(u.totalSpent)}</span></td>
-                    <td>{timeAgo(u.lastLoginAt)}</td>
+                    <td>{timeAgo(u.lastActiveAt || u.lastLoginAt)}</td>
                     <td>{timeAgo(u.createdAt)}</td>
                     <td>
                       <span className={`sc-admin-status ${isDisabled(u) ? "is-banned" : "is-active"}`}>
@@ -194,19 +240,32 @@ export default function SteaCodeUsersPanel() {
                   </tr>
                 );
               })}
-              {visibleUsers.length === 0 && (
+              {pageRows.length === 0 && (
                 <tr>
                   <td colSpan={8} className="sc-admin-empty-row">
                     <div className="sc-admin-empty-state">
                       <Users size={36} className="sc-admin-empty-icon" />
                       <div className="sc-admin-empty-title">No users yet</div>
-                      <div className="sc-admin-empty-caption">Click “Sync Firebase users” to import Firebase customers.</div>
+                      <div className="sc-admin-empty-caption">Email-gate signups appear here automatically.</div>
                     </div>
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
+        )}
+        {!loading && visibleUsers.length > PAGE_SIZE && (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 12, padding: "12px 16px" }}>
+            <button className="sc-users-sync-btn" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={safePage <= 1}>
+              <ChevronLeft size={14} /> Prev
+            </button>
+            <span style={{ fontSize: 13, color: "#9aa1b5" }}>
+              Page {safePage} of {pageCount} · {visibleUsers.length.toLocaleString()} users
+            </span>
+            <button className="sc-users-sync-btn" onClick={() => setPage((p) => Math.min(pageCount, p + 1))} disabled={safePage >= pageCount}>
+              Next <ChevronRight size={14} />
+            </button>
+          </div>
         )}
       </div>
     </div>

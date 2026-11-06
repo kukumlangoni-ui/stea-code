@@ -17769,7 +17769,7 @@ body:has(.sc-market-home) {
   color: #ffffff !important;
 }
 
-.sc-market-home .sc-topbar-nav {
+.sc-market-home .sc-topbar-nav-links {
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -17778,22 +17778,22 @@ body:has(.sc-market-home) {
   margin: 0 !important;
 }
 
-.sc-market-home .sc-topbar-nav a,
-.sc-market-home .sc-topbar-nav button,
-.sc-market-home .sc-topbar-nav .sc-nav-link {
+.sc-market-home .sc-topbar-nav-links a,
+.sc-market-home .sc-topbar-nav-links button,
+.sc-market-home .sc-topbar-nav-links .sc-nav-link {
   color: #ffffff !important;
   background: transparent;
   border-radius: 999px;
 }
 
-.sc-market-home .sc-topbar-nav a:hover,
-.sc-market-home .sc-topbar-nav button:hover {
+.sc-market-home .sc-topbar-nav-links a:hover,
+.sc-market-home .sc-topbar-nav-links button:hover {
   color: #ffffff !important;
   background: rgba(255, 255, 255, 0.06);
 }
 
-.sc-market-home .sc-topbar-nav a.is-active,
-.sc-market-home .sc-topbar-nav button.is-active {
+.sc-market-home .sc-topbar-nav-links a.is-active,
+.sc-market-home .sc-topbar-nav-links button.is-active {
   color: #ffffff !important;
   background: rgba(255, 255, 255, 0.09);
 }
@@ -18174,16 +18174,19 @@ body:has(.sc-market-home) {
 
 @media (max-width: 1120px) {
   .sc-market-home .sc-topbar {
-    grid-template-columns: auto 1fr;
+    grid-template-columns: auto minmax(0, 1fr) !important;
     gap: 12px !important;
   }
 
-  .sc-market-home .sc-topbar-nav {
+  .sc-market-home .sc-topbar-nav-links {
     display: none !important;
   }
 
+  /* Only the inline nav collapses at this width. The community button must
+     stay visible — it used to be display:none here, which is exactly what
+     made it "disappear" on tablet/mobile. */
   .sc-market-home .sc-topbar-community {
-    display: none !important;
+    display: inline-flex !important;
   }
 
   .sc-market-home .sc-topbar-icon-btn.sc-mobile-only {
@@ -18216,13 +18219,16 @@ body:has(.sc-market-home) {
     font-size: 18px;
   }
 
+  /* Never hide the purchase CTA on phones — logged-out visitors still need
+     a visible "get access" path next to Sign in. It shrinks to a compact
+     pill instead (see the ≤480px block at the end of this file). */
   .sc-market-home .sc-go-unlimited-wrap {
-    display: none !important;
+    display: inline-flex !important;
   }
 
   .sc-market-home .sc-topbar-cta {
-    height: 36px;
-    padding: 0 14px;
+    height: 34px;
+    padding: 0 12px;
   }
 
   .sc-market-home .sc-market-hero {
@@ -18513,16 +18519,16 @@ body:has(.sc-market-home) { color-scheme: light; }
 .sc-market-home .sc-topbar-logo span {
   color: #111111 !important;
 }
-.sc-market-home .sc-topbar-nav a,
-.sc-market-home .sc-topbar-nav button,
-.sc-market-home .sc-topbar-nav .sc-nav-link {
+.sc-market-home .sc-topbar-nav-links a,
+.sc-market-home .sc-topbar-nav-links button,
+.sc-market-home .sc-topbar-nav-links .sc-nav-link {
   color: #4a4f5a !important;
   background: transparent !important;
 }
-.sc-market-home .sc-topbar-nav a:hover,
-.sc-market-home .sc-topbar-nav button:hover,
-.sc-market-home .sc-topbar-nav a.is-active,
-.sc-market-home .sc-topbar-nav button.is-active {
+.sc-market-home .sc-topbar-nav-links a:hover,
+.sc-market-home .sc-topbar-nav-links button:hover,
+.sc-market-home .sc-topbar-nav-links a.is-active,
+.sc-market-home .sc-topbar-nav-links button.is-active {
   color: #111111 !important;
   background: #f1f2f4 !important;
 }
@@ -19207,9 +19213,9 @@ a:has(> .sc-topbar-community-label):hover,
   font-size: 13px !important;
 }
 
-/* Top Nav Icon (The Discord icon) */
+/* Top Nav Icon — the glyph is Telegram, so it uses Telegram blue. */
 .sc-topbar-community-icon svg {
-  color: #5865F2 !important; /* Discord Blurple */
+  color: #2AABEE !important;
   fill: currentColor !important;
 }
 
@@ -19231,7 +19237,7 @@ a:has(> .sc-drawer-community-icon) span:not(.sc-drawer-community-icon) {
 }
 
 .sc-drawer-community-icon svg {
-  color: #5865F2 !important;
+  color: #2AABEE !important;
   fill: currentColor !important;
 }
 
@@ -22568,4 +22574,313 @@ html body .sc-premium-product-detail .sc-product-detail-preview-shell.is-library
   min-height: 160px;
   background: #f4f4f5;
   border-radius: inherit;
+}
+
+/* ============================================================
+   LAUNCH FIX — header CTAs must survive on tablet + mobile.
+   Supersedes the earlier "hide on narrow screens" rules:
+     · .sc-topbar-community  was display:none !important at ≤1120px
+     · .sc-go-unlimited-wrap was display:none !important at ≤640px
+   Both now stay visible in a single no-wrap row, and the CTA switches
+   to a short label so it always fits one line.
+   ============================================================ */
+@media (max-width: 1120px) {
+  /* Single clean row — never wrap the CTAs onto a second line. */
+  .sc-market-home .sc-topbar-actions {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    gap: 8px !important;
+    margin-left: auto !important;
+    min-width: 0 !important;
+    white-space: nowrap !important;
+  }
+
+  .sc-market-home .sc-topbar-community {
+    display: inline-flex !important;
+    height: 34px !important;
+    padding: 0 10px !important;
+  }
+
+  .sc-market-home .sc-topbar-community-label {
+    display: none !important;
+  }
+
+  .sc-market-home .sc-go-unlimited-wrap {
+    display: inline-flex !important;
+  }
+
+  .sc-market-home .sc-go-unlimited-btn {
+    height: 34px !important;
+    padding: 0 12px !important;
+    font-size: 12.5px !important;
+    white-space: nowrap !important;
+  }
+
+  .sc-topbar .sc-topbar-actions .sc-topbar-cta {
+    height: 34px !important;
+    padding: 0 12px !important;
+  }
+}
+
+/* Short label is desktop-hidden by default; below 640px the full sentence
+   is swapped out so the CTA never gets clipped or wrapped mid-phrase. */
+.sc-go-unlimited-label--short { display: none !important; }
+
+@media (max-width: 640px) {
+  .sc-market-home .sc-topbar {
+    padding: 0 12px !important;
+    gap: 10px !important;
+  }
+
+  .sc-go-unlimited-label--full { display: none !important; }
+  .sc-go-unlimited-label--short { display: inline !important; }
+
+  .sc-market-home .sc-go-unlimited-btn {
+    height: 32px !important;
+    padding: 0 10px !important;
+    font-size: 12px !important;
+  }
+}
+
+/* Very small phones (320–480px): the wordmark is the only element that can
+   be dropped without removing a click target, so the logo shrinks to its
+   mark and all three CTAs stay on a single line. */
+@media (max-width: 480px) {
+  .sc-market-home .sc-topbar {
+    padding: 0 10px !important;
+    gap: 8px !important;
+  }
+
+  .sc-market-home .sc-topbar-logo { gap: 0 !important; }
+  .sc-market-home .sc-topbar-logo span { display: none !important; }
+  .sc-market-home .sc-topbar-logo-img {
+    width: 28px !important;
+    height: 28px !important;
+  }
+
+  .sc-market-home .sc-topbar-actions { gap: 6px !important; }
+
+  /* Join the Community — icon-only pill (Telegram blue glyph). */
+  .sc-market-home .sc-topbar-community {
+    height: 32px !important;
+    padding: 0 8px !important;
+  }
+
+  .sc-market-home .sc-topbar-cta {
+    height: 32px !important;
+    padding: 0 10px !important;
+    font-size: 12.5px !important;
+  }
+  .sc-market-home .sc-topbar-cta > svg { display: none !important; }
+
+  /* Get Lifetime Access — stays blue, just tighter padding. */
+  .sc-market-home .sc-go-unlimited-btn {
+    height: 32px !important;
+    padding: 0 9px !important;
+    font-size: 11.5px !important;
+  }
+}
+
+/* Tablet range: the inline nav is gone, so there is room to bring the
+   "Join the Community" label back instead of leaving an icon-only pill. */
+@media (min-width: 700px) and (max-width: 1120px) {
+  .sc-market-home .sc-topbar-community {
+    padding: 0 14px !important;
+  }
+
+  .sc-market-home .sc-topbar-community-label {
+    display: inline !important;
+  }
+}
+
+/* ============================================================
+   PHONE HEADER v2 — one tidy row.
+   [logo + wordmark] ................ [community] [avatar] [Lifetime]
+
+   The signed-in state used to render the account hub as a padded
+   pill that swallowed the avatar into a stretched gold oval and
+   left a dead gap before the CTA. On phones the hub is now nothing
+   but the 32px avatar, so the row keeps a constant rhythm whether
+   the visitor is signed in or not.
+   ============================================================ */
+@media (max-width: 640px) {
+  .sc-market-home .sc-topbar {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 8px !important;
+    padding: 0 12px !important;
+    min-height: 56px !important;
+  }
+
+  .sc-market-home .sc-topbar-logo {
+    flex: 0 0 auto !important;
+    min-width: 0 !important;
+    gap: 6px !important;
+  }
+
+  .sc-market-home .sc-topbar-actions {
+    margin-left: auto !important;
+    flex: 0 0 auto !important;
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    gap: 6px !important;
+    min-width: 0 !important;
+  }
+
+  /* Signed-in: the hub is a bare avatar — no pill, no padding, no gaps */
+  .sc-market-home .sc-account-hub,
+  .sc-market-home .sc-account-hub.is-open {
+    flex: 0 0 auto !important;
+    width: auto !important;
+    height: 34px !important;
+    padding: 0 !important;
+    gap: 0 !important;
+    border-radius: 999px !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+  }
+
+  .sc-market-home .sc-account-hub .sc-hub-glow { display: none !important; }
+  .sc-market-home .sc-account-hub .sc-hub-item { display: none !important; }
+
+  .sc-market-home .sc-account-avatar-btn,
+  .sc-market-home .sc-account-avatar-btn .sc-avatar-initial,
+  .sc-market-home .sc-account-avatar-btn .sc-avatar-img {
+    width: 32px !important;
+    height: 32px !important;
+    min-width: 32px !important;
+    max-width: 32px !important;
+    flex: 0 0 32px !important;
+    border-radius: 50% !important;
+    aspect-ratio: 1 / 1 !important;
+  }
+
+  .sc-market-home .sc-account-avatar-btn .sc-avatar-initial {
+    font-size: 12px !important;
+    line-height: 1 !important;
+  }
+
+  .sc-market-home .sc-topbar-community {
+    flex: 0 0 auto !important;
+    height: 32px !important;
+  }
+
+  .sc-market-home .sc-go-unlimited-btn {
+    flex: 0 0 auto !important;
+    white-space: nowrap !important;
+  }
+}
+
+/* Real phones (360–480px): the wordmark is small but stays — the mark
+   alone reads as a broken logo at the sizes people actually use. */
+@media (max-width: 480px) {
+  .sc-market-home .sc-topbar-logo { gap: 6px !important; }
+  .sc-market-home .sc-topbar-logo span {
+    display: inline !important;
+    font-size: 15px !important;
+    letter-spacing: -0.02em !important;
+  }
+  .sc-market-home .sc-topbar-logo-img {
+    width: 26px !important;
+    height: 26px !important;
+  }
+}
+
+/* Below 380px there is genuinely no room left — drop the wordmark. */
+@media (max-width: 380px) {
+  .sc-market-home .sc-topbar-logo span { display: none !important; }
+}
+
+/* Signed-in hub, opened: on phones the pill becomes a proper account
+   sheet hanging under the bar, so tapping the avatar never stretches
+   the header or pushes the CTA off-screen. */
+@media (max-width: 640px) {
+  .sc-market-home .sc-account-hub.is-open {
+    position: absolute !important;
+    top: calc(100% + 8px) !important;
+    right: 10px !important;
+    left: auto !important;
+    width: auto !important;
+    height: auto !important;
+    min-width: 236px !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+    padding: 14px !important;
+    background: #ffffff !important;
+    border: 1px solid #e5e7eb !important;
+    border-radius: 16px !important;
+    box-shadow: 0 16px 40px rgba(16, 24, 40, 0.16) !important;
+    z-index: 80 !important;
+  }
+
+  .sc-market-home .sc-account-hub.is-open .sc-account-avatar-btn {
+    align-self: flex-start !important;
+    margin-bottom: 2px !important;
+  }
+
+  .sc-market-home .sc-account-hub.is-open .sc-hub-item {
+    display: inline-flex !important;
+    max-width: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .sc-market-home .sc-account-hub.is-open .sc-hub-email {
+    color: #111827 !important;
+    font-size: 13px !important;
+    word-break: break-all !important;
+    padding: 0 !important;
+  }
+
+  .sc-market-home .sc-account-hub.is-open .sc-hub-badge {
+    color: #6b7280 !important;
+    align-self: flex-start !important;
+  }
+
+  .sc-market-home .sc-account-hub.is-open .sc-hub-signout {
+    justify-content: center !important;
+    width: 100% !important;
+  }
+}
+
+/* Remove the top navigation text links globally */
+.sc-market-home .sc-topbar-nav-links {
+  display: none !important;
+}
+
+/* ============================================================
+   PHONE CARD TITLES
+   The catalogue cards clamp titles to one line via `white-space:
+   nowrap` + ellipsis, which is why phones showed "SaaS Chat
+   Autom…" and "The 7-day HTML m…". On phones they now wrap to two
+   lines (still capped, so a runaway title can't push the grid
+   around) with a fixed floor so price/save badges line up.
+   ============================================================ */
+@media (max-width: 640px) {
+  .sc-code-card .sc-code-card__title,
+  .sc-code-card--v2 .sc-code-card__title {
+    white-space: normal !important;
+    overflow: hidden !important;
+    text-overflow: clip !important;
+    display: -webkit-box !important;
+    -webkit-box-orient: vertical !important;
+    -webkit-line-clamp: 2 !important;
+    min-height: calc(2 * 1.25em) !important;
+    line-height: 1.25 !important;
+  }
+}
+
+/* Force hide the top navigation links */
+.sc-topbar a.sc-topbar-link,
+.sc-topbar .sc-topbar-links,
+.sc-market-home .sc-topbar-nav {
+  display: none !important;
 }

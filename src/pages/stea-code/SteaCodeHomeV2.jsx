@@ -1,6 +1,6 @@
 import React, { forwardRef, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import './light-mode-fixes.css';
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import { motion, AnimatePresence, useMotionValue, useSpring, useTransform, useReducedMotion } from "framer-motion";
 import SEO from "../../components/SEO.jsx";
 import "./stea-code.css";
@@ -24,7 +24,6 @@ import {
   Layers,
   Lock,
   Download,
-  Mail,
   Package,
   Palette,
   Play,
@@ -36,13 +35,14 @@ import {
   X } from "lucide-react";
 import { useSteaCodeI18n } from "../../components/stea-code/useSteaCodeI18n.js";
 import { createPortal } from "react-dom";
-import { onAuthStateChanged, signOut, sendEmailVerification } from "firebase/auth";
+import { useCloudflareAuth, getCloudflareLogoutUrl } from "../../hooks/useCloudflareAuth.js";
 import SteaCodeMemberGate from "../../components/stea-code/SteaCodeMemberGate.jsx";
 import SteaCodeUnlockModal from "../../components/stea-code/SteaCodeUnlockModal.jsx";
 import SteaCodeProductSkeleton from "../../components/stea-code/SteaCodeProductSkeleton.jsx";
 import PreviewErrorBoundary from "../../components/stea-code/PreviewErrorBoundary.jsx";
 import SteaCodeCheckoutPage from "./SteaCodeCheckoutPage.jsx";
 import SteaCodePurchasesPage from "./SteaCodePurchasesPage.jsx";
+import SteaCodeNotFoundPage from "./SteaCodeNotFoundPage.jsx";
 import {
   STEA_CODE_ACTION_TYPES,
   clearSteaCodePendingAction,
@@ -51,7 +51,6 @@ import {
   makePremiumCheckoutAction,
   makePurchasesAction,
   setSteaCodePendingAction } from "../../services/steaCodeResumeAction.js";
-import { getFirebaseAuth } from "../../firebase.js";
 import { startActivityTracking } from "../../services/userActivity.js";
 import { fetchEntitlements } from "../../services/steaCodeEntitlements.js";
 import {
@@ -68,6 +67,8 @@ import {
   getSteaCodeFavorites,
 } from "../../services/steaCodeCommerce.js";
 import { trackUserEvent } from "../../services/analytics.js";
+import SteaCodeFooter from "../../components/stea-code/SteaCodeFooter.jsx";
+import IconGallery from "../../components/stea-code/IconGallery.jsx";
 
 import {
   CODE_PRODUCT_CATEGORIES,
@@ -212,6 +213,7 @@ const COPY = {
 const NAV_LINKS = [
   { id: "explore", label: { en: "Explore", zhCN: "探索" }, mode: "explore", filter: { category: "All", pricing: "All" } },
   { id: "components", label: { en: "Components", zhCN: "组件" }, mode: "explore", filter: { category: "Components", pricing: "All" } },
+  { id: "icons", label: { en: "Icons", zhCN: "图标" }, tab: "icons" },
   { id: "tools", label: { en: "Tools", zhCN: "工具" }, href: "/tools" },
   { id: "library", label: { en: "Library", zhCN: "开发库" }, href: "/library" },
   { id: "free", label: { en: "Free", zhCN: "免费" }, mode: "explore", filter: { pricing: "Free" } },
@@ -257,21 +259,6 @@ const effectiveCategory = (p) =>
     ? "Notes"
     : p?.category;
 
-const BROWSE_CATEGORIES = [
-  "Animations",
-  "Buttons",
-  "Backgrounds",
-  "Cards",
-  "Heroes",
-  "Navigation",
-  "Forms",
-  "Loaders",
-  "Text Animations",
-  "Page Transitions",
-  "Components",
-  "Portfolio",
-];
-
 const HOMEPAGE_TOOLS = [
   {
     id: "gradient-generator",
@@ -309,15 +296,6 @@ const HOMEPAGE_TOOLS = [
     gradient: "linear-gradient(135deg, #06b6d4, #3b82f6)",
     icon: Code2,
   },
-];
-
-const RESOURCE_LINKS = [
-  { id: "tools", icon: Wrench, title: { en: "Developer Tools", zhCN: "开发者工具" }, desc: { en: "AI, APIs, design, testing, productivity and more.", zhCN: "AI、API、设计、测试、效率工具等。" }, view: "tools" },
-  { id: "ship", icon: Boxes, title: { en: "Hosting & Deployment", zhCN: "托管与部署" }, desc: { en: "Deploy apps fast with the best platforms.", zhCN: "用优质平台快速部署应用。" }, view: "ship" },
-  { id: "learn", icon: BookOpen, title: { en: "Developer Guides", zhCN: "开发者指南" }, desc: { en: "Tutorials, tips and in-depth guides.", zhCN: "教程、技巧与深入指南。" }, view: "learn" },
-  { id: "inspire", icon: Globe2, title: { en: "Website Inspiration", zhCN: "网站灵感" }, desc: { en: "Great websites, UI, motion and design ideas.", zhCN: "优秀网站、UI、动效与设计灵感。" }, view: "inspire" },
-  { id: "monetize", icon: Package, title: { en: "Monetize & Grow", zhCN: "变现与增长" }, desc: { en: "Payments, SEO, analytics and growth resources.", zhCN: "支付、SEO、数据分析与增长资源。" }, view: "monetize" },
-  { id: "china", icon: Globe2, title: { en: "Mainland China", zhCN: "中国大陆" }, desc: { en: "China-friendly tools, hosting and services.", zhCN: "适合中国大陆的工具、托管与服务。" }, view: "tools", intent: "china" },
 ];
 
 function label(product, key, zhKey) {
@@ -437,133 +415,6 @@ function SteaCodeUserAvatar({ user, email, size = 36 }) {
   }
 
   return <span className="sc-avatar-initial">{initial}</span>;
-}
-
-function EmailVerificationBanner({ user, tLocal, onToast }) {
-  const [dismissed, setDismissed] = useState(() => {
-    try { return sessionStorage.getItem("sc-email-verify-dismissed") === "1"; } catch { return false; }
-  });
-  const [verified, setVerified] = useState(() => Boolean(user?.emailVerified));
-  const [sending, setSending] = useState(false);
-  const [rateLimited, setRateLimited] = useState(false);
-  const rateLimitTimerRef = useRef(null);
-
-  useEffect(() => {
-    return () => {
-      if (rateLimitTimerRef.current) clearTimeout(rateLimitTimerRef.current);
-    };
-  }, []);
-
-  // Sync when the auth user object changes (sign-in/out).
-  useEffect(() => {
-    setVerified(Boolean(user?.emailVerified));
-  }, [user?.emailVerified, user?.uid]);
-
-  // Re-check verification when the user returns from their email tab.
-  useEffect(() => {
-    if (!user || verified) return undefined;
-    const onFocus = async () => {
-      try {
-        await user.reload();
-        if (user.emailVerified) setVerified(true);
-      } catch { /* network hiccup — retried on next focus */ }
-    };
-    window.addEventListener("focus", onFocus);
-    return () => window.removeEventListener("focus", onFocus);
-  }, [user, verified]);
-
-  if (!user || verified || dismissed) return null;
-  // Only nudge password accounts — OAuth users (Google) are verified by provider.
-  const isPasswordUser = user.providerData?.some((p) => p?.providerId === "password");
-  if (!isPasswordUser) return null;
-
-  const resend = async () => {
-    if (sending || rateLimited) return;
-    setSending(true);
-    try {
-      await sendEmailVerification(user);
-      onToast?.(
-        "success",
-        tLocal({
-          en: "Verification email sent. Check your inbox.",
-          zhCN: "验证邮件已发送，请检查收件箱。",
-        })
-      );
-    } catch (err) {
-      console.error("[STEA CODE] Resend verification failed:", err);
-      const isRateLimit =
-        err?.code === "auth/too-many-requests" ||
-        String(err?.message || "").includes("too-many-requests");
-      if (isRateLimit) {
-        setRateLimited(true);
-        if (rateLimitTimerRef.current) clearTimeout(rateLimitTimerRef.current);
-        rateLimitTimerRef.current = setTimeout(() => {
-          setRateLimited(false);
-        }, 5 * 60 * 1000);
-        onToast?.(
-          "error",
-          tLocal({
-            en: "Too many attempts. Please wait a few minutes and try again.",
-            zhCN: "尝试次数过多，请稍候几分钟再试。",
-          })
-        );
-      } else {
-        onToast?.(
-          "error",
-          tLocal({
-            en: "Couldn't send right now. Please try again later.",
-            zhCN: "暂时无法发送，请稍后再试。",
-          })
-        );
-      }
-    } finally {
-      setSending(false);
-    }
-  };
-
-  const dismiss = () => {
-    try { sessionStorage.setItem("sc-email-verify-dismissed", "1"); } catch { /* private mode */ }
-    setDismissed(true);
-  };
-
-  return (
-    <div className="sc-email-verify-banner" role="status" aria-live="polite">
-      <div className="sc-email-verify-icon" aria-hidden="true">
-        <Mail size={16} />
-      </div>
-      <div className="sc-email-verify-copy">
-        <strong className="sc-email-verify-title">
-          {tLocal({ en: "Verify your email", zhCN: "验证你的邮箱" })}
-        </strong>
-        <span className="sc-email-verify-sub">
-          {tLocal({
-            en: "Verify your email to get product updates and receipts.",
-            zhCN: "验证你的邮箱以获取产品更新和收据。",
-          })}
-        </span>
-      </div>
-      <button
-        type="button"
-        className="sc-email-verify-resend"
-        onClick={resend}
-        disabled={sending || rateLimited}
-      >
-        {sending
-          ? tLocal({ en: "Sending…", zhCN: "发送中…" })
-          : rateLimited
-          ? tLocal({ en: "Too many attempts…", zhCN: "尝试次数过多…" })
-          : tLocal({ en: "Resend email", zhCN: "重新发送" })}
-      </button>
-      <button
-        type="button"
-        className="sc-email-verify-dismiss"
-        onClick={dismiss}
-        aria-label={tLocal({ en: "Dismiss", zhCN: "关闭" })}
-      >
-        <X size={14} />
-      </button>
-    </div>
-  );
 }
 
 export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSearch }) {
@@ -688,8 +539,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
   const [favoritesLoading, setFavoritesLoading] = useState(false);
 
   const loadFavorites = useCallback(async () => {
-    const auth = getFirebaseAuth();
-    if (!auth?.currentUser) {
+    if (!user?.email) {
       setFavorites(new Set());
       return;
     }
@@ -706,28 +556,22 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
     } finally {
       setFavoritesLoading(false);
     }
-  }, []);
+  }, [user?.email]);
 
-  // Reload favorites on auth state changes
+  // Reload favorites when the Access session changes
   useEffect(() => {
-    const auth = getFirebaseAuth();
-    if (!auth) return undefined;
-    const unsub = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        loadFavorites();
-      } else {
-        setFavorites(new Set());
-      }
-    });
-    return () => unsub();
-  }, [loadFavorites]);
+    if (user?.email) {
+      loadFavorites();
+    } else {
+      setFavorites(new Set());
+    }
+  }, [user?.email, loadFavorites]);
 
   const handleToggleFavorite = useCallback(async (productId) => {
     const cleanId = String(productId || "").trim();
     if (!cleanId) return;
 
-    const auth = getFirebaseAuth();
-    if (!auth?.currentUser) {
+    if (!user?.email) {
       // Not signed in — open member gate
       setMemberGateOpen(true);
       return;
@@ -765,7 +609,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
         : (err?.message || 'Could not update favorites');
       showPageToast('error', msg);
     }
-  }, [favorites]);
+  }, [favorites, user?.email]);
 
   const [liveCatalog, setLiveCatalog] = useState(null);
   const [catalogNextOffset, setCatalogNextOffset] = useState(0);
@@ -822,6 +666,11 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
   useEffect(() => {
     const handleOpenAuth = () => setMemberGateOpen(true);
     window.addEventListener("open-auth", handleOpenAuth);
+    // Deep link from the marketing pages (e.g. /start-project "Sign in"):
+    // /?signin=1 lands on the storefront with the gate already open.
+    if (new URLSearchParams(window.location.search).get("signin") === "1") {
+      setMemberGateOpen(true);
+    }
     return () => window.removeEventListener("open-auth", handleOpenAuth);
   }, []);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
@@ -832,22 +681,13 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
   const goUnlimitedSweepTimerRef = useRef(null);
   const goUnlimitedSweepActiveRef = useRef(false);
   const goUnlimitedUserInteractedRef = useRef(false);
-  const [localAuthUser, setLocalAuthUser] = useState(() => user || getFirebaseAuth()?.currentUser || null);
+  const [localAuthUser, setLocalAuthUser] = useState(() => user || null);
 
   useEffect(() => {
     if (user !== undefined) {
       setLocalAuthUser(user);
     }
   }, [user]);
-
-  useEffect(() => {
-    const auth = getFirebaseAuth();
-    if (!auth) return undefined;
-    const unsub = onAuthStateChanged(auth, (u) => {
-      setLocalAuthUser(u || null);
-    });
-    return () => unsub();
-  }, []);
 
   // Header CTA autoplay sweep — glossy gradient animation
   // Starts at 3000ms to stay out of phase with modal sweeps (600ms / 1900ms)
@@ -1006,22 +846,12 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
   };
 
   useEffect(() => {
-    const auth = getFirebaseAuth();
-    if (!auth) return undefined;
-    let processed = false;
-    const unsub = onAuthStateChanged(auth, (user) => {
-      if (user && !processed) {
-        const action = getSteaCodePendingAction();
-        if (action) {
-          processed = true;
-          setMemberGateOpen(false);
-          resumePendingAction(action);
-        }
-      }
-      if (!user) processed = false;
-    });
-    return () => unsub();
-  }, []);
+    if (!effectiveUser) return;
+    const action = getSteaCodePendingAction();
+    if (!action) return;
+    setMemberGateOpen(false);
+    resumePendingAction(action);
+  }, [effectiveUser?.email]);
 
   const openMemberGate = (action) => {
     setSteaCodePendingAction(action);
@@ -1029,6 +859,23 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
     setMemberGateOpen(true);
     setAccountMenuOpen(false);
   };
+
+  // Legacy login links (/api/auth/login, StoreReaderPage) land here with
+  // ?login=1 — open the email gate instead of a Cloudflare redirect.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (!params.get("login")) return;
+    params.delete("login");
+    params.delete("redirect_url");
+    const qs = params.toString();
+    window.history.replaceState(
+      {},
+      "",
+      `${window.location.pathname}${qs ? `?${qs}` : ""}${window.location.hash}`
+    );
+    if (!effectiveUser) openMemberGate(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [effectiveUser?.email]);
 
   const handleAvatarClick = () => {
     if (avatarSpin !== "idle") return; // ignore mid-animation clicks
@@ -1076,22 +923,42 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
     navigate("/upgrade");
   };
 
+  // Shared by the inline desktop nav and the mobile drawer so both routes
+  // (href → page, tab → in-page tab, filter → explore mode) stay in sync.
+  const handleNavSelect = (item) => {
+    if (!item) return;
+    if (item.href) {
+      navigate(item.href);
+      return;
+    }
+    if (item.tab) {
+      setActiveTab(item.tab);
+      setCategory("All");
+      setPricing("All");
+      setFramework("All Frameworks");
+      setActiveSubcategory("All");
+      syncFilterUrl({ tab: item.tab, cat: "All", sub: "All" });
+      setViewMode("explore");
+      return;
+    }
+    if (item.filter) {
+      if (item.filter.category) setCategory(item.filter.category);
+      if (item.filter.pricing) setPricing(item.filter.pricing);
+    }
+    setViewMode(item.mode || "explore");
+  };
+
   const handleSignOut = async (e) => {
     console.log('[signout] handler fired', { event: e?.type, target: e?.target?.className });
     if (e) {
       e.preventDefault?.();
       e.stopPropagation?.();
     }
-    try {
-      const auth = getFirebaseAuth();
-      if (auth) await signOut(auth);
-    } catch (err) {
-      console.error('[signout] failed', err);
-    } finally {
-      // Always close the account menu and clear local user state immediately
-      setAccountMenuOpen(false);
-      setLocalAuthUser(null);
-    }
+    setAccountMenuOpen(false);
+    setLocalAuthUser(null);
+    // First-party session cookie — the Worker clears `stea_session` and
+    // redirects back to the homepage.
+    window.location.assign(getCloudflareLogoutUrl());
   };
 
 
@@ -1114,8 +981,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
 
   const handleMemberGateClose = () => {
     setMemberGateOpen(false);
-    const user = getFirebaseAuth()?.currentUser;
-    if (!user) {
+    if (!localAuthUser) {
       clearSteaCodePendingAction();
       setMemberGateAction(null);
     }
@@ -1123,6 +989,12 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
 
     useEffect(() => {
     let active = true;
+    // The Icons tab is a local static gallery — no catalog request needed.
+    if (activeTab === "icons") {
+      setIsFallbackCatalog(false);
+      setIsLoading(false);
+      return undefined;
+    }
     // A retry wipes the error state and reloads from the live API.
     setIsFallbackCatalog(false);
     setIsLoading(true);
@@ -1141,6 +1013,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
           offset: 0,
           category: activeTab === "library" && category === "Cheat Sheets" ? "" : category,
           activeTab,
+          search: q,
           onFresh: (fresh) => {
             if (!active) return;
             const products = Array.isArray(fresh?.products) ? fresh.products : [];
@@ -1303,7 +1176,14 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
   const closeProduct = useCallback(() => {
     const sp = new URLSearchParams(location.search);
     const basePath = location.pathname.startsWith("/code") ? "/code" : "/";
-    navigate(`${basePath}${sp.toString() ? `?${sp.toString()}` : ""}`);
+    // Step back one history entry so the user lands exactly where they came
+    // from (store grid, category, search…). A direct deep-link visit has no
+    // previous entry — send those to the storefront instead of exiting.
+    if (window.history.length > 1) {
+      navigate(-1);
+    } else {
+      navigate(`${basePath}${sp.toString() ? `?${sp.toString()}` : ""}`);
+    }
   }, [navigate, location.search, location.pathname]);
 
 
@@ -1380,40 +1260,58 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
    * - Opening a product → navigate to /code/products/{slug} or /products/{slug}
    * - Closing → navigate back to /code or /
    * - Back/forward buttons work because URL drives modal state
-   * - Direct visit to a shared link → modal opens automatically
-   * - Slug not found OR product incomplete → silent redirect to homepage
+   * - Direct visit to a shared link → the product is fetched by slug
+   *   IMMEDIATELY (never gated on the homepage catalog, which used to add a
+   *   full round-trip before the modal could open) and the modal opens as
+   *   soon as the fetch resolves.
+   * - Slug not found OR product incomplete → render the real 404 page
+   *   (no silent bounce to the homepage — that is a soft-404 for Google).
    */
   const productSlugFromUrl = useMemo(() => {
     const m = location.pathname.match(/^(?:\/code)?\/products\/([^/]+)\/?$/);
     return m ? decodeURIComponent(m[1]) : null;
   }, [location.pathname]);
 
+  // Slug that failed to resolve (404 / unpublished) → render NotFoundPage.
+  const [deepLinkNotFoundSlug, setDeepLinkNotFoundSlug] = useState(null);
+
   // Sync URL → selected state
   useEffect(() => {
     if (!productSlugFromUrl) {
       // No product in URL — close modal if open
       if (selected) setSelected(null);
+      setDeepLinkNotFoundSlug(null);
       return;
     }
 
     const slug = productSlugFromUrl.toLowerCase();
+
+    // Already showing this exact product — nothing to do.
+    if (
+      selected &&
+      String(selected.slug || selected.id || "").toLowerCase() === slug
+    ) {
+      return;
+    }
+
     const match =
       products.find((p) => String(p.slug || "").toLowerCase() === slug) ||
       products.find((p) => String(p.id || "").toLowerCase() === slug);
 
     if (match && isProductReady(match)) {
+      setDeepLinkNotFoundSlug(null);
       setSelected(match);
       hydrateProductDetail(match);
       return;
     }
 
-    if (liveCatalog === null) return;
-
+    // Fetch by slug right away — do NOT wait for the homepage catalog.
     let cancelled = false;
-    getSteaCodeProduct(productSlugFromUrl)
+    getSteaCodeProduct(slug)
       .then((product) => {
         if (cancelled) return;
         if (product && isProductReady(product)) {
+          setDeepLinkNotFoundSlug(null);
           setSelected(product);
           return;
         }
@@ -1421,27 +1319,23 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
       })
       .catch(() => {
         if (cancelled) return;
-        const sp = new URLSearchParams(location.search);
-        const basePath = location.pathname.startsWith("/code") ? "/code" : "/";
-        navigate(`${basePath}${sp.toString() ? `?${sp.toString()}` : ""}`, { replace: true });
+        setDeepLinkNotFoundSlug(productSlugFromUrl);
       });
 
     return () => {
       cancelled = true;
     };
-  }, [productSlugFromUrl, products, liveCatalog, navigate, location.search, isProductReady, hydrateProductDetail, location.pathname]);
+  }, [productSlugFromUrl, products, selected, isProductReady, hydrateProductDetail]);
 
   const filtered = useMemo(() => {
     const query = q.trim().toLowerCase();
+    const searching = query.length >= 1;
     return products
       .filter((p) => {
-        // `featured` products are hand-picked to be showcased on the homepage,
-        // but they are authored in whatever tab they belong to — all four
-        // currently featured ones live in layouts/kits/library, none in
-        // components. Without `|| p.featured === true` the tab filter drops
-        // them here, so no amount of sorting downstream could ever surface them
-        // in the main "All" grid. The catalog (ORDER BY featured DESC) and the
-        // sort below both already put featured first, ahead of the slice.
+        // When the user is searching, the Worker SQL already hits every column
+        // including tags/productType/extraData — no tab/category gating here,
+        // or typing "book" on the "components" tab would still hide library items.
+        if (searching) return true;
         if (activeTab === "components") return p.tab === "components" || p.tab === undefined || p.featured === true;
         if (activeTab === "layouts") return p.tab === "layouts";
         if (activeTab === "kits") return p.tab === "kits";
@@ -1449,12 +1343,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
         return true;
       })
       .filter((p) => {
-        // Everything except the combined Library pill is now filtered in SQL
-        // (WHERE category = ? / tab = ? on the Worker, before LIMIT/OFFSET),
-        // so no client-side category filter is needed here. The one exception
-        // is "Cheat Sheets & Notes": it combines two product types that a
-        // plain column equality cannot express, so the API returns the whole
-        // library stream for this pill and this predicate narrows it.
+        if (searching) return true;
         if (activeTab === "library" && category === "Cheat Sheets") {
           return (
             p.productType === "cheatsheet" ||
@@ -1465,17 +1354,23 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
         return true;
       })
       .filter((p) => {
-        // Layout-only subcategory filter. Skipped for every other category.
+        if (searching) return true;
         if (activeSubcategory === "All" || !SUBCATEGORIES[category]) return true;
         return (p.subcategory || "") === activeSubcategory;
       })
-      .filter((p) => pricing === "All" || p.pricingType === pricing.toLowerCase())
-      .filter((p) => framework === "All Frameworks" || (p.frameworks || []).includes(framework))
+      .filter((p) => searching || pricing === "All" || p.pricingType === pricing.toLowerCase())
+      .filter((p) => searching || framework === "All Frameworks" || (p.frameworks || []).includes(framework))
       .filter((p) => {
         if (!query) return true;
+        // Client haystack is a redundancy now (Worker already did LIKE across
+        // every column) but it's cheap and keeps fuzzy matches instant for
+        // users who are still typing. `productType` is included explicitly
+        // so "book" / "ebook" / "pdf" / "note" always surface library items
+        // regardless of which tab the user started on.
         const hay = [
           p.titleEn, p.titleZh, p.shortDescriptionEn, p.shortDescriptionZh,
-          p.category, ...(p.tags || []), ...(p.frameworks || []), ...(p.languages || []),
+          p.category, p.productType, p.tab,
+          ...(p.tags || []), ...(p.frameworks || []), ...(p.languages || []),
         ].join(" ").toLowerCase();
         return hay.includes(query);
       })
@@ -1594,6 +1489,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
         offset: catalogNextOffset,
         category: activeTab === "library" && category === "Cheat Sheets" ? "" : category,
         activeTab,
+        search: q,
       });
       const nextProducts = Array.isArray(result?.products) ? result.products : [];
       setLiveCatalog((previous) => {
@@ -1656,19 +1552,88 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
   const seoImage = selected
     ? (selected.posterImageUrl || selected.preview?.posterUrl || "")
     : "";
-  const seoUrl = selected && productSlugFromUrl
-    ? `/code/products/${encodeURIComponent(productSlugFromUrl)}`
-    : null;
+  const seoSlug = selected
+    ? String(productSlugFromUrl || selected.slug || selected.id || "").trim()
+    : "";
+  const seoCanonical = selected && seoSlug
+    ? `https://steacode.com/products/${encodeURIComponent(seoSlug)}`
+    : "https://steacode.com/";
+  const seoUrl = selected && seoSlug ? seoCanonical : null;
+
+  // JSON-LD: Product + SoftwareApplication so Google understands the page type.
+  const seoStructuredData = useMemo(() => {
+    if (!selected || !seoSlug) return null;
+    const name = String(selected.titleEn || selected.title || selected.titleZh || "").trim() || "STEA Code product";
+    const description =
+      String(
+        selected.shortDescriptionEn ||
+        selected.description ||
+        selected.shortDescriptionZh ||
+        selected.descriptionZh ||
+        ""
+      ).trim() || name;
+    const rawImage = selected.posterImageUrl || selected.preview?.posterUrl || "";
+    let imageUrl = "https://steacode.com/stea-code-logo.png";
+    try {
+      if (rawImage) imageUrl = new URL(rawImage, "https://steacode.com").toString();
+    } catch {
+      /* keep fallback */
+    }
+    const isFree = selected.pricingType === "free";
+    const price = isFree ? "0" : Number(selected.price || 0).toFixed(2);
+    const offers = {
+      "@type": "Offer",
+      url: seoCanonical,
+      priceCurrency: selected.currency || "USD",
+      price,
+      availability: "https://schema.org/InStock",
+      seller: { "@type": "Organization", name: "STEA Code" },
+    };
+    return {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "Product",
+          name,
+          description,
+          image: [imageUrl],
+          category: selected.category || "Web Components",
+          brand: { "@type": "Brand", name: "STEA Code" },
+          offers,
+        },
+        {
+          "@type": "SoftwareApplication",
+          name,
+          description,
+          operatingSystem: "Web",
+          applicationCategory: "DeveloperApplication",
+          offers,
+        },
+      ],
+    };
+  }, [selected, seoSlug, seoCanonical]);
+
+  // Deep-linked slug does not resolve to a published product → real 404 page.
+  // Never fall through to the homepage for /products/:slug (soft-404 for SEO).
+  if (
+    deepLinkNotFoundSlug &&
+    productSlugFromUrl &&
+    deepLinkNotFoundSlug.toLowerCase() === productSlugFromUrl.toLowerCase()
+  ) {
+    return <SteaCodeNotFoundPage />;
+  }
 
   return (
     <>
       <SEO
         title={seoTitle}
         description={seoDescription}
+        canonical={seoCanonical}
         ogImage={seoImage || undefined}
         ogUrl={seoUrl || undefined}
-        type={selected ? "article" : "website"}
-        siteName="steacode"
+        type={selected ? "product" : "website"}
+        siteName="STEA Code"
+        structuredData={seoStructuredData || undefined}
       />
     <div className="stea-code-app sc-v2 sc-market-home sc-v2-home sc-v2-has-liquid">
       <div className="sc-v2-liquid-wrap" aria-hidden="true"><PreviewErrorBoundary><LazyLiquidHero theme="light" /></PreviewErrorBoundary></div>
@@ -1702,6 +1667,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
         <nav className="sc-topbar-nav" aria-label="Marketplace navigation">
           {NAV_LINKS.map((item) => {
             const isActive = (() => {
+              if (item.tab) return activeTab === item.tab;
               if (item.href) return location.pathname === item.href || location.pathname.startsWith(item.href + "/");
               if (item.mode === "explore") {
                 if (item.filter?.category && item.filter.category !== "All") {
@@ -1717,9 +1683,9 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
 
             if (item.href) {
               return (
-                <a key={item.id} href={item.href} className={isActive ? "is-active" : ""}>
+                <Link key={item.id} to={item.href} className={isActive ? "is-active" : ""}>
                   {tLocal(item.label)}
-                </a>
+                </Link>
               );
             }
             return (
@@ -1733,13 +1699,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
                   cursor: "pointer",
                   font: "inherit",
                 }}
-                onClick={() => {
-                  if (item.filter) {
-                    if (item.filter.category) setCategory(item.filter.category);
-                    if (item.filter.pricing) setPricing(item.filter.pricing);
-                  }
-                  setViewMode(item.mode || "explore");
-                }}
+                onClick={() => handleNavSelect(item)}
               >
                 {tLocal(item.label)}
               </button>
@@ -1821,7 +1781,8 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
               aria-label="Get Lifetime Access — $29"
             >
               <span className="sc-go-unlimited-shine" aria-hidden="true" />
-              <span className="sc-go-unlimited-label">Get Lifetime Access — $29</span>
+              <span className="sc-go-unlimited-label sc-go-unlimited-label--full">Get Lifetime Access — $29</span>
+              <span className="sc-go-unlimited-label sc-go-unlimited-label--short">Lifetime — $29</span>
             </button>
             {goUnlimitedToast && (
               <div className="sc-go-unlimited-toast" role="status">
@@ -1833,9 +1794,6 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
 
         </div>
       </header>
-
-      {/* Email verification banner disabled — re-enable when SMTP delivery is configured */}
-      {false && <EmailVerificationBanner user={effectiveUser} tLocal={tLocal} onToast={showPageToast} />}
 
       <main>
         {effectiveView === "checkout" ? (
@@ -1858,7 +1816,10 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
             locale={uiLocale}
             onGoHome={() => {
               if (location.pathname === "/library") {
-                navigate("/");
+                // Step back through history when there is any; fall back to
+                // the storefront for direct/deep-link visits.
+                if (window.history.length > 1) navigate(-1);
+                else navigate("/");
               } else {
                 const sp = new URLSearchParams(location.search);
                 sp.delete("view");
@@ -1925,6 +1886,9 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
               setActiveSubcategory={setActiveSubcategory}
               syncFilterUrl={syncFilterUrl}
             />
+            {activeTab === "icons" ? (
+              <IconGallery />
+            ) : (<>
             {isFallbackCatalog && (
               <div
                 className="sc-fallback-catalog-banner"
@@ -2064,6 +2028,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
                 </button>
               </div>
             ) : null}
+            </>)}
           </section>
         ) : (
           /* ================= STOREFRONT HOMEPAGE SECTIONS ================= */
@@ -2190,6 +2155,10 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
                 ))}
               </div>
 
+              {/* Icons tab: local static gallery replaces pills + product grid */}
+              {activeTab === "icons" ? (
+                <IconGallery />
+              ) : (<>
               {/* Category filter pills — dynamic based on activeTab */}
               <div className="sc-homepage-pill-row" role="tablist" aria-label="Product categories">
                 {TABS[activeTab].categories.map((cat) => (
@@ -2375,6 +2344,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
                 </div>
               </div>
               )}
+              </>)}
             </section>
 
 
@@ -2382,114 +2352,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
         )}
       </main>
 
-      <footer className="sc-footer">
-        <div className="sc-footer-grid">
-          {/* BRAND COLUMN */}
-          <div className="sc-footer-brand">
-            <a href="/code" className="sc-footer-brand-logo">
-              <img src="/stea-code-logo.png" alt="steacode" width={28} height={28} />
-              steacode
-            </a>
-            <p className="sc-footer-tagline">
-              The home of premium code components for modern developers.
-            </p>
-            <div className="sc-footer-social" aria-label="Social links">
-              <a href="https://www.instagram.com/steacode" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-                     stroke="currentColor" strokeWidth="2" strokeLinecap="round"
-                     strokeLinejoin="round">
-                  <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
-                  <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
-                  <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
-                </svg>
-              </a>
-              <a href="https://t.me/steacode" target="_blank" rel="noopener noreferrer" aria-label="Telegram">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
-                </svg>
-              </a>
-              <a href="https://discord.gg/steacode" target="_blank" rel="noopener noreferrer" aria-label="Discord">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
-                </svg>
-              </a>
-              <a href="https://x.com/steacode" target="_blank" rel="noopener noreferrer" aria-label="X / Twitter">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-                </svg>
-              </a>
-              <a href="https://youtube.com/@steacode" target="_blank" rel="noopener noreferrer" aria-label="YouTube">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
-                </svg>
-              </a>
-            </div>
-          </div>
-
-          {/* EXPLORE COLUMN */}
-          <div className="sc-footer-column">
-            <h4>Explore</h4>
-            <a href="/code" onClick={(e) => { e.preventDefault(); setCategory("All"); setPricing("All"); }}>All Components</a>
-            <a href="/code" onClick={(e) => { e.preventDefault(); setCategory("Buttons"); setPricing("All"); }}>Buttons</a>
-            <a href="/code" onClick={(e) => { e.preventDefault(); setCategory("Cards"); setPricing("All"); }}>Cards</a>
-            <a href="/code" onClick={(e) => { e.preventDefault(); setCategory("Forms"); setPricing("All"); }}>Forms</a>
-            <a href="/code" onClick={(e) => { e.preventDefault(); setCategory("Loaders"); setPricing("All"); }}>Loaders</a>
-            <a href="/code" onClick={(e) => { e.preventDefault(); setCategory("Navigation"); setPricing("All"); }}>Navigation</a>
-          </div>
-
-          {/* RESOURCES COLUMN */}
-          <div className="sc-footer-column">
-            <h4>Resources</h4>
-            <a href="/tools">Developer Tools</a>
-            <a href="#hosting-deployment">Hosting &amp; Deployment</a>
-            <a href="#guides">Developer Guides</a>
-            <a href="#inspiration">Website Inspiration</a>
-            <a href="#monetize">Monetize &amp; Grow</a>
-            <a href="/china">Mainland China</a>
-          </div>
-
-          {/* COMPANY COLUMN */}
-          <div className="sc-footer-column">
-            <h4>Company</h4>
-            <a href="/about">About</a>
-            <a href="/changelog">Changelog</a>
-            <a href="/contact">Contact</a>
-            <a href="/terms">Terms</a>
-            <a href="/privacy">Privacy</a>
-            <a href="/refund">Refund Policy</a>
-          </div>
-        </div>
-
-        {/* BOTTOM ROW */}
-        <div className="sc-footer-bottom">
-          <span>&copy; 2026 steacode. All rights reserved.</span>
-          <span className="sc-footer-bottom-right">Made for developers &hearts;</span>
-        </div>
-
-        {/* GIANT FADED WORDMARK */}
-        <div className="sc-footer-wordmark" aria-hidden="true">
-          <svg
-            className="sc-footer-wordmark-svg"
-            viewBox="0 0 1200 200"
-            preserveAspectRatio="xMidYMid meet"
-            role="img"
-            aria-label="STEA CODE"
-          >
-            <text
-              x="600"
-              y="150"
-              textAnchor="middle"
-              fontFamily="'Instrument Serif', Georgia, serif"
-              fontWeight="700"
-              fontSize="180"
-              fill="currentColor"
-              letterSpacing="8"
-            >
-              STEA CODE
-            </text>
-          </svg>
-        </div>
-      </footer>
+      <SteaCodeFooter />
       <AnimatePresence>
         {selected && (
           <ProductDetail
@@ -2548,184 +2411,6 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
 
     </div>
     </>
-  );
-}
-
-function MobileMenu({
-  onClose,
-  onGoWorld,
-  tLocal,
-  onSelectNav,
-  user,
-  isAdmin,
-  onSignOut,
-  onGoUnlimited,
-  category,
-  setCategory,
-  setPricing,
-  setFramework,
-  mobileMenuCategories,
-}) {
-  const signedInEmail = user?.email || "";
-  const initial = String(signedInEmail || "U").charAt(0).toUpperCase() || "U";
-  const photoURL = user?.photoURL;
-
-  return (
-    <div className="sc-market-drawer" role="dialog" aria-modal="true" aria-label="steacode menu">
-      <button className="sc-market-drawer-bg" onClick={onClose} aria-label="Close menu" />
-      <section className="sc-market-drawer-panel">
-
-        {/* ---- Top bar with close ---- */}
-        <header className="sc-drawer-topbar">
-          <span className="sc-drawer-brand">
-            <span className="sc-drawer-brand-mark">&lt;/&gt;</span>
-            <span className="sc-drawer-brand-name">steacode</span>
-          </span>
-          <button
-            type="button"
-            className="sc-drawer-close"
-            onClick={onClose}
-            aria-label="Close menu"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          </button>
-        </header>
-
-        {/* ---- Account card (signed in) or Sign-in CTA (signed out) ---- */}
-        {user ? (
-          <div className="sc-drawer-account">
-            <div className="sc-drawer-account-avatar">
-              {photoURL ? (
-                <img src={photoURL} alt="" referrerPolicy="no-referrer" />
-              ) : (
-                <span>{initial}</span>
-              )}
-            </div>
-            <div className="sc-drawer-account-info">
-              <div className="sc-drawer-account-email">{signedInEmail}</div>
-              <div className={`sc-drawer-account-badge ${isAdmin ? "is-admin" : ""}`}>
-                {isAdmin ? "ADMIN" : "MEMBER"}
-              </div>
-            </div>
-            <button
-              type="button"
-              className="sc-drawer-signout"
-              onClick={() => { onClose(); onSignOut(); }}
-              aria-label="Sign out"
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                <polyline points="16 17 21 12 16 7" />
-                <line x1="21" y1="12" x2="9" y2="12" />
-              </svg>
-              Sign out
-            </button>
-          </div>
-        ) : (
-          <button
-            type="button"
-            className="sc-drawer-signin"
-            onClick={() => { onClose(); window.dispatchEvent(new Event("open-auth")); }}
-          >
-            Sign in
-          </button>
-        )}
-
-        {/* ---- Go Unlimited ---- */}
-        <button
-          type="button"
-          className="sc-drawer-unlimited"
-          onClick={() => { onClose(); onGoUnlimited?.(); }}
-        >
-          <span className="sc-drawer-unlimited-shine" aria-hidden="true" />
-          <span className="sc-drawer-unlimited-label">Get Lifetime Access — $29</span>
-          <span className="sc-drawer-unlimited-badge">$29</span>
-        </button>
-
-        {/* ---- Main navigation ---- */}
-        <div className="sc-drawer-section">
-          <div className="sc-drawer-section-title">Navigate</div>
-          {NAV_LINKS.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              className="sc-drawer-item"
-              onClick={() => { onClose(); onSelectNav?.(item); }}
-            >
-              <span className="sc-drawer-item-label">{tLocal(item.label)}</span>
-              <svg className="sc-drawer-item-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="9 6 15 12 9 18" />
-              </svg>
-            </button>
-          ))}
-        </div>
-
-        {/* ---- Categories ---- */}
-        {mobileMenuCategories && mobileMenuCategories.length > 0 && (
-          <div className="sc-drawer-section">
-            <div className="sc-drawer-section-title">Categories</div>
-            <div className="sc-drawer-categories">
-              {mobileMenuCategories.map((cat) => (
-                <button
-                  key={cat}
-                  type="button"
-                  className={`sc-drawer-chip ${category === cat ? "is-active" : ""}`}
-                  onClick={() => {
-                    setCategory?.(cat);
-                    setPricing?.("All");
-                    setFramework?.("All Frameworks");
-                    onClose();
-                  }}
-                >
-                  {tLocal(CATEGORY_LABELS[cat] || { en: cat, zhCN: cat })}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* ---- Resources ---- */}
-        <div className="sc-drawer-section">
-          <div className="sc-drawer-section-title">Explore</div>
-          {RESOURCE_LINKS.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              className="sc-drawer-item"
-              onClick={() => { onClose(); onGoWorld(item.view, item.intent); }}
-            >
-              <span className="sc-drawer-item-label">{tLocal(item.title)}</span>
-              <svg className="sc-drawer-item-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="9 6 15 12 9 18" />
-              </svg>
-            </button>
-          ))}
-        </div>
-
-        {/* ---- Community footer ---- */}
-        <a
-          href="https://t.me/steacode"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="sc-drawer-community"
-          onClick={onClose}
-        >
-          <span className="sc-drawer-community-icon">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-              <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
-            </svg>
-          </span>
-          <span>Join the Community</span>
-          <svg className="sc-drawer-item-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="9 6 15 12 9 18" />
-          </svg>
-        </a>
-
-      </section>
-    </div>
   );
 }
 
@@ -2940,7 +2625,7 @@ function CodeProductCard({ product, tLocal, onOpen, isFavorited, onToggleFavorit
     : { scale: 0.985, transition: { duration: 0.12 } };
 
   const EXTERNAL_REDIRECTS = {
-    "premium-website-hero": "/start-project.html",
+    "premium-website-hero": "/book-a-call",
   };
   const externalUrl = EXTERNAL_REDIRECTS[product.slug] || EXTERNAL_REDIRECTS[productId];
   // Fall back to the portfolio "Live URL" when the dedicated Website URL is
@@ -3849,6 +3534,8 @@ function ProductDetail({
   onOpenUnlockModal,
   onReadEbook,
 }) {
+  const { user: accessUser } = useCloudflareAuth();
+
   // "You might also like" — up to 4 real products from the same category,
   // excluding the currently opened product.
   const relatedProducts = useMemo(() => {
@@ -4034,7 +3721,7 @@ function ProductDetail({
         return;
       }
 
-      const user = getFirebaseAuth()?.currentUser;
+      const user = accessUser;
 
       if (!user) {
         if (active) {
@@ -4113,7 +3800,7 @@ function ProductDetail({
       };
     }
 
-    const user = getFirebaseAuth()?.currentUser;
+    const user = accessUser;
 
     if (!user) {
       return () => {
@@ -4318,18 +4005,9 @@ function ProductDetail({
     ];
   }, [product?.tags, product?.frameworks]);
 
-  const [currentUser, setCurrentUser] = useState(() => getFirebaseAuth()?.currentUser || null);
+  const { user: currentUser } = useCloudflareAuth();
 
-  useEffect(() => {
-    const auth = getFirebaseAuth();
-    if (!auth) return undefined;
-    const unsub = onAuthStateChanged(auth, (u) => {
-      setCurrentUser(u || null);
-    });
-    return () => unsub();
-  }, []);
-
-  const activeUser = currentUser || getFirebaseAuth()?.currentUser || null;
+  const activeUser = currentUser;
   const isSignedIn = Boolean(activeUser);
 
   // Gate click handler — saves pending action and opens auth without tracking
@@ -4384,8 +4062,8 @@ function ProductDetail({
 
   // Shared success handlers — fire ONLY when copy/download succeeds
   const handleCopyPromptSuccess = useCallback(() => {
-    const user = currentUser || getFirebaseAuth()?.currentUser;
-    if (!user) {
+    const user = currentUser;
+    if (!user && !isFree) {
       handleGateAction("copy-prompt");
       return;
     }
@@ -4405,8 +4083,8 @@ function ProductDetail({
   }, [product, currentUser, handleGateAction]);
 
   const handleCopySourceSuccess = useCallback(() => {
-    const user = currentUser || getFirebaseAuth()?.currentUser;
-    if (!user) {
+    const user = currentUser;
+    if (!user && !isFree) {
       handleGateAction("copy-source");
       return;
     }
@@ -4430,14 +4108,14 @@ function ProductDetail({
     void trackUserEvent("download", {
       productId: cleanId,
       productSlug: product?.slug || "",
-      email: (currentUser || getFirebaseAuth()?.currentUser)?.email || "",
+      email: (currentUser)?.email || "",
     });
   }, [product, currentUser]);
 
   // Action executors
   const executeCopyPrompt = useCallback(async () => {
-    const user = currentUser || getFirebaseAuth()?.currentUser;
-    if (!user) {
+    const user = currentUser;
+    if (!user && !isFree) {
       handleGateAction("copy-prompt");
       return;
     }
@@ -4491,8 +4169,8 @@ function ProductDetail({
   }, [product?.id, product?.slug, isFree]);
 
   const executeCopySource = useCallback(async () => {
-    const user = currentUser || getFirebaseAuth()?.currentUser;
-    if (!user) {
+    const user = currentUser;
+    if (!user && !isFree) {
       handleGateAction("copy-source");
       return;
     }
@@ -4518,7 +4196,7 @@ function ProductDetail({
   }, [currentUser, handleGateAction, sourceCodeHtml, fetchCopyableSource, safeCopyToClipboard, handleCopySourceSuccess]);
 
   const executeDownload = useCallback(async (pid) => {
-    const user = currentUser || getFirebaseAuth()?.currentUser;
+    const user = currentUser;
     if (!user) {
       handleGateAction("download");
       return;
@@ -4540,8 +4218,8 @@ function ProductDetail({
   // Button click handlers
   const handleCopyPromptClick = useCallback((e) => {
     e.stopPropagation();
-    const user = currentUser || getFirebaseAuth()?.currentUser;
-    if (!user) {
+    const user = currentUser;
+    if (!user && !isFree) {
       handleGateAction("copy-prompt");
       return;
     }
@@ -4554,8 +4232,8 @@ function ProductDetail({
 
   const handleCopySourceClick = useCallback((e) => {
     e.stopPropagation();
-    const user = currentUser || getFirebaseAuth()?.currentUser;
-    if (!user) {
+    const user = currentUser;
+    if (!user && !isFree) {
       handleGateAction("copy-source");
       return;
     }
@@ -4568,8 +4246,8 @@ function ProductDetail({
 
   // ── Copy Image (Layouts / poster-based + free products) ──────────
   const handleCopyImageSuccess = useCallback(() => {
-    const user = currentUser || getFirebaseAuth()?.currentUser;
-    if (!user) {
+    const user = currentUser;
+    if (!user && !isFree) {
       handleGateAction("copy-image");
       return;
     }
@@ -4589,8 +4267,8 @@ function ProductDetail({
   }, [product, currentUser, handleGateAction]);
 
   const executeCopyImage = useCallback(async () => {
-    const user = currentUser || getFirebaseAuth()?.currentUser;
-    if (!user) {
+    const user = currentUser;
+    if (!user && !isFree) {
       handleGateAction("copy-image");
       return;
     }
@@ -4622,8 +4300,8 @@ function ProductDetail({
 
   const handleCopyImageClick = useCallback((e) => {
     e.stopPropagation();
-    const user = currentUser || getFirebaseAuth()?.currentUser;
-    if (!user) {
+    const user = currentUser;
+    if (!user && !isFree) {
       handleGateAction("copy-image");
       return;
     }
@@ -4636,7 +4314,7 @@ function ProductDetail({
 
   const handleDownloadClick = useCallback((e) => {
     e.stopPropagation();
-    if (!isSignedIn) {
+    if (!isSignedIn && !isFree) {
       handleGateAction("download");
       return;
     }
@@ -5241,7 +4919,7 @@ function ProductDetail({
                 onClick={handleCopyImageClick}
               >
                 <span className="sc-detail-action-icon" aria-hidden="true">
-                  {(!isSignedIn || (!isFree && !hasAccess)) ? (
+                  {(!isFree && (!isSignedIn || !hasAccess)) ? (
                     <Lock size={18} />
                   ) : copiedImage ? (
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -5252,7 +4930,7 @@ function ProductDetail({
                   )}
                 </span>
                 <span className="sc-detail-action-label">
-                  {!isSignedIn
+                  {(!isFree && !isSignedIn)
                     ? 'Sign in to copy image'
                     : !isFree && !hasAccess
                     ? `Unlock for $${productPrice.toFixed(2)}`
@@ -5270,7 +4948,7 @@ function ProductDetail({
                 onClick={handleCopyPromptClick}
               >
                 <span className="sc-detail-action-icon" aria-hidden="true">
-                  {(!isSignedIn || !hasAccess) ? (
+                  {(!isFree && (!isSignedIn || !hasAccess)) ? (
                     <Lock size={18} />
                   ) : copiedPrompt ? (
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -5284,7 +4962,7 @@ function ProductDetail({
                   )}
                 </span>
                 <span className="sc-detail-action-label">
-                  {!isSignedIn ? 'Sign in to copy AI prompt' : !hasAccess ? `Unlock for $${productPrice.toFixed(2)}` : copiedPrompt ? 'Prompt Copied' : 'Copy AI Prompt'}
+                  {(!isFree && !isSignedIn) ? 'Sign in to copy AI prompt' : !hasAccess ? `Unlock for $${productPrice.toFixed(2)}` : copiedPrompt ? 'Prompt Copied' : 'Copy AI Prompt'}
                 </span>
               </button>
             )}
@@ -5299,7 +4977,7 @@ function ProductDetail({
                 onClick={handleCopySourceClick}
               >
                 <span className="sc-detail-action-icon" aria-hidden="true">
-                  {(!isSignedIn || !hasAccess) ? (
+                  {(!isFree && (!isSignedIn || !hasAccess)) ? (
                     <Lock size={18} />
                   ) : copiedCode ? (
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -5313,7 +4991,7 @@ function ProductDetail({
                   )}
                 </span>
                 <span className="sc-detail-action-label">
-                  {!isSignedIn ? 'Sign in to copy source code' : !hasAccess ? `Unlock for $${productPrice.toFixed(2)}` : copiedCode ? 'Code Copied' : 'Copy Source Code'}
+                  {(!isFree && !isSignedIn) ? 'Sign in to copy source code' : !hasAccess ? `Unlock for $${productPrice.toFixed(2)}` : copiedCode ? 'Code Copied' : 'Copy Source Code'}
                 </span>
               </button>
             )}
@@ -5369,7 +5047,7 @@ function ProductDetail({
                 onClick={handleDownloadClick}
               >
                 <span className="sc-detail-action-icon" aria-hidden="true">
-                  {(!isSignedIn || !hasAccess) ? (
+                  {(!isFree && (!isSignedIn || !hasAccess)) ? (
                     <Lock size={18} />
                   ) : (
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -5380,7 +5058,7 @@ function ProductDetail({
                   )}
                 </span>
                 <span className="sc-detail-action-label">
-                  {!isSignedIn
+                  {(!isFree && !isSignedIn)
                     ? 'Sign in to download the zip file'
                     : !hasAccess
                     ? `Unlock for $${productPrice.toFixed(2)}`

@@ -7,7 +7,7 @@
 
 import type { WorkerEnv } from "../index";
 import { corsHeaders } from "../cors";
-import { verifyFirebaseToken, extractBearerToken } from "../auth";
+import { resolveRequestUser } from "../auth";
 
 // ============================================================
 // Helpers
@@ -24,14 +24,8 @@ function jsonResponse(body: any, status = 200, req?: Request): Response {
 }
 
 async function getAuthedUserId(req: Request, env: WorkerEnv): Promise<string | null> {
-  const token = extractBearerToken(req);
-  if (!token) return null;
-  try {
-    const decoded = await verifyFirebaseToken(env, token);
-    return decoded.uid;
-  } catch {
-    return null;
-  }
+  const user = await resolveRequestUser(req, env);
+  return user?.uid || null;
 }
 
 // ============================================================

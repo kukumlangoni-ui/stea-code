@@ -237,6 +237,12 @@ interface HomepageFilters {
   tab?: string;
   category?: string;
   subcategory?: string;
+  /**
+   * Free‑text search — LIKE across every user‑facing column. When present,
+   * tab/category/subcategory filters are softened (OR'd with the search hit)
+   * so typing "book" on the "components" tab still surfaces library items.
+   */
+  search?: string;
 }
 
 /**
@@ -268,28 +274,52 @@ function buildHomepageWhere(filters: HomepageFilters): { where: string; params: 
   const conditions = ["status = 'published'", "homepageVisible = 1"];
   const params: any[] = [];
 
-  const tab = filters.tab;
-  if (tab) {
-    if (tab === "components") {
-      conditions.push("(tab = 'components' OR featured = 1)");
-    } else if (tab === "library") {
-      conditions.push("(tab = 'library' OR productType IN ('ebook','cheatsheet','note'))");
-    } else {
-      conditions.push("tab = ?");
-      params.push(tab);
+  // Free-text search: when the user has typed something, the tab / category /
+  // subcategory UI still render their pills but the SQL IGNORES THEM so that
+  // "book" on the "components" tab still surfaces library items. The WHERE
+  // below therefore has only status + homepageVisible + search.
+  const q = (filters.search || "").trim();
+
+  if (!q) {
+    const tab = filters.tab;
+    if (tab) {
+      if (tab === "components") {
+        conditions.push("(tab = 'components' OR featured = 1)");
+      } else if (tab === "library") {
+        conditions.push("(tab = 'library' OR productType IN ('ebook','cheatsheet','note'))");
+      } else {
+        conditions.push("tab = ?");
+        params.push(tab);
+      }
+    }
+
+    const category = filters.category;
+    if (category && category !== "All") {
+      conditions.push("category = ?");
+      params.push(category);
+    }
+
+    const subcategory = filters.subcategory;
+    if (subcategory && subcategory !== "All") {
+      conditions.push("subcategory = ?");
+      params.push(subcategory);
     }
   }
 
-  const category = filters.category;
-  if (category && category !== "All") {
-    conditions.push("category = ?");
-    params.push(category);
-  }
-
-  const subcategory = filters.subcategory;
-  if (subcategory && subcategory !== "All") {
-    conditions.push("subcategory = ?");
-    params.push(subcategory);
+  if (q) {
+    // LIKE is case‑insensitive (SQLite default for ASCII). Tags/frameworks are
+    // stored as JSON TEXT — LIKE naturally matches literal tokens inside them
+    // ("ebook" matches '["ebook","pdf"]' at position 1).
+    const needle = `%${q.replace(/%/g, "\\%").replace(/_/g, "\\_")}%`;
+    conditions.push(`(
+      titleEn LIKE ? OR titleZh LIKE ? OR
+      shortDescriptionEn LIKE ? OR shortDescriptionZh LIKE ? OR
+      category LIKE ? OR subcategory LIKE ? OR tab LIKE ? OR
+      productType LIKE ? OR
+      tags LIKE ? OR frameworks LIKE ? OR languages LIKE ? OR
+      COALESCE(extraData, '') LIKE ?
+    )`);
+    params.push(needle, needle, needle, needle, needle, needle, needle, needle, needle, needle, needle, needle);
   }
 
   return { where: conditions.join(" AND "), params };
@@ -406,6 +436,7 @@ export async function handleCatalog(req: Request, env: Env, ctx?: ExecutionConte
     const category = url.searchParams.get("category") || "";
     const subcategory = url.searchParams.get("subcategory") || "";
     const tab = url.searchParams.get("tab") || "";
+    const search = url.searchParams.get("search") || "";
     const limit = Math.min(
       50,
       Math.max(0, Number(url.searchParams.get("limit")) || 0)
@@ -423,9 +454,11 @@ export async function handleCatalog(req: Request, env: Env, ctx?: ExecutionConte
     // v5: paginated homepage response.
     // v6: filter-aware cache keys (tab/category/subcategory in the key) — old
     //     v5 unfiltered entries must never be served for filtered requests.
+    // v7: added free-text `search` to the key so "book" and "form" never collide.
     const homepageCacheKey = new Request(
-      `https://stea-code.internal/catalog/homepage-v6-${limit}-${offset}-` +
-        `${encodeURIComponent(tab)}-${encodeURIComponent(category)}-${encodeURIComponent(subcategory)}`,
+      `https://stea-code.internal/catalog/homepage-v7-${limit}-${offset}-` +
+        `${encodeURIComponent(tab)}-${encodeURIComponent(category)}-${encodeURIComponent(subcategory)}-` +
+        `${encodeURIComponent(search)}`,
       { method: "GET" }
     );
 
@@ -453,7 +486,7 @@ export async function handleCatalog(req: Request, env: Env, ctx?: ExecutionConte
       // Filtering happens in SQL (WHERE tab/category/subcategory) so that
       // LIMIT/OFFSET paginate the FILTERED set, and `total` is the filtered
       // COUNT — not the whole catalog size.
-      const page = await listHomepageCards(env, limit, offset, { tab, category, subcategory });
+      const page = await listHomepageCards(env, limit, offset, { tab, category, subcategory, search });
       products = page.products;
       homepageTotal = page.total;
       globalTotalValue = page.globalTotal;

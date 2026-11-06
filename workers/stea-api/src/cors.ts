@@ -33,6 +33,9 @@ export function corsHeaders(origin: string | null): Record<string, string> {
     "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
     "Access-Control-Max-Age": "86400",
+    // Tell crawlers (incl. AI bots) that API responses are not indexable
+    // content — belt-and-braces alongside robots.txt Disallow: /api/.
+    "X-Robots-Tag": "noindex, nofollow",
     Vary: "Origin",
   };
 }

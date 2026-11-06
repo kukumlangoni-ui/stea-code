@@ -1,9 +1,16 @@
-/* Tailwind v4 — utilities only, no preflight color reset */
-@import "tailwindcss/utilities";
+/* Tailwind v4 — utilities + theme tokens, no preflight (the app ships its
+   own reset below). Importing utilities alone emits nothing, because v4
+   utilities resolve against the theme variables from tailwindcss/theme.css. */
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
 @import "./responsive.css";
 @import "./styles/stea-sites-cards.css";
 
-/* Reset */
+/* Reset — must stay UNLAYERED: Lightning CSS (Tailwind v4 plugin) mangles
+   `@layer base { * { … } }` into invalid CSS and silently drops it.
+   Utility classes that lose to this reset are pinned with `!` at the call
+   site instead (see IconGallery.jsx). */
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body, html, #root {
   background: #05060a;
@@ -2870,4 +2877,96 @@ body {
   --stea-hover: rgba(255, 255, 255, 0.05);
   --stea-danger: #E56565;
   --stea-success: #56C28A;
+}
+
+/* ============================================================
+   Icon Gallery — live preview animations
+   Mapped per icon in IconGallery.jsx (ANIMATION_MAP) and held at
+   frame 0 until the card is hovered, so a 248-tile grid never turns
+   into a washing machine. Unlayered on purpose so page rules can't
+   strip them; copy still serializes a static SVG.
+   ============================================================ */
+@keyframes stea-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+@keyframes stea-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+@keyframes stea-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+@keyframes stea-ring {
+  0%, 100% { transform: rotate(0deg); }
+  15% { transform: rotate(14deg); }
+  30% { transform: rotate(-11deg); }
+  45% { transform: rotate(7deg); }
+  60% { transform: rotate(-4deg); }
+  75% { transform: rotate(2deg); }
+}
+@keyframes stea-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-2px); }
+  40% { transform: translateX(2px); }
+  60% { transform: translateX(-2px); }
+  80% { transform: translateX(2px); }
+}
+@keyframes stea-flip {
+  0%, 35% { transform: rotate(0deg); }
+  50%, 85% { transform: rotate(180deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Rest state: no animation at all, so a card never stays frozen at
+   whatever keyframe the pointer left it on. Hover/focus attaches the
+   animation, which therefore restarts cleanly every time. */
+.anim-spin { transform-origin: center; }
+.anim-pulse { transform-origin: center; }
+.anim-ring { transform-origin: 50% 12%; }
+.anim-flip { transform-origin: center; }
+
+.icon-card:hover .anim-spin,
+.icon-card:focus-visible .anim-spin { animation: stea-spin 1s linear infinite; }
+
+.icon-card:hover .anim-pulse,
+.icon-card:focus-visible .anim-pulse { animation: stea-pulse 1.5s ease-in-out infinite; }
+
+.icon-card:hover .anim-bounce,
+.icon-card:focus-visible .anim-bounce { animation: stea-bounce 1s ease-in-out infinite; }
+
+.icon-card:hover .anim-ring,
+.icon-card:focus-visible .anim-ring { animation: stea-ring 1.1s ease-in-out infinite; }
+
+.icon-card:hover .anim-shake,
+.icon-card:focus-visible .anim-shake { animation: stea-shake 0.5s ease-in-out infinite; }
+
+.icon-card:hover .anim-flip,
+.icon-card:focus-visible .anim-flip { animation: stea-flip 2s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .icon-card:hover .anim-spin, .icon-card:hover .anim-pulse, .icon-card:hover .anim-bounce,
+  .icon-card:hover .anim-ring, .icon-card:hover .anim-shake, .icon-card:hover .anim-flip,
+  .icon-card:focus-visible .anim-spin, .icon-card:focus-visible .anim-pulse, .icon-card:focus-visible .anim-bounce,
+  .icon-card:focus-visible .anim-ring, .icon-card:focus-visible .anim-shake, .icon-card:focus-visible .anim-flip {
+    animation: none;
+  }
+}
+
+/* Live Preview Animations for Icons */
+@keyframes stea-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.stea-animate-spin {
+  animation: stea-spin 1s linear infinite;
+  transform-origin: center;
+}
+
+/* Force the SVG inside to fill the container so it can spin correctly */
+.stea-animate-spin svg {
+  width: 100%;
+  height: 100%;
 }

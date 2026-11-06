@@ -9,13 +9,13 @@
  */
 
 import { corsHeaders } from "../cors";
-import { verifyFirebaseToken, extractBearerToken } from "../auth";
+import { resolveRequestUser } from "../auth";
 import type { WorkerEnv } from "../index";
 
 export async function handleEntitlementsMe(req: Request, env: WorkerEnv): Promise<Response> {
   try {
-    const token = extractBearerToken(req);
-    if (!token) {
+    const user = await resolveRequestUser(req, env);
+    if (!user?.email) {
       return new Response(
         JSON.stringify({ error: "Unauthorized" }),
         {
@@ -24,26 +24,11 @@ export async function handleEntitlementsMe(req: Request, env: WorkerEnv): Promis
         }
       );
     }
-
-    let decoded;
-    try {
-      decoded = await verifyFirebaseToken(env, token);
-    } catch {
-      return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
-        {
-          status: 401,
-          headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) },
-        }
-      );
-    }
-
-    const { uid } = decoded;
 
     const result = await env.DB.prepare(
-      "SELECT productId FROM entitlements WHERE userId = ?"
+      "SELECT productId FROM purchases WHERE lower(email) = ? AND lower(status) = 'paid'"
     )
-      .bind(uid)
+      .bind(user.email)
       .all();
 
     const rows = result.results || [];
@@ -78,31 +63,22 @@ export async function handleEntitlementsMe(req: Request, env: WorkerEnv): Promis
  */
 export async function handlePurchases(req: Request, env: WorkerEnv): Promise<Response> {
   try {
-    const token = extractBearerToken(req);
-    if (!token) {
+    const user = await resolveRequestUser(req, env);
+    if (!user?.email) {
       return new Response(
         JSON.stringify({ error: "Unauthorized" }),
         { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) } }
       );
     }
-    let decoded;
-    try {
-      decoded = await verifyFirebaseToken(env, token);
-    } catch {
-      return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
-        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) } }
-      );
-    }
-    const uid = decoded.uid;
+    const email = user.email;
 
-    // 1. All entitlements for this user
-    const entitlements = await env.DB.prepare(
-      "SELECT * FROM entitlements WHERE userId = ? ORDER BY grantedAt DESC"
-    ).bind(uid).all();
+    // 1. All purchases for this email
+    const purchaseRows = await env.DB.prepare(
+      "SELECT * FROM purchases WHERE lower(email) = ? AND lower(status) = 'paid' ORDER BY grantedAt DESC"
+    ).bind(email).all();
 
     const purchases: any[] = [];
-    for (const ent of (entitlements.results || []) as any[]) {
+    for (const ent of (purchaseRows.results || []) as any[]) {
       const productId = ent.productId;
 
       // 2. Order info (amount, currency, status, date)
@@ -178,23 +154,14 @@ export async function handlePurchases(req: Request, env: WorkerEnv): Promise<Res
  */
 export async function handleProductAccess(req: Request, env: WorkerEnv, productId: string): Promise<Response> {
   try {
-    const token = extractBearerToken(req);
-    if (!token) {
+    const user = await resolveRequestUser(req, env);
+    if (!user?.email) {
       return new Response(
         JSON.stringify({ error: "Authentication required", code: "AUTH_REQUIRED" }),
         { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) } }
       );
     }
-    let decoded;
-    try {
-      decoded = await verifyFirebaseToken(env, token);
-    } catch {
-      return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
-        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) } }
-      );
-    }
-    const uid = decoded.uid;
+    const email = user.email;
 
     // The product might be fetched by id or slug — normalize to the real id first.
     let realId = productId;
@@ -206,8 +173,8 @@ export async function handleProductAccess(req: Request, env: WorkerEnv, productI
     }
 
     const row = await env.DB.prepare(
-      "SELECT 1 FROM entitlements WHERE userId = ? AND (productId = ? OR productId = 'pro-lifetime') LIMIT 1"
-    ).bind(uid, realId).first();
+      "SELECT 1 FROM purchases WHERE lower(email) = ? AND (productId = ? OR productId = 'pro-lifetime') AND lower(status) = 'paid' LIMIT 1"
+    ).bind(email, realId).first();
 
     if (!row) {
       return new Response(

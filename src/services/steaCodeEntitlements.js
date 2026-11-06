@@ -4,8 +4,6 @@
  * Used by the homepage to gate premium product copy/download buttons.
  */
 
-import { getFirebaseAuth } from "../firebase.js";
-
 const EMPTY_STATE = { hasProLifetime: false, productIds: new Set() };
 
 /**
@@ -18,19 +16,12 @@ const EMPTY_STATE = { hasProLifetime: false, productIds: new Set() };
  */
 export async function fetchEntitlements() {
   try {
-    const auth = getFirebaseAuth();
-    const user = auth?.currentUser;
-    if (!user) {
-      return EMPTY_STATE;
-    }
-
-    const token = await user.getIdToken();
-
+    // Cloudflare Access authenticates via the session cookie — same-origin
+    // requests carry it automatically.
     const res = await fetch("/api/stea-code/entitlements/me", {
       method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      credentials: "same-origin",
+      cache: "no-store",
     });
 
     if (!res.ok) {

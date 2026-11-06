@@ -1,29 +1,41 @@
 import { useEffect } from "react";
+import { steaCodeGraph } from "../utils/steaCodeOrgSchema.js";
 
-const DEFAULT_TITLE = "STEA Africa — Education, AI Tools, Websites & Digital Services for Africa";
+const DEFAULT_TITLE = "SteaCode — Premium Code Components & UI Kits";
 const DEFAULT_DESCRIPTION = "STEA Africa is a digital ecosystem for education, AI tools, curated websites, creators, jobs, and digital services across Africa.";
 const DEFAULT_IMAGE = "https://stea.africa/seo/stea-og.jpg";
 
 function upsertMeta(selectorAttr, key, content) {
   if (!content) return;
-  let meta = document.head.querySelector(`meta[${selectorAttr}="${key}"]`);
+  const selector = `meta[${selectorAttr}="${key}"]`;
+  let meta = document.head.querySelector(selector);
   if (!meta) {
     meta = document.createElement("meta");
     meta.setAttribute(selectorAttr, key);
     document.head.appendChild(meta);
   }
   meta.setAttribute("content", content);
+  // Never leave two meta tags with the same key in <head> (Bing: "More than
+  // one Meta Description tag") — drop any duplicates beyond the first.
+  document.head.querySelectorAll(selector).forEach((el, i) => {
+    if (i > 0) el.remove();
+  });
 }
 
 function upsertLink(rel, href) {
   if (!href) return;
-  let link = document.head.querySelector(`link[rel="${rel}"]`);
+  const selector = `link[rel="${rel}"]`;
+  let link = document.head.querySelector(selector);
   if (!link) {
     link = document.createElement("link");
     link.setAttribute("rel", rel);
     document.head.appendChild(link);
   }
   link.setAttribute("href", href);
+  // Same dedupe rule for <link rel="canonical"> etc.
+  document.head.querySelectorAll(selector).forEach((el, i) => {
+    if (i > 0) el.remove();
+  });
 }
 
 function toAbsoluteUrl(value, base = "https://stea.africa") {
@@ -33,6 +45,23 @@ function toAbsoluteUrl(value, base = "https://stea.africa") {
   } catch {
     return "";
   }
+}
+
+function upsertJsonLd(id, data) {
+  if (!data) return;
+  let el = document.head.querySelector(`#${id}`);
+  if (!el) {
+    el = document.createElement("script");
+    el.type = "application/ld+json";
+    el.id = id;
+    document.head.appendChild(el);
+  }
+  el.textContent = JSON.stringify(data);
+}
+
+function removeJsonLd(id) {
+  const el = document.head.querySelector(`#${id}`);
+  if (el) el.remove();
 }
 
 export default function SEO({
@@ -58,6 +87,10 @@ export default function SEO({
     const finalRobots = robots || (noIndex ? "noindex,nofollow" : "index,follow");
     const keywordText = Array.isArray(keywords) ? keywords.filter(Boolean).join(", ") : keywords;
 
+    // Exactly one <title> in <head> (Bing: "More than one title tag").
+    document.head.querySelectorAll("title").forEach((el, i) => {
+      if (i > 0) el.remove();
+    });
     document.title = finalTitle;
     upsertMeta("name", "description", finalDescription);
     upsertMeta("name", "robots", finalRobots);
@@ -77,18 +110,22 @@ export default function SEO({
     upsertMeta("name", "twitter:description", finalDescription);
     upsertMeta("name", "twitter:image", finalImage);
 
-    let jsonLd = document.head.querySelector("#seo-json-ld");
+    // 1. Always inject SteaCode's Organization + founder Person schema — this
+    //    is the "source of truth" for every crawler (Google, OpenAI, Claude,
+    //    Perplexity). Never remove it, even when a page passes structuredData.
+    upsertJsonLd("seo-org-json-ld", steaCodeGraph());
+
+    // 2. Merge page-specific structured data (Product, SoftwareApplication,
+    //    BreadcrumbList, etc.) with the org schema so the graph is cohesive.
+    removeJsonLd("seo-page-json-ld");
     if (structuredData) {
-      if (!jsonLd) {
-        jsonLd = document.createElement("script");
-        jsonLd.type = "application/ld+json";
-        jsonLd.id = "seo-json-ld";
-        document.head.appendChild(jsonLd);
-      }
-      jsonLd.textContent = JSON.stringify(structuredData);
-    } else if (jsonLd) {
-      jsonLd.remove();
+      upsertJsonLd("seo-page-json-ld", structuredData);
     }
+
+    return () => {
+      removeJsonLd("seo-org-json-ld");
+      removeJsonLd("seo-page-json-ld");
+    };
   }, [title, description, keywords, canonical, canonicalUrl, ogImage, image, ogUrl, robots, noIndex, type, siteName, structuredData]);
 
   return null;

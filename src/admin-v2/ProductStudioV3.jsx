@@ -92,6 +92,15 @@ const EMPTY_PRODUCT = {
   cardCoverHtml: "",
   bookContentHtml: "",
   bookDownloadUrl: "",
+  // E-book & Notes Store fields (D1 migration: coverImageUrl, samplePdfUrl,
+  // pdfUrl, isFree, titleZh, descriptionZh, priceCny)
+  coverImageUrl: "",
+  samplePdfUrl: "",
+  pdfUrl: "",
+  isFree: false,
+  titleZh: "",
+  descriptionZh: "",
+  priceCny: 0,
   tags: "",
   frameworks: "",
   included: "",
@@ -453,6 +462,32 @@ function ImageUpload({ value, onUpload, onClear, uploading, label = "Upload Imag
 }
 
 /**
+ * Small cover thumbnail that renders either a saved URL or a locally picked
+ * File (object URL, revoked on change/unmount) — used by the Store Cover
+ * Image uploader in the eBook tab.
+ */
+function CoverThumb({ file, url }) {
+  const [src, setSrc] = useState(url || "");
+  useEffect(() => {
+    if (!file) {
+      setSrc(url || "");
+      return;
+    }
+    const objectUrl = URL.createObjectURL(file);
+    setSrc(objectUrl);
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [file, url]);
+  if (!src) return null;
+  return (
+    <img
+      src={src}
+      alt="Cover preview"
+      style={{ width: 96, aspectRatio: "2 / 3", objectFit: "cover", borderRadius: 8, display: "block" }}
+    />
+  );
+}
+
+/**
  * Map upload errors to consistent, human-readable messages.
  * Single source of truth for all upload error strings.
  */
@@ -605,6 +640,12 @@ export function ProductStudioV3({
       // `ebookFeatures` (an extra field → products.extraData JSON), which is why
       // it is read from both the flattened row and a nested extraData object.
       cardCoverHtml: String(product?.extraData?.cardCoverHtml ?? product?.cardCoverHtml ?? ""),
+      // Store "Is Free" flag — rows predating the migration have no isFree
+      // column, so derive it from pricingType for them.
+      isFree: typeof product?.isFree === "boolean"
+        ? product.isFree
+        : product?.pricingType !== "premium",
+      priceCny: Number(product?.priceCny) || 0,
     };
   });
 
@@ -785,6 +826,16 @@ export function ProductStudioV3({
   const [bookUploading, setBookUploading] = useState(false);
   const [bookUploadProgress, setBookUploadProgress] = useState(0);
   const bookInputRef = useRef(null);
+
+  // Deferred E-book & Notes Store asset uploads. Files are picked in the
+  // eBook tab and uploaded to R2 only when Save is clicked — a brand-new
+  // product needs its real ID (for the R2 path) which only exists after the
+  // first save. `storeUploading` drives the saving-state indicator.
+  const [storeFiles, setStoreFiles] = useState({ cover: null, sample: null, pdf: null });
+  const [storeUploading, setStoreUploading] = useState(false);
+  const coverInputRef = useRef(null);
+  const sampleInputRef = useRef(null);
+  const pdfInputRef = useRef(null);
 
   // XHR upload with real progress — fetch() cannot report upload progress,
   // which is why uploads sat at 0%. Same contract as uploadSteaCodePreviewAssets:
@@ -1081,6 +1132,50 @@ export function ProductStudioV3({
     }
   };
 
+  // ── E-book & Notes Store asset pickers ─────────────────────────────────
+  // Files are NOT uploaded on select — they upload when Save is clicked
+  // (see the deferred upload step inside save()). Validation mirrors the
+  // worker's per-field rules: cover = image, sample/pdf = PDF, max 100 MB.
+  const pickStoreFile = (slot, file) => {
+    if (!file) return;
+    setError("");
+    if (slot === "cover") {
+      const ok = file.type.startsWith("image/") || /\.(png|jpe?g|webp|gif|avif|svg)$/i.test(file.name);
+      if (!ok) {
+        setError("Cover must be an image (PNG, JPG or WebP).");
+        return;
+      }
+    } else {
+      const ok = /\.pdf$/i.test(file.name) || file.type === "application/pdf";
+      if (!ok) {
+        setError("Only .pdf files are accepted for the Sample and Full PDF.");
+        return;
+      }
+    }
+    if (file.size > 100 * 1024 * 1024) {
+      setError("Store files must be under 100 MB.");
+      return;
+    }
+    setStoreFiles((prev) => ({ ...prev, [slot]: file }));
+    setDirty(true);
+  };
+
+  const clearStoreFile = (slot) => {
+    setStoreFiles((prev) => ({ ...prev, [slot]: null }));
+  };
+
+  // "Is Free" drives the legacy pricing columns too, so every existing
+  // reader (storefront, entitlements, reader gate) keeps working unchanged.
+  const handleIsFreeToggle = (v) => {
+    setForm((prev) => ({
+      ...prev,
+      isFree: v,
+      pricingType: v ? "free" : "premium",
+      ...(v ? { price: 0 } : {}),
+    }));
+    setDirty(true);
+  };
+
   // Save logic
   const save = async (publishAction = null) => {
     setError("");
@@ -1258,6 +1353,40 @@ export function ProductStudioV3({
       invalidateSteaCodeProductPreviewCache(realProductId);
 
       setDirty(false);
+
+      // ── Deferred store asset uploads ─────────────────────────────────────
+      // Cover / Sample PDF / Full PDF were picked in the eBook tab and upload
+      // only now: a brand-new product just got its real ID from the save
+      // above, and every upload needs that ID for its R2 path. The worker
+      // persists each returned URL onto the product row itself; the setForm
+      // mirror keeps the editor in sync so a follow-up save never wipes them.
+      const storeUploadPlan = [
+        { slot: "cover", field: "cover", column: "coverImageUrl" },
+        { slot: "sample", field: "sample", column: "samplePdfUrl" },
+        { slot: "pdf", field: "pdf", column: "pdfUrl" },
+      ];
+      const pendingStoreUploads = storeUploadPlan.filter(({ slot }) => storeFiles[slot]);
+      if (pendingStoreUploads.length) {
+        setStoreUploading(true);
+        const failedUploads = [];
+        for (const { slot, field, column } of pendingStoreUploads) {
+          try {
+            const up = await uploadSteaCodeBookFile(realProductId, storeFiles[slot], { field });
+            if (!up?.url) throw new Error(up?.error || "Upload failed");
+            setForm((prev) => ({ ...prev, [column]: up.url }));
+            setStoreFiles((prev) => ({ ...prev, [slot]: null }));
+          } catch (upErr) {
+            failedUploads.push(`${column}: ${upErr?.message || "upload failed"}`);
+          }
+        }
+        setStoreUploading(false);
+        if (failedUploads.length) {
+          setError(
+            `Product saved, but these uploads failed — click Save again to retry: ${failedUploads.join("; ")}`
+          );
+        }
+      }
+
       // If we asked to publish but the server kept it a draft (e.g. staff
       // editor role is forced to draft by the backend), say so instead of
       // showing a misleading "Published ✓".
@@ -1298,6 +1427,11 @@ export function ProductStudioV3({
           tags: (result.product.tags || []).join(", "),
           frameworks: (result.product.frameworks || []).join(", "),
           included: (result.product.included || []).join("\n"),
+          // Never let a stale pre-upload save response wipe the store asset
+          // URLs the worker persisted during this save's upload step below.
+          coverImageUrl: result.product.coverImageUrl || prev.coverImageUrl || "",
+          samplePdfUrl: result.product.samplePdfUrl || prev.samplePdfUrl || "",
+          pdfUrl: result.product.pdfUrl || prev.pdfUrl || "",
         }));
       }
     } catch (err) {
@@ -1367,6 +1501,12 @@ export function ProductStudioV3({
       slug: form.slug || product.id,
       titleEn: form.titleEn,
       titleZh: form.titleZh,
+      descriptionZh: form.descriptionZh,
+      priceCny: Number(form.priceCny) || 0,
+      isFree: Boolean(form.isFree),
+      coverImageUrl: form.coverImageUrl || "",
+      samplePdfUrl: form.samplePdfUrl || "",
+      pdfUrl: form.pdfUrl || "",
       shortDescriptionEn: form.shortDescriptionEn,
       shortDescriptionZh: form.shortDescriptionZh,
       price: finalPrice,
@@ -2595,6 +2735,258 @@ export function ProductStudioV3({
                   value={form.bookDownloadUrl}
                   onChange={(v) => updateForm("bookDownloadUrl", v)}
                   placeholder="/api/stea-code/media/products/<id>/book/book.pdf?download=1"
+                />
+              </Field>
+            </Section>
+
+            <Section title="Store Listing (中文)" subtitle="Chinese metadata shown by the E-book & Notes Store">
+              <Field label="Chinese Title" full>
+                <TextInput
+                  value={form.titleZh}
+                  onChange={(v) => updateForm("titleZh", v)}
+                  placeholder="中文标题"
+                />
+              </Field>
+              <Field label="Chinese Description" full>
+                <TextArea
+                  value={form.descriptionZh}
+                  onChange={(v) => updateForm("descriptionZh", v)}
+                  rows={4}
+                  placeholder="中文简介 — 显示在商店销售页"
+                />
+              </Field>
+              <div className="psv3-grid">
+                <Field label="Price (CNY ¥)" hint="Chinese storefront price — USD price is set in the Pricing section">
+                  <TextInput
+                    type="number"
+                    value={String(form.priceCny ?? "")}
+                    onChange={(v) => updateForm("priceCny", Number(v) || 0)}
+                    placeholder="0"
+                  />
+                </Field>
+                <Toggle
+                  value={!!form.isFree}
+                  onChange={handleIsFreeToggle}
+                  label={form.isFree ? "Free in the store" : "Paid in the store"}
+                />
+              </div>
+            </Section>
+
+            <Section title="Store Cover Image" subtitle="Rendered on the 3D book in the store grid">
+              <Field label="Cover Image" full hint="PNG, JPG or WebP · portrait 2:3 works best · uploads to R2 when you click Save">
+                <input
+                  ref={coverInputRef}
+                  type="file"
+                  accept="image/*"
+                  hidden
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) pickStoreFile("cover", f);
+                    e.target.value = "";
+                  }}
+                />
+                <div style={{ display: "grid", gap: 10 }}>
+                  <CoverThumb file={storeFiles.cover} url={storeFiles.cover ? "" : form.coverImageUrl} />
+                  {storeFiles.cover ? (
+                    <div className="psv3-file-row">
+                      <CheckCircle2 size={14} className="psv3-file-ok" />
+                      <span className="psv3-file-name">{storeFiles.cover.name}</span>
+                      <span className="psv3-file-size">{(storeFiles.cover.size / (1024 * 1024)).toFixed(1)} MB</span>
+                      <span style={{ marginLeft: "auto", fontSize: 11, color: "#b45309", fontWeight: 700 }}>uploads on Save</span>
+                      <button
+                        type="button"
+                        onClick={() => clearStoreFile("cover")}
+                        style={{ background: "none", border: "none", cursor: "pointer", color: "#c00", padding: 2 }}
+                       
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                  ) : form.coverImageUrl ? (
+                    <div className="psv3-file-row">
+                      <CheckCircle2 size={14} className="psv3-file-ok" />
+                      <span className="psv3-file-name">{String(form.coverImageUrl).split("?")[0].split("/").pop()}</span>
+                      <a
+                        href={form.coverImageUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{ marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: 4, color: "#111", fontSize: 12, fontWeight: 700 }}
+                      >
+                        <Download size={12} /> Preview
+                      </a>
+                      {(
+                        <>
+                          <button type="button" className="psv3-btn psv3-btn-ghost" style={{ padding: "4px 10px", fontSize: 12 }} onClick={() => coverInputRef.current?.click()}>
+                            Replace
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => updateForm("coverImageUrl", "")}
+                            style={{ background: "none", border: "none", cursor: "pointer", color: "#c00", padding: 2 }}
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  ) : (
+                    <button type="button" className="psv3-upload" onClick={() => coverInputRef.current?.click()}>
+                      <Upload size={16} className="psv3-upload-icon" />
+                      <div className="psv3-upload-text">Upload Cover Image</div>
+                      <div className="psv3-upload-hint">PNG, JPG or WebP · portrait 2:3 · uploads when you click Save</div>
+                    </button>
+                  )}
+                </div>
+              </Field>
+              <Field label="Cover Image URL" full hint="Saved on the product as coverImageUrl — the store uses it automatically when set">
+                <TextInput
+                  value={form.coverImageUrl}
+                  onChange={(v) => updateForm("coverImageUrl", v)}
+                  placeholder="/api/stea-code/media/products/…/cover/cover.png"
+                />
+              </Field>
+            </Section>
+
+            <Section title="Sample PDF" subtitle="Public first-chapter preview shown on the sales page">
+              <Field label="Sample PDF" full hint="PDF only · max 100MB · uploads to R2 when you click Save">
+                <input
+                  ref={sampleInputRef}
+                  type="file"
+                  accept="application/pdf"
+                  hidden
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) pickStoreFile("sample", f);
+                    e.target.value = "";
+                  }}
+                />
+                {storeFiles.sample ? (
+                  <div className="psv3-file-row">
+                    <CheckCircle2 size={14} className="psv3-file-ok" />
+                    <span className="psv3-file-name">{storeFiles.sample.name}</span>
+                    <span className="psv3-file-size">{(storeFiles.sample.size / (1024 * 1024)).toFixed(1)} MB</span>
+                    <span style={{ marginLeft: "auto", fontSize: 11, color: "#b45309", fontWeight: 700 }}>uploads on Save</span>
+                    <button
+                      type="button"
+                      onClick={() => clearStoreFile("sample")}
+                      style={{ background: "none", border: "none", cursor: "pointer", color: "#c00", padding: 2 }}
+                     
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
+                ) : form.samplePdfUrl ? (
+                  <div className="psv3-file-row">
+                    <CheckCircle2 size={14} className="psv3-file-ok" />
+                    <span className="psv3-file-name">{String(form.samplePdfUrl).split("?")[0].split("/").pop()}</span>
+                    <a
+                      href={form.samplePdfUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{ marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: 4, color: "#111", fontSize: 12, fontWeight: 700 }}
+                    >
+                      <Download size={12} /> Preview
+                    </a>
+                    {(
+                      <>
+                        <button type="button" className="psv3-btn psv3-btn-ghost" style={{ padding: "4px 10px", fontSize: 12 }} onClick={() => sampleInputRef.current?.click()}>
+                          Replace
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => updateForm("samplePdfUrl", "")}
+                          style={{ background: "none", border: "none", cursor: "pointer", color: "#c00", padding: 2 }}
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </>
+                    )}
+                  </div>
+                ) : (
+                  <button type="button" className="psv3-upload" onClick={() => sampleInputRef.current?.click()}>
+                    <Upload size={16} className="psv3-upload-icon" />
+                    <div className="psv3-upload-text">Upload Sample PDF</div>
+                    <div className="psv3-upload-hint">PDF only · max 100MB · uploads when you click Save</div>
+                  </button>
+                )}
+              </Field>
+              <Field label="Sample PDF URL" full hint="Saved on the product as samplePdfUrl">
+                <TextInput
+                  value={form.samplePdfUrl}
+                  onChange={(v) => updateForm("samplePdfUrl", v)}
+                  placeholder="/api/stea-code/media/products/…/sample/sample.pdf"
+                />
+              </Field>
+            </Section>
+
+            <Section title="Full PDF (Premium Download)" subtitle="Served by the reader's 'Download PDF for Premium' button">
+              <Field label="Full PDF" full hint="PDF only · max 100MB · uploads to R2 when you click Save">
+                <input
+                  ref={pdfInputRef}
+                  type="file"
+                  accept="application/pdf"
+                  hidden
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) pickStoreFile("pdf", f);
+                    e.target.value = "";
+                  }}
+                />
+                {storeFiles.pdf ? (
+                  <div className="psv3-file-row">
+                    <CheckCircle2 size={14} className="psv3-file-ok" />
+                    <span className="psv3-file-name">{storeFiles.pdf.name}</span>
+                    <span className="psv3-file-size">{(storeFiles.pdf.size / (1024 * 1024)).toFixed(1)} MB</span>
+                    <span style={{ marginLeft: "auto", fontSize: 11, color: "#b45309", fontWeight: 700 }}>uploads on Save</span>
+                    <button
+                      type="button"
+                      onClick={() => clearStoreFile("pdf")}
+                      style={{ background: "none", border: "none", cursor: "pointer", color: "#c00", padding: 2 }}
+                     
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
+                ) : form.pdfUrl ? (
+                  <div className="psv3-file-row">
+                    <CheckCircle2 size={14} className="psv3-file-ok" />
+                    <span className="psv3-file-name">{String(form.pdfUrl).split("?")[0].split("/").pop()}</span>
+                    <a
+                      href={form.pdfUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{ marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: 4, color: "#111", fontSize: 12, fontWeight: 700 }}
+                    >
+                      <Download size={12} /> Preview
+                    </a>
+                    {(
+                      <>
+                        <button type="button" className="psv3-btn psv3-btn-ghost" style={{ padding: "4px 10px", fontSize: 12 }} onClick={() => pdfInputRef.current?.click()}>
+                          Replace
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => updateForm("pdfUrl", "")}
+                          style={{ background: "none", border: "none", cursor: "pointer", color: "#c00", padding: 2 }}
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </>
+                    )}
+                  </div>
+                ) : (
+                  <button type="button" className="psv3-upload" onClick={() => pdfInputRef.current?.click()}>
+                    <Upload size={16} className="psv3-upload-icon" />
+                    <div className="psv3-upload-text">Upload Full PDF</div>
+                    <div className="psv3-upload-hint">PDF only · max 100MB · uploads when you click Save</div>
+                  </button>
+                )}
+              </Field>
+              <Field label="Full PDF URL" full hint="Saved on the product as pdfUrl — premium readers only">
+                <TextInput
+                  value={form.pdfUrl}
+                  onChange={(v) => updateForm("pdfUrl", v)}
+                  placeholder="/api/stea-code/media/products/…/pdf/book.pdf"
                 />
               </Field>
             </Section>

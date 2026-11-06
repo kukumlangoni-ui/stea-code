@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { fetchEntitlements } from "../../services/steaCodeEntitlements.js";
 import { getSteaCodeCatalog, getSteaCodeEbookContent } from "../../services/steaCodeCommerce.js";
-import { getFirebaseAuth } from "../../firebase.js";
 import libraryReaderHtml from "../../components/stea-code/library-reader.html?raw";
 
 /**
@@ -71,7 +70,7 @@ export default function LibraryReader({ user, authLoading }) {
   }, [slug]);
 
   // Access check for the signed-in user.
-  const effectiveUser = user || getFirebaseAuth()?.currentUser || null;
+  const effectiveUser = user || null;
   useEffect(() => {
     let cancelled = false;
     if (!effectiveUser) {

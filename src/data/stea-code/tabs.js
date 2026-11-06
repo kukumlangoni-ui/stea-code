@@ -61,6 +61,15 @@ export const TABS = {
       { id: "Cheat Sheets", label: "Cheat Sheets & Notes", tooltip: "Quick references" },
     ],
   },
+  // Icons is a local static gallery (src/data/iconsData.js), not a catalog
+  // tab — its category pills are rendered by <IconGallery /> itself, so the
+  // shared pill row stays empty here.
+  icons: {
+    id: "icons",
+    label: "Icons",
+    description: "Free SVG icons",
+    categories: [],
+  },
 };
 
 export const SUBCATEGORIES = {

@@ -1,98 +1,14 @@
-import { onAuthStateChanged } from "firebase/auth";
-import { getFirebaseAuth } from "../firebase.js";
-
 const API_BASE = ""; // same-origin — Cloudflare Worker Route handles /api/*
 
 /**
- * Build request headers with the signed-in user's Firebase ID token.
+ * Build request headers for an authenticated call.
  *
- * `optional` — send the token when there is a session, otherwise send no
- * Authorization header and let the Worker decide. That is what free books
- * need: the /book-content route serves `pricingType === "free"` without auth,
- * so throwing AUTH_REQUIRED client-side would wrongly gate a free product.
+ * Cloudflare Access owns the session cookie, so there is no token to attach —
+ * same-origin GET/POST requests already carry `CF_Authorization`. The Worker
+ * resolves the user from `Cf-Access-Authenticated-User-Email`.
  */
-async function authHeaders({ optional = false } = {}) {
-  const auth = getFirebaseAuth();
-
-  if (!auth) {
-    if (optional) return { "Content-Type": "application/json" };
-    const error = new Error("AUTH_REQUIRED");
-    error.code = "AUTH_REQUIRED";
-    throw error;
-  }
-
-  // Optional callers must never wait for auth. A free book has to paint in
-  // milliseconds, and Firebase session restore can take seconds — the reader
-  // retries once auth settles, so a missing token here is not a problem.
-  if (optional) {
-    const current = auth.currentUser;
-    if (!current) return { "Content-Type": "application/json" };
-    try {
-      const token = await current.getIdToken(true);
-      return {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      };
-    } catch {
-      // Token refresh failed — the Worker decides; paid routes still fail closed.
-      return { "Content-Type": "application/json" };
-    }
-  }
-
-  if (typeof auth.authStateReady === "function") {
-    await auth.authStateReady();
-  }
-
-  let user = auth.currentUser;
-
-  if (!user) {
-    user = await new Promise((resolve) => {
-      let finished = false;
-      let unsubscribe = () => {};
-
-      const finish = (value) => {
-        if (finished) return;
-        finished = true;
-
-        try {
-          unsubscribe();
-        } catch {}
-
-        resolve(value || null);
-      };
-
-      const timer = window.setTimeout(() => {
-        finish(auth.currentUser);
-      }, 8000);
-
-      unsubscribe = onAuthStateChanged(
-        auth,
-        (nextUser) => {
-          if (!nextUser) return;
-          window.clearTimeout(timer);
-          finish(nextUser);
-        },
-        () => {
-          window.clearTimeout(timer);
-          finish(null);
-        }
-      );
-    });
-  }
-
-  if (!user) {
-    if (optional) return { "Content-Type": "application/json" };
-    const error = new Error("AUTH_REQUIRED");
-    error.code = "AUTH_REQUIRED";
-    throw error;
-  }
-
-  const token = await user.getIdToken(true);
-
-  return {
-    "Content-Type": "application/json",
-    Authorization: `Bearer ${token}`,
-  };
+async function authHeaders() {
+  return { "Content-Type": "application/json" };
 }
 
 async function parseResponse(response) {
@@ -442,12 +358,20 @@ export async function getSteaCodeCatalog(options = {}) {
   const rawCategory = String(options?.category ?? "").trim();
   const category = rawCategory && rawCategory !== "All" ? rawCategory : "";
   const activeTab = String(options?.activeTab ?? "").trim();
+  const rawSearch = String(options?.search ?? "").trim();
+  const search = rawSearch.length >= 1 ? rawSearch : "";
+  // When the user is searching, we send an empty tab/category to the Worker
+  // so that the SQL ignores those columns and finds "book" everywhere —
+  // component tabs, library tabs, all productTypes. The UI tab pills remain
+  // visible (they still reflect the user's current section) but don't filter.
+  const effectiveTab = search ? "" : activeTab;
+  const effectiveCategory = search ? "" : category;
   const cacheScope = scope === "homepage"
-    ? `${scope}:${limit}:${offset}:${category}:${activeTab}`
+    ? `${scope}:${limit}:${offset}:${effectiveCategory}:${effectiveTab}:${search}`
     : scope;
   const homepageQuery = limit > 0
-    ? `?scope=homepage&limit=${limit}&offset=${offset}${category ? `&category=${encodeURIComponent(category)}` : ""}${activeTab ? `&tab=${encodeURIComponent(activeTab)}` : ""}`
-    : `?scope=homepage${category ? `&category=${encodeURIComponent(category)}` : ""}${activeTab ? `&tab=${encodeURIComponent(activeTab)}` : ""}`;
+    ? `?scope=homepage&limit=${limit}&offset=${offset}${effectiveCategory ? `&category=${encodeURIComponent(effectiveCategory)}` : ""}${effectiveTab ? `&tab=${encodeURIComponent(effectiveTab)}` : ""}${search ? `&search=${encodeURIComponent(search)}` : ""}`
+    : `?scope=homepage${effectiveCategory ? `&category=${encodeURIComponent(effectiveCategory)}` : ""}${effectiveTab ? `&tab=${encodeURIComponent(effectiveTab)}` : ""}${search ? `&search=${encodeURIComponent(search)}` : ""}`;
   const baseUrl = scope
     ? `${API_BASE}/api/stea-code/catalog${homepageQuery}`
     : `${API_BASE}/api/stea-code/catalog`;
@@ -599,17 +523,8 @@ export async function getSteaCodeProductCardPreview(productId, options = {}) {
     }
   }
 
-  // 2. Build headers — include auth token if user is signed in
+  // 2. Same-origin request — the Access cookie identifies the user when present.
   const headers = { Accept: "application/json" };
-  const auth = getFirebaseAuth();
-  if (auth?.currentUser) {
-    try {
-      const token = await auth.currentUser.getIdToken(/* forceRefresh */ false);
-      headers.Authorization = `Bearer ${token}`;
-    } catch {
-      // Token retrieval failed — proceed without auth (gets sanitized preview)
-    }
-  }
 
   const fetchPromise = fetch(
     `${API_BASE}/api/stea-code/products/${encodeURIComponent(cleanId)}/preview-card?_t=${Date.now()}`,

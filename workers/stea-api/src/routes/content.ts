@@ -8,7 +8,7 @@
 
 import { Env, getDoc, listDocs } from "../firestore";
 import { corsHeaders } from "../cors";
-import { extractBearerToken, verifyFirebaseToken } from "../auth";
+import { resolveRequestUser } from "../auth";
 
 const PRODUCTS_COLLECTION = "stea_code_products";
 const PREVIEWS_COLLECTION = "stea_code_product_previews";
@@ -212,15 +212,14 @@ export async function handleFreeContent(req: Request, env: Env, productId: strin
 
 export async function handleContent(req: Request, env: Env, productId: string): Promise<Response> {
   try {
-    const token = extractBearerToken(req);
-    if (!token) {
+    const user = await resolveRequestUser(req, env);
+    if (!user?.email) {
       return new Response(JSON.stringify({ error: "Authentication required", code: "AUTH_REQUIRED" }), {
         status: 401,
         headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) },
       });
     }
 
-    const decoded = await verifyFirebaseToken(env, token);
     const productDoc = await getDoc(env, PRODUCTS_COLLECTION, productId);
     if (!productDoc) {
       return new Response(JSON.stringify({ error: "Product not found" }), {
@@ -235,9 +234,9 @@ export async function handleContent(req: Request, env: Env, productId: string): 
     if (!isFree) {
       // Check entitlement: per-product OR pro-lifetime (D1, keyed by userId)
       entitlementRow = await env.DB.prepare(
-        "SELECT orderId, licenseType FROM entitlements WHERE userId = ? AND (productId = ? OR productId = 'pro-lifetime') LIMIT 1"
+        "SELECT orderId FROM purchases WHERE lower(email) = ? AND (productId = ? OR productId = 'pro-lifetime') AND lower(status) = 'paid' LIMIT 1"
       )
-        .bind(decoded.uid, productDoc.id)
+        .bind(user.email, productDoc.id)
         .first();
       if (!entitlementRow) {
         return new Response(JSON.stringify({ error: "Premium access required", code: "ACCESS_DENIED" }), {
@@ -373,17 +372,9 @@ export async function handleBookContent(req: Request, env: Env, productId: strin
     const isFree =
       doc.data.pricingType === "free" || !(Number(doc.data.price) > 0);
     if (!isFree) {
-      const token = extractBearerToken(req);
-      if (!token) {
+      const user = await resolveRequestUser(req, env);
+      if (!user?.email) {
         return new Response(JSON.stringify({ error: "Authentication required", code: "AUTH_REQUIRED" }), {
-          status: 401,
-          headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) },
-        });
-      }
-
-      const decoded = await verifyFirebaseToken(env, token);
-      if (!decoded) {
-        return new Response(JSON.stringify({ error: "Invalid or expired session", code: "AUTH_REQUIRED" }), {
           status: 401,
           headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) },
         });
@@ -391,9 +382,9 @@ export async function handleBookContent(req: Request, env: Env, productId: strin
 
       // Entitlement: per-product OR pro-lifetime (same check as /content).
       const entitlementRow = await env.DB.prepare(
-        "SELECT orderId, licenseType FROM entitlements WHERE userId = ? AND (productId = ? OR productId = 'pro-lifetime') LIMIT 1"
+        "SELECT orderId FROM purchases WHERE lower(email) = ? AND (productId = ? OR productId = 'pro-lifetime') AND lower(status) = 'paid' LIMIT 1"
       )
-        .bind(decoded.uid, doc.id)
+        .bind(user.email, doc.id)
         .first();
 
       if (!entitlementRow) {
@@ -501,24 +492,19 @@ export async function handleProductPreviewCard(req: Request, env: Env, productId
     let hasFullAccess = isFree;
 
     if (!isFree) {
-      // Check auth — Authorization header is optional for this endpoint
-      const token = extractBearerToken(req);
-      if (token) {
+      // Access is optional for this endpoint — unauthenticated callers get the preview.
+      const user = await resolveRequestUser(req, env);
+      if (user?.email) {
         try {
-          const decoded = await verifyFirebaseToken(env, token);
-          const uid = decoded.uid;
-
-          // Check D1 entitlements: pro-lifetime OR per-product entitlement
           const result = await env.DB.prepare(
-            "SELECT productId FROM entitlements WHERE userId = ? AND (productId = ? OR productId = 'pro-lifetime') LIMIT 1"
+            "SELECT productId FROM purchases WHERE lower(email) = ? AND (productId = ? OR productId = 'pro-lifetime') AND lower(status) = 'paid' LIMIT 1"
           )
-            .bind(uid, product.id)
+            .bind(user.email, product.id)
             .all();
 
           const rows = result.results || [];
           hasFullAccess = rows.length > 0;
         } catch {
-          // Token invalid or verification failed — treat as unauthenticated
           hasFullAccess = false;
         }
       }

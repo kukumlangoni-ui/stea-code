@@ -1,61 +1,67 @@
 /**
  * Download route — returns a 302 redirect to a signed R2 URL.
- * Free products: no auth. Premium: requires entitlement.
+ * Requires a signed-in email (first-party `stea_session` cookie or Cloudflare
+ * Access) and, for paid products, a matching row in `purchases`.
  */
 
 import { getDoc } from "../firestore";
-import type { Env } from "../firestore";
 import { corsHeaders } from "../cors";
 import { getSignedDownloadUrl } from "../r2";
-import { verifyFirebaseToken, extractBearerToken } from "../auth";
+import { resolveAccessEmail } from "../auth";
+import { getSessionUser } from "../session";
 import type { WorkerEnv } from "../index";
 
 const PRODUCTS_COLLECTION = "stea_code_products";
-const ENTITLEMENTS_COLLECTION = "stea_code_entitlements";
+
+function json(req: Request, body: unknown, status: number): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) },
+  });
+}
+
+/**
+ * Check whether `email` owns `productId` (or the Pro lifetime product).
+ */
+async function hasPurchase(env: WorkerEnv, email: string, productId: string): Promise<boolean> {
+  const row = await env.DB.prepare(
+    `SELECT 1 FROM purchases
+      WHERE lower(email) = ?
+        AND (productId = ? OR productId = 'pro-lifetime')
+        AND lower(status) = 'paid'
+      LIMIT 1`
+  )
+    .bind(email, productId)
+    .first();
+  return Boolean(row);
+}
 
 export async function handleDownload(req: Request, env: WorkerEnv, productId: string): Promise<Response> {
   try {
     const productDoc = await getDoc(env, PRODUCTS_COLLECTION, productId);
     if (!productDoc) {
-      return new Response(JSON.stringify({ error: "Product not found", code: "PRODUCT_NOT_FOUND" }), {
-        status: 404,
-        headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) },
-      });
+      return json(req, { error: "Product not found", code: "PRODUCT_NOT_FOUND" }, 404);
     }
 
-    const isFree = productDoc.data.pricingType === "free";
+    // Free products are downloadable by anyone — no email, no login. Paid
+    // products still require a signed-in identity plus a purchase row.
+    const isFree = productDoc.data.pricingType === "free" || productDoc.data.isFree === true;
 
-    if (!isFree) {
-      const token = extractBearerToken(req);
-      if (!token) {
-        return new Response(JSON.stringify({ error: "Authentication required", code: "AUTH_REQUIRED" }), {
-          status: 401,
-          headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) },
-        });
-      }
-      const decoded = await verifyFirebaseToken(env, token);
-      const entitlementRow = await env.DB.prepare(
-        "SELECT 1 FROM entitlements WHERE userId = ? AND (productId = ? OR productId = 'pro-lifetime') LIMIT 1"
-      )
-        .bind(decoded.uid, productDoc.id)
-        .first();
-      if (!entitlementRow) {
-        return new Response(JSON.stringify({ error: "Premium access required", code: "ACCESS_DENIED" }), {
-          status: 403,
-          headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) },
-        });
-      }
+    const accessEmail = await resolveAccessEmail(req);
+    const sessionEmail = accessEmail ? null : (await getSessionUser(req, env))?.email || null;
+    const email = accessEmail || sessionEmail;
+
+    if (!email && !isFree) {
+      return json(req, { error: "Please sign in with your email to download", code: "AUTH_REQUIRED" }, 401);
+    }
+
+    if (!isFree && !(await hasPurchase(env, email!, productDoc.id))) {
+      return json(req, { error: "Purchase required", code: "ACCESS_DENIED" }, 403);
     }
 
     const storageKey = productDoc.data.package?.storageKey;
     if (!storageKey) {
-      return new Response(
-        JSON.stringify({ error: "No downloadable package found for this product", code: "NO_PACKAGE" }),
-        {
-          status: 404,
-          headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) },
-        }
-      );
+      return json(req, { error: "No downloadable package found for this product", code: "NO_PACKAGE" }, 404);
     }
 
     const accountId = env.R2_ACCOUNT_ID;
@@ -64,10 +70,7 @@ export async function handleDownload(req: Request, env: WorkerEnv, productId: st
     const bucketName = env.R2_BUCKET_NAME;
 
     if (!accountId || !accessKeyId || !secretAccessKey || !bucketName) {
-      return new Response(JSON.stringify({ error: "R2 not configured", code: "R2_NOT_CONFIGURED" }), {
-        status: 503,
-        headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) },
-      });
+      return json(req, { error: "R2 not configured", code: "R2_NOT_CONFIGURED" }, 503);
     }
 
     const signedUrl = await getSignedDownloadUrl(
@@ -79,11 +82,8 @@ export async function handleDownload(req: Request, env: WorkerEnv, productId: st
       300 // 5 minutes
     );
 
-    // ============================================================
-    // Track download — fire-and-forget
-    // ============================================================
+    // Track download — fire-and-forget, never blocks the redirect.
     try {
-      // Increment download counter on the product
       env.DB.prepare(
         "UPDATE products SET downloads = COALESCE(downloads, 0) + 1 WHERE id = ?"
       )
@@ -91,36 +91,27 @@ export async function handleDownload(req: Request, env: WorkerEnv, productId: st
         .run()
         .catch((e) => console.warn("[download] counter increment skipped:", e));
 
-      // If user is authed, record in user_downloads table
-      const token = extractBearerToken(req);
-      if (token) {
-        verifyFirebaseToken(env, token)
-          .then((decoded) => {
-            const downloadId = crypto.randomUUID();
-            const downloadedAt = new Date().toISOString();
-            const isFree = productDoc.data.pricingType === "free";
-            const licenseType = isFree ? null : "personal";
-            return env.DB.prepare(
-              "INSERT OR IGNORE INTO user_downloads (id, userId, productId, downloadedAt, licenseType) VALUES (?, ?, ?, ?, ?)"
-            )
-              .bind(downloadId, decoded.uid, productDoc.id, downloadedAt, licenseType)
-              .run();
-          })
+      const downloadId = crypto.randomUUID();
+      const downloadedAt = new Date().toISOString();
+      const licenseType = isFree ? null : "personal";
+      if (email) {
+        env.DB.prepare(
+          "INSERT OR IGNORE INTO user_downloads (id, userId, productId, downloadedAt, licenseType) VALUES (?, ?, ?, ?, ?)"
+        )
+          .bind(downloadId, email, productDoc.id, downloadedAt, licenseType)
+          .run()
           .catch((e) => console.warn("[download] user_downloads tracking skipped:", e));
       }
     } catch (e) {
-      // Never let tracking break the download
       console.warn("[download] tracking error (non-fatal):", e);
     }
 
     return Response.redirect(signedUrl, 302);
   } catch (e: any) {
-    return new Response(
-      JSON.stringify({ error: "Could not download product source", code: "DOWNLOAD_FAILED", detail: e?.message }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) },
-      }
+    return json(
+      req,
+      { error: "Could not download product source", code: "DOWNLOAD_FAILED", detail: e?.message },
+      500
     );
   }
 }

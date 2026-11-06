@@ -244,3 +244,21 @@ CREATE TABLE IF NOT EXISTS error_logs (
 );
 
 CREATE INDEX IF NOT EXISTS idx_error_logs_created ON error_logs(created_at DESC);
+
+-- ============ Table 10: purchases ============
+-- Email-keyed purchase records used by the Cloudflare Access download gate.
+-- Cloudflare Access identifies the buyer by email, not by a Firebase uid,
+-- so `/api/download/:id` checks this table instead of `entitlements`.
+CREATE TABLE IF NOT EXISTS purchases (
+  id          TEXT PRIMARY KEY,     -- Stripe session id (or uuid)
+  email       TEXT NOT NULL,        -- normalized lower-case buyer email
+  productId   TEXT NOT NULL,        -- product id, or 'pro-lifetime'
+  orderId     TEXT,
+  status      TEXT DEFAULT 'paid',  -- paid | refunded | pending
+  grantedAt   TEXT,                 -- ISO 8601 string
+  expiresAt   TEXT,                 -- ISO 8601 string (null = lifetime)
+  extraData   TEXT                  -- JSON: catch-all
+);
+
+CREATE INDEX IF NOT EXISTS idx_purchases_email   ON purchases(email);
+CREATE INDEX IF NOT EXISTS idx_purchases_product ON purchases(productId);

@@ -1,0 +1,1028 @@
+/* ============================================================================
+   STEACODE Store — E-book & Notes storefront
+   Warm modern educational aesthetic: mustard background, burnt-red accents,
+   charcoal text, flat vector shapes.
+   ============================================================================ */
+
+.store-root {
+  /* Design tokens (no Tailwind in this project — these are the source of truth) */
+  --store-bg: #E5C85A;        /* warm mustard / sand yellow   */
+  --store-bg-deep: #D4B047;   /* deeper mustard — gradient end */
+  --store-bg-soft: #EED684;   /* lighter mustard for panels   */
+  --store-cream: #F7EFD8;     /* paper cream                  */
+  --store-accent: #D94226;    /* deep burnt orange / red      */
+  --store-accent-dark: #B53418;
+  --store-text: #1A1A1A;      /* dark charcoal                */
+  --store-text-soft: rgba(26, 26, 26, 0.64);
+  --store-line: rgba(26, 26, 26, 0.16);
+  --store-radius: 18px;
+
+  background: linear-gradient(168deg, var(--store-bg) 0%, var(--store-bg-deep) 100%);
+  color: var(--store-text);
+  min-height: 100vh;
+  font-family: "Inter", "Helvetica Neue", Arial, sans-serif;
+}
+
+.store-root *,
+.store-root *::before,
+.store-root *::after {
+  box-sizing: border-box;
+}
+
+/* ----------------------------------------------------------------------------
+   Flat-vector decorative shapes
+   ---------------------------------------------------------------------------- */
+
+.store-deco {
+  position: absolute;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ----------------------------------------------------------------------------
+   Page chrome (hero / header)
+   ---------------------------------------------------------------------------- */
+
+.store-hero {
+  position: relative;
+  overflow: hidden;
+  padding: 72px 24px 40px;
+  text-align: center;
+}
+
+.store-hero__eyebrow {
+  display: inline-block;
+  padding: 6px 14px;
+  border: 2px solid var(--store-text);
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  background: var(--store-cream);
+}
+
+.store-hero__title {
+  margin: 18px 0 10px;
+  font-size: clamp(34px, 6vw, 58px);
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  line-height: 1.04;
+}
+
+.store-hero__title em {
+  font-style: normal;
+  color: var(--store-accent);
+}
+
+.store-hero__sub {
+  margin: 0 auto;
+  max-width: 560px;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--store-text-soft);
+}
+
+.store-section {
+  position: relative;
+  z-index: 1;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 24px 24px 96px;
+}
+
+.store-backlink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 28px 0 8px 28px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--store-text);
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.store-backlink:hover {
+  color: var(--store-accent);
+}
+
+/* ----------------------------------------------------------------------------
+   THE 3D BOOK
+   ----------------------------------------------------------------------------
+   Geometry (book depth = --book-depth, cover plane at z = depth/2):
+     .store-book            perspective wrapper (perspective: 1000px)
+     .store-book__inner     preserve-3d stage, rotateY(-15deg) resting
+     .store-book__cover     front face  — translateZ(+depth/2)
+     .store-book__back      back face   — translateZ(-depth/2)
+     .store-book__spine     left plane  — rotateY(-90deg), centered on x = 0
+     .store-book__pages     right plane — rotateY(90deg),  centered on x = W
+     .store-book__pages-top top plane   — rotateX(-90deg), centered on y = 0
+   Every side plane is positioned so its own center sits exactly on the cover
+   edge it belongs to, then rotated 90° around that center — so the planes meet
+   the front/back covers edge-to-edge with no gaps at any angle.
+   ---------------------------------------------------------------------------- */
+
+.store-book {
+  --book-depth: 30px;
+
+  position: relative;
+  width: 100%;
+  max-width: var(--book-w, 220px);
+  aspect-ratio: 2 / 3;
+  margin: 0 auto;
+  perspective: 1000px;
+  -webkit-perspective: 1000px;
+}
+
+.store-book__inner {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
+  transform: rotateY(-15deg);
+  transition: transform 0.55s cubic-bezier(0.25, 0.9, 0.3, 1);
+  will-change: transform;
+}
+
+.store-book:hover .store-book__inner,
+.store-book:focus-within .store-book__inner {
+  transform: rotateY(0deg) scale(1.05);
+}
+
+/* Ground shadow — kept OUTSIDE the preserve-3d stage so it always lies flat
+   on the "table" instead of rotating with the book. */
+.store-book::after {
+  content: "";
+  position: absolute;
+  left: 8%;
+  right: 0%;
+  bottom: -9%;
+  height: 9%;
+  border-radius: 50%;
+  background: radial-gradient(
+    50% 50% at 50% 50%,
+    rgba(26, 26, 26, 0.38),
+    rgba(26, 26, 26, 0) 72%
+  );
+  transform: skewX(-14deg) translateX(-4%);
+  transition: transform 0.55s cubic-bezier(0.25, 0.9, 0.3, 1), opacity 0.55s;
+  pointer-events: none;
+}
+
+.store-book:hover::after,
+.store-book:focus-within::after {
+  transform: skewX(0deg) translateX(0) scaleX(1.06);
+  opacity: 0.85;
+}
+
+.store-book__face {
+  position: absolute;
+  inset: 0;
+  border-radius: 4px 10px 10px 4px;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* Front cover. The inset box-shadow near the left edge is the spine (hinge)
+   shadow — it makes the cover read as a physical board wrapping the page
+   block instead of a flat sticker. */
+.store-book__cover {
+  transform: translateZ(calc(var(--book-depth) / 2));
+  overflow: hidden;
+  background: var(--cover-bg, var(--store-accent));
+  box-shadow:
+    inset 7px 0 14px -7px rgba(26, 26, 26, 0.5),
+    inset -2px 0 5px -2px rgba(26, 26, 26, 0.22);
+}
+
+.store-book__back {
+  transform: translateZ(calc(var(--book-depth) / -2));
+  background: #241611;
+  border-radius: 10px 4px 4px 10px;
+}
+
+/* Spine — left side plane, darker shade of the cover. */
+.store-book__spine {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(var(--book-depth) / -2);
+  width: var(--book-depth);
+  transform: rotateY(-90deg);
+  background: #8f2a13; /* fallback */
+  background: color-mix(in srgb, var(--cover-bg, var(--store-accent)) 68%, #1a1a1a);
+  box-shadow:
+    inset -5px 0 9px -5px rgba(0, 0, 0, 0.55),
+    inset 3px 0 6px -3px rgba(255, 255, 255, 0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.store-book__spine-title {
+  writing-mode: vertical-rl;
+  font-size: calc(var(--book-depth) * 0.34);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cover-fg, var(--store-cream));
+  opacity: 0.92;
+  white-space: nowrap;
+  overflow: hidden;
+  max-height: 92%;
+  text-overflow: ellipsis;
+}
+
+/* Page block — right side plane: layered paper stripes. */
+.store-book__pages {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  right: calc(var(--book-depth) / -2);
+  width: var(--book-depth);
+  transform: rotateY(90deg);
+  background: repeating-linear-gradient(
+    90deg,
+    #fdfaf1 0px,
+    #fdfaf1 2px,
+    #e6dec9 2px,
+    #e6dec9 3px
+  );
+  box-shadow: inset 0 0 6px rgba(26, 26, 26, 0.18);
+}
+
+/* Page block — top plane (visible from high angles on large renders). */
+.store-book__pages-top {
+  position: absolute;
+  top: calc(var(--book-depth) / -2);
+  left: 5px;
+  right: 5px;
+  height: var(--book-depth);
+  transform: rotateX(-90deg);
+  background: repeating-linear-gradient(
+    0deg,
+    #fdfaf1 0px,
+    #fdfaf1 2px,
+    #e6dec9 2px,
+    #e6dec9 3px
+  );
+}
+
+/* Cover art: real cover image when the product has one, otherwise the
+   generated flat-vector cover (styled via --cover-* custom properties). */
+.store-book__cover-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.store-book__art {
+  position: absolute;
+  inset: 0;
+  background: var(--cover-bg, var(--store-accent));
+  color: var(--cover-fg, var(--store-cream));
+  display: flex;
+  flex-direction: column;
+  padding: 9% 10% 8% 14%; /* extra left padding clears the hinge shadow */
+  overflow: hidden;
+}
+
+/* Flat vector shapes */
+.store-book__art-circle {
+  position: absolute;
+  top: -12%;
+  right: -18%;
+  width: 58%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: var(--cover-shape, var(--store-text));
+  opacity: 0.92;
+}
+
+.store-book__art-half {
+  position: absolute;
+  bottom: -10%;
+  left: -14%;
+  width: 46%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: calc(var(--book-w, 220px) * 0.028) solid var(--cover-shape, var(--store-text));
+  opacity: 0.55;
+}
+
+.store-book__art-bars {
+  position: absolute;
+  top: 16%;
+  left: 14%;
+  display: flex;
+  gap: 6px;
+}
+
+.store-book__art-bars i {
+  display: block;
+  width: 8px;
+  height: 26px;
+  border-radius: 4px;
+  background: var(--cover-shape, var(--store-text));
+  opacity: 0.85;
+}
+
+.store-book__art-bars i:nth-child(2) { height: 18px; margin-top: 8px; }
+.store-book__art-bars i:nth-child(3) { height: 12px; margin-top: 14px; }
+
+.store-book__type {
+  position: relative;
+  z-index: 1;
+  align-self: flex-start;
+  margin-top: 22%;
+  padding: 4px 9px;
+  border: 2px solid currentColor;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.store-book__title {
+  position: relative;
+  z-index: 1;
+  margin-top: 12px;
+  font-size: calc(var(--book-w, 220px) * 0.085);
+  font-weight: 900;
+  line-height: 1.12;
+  letter-spacing: -0.01em;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.store-book__brand {
+  position: relative;
+  z-index: 1;
+  margin-top: auto;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+/* Moving glare on hover — a paper-sheen sweep across the cover. */
+.store-book__glare {
+  position: absolute;
+  inset: -20%;
+  background: linear-gradient(
+    105deg,
+    transparent 42%,
+    rgba(255, 255, 255, 0.22) 50%,
+    transparent 58%
+  );
+  transform: translateX(-70%);
+  transition: transform 0.7s ease;
+  pointer-events: none;
+}
+
+.store-book:hover .store-book__glare,
+.store-book:focus-within .store-book__glare {
+  transform: translateX(70%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .store-book__inner,
+  .store-book::after,
+  .store-book__glare {
+    transition: none;
+  }
+  .store-book:hover .store-book__inner,
+  .store-book:focus-within .store-book__inner {
+    transform: rotateY(-15deg);
+  }
+}
+
+/* ----------------------------------------------------------------------------
+   Book grid
+   ---------------------------------------------------------------------------- */
+
+.store-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 56px 40px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.store-card {
+  background: var(--store-cream);
+  border: 2px solid var(--store-text);
+  border-radius: var(--store-radius);
+  padding: 34px 22px 22px;
+  box-shadow: 6px 6px 0 var(--store-text);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.store-card:hover {
+  transform: translate(-2px, -4px);
+  box-shadow: 9px 10px 0 var(--store-text);
+}
+
+.store-card__hit {
+  display: block;
+  width: 100%;
+  padding: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.store-card__meta {
+  margin-top: 30px;
+  text-align: left;
+}
+
+.store-card__type {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--store-accent);
+}
+
+.store-card__title {
+  margin: 6px 0 0;
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1.25;
+  color: var(--store-text);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 2.5em;
+}
+
+.store-card__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 12px;
+}
+
+.store-card__price {
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.store-card__price--free {
+  color: var(--store-accent);
+}
+
+.store-card__cta {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--store-text-soft);
+  transition: color 0.2s ease;
+}
+
+.store-card:hover .store-card__cta {
+  color: var(--store-accent);
+}
+
+/* Skeleton */
+.store-grid--skeleton .store-card {
+  pointer-events: none;
+}
+
+.store-skeleton-book {
+  width: 100%;
+  max-width: 220px;
+  aspect-ratio: 2 / 3;
+  margin: 0 auto;
+  border-radius: 8px;
+  background: linear-gradient(100deg, rgba(26,26,26,0.06) 40%, rgba(26,26,26,0.12) 50%, rgba(26,26,26,0.06) 60%);
+  background-size: 220% 100%;
+  animation: store-shimmer 1.4s linear infinite;
+}
+
+.store-skeleton-line {
+  height: 14px;
+  border-radius: 7px;
+  margin-top: 14px;
+  background: rgba(26, 26, 26, 0.1);
+}
+
+.store-skeleton-line--short { width: 45%; }
+.store-skeleton-line--long  { width: 85%; }
+
+@keyframes store-shimmer {
+  from { background-position: 120% 0; }
+  to   { background-position: -120% 0; }
+}
+
+/* Empty / error states */
+.store-state {
+  text-align: center;
+  padding: 80px 24px;
+}
+
+.store-state__icon { font-size: 42px; }
+
+.store-state__title {
+  margin: 14px 0 6px;
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.store-state__sub {
+  margin: 0 auto 22px;
+  max-width: 420px;
+  color: var(--store-text-soft);
+  font-size: 15px;
+}
+
+/* ----------------------------------------------------------------------------
+   Buttons
+   ---------------------------------------------------------------------------- */
+
+.store-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 26px;
+  border-radius: 999px;
+  border: 2px solid var(--store-text);
+  font-size: 15px;
+  font-weight: 800;
+  font-family: inherit;
+  cursor: pointer;
+  text-decoration: none;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+}
+
+.store-btn--primary {
+  background: var(--store-accent);
+  border-color: var(--store-accent);
+  color: #fff;
+  box-shadow: 0 6px 0 var(--store-accent-dark);
+}
+
+.store-btn--primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 0 var(--store-accent-dark);
+}
+
+.store-btn--primary:active {
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 var(--store-accent-dark);
+}
+
+.store-btn--ghost {
+  background: transparent;
+  color: var(--store-text);
+  box-shadow: none;
+}
+
+.store-btn--ghost:hover {
+  background: var(--store-text);
+  color: var(--store-bg);
+}
+
+.store-btn[disabled] {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ----------------------------------------------------------------------------
+   Sales page (/store/:slug)
+   ---------------------------------------------------------------------------- */
+
+.store-sales {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 12px 28px 96px;
+}
+
+.store-sales__grid {
+  display: grid;
+  grid-template-columns: minmax(280px, 420px) 1fr;
+  gap: 56px;
+  align-items: center;
+  margin-top: 24px;
+}
+
+@media (max-width: 860px) {
+  .store-sales__grid {
+    grid-template-columns: 1fr;
+    gap: 44px;
+  }
+}
+
+.store-sales__book {
+  padding: 24px 12px 40px;
+}
+
+.store-sales__type {
+  display: inline-block;
+  padding: 5px 12px;
+  border: 2px solid var(--store-text);
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  background: var(--store-cream);
+}
+
+.store-sales__title {
+  margin: 16px 0 10px;
+  font-size: clamp(28px, 4.5vw, 44px);
+  font-weight: 900;
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+}
+
+.store-sales__desc {
+  margin: 0 0 22px;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--store-text-soft);
+  max-width: 52ch;
+}
+
+.store-sales__price {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 26px;
+}
+
+.store-sales__price-value {
+  font-size: 38px;
+  font-weight: 900;
+  color: var(--store-accent);
+}
+
+.store-sales__price-note {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--store-text-soft);
+}
+
+.store-sales__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.store-sales__perks {
+  margin: 28px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 10px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.store-sales__perks li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.store-sales__perks li::before {
+  content: "";
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--store-accent);
+  flex: none;
+}
+
+/* Sample reader section */
+.store-sample {
+  margin-top: 72px;
+}
+
+.store-sample__heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.store-sample__title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 900;
+}
+
+.store-sample__hint {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--store-text-soft);
+}
+
+.store-sample__frame-wrap {
+  border: 2px solid var(--store-text);
+  border-radius: var(--store-radius);
+  overflow: hidden;
+  background: var(--store-cream);
+  box-shadow: 6px 6px 0 var(--store-text);
+}
+
+.store-sample__frame {
+  display: block;
+  width: 100%;
+  height: min(78vh, 860px);
+  border: none;
+  background: #fff;
+}
+
+/* ----------------------------------------------------------------------------
+   Reader (/store/read/:slug)
+   ---------------------------------------------------------------------------- */
+
+.store-reader {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  background: var(--store-cream);
+}
+
+.store-reader__topbar {
+  flex: none;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  background: var(--store-bg);
+  border-bottom: 2px solid var(--store-text);
+}
+
+.store-reader__back {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 2px solid var(--store-text);
+  border-radius: 999px;
+  background: var(--store-cream);
+  color: var(--store-text);
+  font-size: 13px;
+  font-weight: 800;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.store-reader__back:hover {
+  background: var(--store-text);
+  color: var(--store-bg);
+}
+
+.store-reader__title {
+  justify-self: center;
+  font-size: 14px;
+  font-weight: 800;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 42vw;
+}
+
+.store-reader__download {
+  justify-self: end;
+  padding: 9px 18px;
+  border: none;
+  border-radius: 999px;
+  background: var(--store-accent);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+  font-family: inherit;
+  cursor: pointer;
+  box-shadow: 0 3px 0 var(--store-accent-dark);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.store-reader__download:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 0 var(--store-accent-dark);
+}
+
+.store-reader__download[disabled] {
+  opacity: 0.6;
+  cursor: wait;
+  transform: none;
+}
+
+.store-reader__stage {
+  flex: 1 1 auto;
+  min-height: 0;
+  position: relative;
+}
+
+.store-reader__frame {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: #fff;
+}
+
+.store-reader__notice {
+  position: absolute;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  max-width: min(92vw, 520px);
+  padding: 10px 18px;
+  border-radius: 12px;
+  border: 2px solid var(--store-text);
+  background: var(--store-cream);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--store-text);
+  box-shadow: 4px 4px 0 var(--store-text);
+}
+
+/* Centered splash / gate states (shared) */
+.store-splash {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  background: var(--store-bg);
+  color: var(--store-text);
+  font: 700 14px "Inter", system-ui, sans-serif;
+}
+
+.store-gate {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  background: var(--store-bg);
+  padding: 24px;
+}
+
+.store-gate__card {
+  max-width: 460px;
+  width: 100%;
+  background: var(--store-cream);
+  border: 2px solid var(--store-text);
+  border-radius: 22px;
+  box-shadow: 8px 8px 0 var(--store-text);
+  padding: 40px 36px;
+  text-align: center;
+}
+
+.store-gate__icon { font-size: 40px; }
+
+.store-gate__title {
+  margin: 14px 0 8px;
+  font-size: 24px;
+  font-weight: 900;
+  line-height: 1.15;
+}
+
+.store-gate__sub {
+  margin: 0 0 24px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--store-text-soft);
+}
+
+.store-gate__actions {
+  display: grid;
+  gap: 12px;
+}
+
+@media (max-width: 640px) {
+  .store-reader__title { display: none; }
+  .store-reader__topbar { grid-template-columns: auto 1fr; }
+  .store-reader__download { grid-column: 2; }
+  .store-hero { padding-top: 56px; }
+  .store-grid { gap: 44px 24px; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+}
+
+/* ============================================================================
+   Mobile / narrow screens
+   The 3D book keeps its 2:3 proportions at any width:
+   - the cover typography is sized from the *rendered* cover width (cqi),
+     not from the 220px desktop maximum, so a 140px cover no longer
+     overflows its own art;
+   - depth and the resting rotateY shrink so the spine reads as a hinge
+     instead of a slab;
+   - the grid is a hard 2-up, the card padding tightens, and titles wrap
+     to two lines with a floor so price rows stay on one baseline.
+   ============================================================================ */
+.store-book {
+  container-type: inline-size;
+}
+
+.store-book__title {
+  font-size: clamp(11px, 8.6cqi, 19px);
+}
+.store-book__type {
+  font-size: clamp(8px, 4.4cqi, 10px);
+}
+.store-book__brand {
+  font-size: clamp(7px, 3.8cqi, 10px);
+}
+.store-book__spine-title {
+  font-size: clamp(6px, calc(var(--book-depth) * 0.34), 10px);
+}
+
+@media (max-width: 768px) {
+  .store-book {
+    --book-depth: 18px;
+    perspective: 1200px;
+    -webkit-perspective: 1200px;
+  }
+
+  .store-book__inner {
+    transform: rotateY(-10deg);
+  }
+
+  .store-book:hover .store-book__inner,
+  .store-book:focus-within .store-book__inner {
+    transform: rotateY(0deg) scale(1.02);
+  }
+}
+
+@media (max-width: 640px) {
+  .store-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 26px 14px;
+  }
+
+  .store-card {
+    display: flex;
+    flex-direction: column;
+    padding: 16px 12px 14px;
+    border-radius: 16px;
+    box-shadow: 5px 5px 0 var(--store-text);
+  }
+
+  .store-card:hover {
+    transform: none;
+    box-shadow: 5px 5px 0 var(--store-text);
+  }
+
+  .store-card__meta {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    margin-top: 16px;
+  }
+
+  .store-card__type {
+    font-size: 10px;
+    letter-spacing: 0.1em;
+  }
+
+  /* Full title, wrapped — two lines reserved so every price row in a
+     row of cards sits on the same baseline. */
+  .store-card__title {
+    display: block;
+    font-size: 14.5px;
+    line-height: 1.3;
+    -webkit-line-clamp: unset;
+    -webkit-box-orient: initial;
+    overflow: visible;
+    white-space: normal;
+    text-overflow: clip;
+    min-height: calc(2 * 1.3em);
+    margin: 4px 0 0;
+  }
+
+  .store-card__row {
+    margin-top: auto;
+    padding-top: 10px;
+  }
+
+  .store-card__price {
+    font-size: 14.5px;
+  }
+
+  .store-card__cta {
+    font-size: 12px;
+  }
+}
