@@ -1,3 +1,5 @@
+// BUILD-MARKER: cache-bust entry bundle after a poisoned edge response (2026-11-07)
+if (typeof window !== "undefined") { window.__STEACODE_BUILD_ID__ = "2026-11-07a"; }
 // ============================================================
 // Auto-recover from chunk-load failures (deploy race condition)
 // When Vite's dynamic import fails because the browser has stale

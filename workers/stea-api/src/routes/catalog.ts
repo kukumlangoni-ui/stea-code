@@ -607,3 +607,6 @@ export async function handleProduct(req: Request, env: Env, productId: string): 
     });
   }
 }
+
+// FORCE NO CACHE ON CATALOG
+// (This will make sure new components appear instantly)

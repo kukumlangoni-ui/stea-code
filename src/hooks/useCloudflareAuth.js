@@ -1,167 +1,79 @@
-/**
- * Store session hook (first-party email login).
- *
- * The store no longer relies on Cloudflare Access. `/api/auth/login-email`
- * sets an HttpOnly `stea_session` cookie; the browser cannot read either the
- * cookie or an injected header, so on load we ask `/api/auth/me` who is
- * signed in and treat a resolved email as the current user.
- *
- * Login happens inside `SteaCodeMemberGate` (email form). Logout simply hits
- * `/api/auth/logout`, which clears the cookie and redirects to the homepage.
- */
+import { useState, useEffect } from "react";
 
-import { useCallback, useEffect, useState } from "react";
+const getInitialUser = () => {
+  try {
+    const saved = localStorage.getItem("stea_user");
+    return saved ? JSON.parse(saved) : null;
+  } catch {
+    return null;
+  }
+};
 
-export const STORE_LOGIN_URL = "/?login=1";
-export const STORE_LOGOUT_URL = "/api/auth/logout";
-
-const SESSION_TTL_MS = 60 * 1000;
-
-// Shared between every component using the hook so a page load only hits
-// /api/auth/me once.
-let cachedEmail = null;
-let cachedAt = 0;
-let inFlight = null;
-
-function toUser(email) {
-  if (!email) return null;
-  return {
-    email,
-    uid: `email:${email}`,
-    displayName: email.split("@")[0],
-    emailVerified: true,
-    providerId: "email-session",
-  };
-}
-
-/**
- * Fetch the current session email (or null).
- * Safe to call outside React. `force` bypasses the short-lived cache.
- */
+// All possible session functions
 export async function fetchCloudflareSession({ force = false } = {}) {
-  if (!force && cachedAt && Date.now() - cachedAt < SESSION_TTL_MS) {
-    return cachedEmail;
+  try {
+    const res = await fetch("/api/auth/me", { credentials: "same-origin", cache: "no-store" });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data?.email || null;
+  } catch {
+    return null;
   }
-  if (!force && inFlight) return inFlight;
-
-  inFlight = fetch("/api/auth/me", {
-    method: "GET",
-    credentials: "same-origin",
-    cache: "no-store",
-    headers: { Accept: "application/json" },
-  })
-    .then(async (res) => {
-      if (!res.ok) return null;
-      const data = await res.json();
-      return typeof data?.email === "string" ? data.email.trim().toLowerCase() : null;
-    })
-    .catch(() => null)
-    .then((email) => {
-      cachedEmail = email;
-      cachedAt = Date.now();
-      inFlight = null;
-      return email;
-    });
-
-  return inFlight;
 }
 
-/**
- * Point the browser at the SPA login gate on the homepage.
- * Only same-origin paths are forwarded, absolute URLs collapse to "/".
- */
-export function getCloudflareLoginUrl(redirectUrl) {
-  if (typeof window === "undefined") return STORE_LOGIN_URL;
-
-  let target =
-    redirectUrl ||
-    `${window.location.pathname}${window.location.search}${window.location.hash}`;
-
-  if (/^https?:\/\//i.test(target)) {
-    try {
-      const url = new URL(target);
-      target = url.origin === window.location.origin ? `${url.pathname}${url.search}${url.hash}` : "/";
-    } catch {
-      target = "/";
-    }
-  }
-  if (!target.startsWith("/") || target.startsWith("//")) target = "/";
-
-  const params = new URLSearchParams({ login: "1" });
-  if (target !== "/" && !target.startsWith("/?")) params.set("redirect_url", target);
-  return `/?${params.toString()}`;
+export function getCloudflareLoginUrl() {
+  return "/?login=1";
 }
 
 export function getCloudflareLogoutUrl() {
-  return STORE_LOGOUT_URL;
+  return "/api/auth/logout";
 }
 
-/**
- * A previous Access handshake could leave the browser on
- * /api/auth/login?redirect_url=... — rewrite it to the clean product URL.
- */
-function cleanAuthRedirectUrl() {
-  if (typeof window === "undefined") return;
-  const { pathname, search } = window.location;
-  if (!pathname.startsWith("/api/auth/login")) return;
-  const target = new URLSearchParams(search).get("redirect_url");
-  const safeTarget =
-    target && target.startsWith("/") && !target.startsWith("//") ? target : "/";
-  window.history.replaceState({}, "", safeTarget);
-}
-
+// The main hook
 export function useCloudflareAuth() {
-  const [email, setEmail] = useState(() =>
-    cachedAt ? cachedEmail : null
-  );
-  const [loading, setLoading] = useState(true);
-
-  const refresh = useCallback(async ({ force = true } = {}) => {
-    const next = await fetchCloudflareSession({ force });
-    setEmail(next);
-    setLoading(false);
-    return next;
-  }, []);
+  const [user, setUser] = useState(getInitialUser);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     let alive = true;
-    // Clean the address bar first — a user returning from the legacy Access
-    // hop should see the product URL, not /api/auth/login?redirect_url=...
-    cleanAuthRedirectUrl();
-    fetchCloudflareSession({ force: false }).then((next) => {
-      if (!alive) return;
-      setEmail(next);
-      setLoading(false);
-    });
-    return () => {
-      alive = false;
-    };
+    setLoading(true);
+
+    fetch("/api/auth/me", { credentials: "same-origin" })
+      .then((res) => res.json())
+      .then((data) => {
+        if (!alive) return;
+        if (data && data.email) {
+          const realUser = { email: data.email, loggedIn: true };
+          setUser(realUser);
+          localStorage.setItem("stea_user", JSON.stringify(realUser));
+        } else {
+          setUser(null);
+          localStorage.removeItem("stea_user");
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (alive) setLoading(false);
+      });
+
+    return () => { alive = false; };
   }, []);
 
-  // The gate fires this after a successful email login so every mounted
-  // instance picks up the new session without a reload.
-  useEffect(() => {
-    const onAuthChanged = () => {
-      refresh({ force: true });
-    };
-    window.addEventListener("stea-auth-changed", onAuthChanged);
-    return () => window.removeEventListener("stea-auth-changed", onAuthChanged);
-  }, [refresh]);
-
-  const login = useCallback((redirectUrl) => {
-    window.location.assign(getCloudflareLoginUrl(redirectUrl));
-  }, []);
-
-  const logout = useCallback(() => {
-    window.location.assign(getCloudflareLogoutUrl());
-  }, []);
-
-  return {
-    user: toUser(email),
-    email,
-    loading,
-    login,
-    logout,
-    refresh,
+  const login = (email) => {
+    const newUser = { email, loggedIn: true };
+    setUser(newUser);
+    localStorage.setItem("stea_user", JSON.stringify(newUser));
   };
+
+  const logout = () => {
+    setUser(null);
+    localStorage.removeItem("stea_user");
+    localStorage.removeItem("stea_last_email");
+    window.location.href = "/api/auth/logout";
+  };
+
+  return { user, loading, login, logout };
 }
+
+// Default export just in case
+export default useCloudflareAuth;

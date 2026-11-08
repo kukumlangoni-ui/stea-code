@@ -1026,3 +1026,92 @@
     font-size: 12px;
   }
 }
+
+/* ── Mobile 3D Book Fix ── */
+@media (max-width: 768px) {
+  /* Kill the 3D squish — flat cover instead of a rotated sliver */
+  .store-book {
+    perspective: none !important;
+    max-width: 100% !important;
+    aspect-ratio: 2 / 3 !important;
+    border-left: 6px solid rgba(0, 0, 0, 0.18) !important; /* faux spine */
+    border-radius: 4px 10px 10px 4px !important;
+    box-shadow: -4px 8px 18px rgba(0, 0, 0, 0.12) !important;
+  }
+  
+  .store-book__inner,
+  .store-card:hover .store-book__inner {
+    transform: none !important; /* no rotateY on phones */
+    transform-style: flat !important;
+  }
+  
+  .store-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 18px 12px !important;
+  }
+  
+  .store-card__title {
+    font-size: 13.5px !important;
+    line-height: 1.3 !important;
+    -webkit-line-clamp: 2 !important;
+    white-space: normal !important;
+    height: auto !important;
+  }
+}
+
+/* ── FINAL MOBILE BOOK FIX ── */
+@media (max-width: 768px) {
+  /* 1. Force the grid to 2 columns */
+  .store-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 16px !important;
+    padding: 0 12px !important;
+  }
+
+  /* 2. Force the card to be flat and square */
+  .store-book {
+    perspective: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    aspect-ratio: 2 / 3 !important;
+    border-left: 6px solid rgba(0, 0, 0, 0.15) !important; /* Fake spine */
+    border-radius: 4px 10px 10px 4px !important;
+    box-shadow: -4px 8px 16px rgba(0, 0, 0, 0.15) !important;
+  }
+
+  /* 3. Kill the 3D rotation */
+  .store-book__inner,
+  .store-book-cover {
+    transform: none !important;
+    transform-style: flat !important;
+    width: 100% !important;
+    height: 100% !important;
+  }
+  
+  /* 4. Fix the title truncation */
+  .store-card__title {
+    font-size: 13px !important;
+    line-height: 1.3 !important;
+    white-space: normal !important;
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
+    height: 36px !important;
+  }
+}
+
+/* Fix mobile card overlap and spacing */
+@media (max-width: 768px) {
+  .store-card {
+    padding-bottom: 24px !important; /* Add padding to the bottom of every card */
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100% !important; /* Ensure all cards in a row are the same height */
+  }
+
+  .store-card__title {
+    margin-top: 16px !important; /* Push the title down away from the book image */
+    flex-grow: 1 !important;
+  }
+}

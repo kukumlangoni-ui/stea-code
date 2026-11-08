@@ -11,6 +11,7 @@
 
 import { corsHeaders, isPreflight, preflightResponse } from "./cors";
 import { handleCatalog, handleProduct } from "./routes/catalog";
+import { handleBlogList, handleBlogPost } from "./routes/blog";
 import { handlePreview, handleFreeContent, handleContent, handleProductPreviewCard, handleSalesPage, handleBookContent } from "./routes/content";
 import { handleCheckout } from "./routes/checkout";
 import { handleCheckoutProduct } from "./routes/checkout-product";
@@ -482,6 +483,9 @@ export default {
       }
 
       // ============ 404 ============
+      if (apiPath === "/blog") return handleBlogList(env);
+      if (apiPath.startsWith("/blog/")) return handleBlogPost(env, decodeURIComponent(apiPath.slice("/blog/".length)));
+      
       return new Response(JSON.stringify({ error: "Not found", path: apiPath }), {
         status: 404,
         headers: { "Content-Type": "application/json", ...corsHeaders(request.headers.get("origin")) },

@@ -16,6 +16,7 @@ import { resolveRequestUser } from "../auth";
 import {
   createSessionForEmail,
   clearedSessionCookie,
+  renewSessionToken,
   sessionCookie,
 } from "../session";
 import { sendVerificationCode, verifyCode } from "../otp";
@@ -91,11 +92,19 @@ export async function handleAuthMe(req: Request, env: WorkerEnv): Promise<Respon
   if (!user?.email) {
     return json(req, { email: null, user: null, source: null });
   }
-  return json(req, {
-    email: user.email,
-    user: { id: user.uid, email: user.email },
-    source: user.source,
-  });
+  // Slide an ageing cookie forward so an active visitor is not asked for a
+  // new OTP every few weeks.
+  const renewed = user.source === "session" ? await renewSessionToken(req, env) : null;
+  return json(
+    req,
+    {
+      email: user.email,
+      user: { id: user.uid, email: user.email },
+      source: user.source,
+    },
+    200,
+    renewed ? { "Set-Cookie": sessionCookie(renewed) } : {}
+  );
 }
 
 /**

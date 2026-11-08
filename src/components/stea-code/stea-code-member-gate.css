@@ -8,7 +8,11 @@
 .sc-gate {
   position: fixed;
   inset: 0;
-  z-index: 9999;
+  /* The gate is usually opened *from* a product / unlock modal
+     (z-index 2147483000..2147483646), so 9999 hid the sign-in panel behind
+     the very card that asked for it. Max integer clears every storefront
+     layer, including the custom cursor. */
+  z-index: 2147483647;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -34,6 +38,13 @@
   color: #111827;
   box-shadow: 0 24px 60px rgba(5, 6, 10, 0.28);
   animation: sc-gate-rise 0.18s ease-out;
+}
+
+/* Hidden for the ~100ms session probe. A returning visitor with a live
+   cookie is signed in and closed out before this ever becomes visible. */
+.sc-gate__panel.is-checking {
+  opacity: 0;
+  pointer-events: none;
 }
 
 @keyframes sc-gate-rise {
@@ -437,5 +448,37 @@
   .sc-gate__panel.is-shaking {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
+  }
+}
+
+/* --- Fix Orbit Overlap and Sizing --- */
+.sc-gate-stage {
+  height: 280px !important; /* Much taller to hold the orbit */
+  display: flex !important;
+  align-items: flex-end !important; /* Push the orbit down */
+  justify-content: center !important;
+  padding-bottom: 20px !important;
+  margin-top: 10px !important;
+}
+
+.sc-orbit-layer {
+  top: 40px !important; /* Move the whole orbit down away from the text */
+}
+
+.sc-orbit-node {
+  width: 44px !important;
+  height: 52px !important;
+  font-size: 1.25rem !important;
+}
+
+.sc-gate-inputs {
+  align-self: center !important; /* Keep the inputs centered when idle */
+}
+
+/* Optional: If the modal card itself feels too small on mobile */
+@media (max-width: 480px) {
+  .sc-gate-card {
+    padding-top: 32px !important;
+    padding-bottom: 32px !important;
   }
 }

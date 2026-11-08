@@ -17,7 +17,11 @@
 type SessionEnv = { DB: D1Database };
 
 export const SESSION_COOKIE = "stea_session";
-const SESSION_TTL_SECONDS = 30 * 24 * 60 * 60; // 30 days
+// Returning visitors keep their session without another emailed code. This is
+// a low-friction storefront session (paid downloads additionally require a
+// `purchases` row), and it slides forward on activity — see
+// `renewSessionToken` — so an active buyer effectively never expires.
+const SESSION_TTL_SECONDS = 180 * 24 * 60 * 60; // 180 days
 
 export type SessionUser = {
   id: string;
@@ -123,6 +127,32 @@ export async function createSessionForEmail(
     .run();
 
   return { token, user: { id: user.id, email: user.email }, expiresAt };
+}
+
+/**
+ * Sliding expiry: while a session is still valid, push its end date back to a
+ * full TTL once it has burned through half of it. Returns the same token so the
+ * caller can re-set the cookie; null when there is nothing to renew.
+ */
+export async function renewSessionToken(req: Request, env: SessionEnv): Promise<string | null> {
+  const token = sessionTokenFromRequest(req);
+  if (!token) return null;
+
+  const sessionId = await sha256Hex(token);
+  const row = await env.DB.prepare("SELECT expires_at FROM sessions WHERE id = ?")
+    .bind(sessionId)
+    .first<{ expires_at: string }>();
+  if (!row) return null;
+
+  const remaining = Date.parse(row.expires_at) - Date.now();
+  if (!(remaining > 0)) return null;
+  if (remaining > (SESSION_TTL_SECONDS * 1000) / 2) return null;
+
+  const expiresAt = new Date(Date.now() + SESSION_TTL_SECONDS * 1000).toISOString();
+  await env.DB.prepare("UPDATE sessions SET expires_at = ? WHERE id = ?")
+    .bind(expiresAt, sessionId)
+    .run();
+  return token;
 }
 
 /**
