@@ -4,23 +4,10 @@ const SITE = 'https://steacode.com';
 // Overridable so the fallback path can be exercised locally:
 //   SITEMAP_CATALOG_URL=https://127.0.0.1:9/x node generate-sitemap.cjs
 const CATALOG_URL = process.env.SITEMAP_CATALOG_URL || `${SITE}/api/stea-code/catalog?limit=1000`;
-const TIMEOUT_MS = 30000;
+const TIMEOUT_MS = 120000;
 
 function writeSitemap(xml) {
   fs.writeFileSync('public/sitemap.xml', xml);
-}
-
-/**
- * Minimal, always-valid sitemap: the homepage only.
- * Used when the catalog API is unreachable (e.g. a build running before
- * the Worker is deployed, or a CI runner behind a restrictive proxy).
- */
-function fallbackSitemap() {
-  let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
-  xml += `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n`;
-  xml += `  <url>\n    <loc>${SITE}/</loc>\n    <changefreq>daily</changefreq>\n    <priority>1.0</priority>\n  </url>\n`;
-  xml += `</urlset>`;
-  return xml;
 }
 
 async function fetchProducts() {
@@ -43,11 +30,20 @@ async function generateSitemap() {
     console.log('Fetching products from API...');
     products = await fetchProducts();
   } catch (error) {
-    // Never break the build: an unreachable API is an expected condition
-    // during early/offline builds, not a fatal error.
-    console.warn(`⚠️  Sitemap fetch failed (${error.message}), using fallback (homepage only).`);
-    writeSitemap(fallbackSitemap());
-    return;
+    // Never silently ship a 1-URL sitemap. If the fetch fails:
+    //  - keep an existing healthy sitemap (>1 URLs) and continue the build;
+    //  - otherwise fail loudly so a broken sitemap can never deploy.
+    console.error(`Sitemap fetch error: ${error.message}`, error.cause ?? '');
+    try {
+      const existing = fs.readFileSync('public/sitemap.xml', 'utf8');
+      const count = (existing.match(/<url>/g) || []).length;
+      if (count > 1) {
+        console.warn(`⚠️  Keeping existing sitemap (${count} URLs) and continuing the build.`);
+        return;
+      }
+    } catch {}
+    console.error('❌ No healthy sitemap available — failing the build instead of shipping a homepage-only fallback.');
+    process.exit(1);
   }
 
   let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;

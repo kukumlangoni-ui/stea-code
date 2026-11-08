@@ -37,6 +37,8 @@ const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy.jsx"));
 const CookiePolicy = lazy(() => import("./pages/CookiePolicy.jsx"));
 // import CookieConsentBanner from "./components/stea-code/CookieConsentBanner.jsx";
 import { useConsentGatedScripts } from "./hooks/useConsentGatedScripts.js";
+import EzoicRouteListener from "./components/stea-code/EzoicRouteListener.jsx";
+import StickyFooterAd from "./components/stea-code/StickyFooterAd.jsx";
 
 class LocalErrorBoundary extends Component {
   constructor(props) {
@@ -163,6 +165,8 @@ export default function App() {
             <div className="stea-master-root" style={{ minHeight: "100vh", background: "#050505", overflow: "visible" }}>
               {/* <CookieConsentBanner /> removed */}
               <Suspense fallback={<PageLoadingFallback />}>
+                <EzoicRouteListener />
+                <StickyFooterAd />
                 <Routes>
                   {/* Home */}
                   <Route path="/" element={<SteaCodeHomeV2 user={cfUser} authLoading={cfLoading} />} />

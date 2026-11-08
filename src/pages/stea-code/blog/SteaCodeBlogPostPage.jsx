@@ -29,20 +29,41 @@ export default function SteaCodeBlogPostPage() {
 
   return (
     <main className="sc-blog">
-      <article className="sc-post">
-        <nav className="sc-post__nav">
-          <Link to="/" className="sc-post__back">← Back to SteaCode</Link>
-          <Link to="/blog" className="sc-post__back">← All articles</Link>
-        </nav>
-        <span className="sc-post__tag">{post.category}</span>
-        <h1 className="sc-post__title">{post.title}</h1>
-        <p className="sc-post__meta">
-          {[post.author_name, post.created_at ? String(post.created_at).slice(0, 10) : "", postReadTime(post.content)]
-            .filter(Boolean)
-            .join(" · ")}
-        </p>
-        <div className="sc-post__body" dangerouslySetInnerHTML={{ __html: post.content }} />
-      </article>
+      <div className="sc-post-layout">
+        <article className="sc-post">
+          <nav className="sc-post__nav">
+            <Link to="/" className="sc-post__back">← Back to SteaCode</Link>
+            <Link to="/blog" className="sc-post__back">← All articles</Link>
+          </nav>
+          <span className="sc-post__tag">{post.category}</span>
+          <h1 className="sc-post__title">{post.title}</h1>
+          <p className="sc-post__meta">
+            {[post.author_name, post.created_at ? String(post.created_at).slice(0, 10) : "", postReadTime(post.content)]
+              .filter(Boolean)
+              .join(" · ")}
+          </p>
+          {/* PubFuture In-Article Ad — filled once final tags are approved */}
+          <div className="sc-ad-mid-article">
+            <div>
+              <p className="sc-ad-label">Advertisement</p>
+              <div id="pubfuture-in-article" style={{ minHeight: "250px", margin: "40px 0" }} />
+            </div>
+          </div>
+
+          <div className="sc-post__body" dangerouslySetInnerHTML={{ __html: post.content }} />
+
+          {/* Ezoic Ad Below */}
+          <div className="sc-ad-bottom-article">
+            <p className="sc-ad-label">Advertisement</p>
+            <div id="ezoic-pub-ad-placeholder-102" style={{ minHeight: "90px", margin: "40px 0" }} />
+          </div>
+        </article>
+
+        {/* PubFuture Sidebar Ad — sticky, desktop only */}
+        <aside className="sc-post-sidebar">
+          <div id="pubfuture-sidebar" style={{ position: "sticky", top: "100px", minHeight: "600px" }} />
+        </aside>
+      </div>
     </main>
   );
 }
