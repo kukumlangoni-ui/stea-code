@@ -37,10 +37,9 @@ import { useSteaCodeI18n } from "../../components/stea-code/useSteaCodeI18n.js";
 import { createPortal } from "react-dom";
 import { useCloudflareAuth, getCloudflareLogoutUrl } from "../../hooks/useCloudflareAuth.js";
 import SteaCodeMemberGate from "../../components/stea-code/SteaCodeMemberGate.jsx";
-import SteaCodeUnlockModal from "../../components/stea-code/SteaCodeUnlockModal.jsx";
+import NewsletterModal from "../../components/stea-code/NewsletterModal.jsx";
 import SteaCodeProductSkeleton from "../../components/stea-code/SteaCodeProductSkeleton.jsx";
 import PreviewErrorBoundary from "../../components/stea-code/PreviewErrorBoundary.jsx";
-import SteaCodeCheckoutPage from "./SteaCodeCheckoutPage.jsx";
 import SteaCodePurchasesPage from "./SteaCodePurchasesPage.jsx";
 import SteaCodeNotFoundPage from "./SteaCodeNotFoundPage.jsx";
 import {
@@ -48,7 +47,6 @@ import {
   clearSteaCodePendingAction,
   getSteaCodePendingAction,
   makeFreeCodeAction,
-  makePremiumCheckoutAction,
   makePurchasesAction,
   setSteaCodePendingAction } from "../../services/steaCodeResumeAction.js";
 import { startActivityTracking } from "../../services/userActivity.js";
@@ -69,6 +67,8 @@ import {
 import { trackUserEvent } from "../../services/analytics.js";
 import SteaCodeFooter from "../../components/stea-code/SteaCodeFooter.jsx";
 import IconGallery from "../../components/stea-code/IconGallery.jsx";
+import SteaCodeBlogPage from "./blog/SteaCodeBlogPage.jsx";
+import LatestFromBlog from "../../components/stea-code/LatestFromBlog.jsx";
 
 import {
   CODE_PRODUCT_CATEGORIES,
@@ -174,7 +174,7 @@ const COPY = {
   exploreCode: { en: "Explore Code", zhCN: "探索代码" },
   browseFree: { en: "Explore Free", zhCN: "探索免费资源" },
   browsePremium: { en: "Browse Premium", zhCN: "浏览高级代码" },
-  marketplaceSub: { en: "Premium code products to ship your ideas faster.", zhCN: "高级代码产品，帮助你更快发布创意。" },
+  marketplaceSub: { en: "Free code products to ship your ideas faster.", zhCN: "免费代码产品，帮助你更快发布创意。" },
   viewAll: { en: "View all products", zhCN: "查看全部产品" },
   trendingTitle: { en: "Trending this week", zhCN: "本周趋势" },
   trendingSub: { en: "Popular resources worth checking out.", zhCN: "值得探索的热门开发者资源。" },
@@ -199,7 +199,7 @@ const COPY = {
   getCode: { en: "Get Code", zhCN: "获取代码" },
   unlockFullCode: { en: "Unlock Full Code", zhCN: "解锁完整代码" },
   oneTime: { en: "One-time purchase · Instant access", zhCN: "一次购买 · 即时访问" },
-  locked: { en: "Premium source is locked until purchase is verified.", zhCN: "高级源码会在购买验证后解锁。" },
+  locked: { en: "Sign in with your email to copy the full source.", zhCN: "使用邮箱登录即可复制完整源码。" },
   signInToContinue: { en: "Please sign in to continue.", zhCN: "请先登录以继续。" },
   included: { en: "What's Included", zhCN: "包含内容" },
   howTo: { en: "How to Use", zhCN: "如何使用" },
@@ -217,7 +217,6 @@ const NAV_LINKS = [
   { id: "tools", label: { en: "Tools", zhCN: "工具" }, href: "/tools" },
   { id: "library", label: { en: "Library", zhCN: "开发库" }, href: "/library" },
   { id: "free", label: { en: "Free", zhCN: "免费" }, mode: "explore", filter: { pricing: "Free" } },
-  { id: "premium", label: { en: "Premium", zhCN: "高级" }, mode: "explore", filter: { pricing: "Premium" } },
 ];
 
 const CATEGORY_LABELS = {
@@ -305,6 +304,16 @@ function label(product, key, zhKey) {
 function formatPrice(product) {
   if (product.pricingType === "free") return "Free";
   return `${product.currency === "USD" ? "$" : ""}${Number(product.price || 0).toFixed(2)}`;
+}
+
+// 100% free pivot — the storefront no longer sells anything. Every product is
+// presented (and accessed) as free, regardless of the legacy pricing columns
+// still stored in D1.
+function asFreeProducts(products) {
+  if (!Array.isArray(products)) return [];
+  return products.map((product) =>
+    product ? { ...product, pricingType: "free", price: 0 } : product
+  );
 }
 
 
@@ -431,12 +440,10 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
   const location = useLocation();
   const searchParams = useMemo(() => new URLSearchParams(location.search), [location.search]);
   const viewParam = searchParams.get("view");
-  const checkoutProductId = searchParams.get("product");
 
   const effectiveView = useMemo(() => {
     if (location.pathname === "/library") return "purchases";
     if (viewParam === "purchases" || viewParam === "library") return "purchases";
-    if (viewParam === "checkout") return "checkout";
     // payment-return (old purchased-workspace code-view) removed — users see the product page with copy buttons instead
     return viewMode;
   }, [location.pathname, viewParam, viewMode]);
@@ -453,8 +460,18 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
   // empty grid, because `TABS[activeTab].categories` would throw on an unknown
   // tab.
   const filterParams = useMemo(() => {
+    // Clean, crawlable routes (/layouts, /kits, /icons) imply their tab even
+    // when there is no ?tab= param. An explicit param always wins.
+    const pathTab =
+      { "/components": "components", "/layouts": "layouts", "/kits": "kits", "/icons": "icons" }[
+        location.pathname.replace(/\/+$/, "") || "/"
+      ];
     const tabParam = searchParams.get("tab");
-    const tab = tabParam && TABS[tabParam] ? tabParam : DEFAULT_TAB;
+    const tab = tabParam && TABS[tabParam]
+      ? tabParam
+      : pathTab && TABS[pathTab]
+        ? pathTab
+        : DEFAULT_TAB;
     const catParam = searchParams.get("category");
     const catIds = TABS[tab].categories.map((c) => c.id);
     const cat = catParam && catIds.includes(catParam) ? catParam : "All";
@@ -462,7 +479,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
     const subs = SUBCATEGORIES[cat] || [];
     const sub = subParam && subs.includes(subParam) ? subParam : "All";
     return { tab, cat, sub };
-  }, [searchParams]);
+  }, [searchParams, location.pathname]);
 
   const filterSignature = `${filterParams.tab}|${filterParams.cat}|${filterParams.sub}`;
 
@@ -618,6 +635,18 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
   const [isFallbackCatalog, setIsFallbackCatalog] = useState(false);
   // Incrementing this triggers a fresh catalog load (used by the error-state Retry).
   const [catalogReloadToken, setCatalogReloadToken] = useState(0);
+  // When true, the next catalog load bypasses the localStorage client cache
+  // (forceFresh). Set by the "stea-catalog-changed" window event, which the
+  // admin panel dispatches after a product delete/update.
+  const forceNextCatalogLoadRef = useRef(false);
+  useEffect(() => {
+    const handler = () => {
+      forceNextCatalogLoadRef.current = true;
+      setCatalogReloadToken((t) => t + 1);
+    };
+    window.addEventListener("stea-catalog-changed", handler);
+    return () => window.removeEventListener("stea-catalog-changed", handler);
+  }, []);
   const [isLoading, setIsLoading] = useState(true);
   // Storefront-wide product total (published + homepageVisible), independent of
   // the current tab/category filters — drives the hero counter. `animatedTotal`
@@ -661,6 +690,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
   }, [selected]);
 
   const [memberGateOpen, setMemberGateOpen] = useState(false);
+  const [newsletterOpen, setNewsletterOpen] = useState(false);
   const [memberGateAction, setMemberGateAction] = useState(null);
 
   useEffect(() => {
@@ -801,24 +831,6 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
   /* -------- Auth resume flow — Member Gate (premium / free code) -------- */
   const [pendingFreeCodeProductId, setPendingFreeCodeProductId] = useState(null);
 
-  const goToCheckout = (productId) => {
-    // Find the product in the live catalog and open the Unlock modal, which
-    // drives the working Stripe Checkout redirect flow (/checkout-product).
-    // Avoids the legacy embedded PaymentElement checkout page (dead /orders route).
-    const match = (Array.isArray(liveCatalog) ? liveCatalog : []).find(
-      (p) => p && String(p.id || p.slug || "") === String(productId)
-    );
-    if (match) {
-      setUnlockModalProduct(match);
-      return;
-    }
-    // Fallback: still navigate to the product detail so the user can tap Unlock.
-    const sp = new URLSearchParams(window.location.search);
-    sp.set("view", "product");
-    sp.set("product", String(productId));
-    navigate(`${window.location.pathname}?${sp.toString()}`);
-  };
-
   const goToPurchases = () => {
     const sp = new URLSearchParams(window.location.search);
     sp.set("view", "purchases");
@@ -831,9 +843,9 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
     clearSteaCodePendingAction();
     setMemberGateAction(null);
     switch (a.type) {
+      // Everything is free now: a legacy checkout resume just copies the
+      // product source like any other free-code action.
       case STEA_CODE_ACTION_TYPES.PREMIUM_CHECKOUT:
-        if (a.productId) goToCheckout(a.productId);
-        break;
       case STEA_CODE_ACTION_TYPES.FREE_CODE:
         if (a.productId) setPendingFreeCodeProductId(a.productId);
         break;
@@ -916,13 +928,6 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
     };
   }, [accountMenuOpen]);
 
-  const handleGoUnlimited = async (e) => {
-    if (e) { e.preventDefault(); e.stopPropagation(); }
-    // Navigate to the upgrade info page — pre-purchase marketing
-    // before the user reaches Stripe checkout
-    navigate("/upgrade");
-  };
-
   // Shared by the inline desktop nav and the mobile drawer so both routes
   // (href → page, tab → in-page tab, filter → explore mode) stay in sync.
   const handleNavSelect = (item) => {
@@ -963,10 +968,6 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
 
 
 
-  const requestAuthForCheckout = (productId) => {
-    openMemberGate(makePremiumCheckoutAction(productId));
-  };
-
   const requestAuthForFreeCode = (productId) => {
     openMemberGate(makeFreeCodeAction(productId));
   };
@@ -989,8 +990,8 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
 
     useEffect(() => {
     let active = true;
-    // The Icons tab is a local static gallery — no catalog request needed.
-    if (activeTab === "icons") {
+    // Icons and Blog are self-contained panels — no catalog request needed.
+    if (activeTab === "icons" || activeTab === "blog") {
       setIsFallbackCatalog(false);
       setIsLoading(false);
       return undefined;
@@ -1001,6 +1002,10 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
 
     async function loadHomepageCatalog() {
       try {
+        // A "stea-catalog-changed" event (admin delete/update) makes this one
+        // load bypass both the localStorage cache and the CDN edge cache.
+        const forceFresh = forceNextCatalogLoadRef.current;
+        forceNextCatalogLoadRef.current = false;
         // The Library "Cheat Sheets & Notes" pill is a combined filter
         // (cheatsheets + notes) that the API cannot express as a single
         // `category = ?`, so for that one pill we send NO category and let the
@@ -1014,9 +1019,10 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
           category: activeTab === "library" && category === "Cheat Sheets" ? "" : category,
           activeTab,
           search: q,
+          forceFresh,
           onFresh: (fresh) => {
             if (!active) return;
-            const products = Array.isArray(fresh?.products) ? fresh.products : [];
+            const products = asFreeProducts(fresh?.products);
             setGlobalCatalogTotal(Number(fresh?.globalTotal) || 0);
             setLiveCatalog((previous) => {
               const base = Array.isArray(previous) ? previous : [];
@@ -1038,9 +1044,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
         if (!active) return;
 
         // Empty array is valid catalog data. Only a rejected request is an error.
-        const homepageNext = Array.isArray(homepageResult?.products)
-          ? homepageResult.products
-          : [];
+        const homepageNext = asFreeProducts(homepageResult?.products);
 
         setIsFallbackCatalog(false);
         setLiveCatalog(homepageNext);
@@ -1760,58 +1764,21 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
             <button
               type="button"
               className="sc-topbar-cta"
-              onClick={() => setMemberGateOpen(true)}
+              data-newsletter-trigger
+              onClick={() => setNewsletterOpen(true)}
             >
-              Sign in
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                   stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"
-                   strokeLinejoin="round">
-                <line x1="5" y1="12" x2="19" y2="12"/>
-                <polyline points="12 5 19 12 12 19"/>
+              Get Updates
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M12 2l1.9 5.7L20 9.6l-5.1 3.7L16.4 20 12 16.6 7.6 20l1.5-6.7L4 9.6l6.1-1.9L12 2z"/>
               </svg>
             </button>
           )}
-
-          <div className="sc-go-unlimited-wrap">
-            <button
-              ref={goUnlimitedBtnRef}
-              type="button"
-              className={`sc-go-unlimited-btn ${goUnlimitedPulse ? "is-pulsing" : ""}`}
-              onClick={handleGoUnlimited}
-              aria-label="Get Lifetime Access — $29"
-            >
-              <span className="sc-go-unlimited-shine" aria-hidden="true" />
-              <span className="sc-go-unlimited-label sc-go-unlimited-label--full">Get Lifetime Access — $29</span>
-              <span className="sc-go-unlimited-label sc-go-unlimited-label--short">Lifetime — $29</span>
-            </button>
-            {goUnlimitedToast && (
-              <div className="sc-go-unlimited-toast" role="status">
-                <span className="sc-go-unlimited-toast-dot" aria-hidden="true" />
-                <span className="sc-go-unlimited-toast-text">Something went wrong</span>
-              </div>
-            )}
-          </div>
 
         </div>
       </header>
 
       <main>
-        {effectiveView === "checkout" ? (
-          <SteaCodeCheckoutPage
-            productId={checkoutProductId}
-            locale={uiLocale}
-            onBack={() => {
-              const sp = new URLSearchParams(location.search);
-              sp.delete("view");
-              sp.delete("product");
-              navigate(`${location.pathname}${sp.toString() ? `?${sp.toString()}` : ""}`);
-            }}
-            onRequireAuth={(pid) => {
-              setMemberGateAction({ type: "checkout", productId: pid || checkoutProductId });
-              setMemberGateOpen(true);
-            }}
-          />
-        ) : effectiveView === "purchases" ? (
+        {effectiveView === "purchases" ? (
           <SteaCodePurchasesPage
             locale={uiLocale}
             onGoHome={() => {
@@ -1888,6 +1855,8 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
             />
             {activeTab === "icons" ? (
               <IconGallery />
+            ) : activeTab === "blog" ? (
+              <SteaCodeBlogPage embedded />
             ) : (<>
             {isFallbackCatalog && (
               <div
@@ -2078,16 +2047,6 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
                   >
                     {tLocal(COPY.browseFree)} <ArrowRight size={16} />
                   </button>
-                  <button
-                    type="button"
-                    className="sc-market-secondary sc-hero-cta-secondary"
-                    onClick={() => {
-                      setPricing("Premium");
-                      setCategory("All");
-                    }}
-                  >
-                    {tLocal(COPY.browsePremium)}
-                  </button>
                 </div>
                 <div className="sc-trust-bar" role="status" aria-label="steacode stats">
                   <div className="sc-trust-item">
@@ -2158,6 +2117,8 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
               {/* Icons tab: local static gallery replaces pills + product grid */}
               {activeTab === "icons" ? (
                 <IconGallery />
+              ) : activeTab === "blog" ? (
+                <SteaCodeBlogPage embedded />
               ) : (<>
               {/* Category filter pills — dynamic based on activeTab */}
               <div className="sc-homepage-pill-row" role="tablist" aria-label="Product categories">
@@ -2352,6 +2313,8 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
         )}
       </main>
 
+      <LatestFromBlog />
+
       <SteaCodeFooter />
       <AnimatePresence>
         {selected && (
@@ -2377,18 +2340,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
         onClose={handleMemberGateClose}
         onAuthenticated={handleMemberGateAuthenticated}
       />
-
-      {/* Unlock premium modal */}
-      {unlockModalProduct && (
-        <SteaCodeUnlockModal
-          product={unlockModalProduct}
-          onClose={() => setUnlockModalProduct(null)}
-          onPurchased={() => {
-            fetchEntitlements().then((data) => setEntitlements(data));
-            setUnlockModalProduct(null);
-          }}
-        />
-      )}
+      <NewsletterModal open={newsletterOpen} onClose={() => setNewsletterOpen(false)} />
 
       {/* Page-level toast */}
       {pageToast && (
@@ -2512,7 +2464,6 @@ function ProductControls({ tLocal, uiLocale = "en", activeTab, setActiveTab, cat
           {[
             { value: "All", label: uiLocale === "zhCN" ? "全部产品" : "All Products" },
             { value: "Free", label: tLocal(COPY["free"] || "Free") },
-            { value: "Premium", label: tLocal(COPY["premium"] || "Premium") },
           ].map((item) => (
             <button
               key={item.value}
@@ -2604,6 +2555,10 @@ function CodeProductCard({ product, tLocal, onOpen, isFavorited, onToggleFavorit
   }, [product?.gallery, posterUrl]);
   const [cardImageIndex, setCardImageIndex] = useState(0);
   const cardTouchX = useRef(null);
+  // When the poster/gallery image 404s (e.g. its R2 file was removed), swap to
+  // a branded gradient placeholder with the product title + category instead
+  // of showing a broken-image icon.
+  const [cardPosterFailed, setCardPosterFailed] = useState(false);
   const activePoster = cardGallery[cardImageIndex] || posterUrl;
   const cycleCardImage = useCallback(
     (dir) => {
@@ -2674,13 +2629,53 @@ function CodeProductCard({ product, tLocal, onOpen, isFavorited, onToggleFavorit
               cardTouchX.current = null;
             }}
           >
-            <img
-              src={activePoster}
-              alt={title}
-              loading="lazy"
-              decoding="async"
-              draggable={false}
-            />
+            {cardPosterFailed ? (
+              <div
+                className="sc-card-poster-fallback"
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  background:
+                    "radial-gradient(120% 80% at 50% 0%, rgba(245,166,35,0.14), rgba(15,23,42,0.00) 60%), linear-gradient(160deg, rgba(245,166,35,0.10), rgba(15,23,42,0.05))",
+                  color: "rgba(148, 163, 184, 0.9)",
+                  fontSize: "12px",
+                  letterSpacing: "0.02em",
+                  gap: "8px",
+                  padding: "16px",
+                  textAlign: "center",
+                }}
+              >
+                <Code2 size={24} style={{ color: "rgba(245, 166, 35, 0.7)" }} />
+                <span
+                  style={{
+                    color: "rgba(226, 232, 240, 0.95)",
+                    fontSize: "13px",
+                    fontWeight: 600,
+                    lineHeight: 1.35,
+                    display: "-webkit-box",
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: "vertical",
+                    overflow: "hidden",
+                  }}
+                >
+                  {title}
+                </span>
+                <span style={{ opacity: 0.88 }}>{categoryLabel}</span>
+              </div>
+            ) : (
+              <img
+                src={activePoster}
+                alt={title}
+                loading="lazy"
+                decoding="async"
+                draggable={false}
+                onError={() => setCardPosterFailed(true)}
+              />
+            )}
             {cardGallery.length > 1 && (
               <div className="sc-card-gallery-dots" aria-hidden="true">
                 {cardGallery.map((_, i) => (
@@ -2907,6 +2902,7 @@ function ProductVideoPreview({ videoUrl, posterUrl, title, playing, autoPlayWhen
   const videoRef = useRef(null);
   const containerRef = useRef(null);
   const [loadError, setLoadError] = useState(false);
+  const [posterError, setPosterError] = useState(false);
   const [isAutoPlaying, setIsAutoPlaying] = useState(false);
 
   // Accessibility: never play for reduced-motion users.
@@ -3050,6 +3046,9 @@ function ProductVideoPreview({ videoUrl, posterUrl, title, playing, autoPlayWhen
   const showPoster = loadError || noMotion || noData;
 
   if (loadError && !posterUrl) return null;
+  // Both video and poster failed — nothing meaningful to render here; the
+  // card-level fallbacks (live preview / branded placeholder) take over.
+  if (loadError && posterError) return null;
 
   return (
     <div
@@ -3065,12 +3064,13 @@ function ProductVideoPreview({ videoUrl, posterUrl, title, playing, autoPlayWhen
         pointerEvents: "none",
       }}
     >
-      {posterUrl ? (
+      {posterUrl && !posterError ? (
         <img
           src={posterUrl}
           alt={title || ""}
           loading="lazy"
           decoding="async"
+          onError={() => setPosterError(true)}
           style={{
             position: "absolute",
             inset: 0,
@@ -3155,6 +3155,9 @@ const ProductPreview = forwardRef(function ProductPreview({
   const canHover = useCanHover();
   const [isHovering, setIsHovering] = useState(false);
   const [cardVideoFailed, setCardVideoFailed] = useState(false);
+  // When the poster image 404s (e.g. its R2 file was removed) the card swaps
+  // to the branded gradient placeholder instead of a broken-image icon.
+  const [posterFailed, setPosterFailed] = useState(false);
 
   // Priority 1: Native preview (if any registered)
   if (NativePreview) {
@@ -3335,12 +3338,13 @@ const ProductPreview = forwardRef(function ProductPreview({
             placeholder={null}
             cardPreview={cardPreview}
           />
-        ) : product?.posterImageUrl ? (
+        ) : product?.posterImageUrl && !posterFailed ? (
           <img
             src={String(product.posterImageUrl)}
             alt={product?.titleEn || product?.titleZh || productId || "Preview poster"}
             loading="lazy"
             className="sc-preview-poster-image"
+            onError={() => setPosterFailed(true)}
             style={{
               width: "100%",
               height: "100%",
@@ -3353,7 +3357,7 @@ const ProductPreview = forwardRef(function ProductPreview({
         ) : (
           <div
             className="sc-preview-unavailable"
-            aria-label="Preview unavailable"
+            aria-label={product?.titleEn || product?.titleZh || "Preview"}
             style={{
               width: "100%",
               height: "100%",
@@ -3362,15 +3366,31 @@ const ProductPreview = forwardRef(function ProductPreview({
               alignItems: "center",
               justifyContent: "center",
               background:
-                "radial-gradient(120% 80% at 50% 0%, rgba(245,166,35,0.06), rgba(15,23,42,0.00) 60%), rgba(15,23,42,0.02)",
+                "radial-gradient(120% 80% at 50% 0%, rgba(245,166,35,0.12), rgba(15,23,42,0.00) 60%), linear-gradient(160deg, rgba(245,166,35,0.08), rgba(15,23,42,0.04))",
               borderRadius: "12px",
               color: "rgba(148, 163, 184, 0.9)",
               fontSize: "12px",
               letterSpacing: "0.02em",
               gap: "8px",
+              padding: "16px",
+              textAlign: "center",
             }}
           >
             <Code2 size={24} style={{ color: "rgba(245, 166, 35, 0.7)" }} />
+            <span
+              style={{
+                color: "rgba(226, 232, 240, 0.95)",
+                fontSize: "13px",
+                fontWeight: 600,
+                lineHeight: 1.35,
+                display: "-webkit-box",
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: "vertical",
+                overflow: "hidden",
+              }}
+            >
+              {product?.titleEn || product?.titleZh || ""}
+            </span>
             <span style={{ opacity: 0.88 }}>{categoryLabel}</span>
           </div>
         )}
@@ -3846,7 +3866,7 @@ function ProductDetail({
   if (!product) return null;
   if (typeof document === "undefined") return null;
 
-  const isPremium = product.pricingType === "premium";
+  const isPremium = false; // 100% free pivot — no product is gated by payment.
   const isFree = !isPremium;
 
   // Build copyable source HTML from product.sourceCode or product.deliverablesSource
@@ -4063,7 +4083,7 @@ function ProductDetail({
   // Shared success handlers — fire ONLY when copy/download succeeds
   const handleCopyPromptSuccess = useCallback(() => {
     const user = currentUser;
-    if (!user && !isFree) {
+    if (!user) {
       handleGateAction("copy-prompt");
       return;
     }
@@ -4084,7 +4104,7 @@ function ProductDetail({
 
   const handleCopySourceSuccess = useCallback(() => {
     const user = currentUser;
-    if (!user && !isFree) {
+    if (!user) {
       handleGateAction("copy-source");
       return;
     }
@@ -4115,7 +4135,7 @@ function ProductDetail({
   // Action executors
   const executeCopyPrompt = useCallback(async () => {
     const user = currentUser;
-    if (!user && !isFree) {
+    if (!user) {
       handleGateAction("copy-prompt");
       return;
     }
@@ -4170,7 +4190,7 @@ function ProductDetail({
 
   const executeCopySource = useCallback(async () => {
     const user = currentUser;
-    if (!user && !isFree) {
+    if (!user) {
       handleGateAction("copy-source");
       return;
     }
@@ -4219,7 +4239,7 @@ function ProductDetail({
   const handleCopyPromptClick = useCallback((e) => {
     e.stopPropagation();
     const user = currentUser;
-    if (!user && !isFree) {
+    if (!user) {
       handleGateAction("copy-prompt");
       return;
     }
@@ -4233,7 +4253,7 @@ function ProductDetail({
   const handleCopySourceClick = useCallback((e) => {
     e.stopPropagation();
     const user = currentUser;
-    if (!user && !isFree) {
+    if (!user) {
       handleGateAction("copy-source");
       return;
     }
@@ -4247,7 +4267,7 @@ function ProductDetail({
   // ── Copy Image (Layouts / poster-based + free products) ──────────
   const handleCopyImageSuccess = useCallback(() => {
     const user = currentUser;
-    if (!user && !isFree) {
+    if (!user) {
       handleGateAction("copy-image");
       return;
     }
@@ -4268,7 +4288,7 @@ function ProductDetail({
 
   const executeCopyImage = useCallback(async () => {
     const user = currentUser;
-    if (!user && !isFree) {
+    if (!user) {
       handleGateAction("copy-image");
       return;
     }
@@ -4301,7 +4321,7 @@ function ProductDetail({
   const handleCopyImageClick = useCallback((e) => {
     e.stopPropagation();
     const user = currentUser;
-    if (!user && !isFree) {
+    if (!user) {
       handleGateAction("copy-image");
       return;
     }
@@ -4314,7 +4334,7 @@ function ProductDetail({
 
   const handleDownloadClick = useCallback((e) => {
     e.stopPropagation();
-    if (!isSignedIn && !isFree) {
+    if (!isSignedIn) {
       handleGateAction("download");
       return;
     }

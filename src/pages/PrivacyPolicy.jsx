@@ -8,7 +8,7 @@ export default function PrivacyPolicy() {
   const homeUrl = getSteaCodePublicUrl();
 
   return (
-    <div style={{ minHeight: "100vh", background: "#05060a", color: "#e2e8f0", padding: "48px 20px 80px", fontFamily: "system-ui, -apple-system, sans-serif" }}>
+    <div style={{ minHeight: "100vh", background: "#fffdf7", color: "#111827", padding: "48px 20px 80px", fontFamily: "system-ui, -apple-system, sans-serif" }}>
       <SEO
         title="Privacy Policy | STEA Africa & steacode"
         description="Learn how STEA Africa and steacode collect, handle, and protect your personal data in accordance with GDPR, UK GDPR, and CCPA."
@@ -31,16 +31,16 @@ export default function PrivacyPolicy() {
           </span>
         </div>
 
-        <h1 style={{ fontSize: "clamp(28px, 4vw, 40px)", fontWeight: 900, color: "#ffffff", letterSpacing: "-0.02em", margin: "0 0 12px" }}>
+        <h1 style={{ fontSize: "clamp(28px, 4vw, 40px)", fontWeight: 900, color: "#111827", letterSpacing: "-0.02em", margin: "0 0 12px" }}>
           Privacy Policy
         </h1>
-        <p style={{ fontSize: "14px", color: "#94a3b8", marginBottom: 36 }}>
+        <p style={{ fontSize: "14px", color: "#4b5563", marginBottom: 36 }}>
           Last updated: September 28, 2026 · Effective immediately
         </p>
 
-        <section style={{ display: "flex", flexDirection: "column", gap: 28, fontSize: "15px", lineHeight: "1.7", color: "#cbd5e1" }}>
+        <section style={{ display: "flex", flexDirection: "column", gap: 28, fontSize: "15px", lineHeight: "1.7", color: "#374151" }}>
           <div>
-            <h2 style={{ fontSize: "20px", fontWeight: 700, color: "#ffffff", marginBottom: 12 }}>1. Introduction</h2>
+            <h2 style={{ fontSize: "20px", fontWeight: 700, color: "#111827", marginBottom: 12 }}>1. Introduction</h2>
             <p>
               STEA Africa ("STEA", "we", "us", or "our") is dedicated to protecting your privacy and personal data.
               This Privacy Policy explains how we collect, process, and safeguard information when you use STEA Africa
@@ -49,7 +49,7 @@ export default function PrivacyPolicy() {
           </div>
 
           <div>
-            <h2 style={{ fontSize: "20px", fontWeight: 700, color: "#ffffff", marginBottom: 12 }}>2. Information We Collect</h2>
+            <h2 style={{ fontSize: "20px", fontWeight: 700, color: "#111827", marginBottom: 12 }}>2. Information We Collect</h2>
             <p>We only collect information necessary to provide and secure our services:</p>
             <ul style={{ paddingLeft: 20, marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
               <li><strong>Account Credentials:</strong> Email, username, and authentication tokens via Firebase Authentication.</li>
@@ -59,7 +59,7 @@ export default function PrivacyPolicy() {
           </div>
 
           <div>
-            <h2 style={{ fontSize: "20px", fontWeight: 700, color: "#ffffff", marginBottom: 12 }}>3. Lawful Basis for Processing (GDPR)</h2>
+            <h2 style={{ fontSize: "20px", fontWeight: 700, color: "#111827", marginBottom: 12 }}>3. Lawful Basis for Processing (GDPR)</h2>
             <p>Under the General Data Protection Regulation (GDPR), we process your data under the following legal bases:</p>
             <ul style={{ paddingLeft: 20, marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
               <li><strong>Contractual Necessity:</strong> To deliver code components, process checkout, and provide account management.</li>
@@ -69,7 +69,7 @@ export default function PrivacyPolicy() {
           </div>
 
           <div>
-            <h2 style={{ fontSize: "20px", fontWeight: 700, color: "#ffffff", marginBottom: 12 }}>4. Third-Party Service Providers</h2>
+            <h2 style={{ fontSize: "20px", fontWeight: 700, color: "#111827", marginBottom: 12 }}>4. Third-Party Service Providers</h2>
             <p>We work with trusted industry providers to operate our platform:</p>
             <ul style={{ paddingLeft: 20, marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
               <li><strong>Google Firebase:</strong> Authentication and real-time database infrastructure.</li>
@@ -80,7 +80,23 @@ export default function PrivacyPolicy() {
           </div>
 
           <div>
-            <h2 style={{ fontSize: "20px", fontWeight: 700, color: "#ffffff", marginBottom: 12 }}>5. Your Rights</h2>
+            <h2 style={{ fontSize: "20px", fontWeight: 700, color: "#111827", marginBottom: 12 }}>5. Advertising &amp; Google AdSense</h2>
+            <p>
+              We use Google AdSense to display ads on steacode. Third-party vendors, including Google, use cookies
+              to serve ads based on your prior visits to this website or other websites. Google's use of advertising
+              cookies enables it and its partners to serve ads to you based on your visit to our site and/or other
+              sites on the Internet.
+            </p>
+            <p style={{ marginTop: 10 }}>
+              You may opt out of personalized advertising at any time by visiting
+              {" "}<a href="https://www.google.com/settings/ads" target="_blank" rel="noopener noreferrer" style={{ color: "#f5a623", textDecoration: "underline" }}>Google Ads Settings</a>.
+              You can also opt out of other third-party vendors' use of cookies for personalized advertising via
+              {" "}<a href="https://www.aboutads.info/choices/" target="_blank" rel="noopener noreferrer" style={{ color: "#f5a623", textDecoration: "underline" }}>aboutads.info/choices</a>.
+            </p>
+          </div>
+
+          <div>
+            <h2 style={{ fontSize: "20px", fontWeight: 700, color: "#111827", marginBottom: 12 }}>6. Your Rights</h2>
             <p>
               Depending on your jurisdiction (including EU/UK GDPR and California CCPA), you have the right to access,
               rectify, erase, or export your personal data, as well as the right to object to processing.
@@ -88,7 +104,7 @@ export default function PrivacyPolicy() {
           </div>
 
           <div>
-            <h2 style={{ fontSize: "20px", fontWeight: 700, color: "#ffffff", marginBottom: 12 }}>6. Contact Us</h2>
+            <h2 style={{ fontSize: "20px", fontWeight: 700, color: "#111827", marginBottom: 12 }}>7. Contact Us</h2>
             <p>
               For privacy inquiries, data deletion requests, or compliance questions, please contact our Data Protection Officer at:
               {" "}<a href="mailto:privacy@stea.africa" style={{ color: "#f5a623", textDecoration: "underline" }}>privacy@stea.africa</a>.

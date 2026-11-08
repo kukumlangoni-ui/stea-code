@@ -14,7 +14,7 @@
  * - POST   /admin/stea-code/products/:productId/preview/upload
  */
 
-import { Env, getDoc, listDocs, setDoc, deleteDoc } from "../firestore";
+import { Env, getDoc, listDocs, setDoc } from "../firestore";
 import { corsHeaders } from "../cors";
 import { extractBearerToken, verifyFirebaseToken } from "../auth";
 import { putObject } from "../r2";
@@ -280,6 +280,24 @@ function auditActor(writer: Writer): { uid: string; email?: string; role?: strin
     return { uid: writer.ctx.staff.id, email: writer.ctx.staff.email, role: writer.ctx.staff.role };
   }
   return { uid: writer.uid, role: "owner" };
+}
+
+/**
+ * Bump the catalog cache version. The public catalog edge-cache key embeds
+ * this version, so every admin product write instantly invalidates the stale
+ * cached homepage (no more ghost cards for deleted/edited products).
+ * Best-effort: never let it break the underlying write.
+ */
+async function bumpCatalogVersion(env: Env): Promise<void> {
+  try {
+    const version = Date.now().toString();
+    await env.DB.prepare(
+      `INSERT INTO meta (key, value) VALUES ('catalog_version', ?)
+       ON CONFLICT(key) DO UPDATE SET value = ?`
+    ).bind(version, version).run();
+  } catch {
+    // meta table may not exist yet (pre-migration) — ignore
+  }
 }
 
 export async function handleAdminProducts(req: Request, env: Env): Promise<Response> {
@@ -844,6 +862,9 @@ export async function handleAdminUpdateProduct(req: Request, env: Env, productId
 
     await setDoc(env, PRODUCTS_COLLECTION, productId, merged, false);
 
+    // Invalidate the cached homepage catalog at the edge.
+    await bumpCatalogVersion(env);
+
     await logProductAudit(
       env,
       auditActor(writer),
@@ -868,10 +889,16 @@ export async function handleAdminDeleteProduct(req: Request, env: Env, productId
   if (!admin) return admin403(req);
 
   try {
-    // Delete all related rows (sources, previews, then product)
-    await deleteDoc(env, SOURCES_COLLECTION, productId);
-    await deleteDoc(env, PREVIEWS_COLLECTION, productId);
-    await deleteDoc(env, PRODUCTS_COLLECTION, productId);
+    // Soft delete: mark the row deleted instead of removing it. The row (and
+    // its sources/previews) stays in the database so order history,
+    // entitlements, and purchases keep resolving; every public catalog query
+    // filters on `deleted_at IS NULL` so the card disappears from the site.
+    await env.DB.prepare("UPDATE products SET deleted_at = ? WHERE id = ?")
+      .bind(new Date().toISOString(), productId)
+      .run();
+
+    // Invalidate the cached homepage catalog at the edge.
+    await bumpCatalogVersion(env);
 
     await logProductAudit(
       env,

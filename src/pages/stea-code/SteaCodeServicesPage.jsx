@@ -244,10 +244,6 @@ export default function SteaCodeServicesPage() {
                 <polyline points="12 5 19 12 12 19" />
               </svg>
             </Link>
-
-            <Link to="/upgrade" className="sc-go-unlimited-btn">
-              <span className="sc-go-unlimited-label">Lifetime — $29</span>
-            </Link>
           </div>
         </header>
 

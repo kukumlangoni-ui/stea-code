@@ -1,7 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import SEO from "../../components/SEO.jsx";
-import SteaCodeFooter from "../../components/stea-code/SteaCodeFooter.jsx";
 import "./stea-code-about.css";
 
 /**
@@ -20,19 +19,6 @@ export default function SteaCodeAboutPage() {
         type="aboutpage"
       />
       <div className="sc-about">
-        {/* Top bar so the page doesn't feel lost */}
-        <header className="sc-about-nav">
-          <Link to="/" className="sc-about-brand">
-            <img src="/stea-code-logo.png" alt="" width={24} height={24} />
-            steacode
-          </Link>
-          <nav className="sc-about-nav-links">
-            <Link to="/">Browse Components</Link>
-            <Link to="/store">E‑books</Link>
-            <Link to="/contact">Contact</Link>
-          </nav>
-        </header>
-
         {/* HERO */}
         <section className="sc-about-hero">
           <span className="sc-about-kicker">Built for developers</span>
@@ -103,8 +89,6 @@ export default function SteaCodeAboutPage() {
             <Link to="/contact" className="sc-about-btn sc-about-btn-ghost">Get in touch</Link>
           </div>
         </section>
-
-        <SteaCodeFooter />
       </div>
     </>
   );

@@ -140,7 +140,6 @@ export default function StoreSalesPage() {
   }
 
   const title = product.titleEn || product.title || "Untitled";
-  const isFree = !(Number(product.price) > 0);
   const samplePdfUrl = typeof product.samplePdfUrl === "string" && product.samplePdfUrl.trim()
     ? product.samplePdfUrl.trim()
     : "";
@@ -148,7 +147,7 @@ export default function StoreSalesPage() {
   const description =
     (typeof product.description === "string" && product.description.trim()) ||
     (typeof product.subtitleEn === "string" && product.subtitleEn.trim()) ||
-    "A premium STEACODE title. Read it in your browser, download the PDF, and keep lifetime access.";
+    "A STEACODE title. Read it in your browser, download the PDF, and keep lifetime access.";
 
   const scrollToSample = () => {
     sampleRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -190,28 +189,18 @@ export default function StoreSalesPage() {
             <div className="store-sales__price">
               <span className="store-sales__price-value">{getStorePriceLabel(product)}</span>
               <span className="store-sales__price-note">
-                {isFree ? "free forever · no account needed" : "USD · one-time purchase · lifetime access"}
+                free forever · sign in with your email to read
               </span>
             </div>
 
             <div className="store-sales__actions">
-              {isFree ? (
-                <button
-                  type="button"
-                  className="store-btn store-btn--primary"
-                  onClick={() => navigate(`/store/read/${product.slug || product.id}`)}
-                >
-                  Read Now — Free
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  className="store-btn store-btn--primary"
-                  onClick={() => navigate(`/products/${product.slug || product.id}`)}
-                >
-                  Buy Now — {getStorePriceLabel(product)}
-                </button>
-              )}
+              <button
+                type="button"
+                className="store-btn store-btn--primary"
+                onClick={() => navigate(`/store/read/${product.slug || product.id}`)}
+              >
+                Read Now — Free
+              </button>
               <button
                 type="button"
                 className="store-btn store-btn--ghost"
@@ -225,7 +214,7 @@ export default function StoreSalesPage() {
 
             <ul className="store-sales__perks">
               <li>Read instantly in your browser</li>
-              <li>Downloadable PDF for premium readers</li>
+              <li>Downloadable PDF</li>
               <li>Lifetime access, including updates</li>
             </ul>
           </div>
@@ -237,7 +226,7 @@ export default function StoreSalesPage() {
             <div className="store-sample__heading">
               <h2 className="store-sample__title">Read a free sample</h2>
               <span className="store-sample__hint">
-                {isFree ? "The whole book is free — this is the full preview." : "First chapter, on the house."}
+                The whole book is free — this is the full preview.
               </span>
             </div>
             <div className="store-sample__frame-wrap">

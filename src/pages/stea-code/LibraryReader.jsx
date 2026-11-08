@@ -83,12 +83,10 @@ export default function LibraryReader({ user, authLoading }) {
     return () => { cancelled = true; };
   }, [effectiveUser?.uid]);
 
-  // A book is only premium when it is explicitly flagged premium AND carries
-  // a real price. `pricingType: "free"` (or a stale premium flag on a 0-price
-  // row) grants instant access — no sign-in, no purchase.
-  const isPremium =
-    product?.pricingType === "premium" && Number(product?.price || 0) > 0;
-  const hasAccess = !serverDenied && (!isPremium || entitlements.hasProLifetime || entitlements.productIds.has(product?.id));
+  // 100% free pivot: no book is premium anymore. The only gate left is the
+  // email sign-in (enforced server-side), so access means "server allowed it".
+  const isPremium = false;
+  const hasAccess = !serverDenied;
   const normalizedProductType = String(product?.productType || "").trim().toLowerCase();
   const isReaderProduct =
     ["ebook", "cheatsheet", "note"].includes(normalizedProductType) ||
@@ -148,7 +146,7 @@ export default function LibraryReader({ user, authLoading }) {
         }
         // Endpoint unreachable. A signed-out visitor never gets the shell for a
         // paid book; a signed-in reader keeps the shipped shell usable.
-        if (isPremium && !effectiveUser) {
+        if (!effectiveUser) {
           setContentState("idle");
           return;
         }
@@ -291,17 +289,14 @@ export default function LibraryReader({ user, authLoading }) {
           <div style={{ fontSize: 34, marginBottom: 14 }}>🔒</div>
           <h1 style={{ fontSize: 22, marginBottom: 10 }}>{product.titleEn}</h1>
           <p style={{ color: "#8b93a3", fontSize: 14, marginBottom: 22 }}>
-            This eBook is premium content. Unlock it once to read every stage, run the exercises and keep lifetime access.
+            Sign in with your email to read every stage, run the exercises and download the PDF. This book is free.
           </p>
-          <div style={{ fontWeight: 800, fontSize: 26, color: "#d89a2b", marginBottom: 22 }}>
-            ${Number(product.price) || 50} <span style={{ fontSize: 13, color: "#8b93a3", fontWeight: 600 }}>one-time · lifetime access</span>
-          </div>
           <button
             type="button"
-            onClick={() => navigate(`/products/${product.slug || product.id}`)}
+            onClick={() => navigate("/?signin=1")}
             style={{ width: "100%", padding: "12px 18px", borderRadius: 11, background: "linear-gradient(135deg,#d89a2b,#e0a63c)", color: "#0b0e14", fontWeight: 700, border: 0, cursor: "pointer", fontSize: 14, marginBottom: 10 }}
           >
-            Buy Now
+            Sign in to read
           </button>
           <button
             type="button"

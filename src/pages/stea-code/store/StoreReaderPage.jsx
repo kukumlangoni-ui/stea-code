@@ -105,11 +105,10 @@ export default function StoreReaderPage({ user, authLoading }) {
   }, [notice]);
 
   const title = product?.titleEn || product?.title || "STEACODE eBook";
-  const isFree = !(Number(product?.price) > 0);
 
   /**
-   * "Download PDF for Premium" — hits the Worker route /api/download/:id,
-   * which enforces the Cloudflare Access cookie + purchase row server-side.
+   * Download PDF — hits the Worker route /api/download/:id, which keeps the
+   * email sign-in gate server-side but no longer checks purchases.
    * A same-origin fetch carries the cookie automatically; on 401 we send the
    * user through the Access login and straight back here.
    */
@@ -128,7 +127,7 @@ export default function StoreReaderPage({ user, authLoading }) {
         return;
       }
       if (response.status === 403) {
-        setNotice("This download is for premium readers — unlock the book to keep the PDF.");
+        setNotice("Please sign in with your email to download the PDF.");
         return;
       }
 
@@ -203,8 +202,7 @@ export default function StoreReaderPage({ user, authLoading }) {
             <div className="store-gate__icon">🔒</div>
             <h1 className="store-gate__title">{title}</h1>
             <p className="store-gate__sub">
-              This is a premium title. Unlock it once to read every chapter,
-              download the PDF and keep lifetime access.
+              Sign in with your email to read every chapter and download the PDF.
             </p>
             <div className="store-gate__actions">
               {!user && (
@@ -217,7 +215,7 @@ export default function StoreReaderPage({ user, authLoading }) {
                 className="store-btn store-btn--primary"
                 onClick={() => navigate(`/store/${product.slug || product.id}`)}
               >
-                {isFree ? "View the Book" : `Unlock — $${Number(product?.price) || 0}`}
+                View the Book
               </button>
               <button type="button" className="store-btn store-btn--ghost" onClick={() => navigate("/store")}>
                 Browse the Bookstore
@@ -278,9 +276,9 @@ export default function StoreReaderPage({ user, authLoading }) {
             className="store-reader__download"
             onClick={handleDownload}
             disabled={downloading}
-            title="Downloads the PDF via your premium account"
+            title="Download the PDF"
           >
-            {downloading ? "Preparing…" : "Download PDF for Premium"}
+            {downloading ? "Preparing…" : "Download PDF"}
           </button>
         </div>
 

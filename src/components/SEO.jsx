@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { steaCodeGraph } from "../utils/steaCodeOrgSchema.js";
 
-const DEFAULT_TITLE = "SteaCode — Premium Code Components & UI Kits";
+const DEFAULT_TITLE = "SteaCode — Free Code Components & UI Kits";
 const DEFAULT_DESCRIPTION = "STEA Africa is a digital ecosystem for education, AI tools, curated websites, creators, jobs, and digital services across Africa.";
 const DEFAULT_IMAGE = "https://stea.africa/seo/stea-og.jpg";
 

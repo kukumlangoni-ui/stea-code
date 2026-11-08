@@ -2,7 +2,15 @@ import React, { useState, useEffect, useRef } from "react";
 import { useCloudflareAuth } from "../../hooks/useCloudflareAuth";
 import "./stea-code-member-gate.css";
 
-export default function SteaCodeMemberGate({ open, onClose, onSuccess }) {
+export default function SteaCodeMemberGate({
+  open,
+  onClose,
+  onAuthenticated,
+  // Accepted for backwards compatibility with callers that still pass them.
+  onSuccess,
+  pendingAction: _pendingAction,
+  locale: _locale,
+}) {
   const { user } = useCloudflareAuth(); // Read user state
   const [step, setStep] = useState(1); // 1 = Email, 2 = OTP, 3 = Success
   const [email, setEmail] = useState("");
@@ -15,11 +23,24 @@ export default function SteaCodeMemberGate({ open, onClose, onSuccess }) {
 
   // If user is already logged in, immediately close the modal and call success
   useEffect(() => {
-    if (isOpen && user) {
+    if (open && user) {
+      if (onAuthenticated) onAuthenticated(user);
       if (onSuccess) onSuccess();
-      onClose();
+      onClose?.();
     }
-  }, [isOpen, user, onClose, onSuccess]);
+  }, [open, user, onClose, onAuthenticated, onSuccess]);
+
+  // Reset the flow each time the gate opens.
+  useEffect(() => {
+    if (!open) return;
+    setStep(1);
+    setEmail("");
+    setOtp(["", "", "", "", "", ""]);
+    setError("");
+    setLoading(false);
+    setOrbitActive(false);
+    setSuccess(false);
+  }, [open]);
 
   useEffect(() => {
     if (step === 2 && inputRefs.current[0]) {
@@ -103,10 +124,11 @@ export default function SteaCodeMemberGate({ open, onClose, onSuccess }) {
         localStorage.setItem("stea_user", JSON.stringify(newUser));
         
         setSuccess(true);
+        if (onAuthenticated) onAuthenticated(newUser);
         if (onSuccess) onSuccess();
         
         setTimeout(() => {
-          onClose();
+          onClose?.();
           setTimeout(() => {
             setStep(1); setEmail(""); setOtp(["","","","","",""]); setSuccess(false);
           }, 300);
@@ -123,7 +145,7 @@ export default function SteaCodeMemberGate({ open, onClose, onSuccess }) {
     }, 1600);
   };
 
-  if (!isOpen || user) return null; // Never render if already logged in
+  if (!open || user) return null; // Never render if already logged in
 
   return (
     <div className="fixed inset-0 z-[2147483647] flex items-center justify-center bg-black/50 p-4">

@@ -1,8 +1,26 @@
 import { onAuthStateChanged } from "firebase/auth";
 import { getFirebaseAuth } from "../firebase.js";
 import { getToken as getStaffToken } from "./staffAuth.js";
+import { invalidateSteaCodeCatalogCache } from "./steaCodeCommerce.js";
 
 const API_BASE = ""; // same-origin — Cloudflare Worker Route handles /api/*
+
+/**
+ * After any admin product write (update/delete): wipe the localStorage
+ * catalog cache in THIS browser and notify the homepage (if it is mounted)
+ * to refetch immediately. The Worker also bumps the server-side catalog
+ * version, which invalidates the edge cache for every visitor.
+ */
+function notifyCatalogChanged() {
+  try {
+    invalidateSteaCodeCatalogCache();
+  } catch {
+    // storage unavailable — ignore
+  }
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event("stea-catalog-changed"));
+  }
+}
 
 // Simple token cache: Firebase tokens last ~1hr. Avoid re-fetching on
 // every admin API call. Parallel callers may share the cached value.
@@ -321,7 +339,10 @@ export function updateAdminSteaCodeProduct(productId, product) {
       method: "PATCH",
       body: JSON.stringify(safeProduct),
     }
-  );
+  ).then((res) => {
+    notifyCatalogChanged();
+    return res;
+  });
 }
 
 export function deleteAdminSteaCodeProduct(productId) {
@@ -330,7 +351,10 @@ export function deleteAdminSteaCodeProduct(productId) {
     {
       method: "DELETE",
     }
-  );
+  ).then((res) => {
+    notifyCatalogChanged();
+    return res;
+  });
 }
 
 export function getAdminSteaCodeSource(productId) {

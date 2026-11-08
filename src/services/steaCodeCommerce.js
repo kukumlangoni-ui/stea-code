@@ -387,13 +387,26 @@ export async function getSteaCodeCatalog(options = {}) {
     const freshUrl = options?.forceFresh
       ? `${baseUrl}${sep}_t=${Date.now()}`
       : baseUrl;
-    const response = await fetch(freshUrl, {
-      cache: options?.forceFresh ? "no-cache" : "default",
-      headers: {
-        Accept: "application/json",
-      },
-    });
-    const data = await parseResponse(response);
+    const requestOnce = async () => {
+      const response = await fetch(freshUrl, {
+        cache: options?.forceFresh ? "no-cache" : "default",
+        headers: {
+          Accept: "application/json",
+        },
+      });
+      return parseResponse(response);
+    };
+
+    let data;
+    try {
+      data = await requestOnce();
+    } catch {
+      // A cold Worker tab (notably the first visit to /layouts) can close the
+      // connection mid-body, which surfaces as "Malformed JSON in response".
+      // Retry once — the first request usually finishes warming the edge cache,
+      // so the retry returns the complete payload.
+      data = await requestOnce();
+    }
     writeCatalogCache(cacheScope, data);
     if (onFresh) onFresh(data);
     return data;

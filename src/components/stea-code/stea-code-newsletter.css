@@ -1,0 +1,182 @@
+/* ==========================================================================
+   NewsletterModal — light-theme email capture overlay.
+   Follows the .sc-gate layering convention (max z-index, fixed overlay) but
+   is scoped under .sc-newsletter so the two modals never share state.
+   ========================================================================== */
+
+.sc-newsletter {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483647;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(10, 10, 15, 0.55);
+  backdrop-filter: blur(3px);
+  animation: sc-newsletter-fade 0.16s ease-out;
+}
+
+@keyframes sc-newsletter-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.sc-newsletter__panel {
+  width: 100%;
+  max-width: 420px;
+  padding: 28px 28px 24px;
+  border-radius: 20px;
+  background: #ffffff;
+  color: #111827;
+  box-shadow: 0 24px 60px rgba(5, 6, 10, 0.28);
+  animation: sc-newsletter-rise 0.18s ease-out;
+}
+
+@keyframes sc-newsletter-rise {
+  from { transform: translateY(10px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.sc-newsletter__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.sc-newsletter__spark {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  color: #b45309;
+  background: linear-gradient(135deg, rgba(245, 166, 35, 0.18), rgba(245, 166, 35, 0.06));
+  border: 1px solid rgba(245, 166, 35, 0.35);
+}
+
+.sc-newsletter__close {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #e5e7eb;
+  border-radius: 999px;
+  background: #fff;
+  color: #6b7280;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  transition: all 0.16s ease;
+}
+
+.sc-newsletter__close:hover {
+  border-color: #d1d5db;
+  color: #111827;
+  background: #f9fafb;
+}
+
+.sc-newsletter__title {
+  margin: 0 0 6px;
+  font-size: 24px;
+  line-height: 1.25;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #111827;
+}
+
+.sc-newsletter__copy {
+  margin: 0 0 18px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #6b7280;
+}
+
+.sc-newsletter__error {
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border: 1px solid #fecaca;
+  border-radius: 12px;
+  background: #fef2f2;
+  color: #b91c1c;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.sc-newsletter__form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sc-newsletter__input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 12px;
+  font-size: 15px;
+  color: #111827;
+  background: #fff;
+  outline: none;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease;
+  box-sizing: border-box;
+}
+
+.sc-newsletter__input:focus {
+  border-color: #f5a623;
+  box-shadow: 0 0 0 3px rgba(245, 166, 35, 0.18);
+}
+
+.sc-newsletter__button {
+  width: 100%;
+  padding: 12px 18px;
+  border: none;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #1a1305;
+  background: linear-gradient(135deg, #f8c555 0%, #f5a623 55%, #e08e0b 100%);
+  box-shadow: 0 8px 20px rgba(245, 166, 35, 0.35);
+  cursor: pointer;
+  transition: transform 0.14s ease, box-shadow 0.14s ease, filter 0.14s ease;
+}
+
+.sc-newsletter__button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  filter: brightness(1.03);
+  box-shadow: 0 10px 24px rgba(245, 166, 35, 0.42);
+}
+
+.sc-newsletter__button:disabled {
+  opacity: 0.65;
+  cursor: default;
+}
+
+.sc-newsletter__trust {
+  margin: 14px 0 0;
+  font-size: 12.5px;
+  color: #9ca3af;
+  text-align: center;
+}
+
+.sc-newsletter__success {
+  text-align: center;
+  padding: 8px 0 4px;
+}
+
+.sc-newsletter__success-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  margin-bottom: 14px;
+  border-radius: 999px;
+  color: #15803d;
+  background: rgba(34, 197, 94, 0.12);
+  border: 1px solid rgba(34, 197, 94, 0.35);
+}
+
+.sc-newsletter__success .sc-newsletter__copy {
+  margin-bottom: 20px;
+}

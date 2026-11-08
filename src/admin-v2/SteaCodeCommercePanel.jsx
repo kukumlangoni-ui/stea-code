@@ -3840,6 +3840,8 @@ export default function SteaCodeCommercePanel({ isSuperAdmin, initialTab = "prod
   // Category + Layout-subcategory filters for the product list.
   const [activeCategory, setActiveCategory] = useState("All");
   const [activeSubcategory, setActiveSubcategory] = useState("All");
+  // Soft-deleted products (deleted_at set) are hidden unless this is on.
+  const [showDeleted, setShowDeleted] = useState(false);
 
   // Subcategory pills reset to "All" whenever the top-level category changes.
   useEffect(() => {
@@ -4060,6 +4062,7 @@ export default function SteaCodeCommercePanel({ isSuperAdmin, initialTab = "prod
   const visibleProducts = useMemo(() => {
     const needle = debouncedQuery.trim().toLowerCase();
     return products.filter((p) => {
+      if (!showDeleted && p.deleted_at) return false;
       if (filter === "published" && p.status !== "published") return false;
       if (filter === "draft" && p.status !== "draft") return false;
       if (filter === "premium" && p.pricingType !== "premium") return false;
@@ -4074,7 +4077,7 @@ export default function SteaCodeCommercePanel({ isSuperAdmin, initialTab = "prod
         .toLowerCase()
         .includes(needle);
     });
-  }, [products, debouncedQuery, filter, activeCategory, activeSubcategory]);
+  }, [products, debouncedQuery, filter, activeCategory, activeSubcategory, showDeleted]);
 
   // Per-subcategory product counts (admin filter pills), from the loaded list.
   const layoutSubcategoryCounts = useMemo(() => {
@@ -4361,12 +4364,17 @@ export default function SteaCodeCommercePanel({ isSuperAdmin, initialTab = "prod
         return;
       }
       const deletedId = deleting.id;
-      setProducts((prev) => prev.filter((p) => p.id !== deletedId && p.slug !== deletedId));
+      // Soft delete: the row stays in the DB with deleted_at set, so mark it
+      // here instead of removing it — "Show Deleted" reveals it immediately.
+      const deletedAt = new Date().toISOString();
+      setProducts((prev) =>
+        prev.map((p) => (p.id === deletedId || p.slug === deletedId ? { ...p, deleted_at: deletedAt } : p))
+      );
       setDeleting(null);
       await deleteAdminSteaCodeProduct(deletedId);
       dataCacheRef.current = { timestamp: 0, products: [], orders: [], entitlements: [] };
       await refresh(false, true);
-      setToast("Product deleted permanently.");
+      setToast("Product deleted.");
     } catch (err) {
       setError(err?.message || "Could not delete product.");
       setDeleting(null);
@@ -4531,6 +4539,27 @@ export default function SteaCodeCommercePanel({ isSuperAdmin, initialTab = "prod
                 </button>
               ))}
             </div>
+
+            {/* Soft-deleted rows toggle — default view hides deleted_at rows. */}
+            <label
+              className="sc-admin-show-deleted"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                fontSize: "13px",
+                color: "rgba(255,255,255,0.7)",
+                cursor: "pointer",
+                userSelect: "none",
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={showDeleted}
+                onChange={(e) => setShowDeleted(e.target.checked)}
+              />
+              Show Deleted
+            </label>
 
             {/* Category filter row */}
             <div className="sc-admin-filter-row">
@@ -5774,6 +5803,25 @@ function ProductTable({
                 <div className="sc-admin-product-name">
                   <strong>{p.titleEn || p.id}</strong>
                   <span>{p.id}</span>
+                  {p.deleted_at && (
+                    <span
+                      className="sc-admin-deleted-badge"
+                      style={{
+                        display: "inline-block",
+                        marginTop: "4px",
+                        padding: "1px 8px",
+                        borderRadius: "999px",
+                        background: "rgba(239,68,68,0.15)",
+                        color: "#ef4444",
+                        fontSize: "11px",
+                        fontWeight: 600,
+                        textTransform: "uppercase",
+                        letterSpacing: "0.04em",
+                      }}
+                    >
+                      Deleted
+                    </span>
+                  )}
                 </div>
               </td>
               <td>
@@ -5821,7 +5869,12 @@ function ProductTable({
               <td>{formatDate(p.updatedAt)}</td>
               <td>
                 <div className="sc-admin-row-actions">
-                  <button title="Edit" onClick={() => onEdit(p)}>
+                  <button
+                    title={p.deleted_at ? "Deleted products cannot be edited" : "Edit"}
+                    disabled={Boolean(p.deleted_at)}
+                    style={p.deleted_at ? { opacity: 0.35, cursor: "not-allowed" } : undefined}
+                    onClick={() => { if (!p.deleted_at) onEdit(p); }}
+                  >
                     <Edit3 size={14} />
                   </button>
                   {onPreview && (

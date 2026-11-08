@@ -13,14 +13,12 @@ import { corsHeaders, isPreflight, preflightResponse } from "./cors";
 import { handleCatalog, handleProduct } from "./routes/catalog";
 import { handleBlogList, handleBlogPost } from "./routes/blog";
 import { handlePreview, handleFreeContent, handleContent, handleProductPreviewCard, handleSalesPage, handleBookContent } from "./routes/content";
-import { handleCheckout } from "./routes/checkout";
-import { handleCheckoutProduct } from "./routes/checkout-product";
 import { handleEntitlementsMe, handlePurchases, handleProductAccess } from "./routes/entitlements";
 import { handleDownload } from "./routes/download";
 import { handleAuthMe, handleLoginEmail, handleAccessLogin, handleAccessLogout, handleAuthSendCode, handleAuthVerifyCode } from "./routes/auth";
 import { handleStoreLead } from "./routes/leads";
+import { handleNewsletterSubscribe } from "./routes/newsletter";
 import { handleMedia, handleMediaUpload } from "./routes/media";
-import { handleStripeWebhook } from "./routes/stripe-webhook";
 import {
   handleRecordView,
   handleRecordCopy,
@@ -151,6 +149,11 @@ export default {
         return handleStoreLead(request, env);
       }
 
+      // Public newsletter signup (no auth, no session — marketing list only)
+      if (apiPath === "/newsletter/subscribe" && method === "POST") {
+        return handleNewsletterSubscribe(request, env);
+      }
+
       // POST /api/log-error — receive frontend error logs
       if (apiPath === "/log-error" && method === "POST") {
         try {
@@ -272,16 +275,6 @@ export default {
         return handleRecordCopy(request, env, copyMatch[1]);
       }
 
-      // Stripe checkout (auth required)
-      if (apiPath === "/stea-code/checkout" && method === "POST") {
-        return handleCheckout(request, env);
-      }
-
-      // Per-product Stripe checkout (auth required)
-      if (apiPath === "/stea-code/checkout-product" && method === "POST") {
-        return handleCheckoutProduct(request, env);
-      }
-
       // Entitlements for current user (auth required)
       if (apiPath === "/stea-code/entitlements/me" && method === "GET") {
         return handleEntitlementsMe(request, env);
@@ -296,11 +289,6 @@ export default {
       const accessMatch = apiPath.match(/^\/stea-code\/products\/([^/]+)\/access$/);
       if (accessMatch && method === "GET") {
         return handleProductAccess(request, env, accessMatch[1]);
-      }
-
-      // Stripe webhook
-      if (apiPath === "/stea-code/stripe-webhook" && method === "POST") {
-        return handleStripeWebhook(request, env);
       }
 
       // Favorites — list (auth required)

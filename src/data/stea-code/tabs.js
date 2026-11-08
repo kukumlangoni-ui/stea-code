@@ -56,7 +56,7 @@ export const TABS = {
     description: "eBooks & learning",
     categories: [
       { id: "All", label: "All", tooltip: null },
-      { id: "Ebooks", label: "Ebooks", tooltip: "Premium eBooks & masterclasses" },
+      { id: "Ebooks", label: "Ebooks", tooltip: "Free eBooks & masterclasses" },
       { id: "Courses", label: "Courses", tooltip: "Guided learning tracks" },
       { id: "Cheat Sheets", label: "Cheat Sheets & Notes", tooltip: "Quick references" },
     ],
@@ -68,6 +68,14 @@ export const TABS = {
     id: "icons",
     label: "Icons",
     description: "Free SVG icons",
+    categories: [],
+  },
+  // Blog is also a self-contained panel (<BlogGallery />) — it fetches the
+  // public /api/blog feed, so it has no catalog categories of its own.
+  blog: {
+    id: "blog",
+    label: "Blog",
+    description: "Guides & articles",
     categories: [],
   },
 };

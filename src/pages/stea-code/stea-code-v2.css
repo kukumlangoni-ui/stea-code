@@ -22934,3 +22934,75 @@ html body .sc-premium-product-detail .sc-product-detail-preview-shell.is-library
   color: #111827 !important;
   background: #f3f4f6 !important;
 }
+
+/* Premium gold "Get Updates" pill — newsletter trigger in the top nav
+   (homepage sc-topbar-cta and blog/legal shell sc-blog-signin).
+   !important beats the high-specificity .sc-topbar .sc-topbar-actions rules. */
+.sc-nav-cta,
+button[data-newsletter-trigger] {
+  padding: 10px 22px !important;
+  background: linear-gradient(135deg, #f5b400 0%, #d97706 100%) !important;
+  border-radius: 999px !important;
+  font-weight: 700 !important;
+  font-size: 14px !important;
+  color: #111827 !important;
+  border: none !important;
+  box-shadow: 0 4px 14px rgba(245, 180, 0, 0.35) !important;
+  transition: transform 160ms ease, box-shadow 160ms ease !important;
+  cursor: pointer !important;
+}
+.sc-nav-cta:hover,
+button[data-newsletter-trigger]:hover {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 8px 20px rgba(245, 180, 0, 0.45) !important;
+}
+button[data-newsletter-trigger] svg {
+  color: #111827 !important;
+}
+
+/* ============================================
+   Fix header nav visibility — dark, bold, premium
+   ============================================ */
+.sc-topbar-nav a,
+.sc-topbar-nav-link,
+.sc-topbar-links a,
+nav.sc-topbar a,
+header nav a {
+  color: #111827 !important;
+  font-weight: 600 !important;
+  font-size: 15px !important;
+  letter-spacing: -0.01em !important;
+  text-decoration: none !important;
+  transition: color 150ms ease !important;
+}
+
+.sc-topbar-nav a:hover,
+.sc-topbar-nav-link:hover,
+.sc-topbar-links a:hover,
+nav.sc-topbar a:hover,
+header nav a:hover {
+  color: #d97706 !important;
+}
+
+/* Active state — for the currently selected tab */
+.sc-topbar-nav a.is-active,
+.sc-topbar-nav-link.is-active,
+.sc-topbar-links a.is-active {
+  color: #111827 !important;
+  font-weight: 700 !important;
+  border-bottom: 2px solid #f5b400 !important;
+  padding-bottom: 4px !important;
+}
+
+/* If the header uses tab buttons instead of links, style them too */
+.sc-topbar-tab,
+.sc-tabs__item.sc-nav-item,
+.sc-tab.sc-nav-item {
+  color: #111827 !important;
+  font-weight: 600 !important;
+}
+
+.sc-topbar-tab:hover,
+.sc-tabs__item.sc-nav-item:hover {
+  color: #d97706 !important;
+}

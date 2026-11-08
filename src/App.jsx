@@ -14,14 +14,11 @@ import { useAuth } from "./hooks/useAuth.js";
 import { useCloudflareAuth } from "./hooks/useCloudflareAuth.js";
 
 // Code pages
-const SteaCodeShellV2 = lazy(() => import("./pages/stea-code/SteaCodeShellV2.jsx"));
 const SteaCodeHomeV2 = lazy(() => import("./pages/stea-code/SteaCodeHomeV2.jsx"));
 const SteaCodeAdminApp = lazy(() => import("./admin-v2/SteaCodeAdminApp.jsx"));
 const StaffAuthGate = lazy(() => import("./admin-v2/StaffAuthGate.jsx"));
 const StaffLoginPage = lazy(() => import("./admin-v2/StaffLoginPage.jsx"));
 const SteaCodeNotFoundPage = lazy(() => import("./pages/stea-code/SteaCodeNotFoundPage.jsx"));
-const SteaCodeCheckoutSuccessPage = lazy(() => import("./pages/stea-code/SteaCodeCheckoutSuccessPage.jsx"));
-const SteaCodeUpgradePage = lazy(() => import("./pages/stea-code/SteaCodeUpgradePage.jsx"));
 const LibraryReader = lazy(() => import("./pages/stea-code/LibraryReader.jsx"));
 const StoreHomePage = lazy(() => import("./pages/stea-code/store/StoreHomePage.jsx"));
 const StoreSalesPage = lazy(() => import("./pages/stea-code/store/StoreSalesPage.jsx"));
@@ -31,6 +28,9 @@ const SteaCodeContactPage = lazy(() => import("./pages/stea-code/SteaCodeContact
 const SteaCodeServicesPage = lazy(() => import("./pages/stea-code/SteaCodeServicesPage.jsx"));
 const SteaCodeTermsPage = lazy(() => import("./pages/stea-code/SteaCodeTermsPage.jsx"));
 const SteaCodeLicensingPage = lazy(() => import("./pages/stea-code/SteaCodeLicensingPage.jsx"));
+const SteaCodeBlogPage = lazy(() => import("./pages/stea-code/blog/SteaCodeBlogPage.jsx"));
+const SteaCodeBlogPostPage = lazy(() => import("./pages/stea-code/blog/SteaCodeBlogPostPage.jsx"));
+const SteaCodeBlogShell = lazy(() => import("./components/stea-code/SteaCodeBlogShell.jsx"));
 
 // Shared
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy.jsx"));
@@ -182,6 +182,12 @@ export default function App() {
                   <Route path="/products/:slug" element={<SteaCodeHomeV2 user={cfUser} authLoading={cfLoading} />} />
                   <Route path="/library/read/:slug" element={<LibraryReader user={cfUser} authLoading={cfLoading} />} />
 
+                  {/* Blog — wrapped in the marketplace shell (sticky nav + footer) */}
+                  <Route element={<SteaCodeBlogShell />}>
+                    <Route path="/blog" element={<SteaCodeBlogPage />} />
+                    <Route path="/blog/:slug" element={<SteaCodeBlogPostPage />} />
+                  </Route>
+
                   {/* E-book & Notes Store */}
                   <Route path="/store" element={<StoreHomePage />} />
                   <Route path="/store/read/:slug" element={<StoreReaderPage user={cfUser} authLoading={cfLoading} />} />
@@ -231,27 +237,25 @@ export default function App() {
                   <Route path="/notes" element={<Navigate to="/code?view=learn" replace />} />
                   <Route path="/past-papers" element={<Navigate to="/code?view=learn" replace />} />
 
-                  {/* Checkout */}
-                  <Route path="/checkout/success" element={<SteaCodeCheckoutSuccessPage />} />
-                  <Route path="/checkout/cancel" element={<Navigate to="/" replace />} />
-                  <Route path="/upgrade" element={<SteaCodeUpgradePage />} />
-
                   {/* Icon Gallery — lives in the homepage "Icons" tab now;
                       keep the old URL as a deep link to it. */}
                   {/* /icons is now a real tab route (declared above) */}
 
-                  {/* About & trust */}
-                  <Route path="/about" element={<SteaCodeAboutPage />} />
-                  <Route path="/contact" element={<SteaCodeContactPage />} />
+                  {/* About & trust + Legal — same marketplace shell as the blog
+                      (sticky top nav + footer + newsletter modal) */}
+                  <Route element={<SteaCodeBlogShell />}>
+                    <Route path="/about" element={<SteaCodeAboutPage />} />
+                    <Route path="/contact" element={<SteaCodeContactPage />} />
+                    <Route path="/privacy" element={<PrivacyPolicy />} />
+                    <Route path="/cookies" element={<CookiePolicy />} />
+                    <Route path="/terms" element={<SteaCodeTermsPage />} />
+                    <Route path="/licensing" element={<SteaCodeLicensingPage />} />
+                  </Route>
                   <Route path="/hello" element={<Navigate to="/contact" replace />} />
                   <Route path="/book-a-call" element={<SteaCodeServicesPage />} />
 
-                  {/* Legal */}
-                  <Route path="/privacy" element={<PrivacyPolicy />} />
-                  <Route path="/cookies" element={<CookiePolicy />} />
+                  {/* Legal redirects */}
                   <Route path="/cookie-policy" element={<Navigate to="/cookies" replace />} />
-                  <Route path="/terms" element={<SteaCodeTermsPage />} />
-                  <Route path="/licensing" element={<SteaCodeLicensingPage />} />
 
                   {/* Catch-all */}
                   <Route path="*" element={<SteaCodeNotFoundPage />} />

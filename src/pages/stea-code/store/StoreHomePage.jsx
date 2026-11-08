@@ -12,7 +12,7 @@ export default function StoreHomePage() {
     <div className="store-root">
       <SEO
         title="STEACODE Bookstore — E-books, Notes & Cheat Sheets"
-        description="Premium developer e-books, study notes and cheat sheets. Read in your browser, download the PDF, keep lifetime access."
+        description="Free developer e-books, study notes and cheat sheets. Read in your browser, download the PDF, keep lifetime access."
       />
 
       <header className="store-hero">

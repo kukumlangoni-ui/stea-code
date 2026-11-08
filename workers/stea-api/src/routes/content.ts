@@ -169,22 +169,21 @@ export async function handleFreeContent(req: Request, env: Env, productId: strin
       });
     }
 
-    const isFree = productDoc.data.pricingType === "free";
-    let files: any[] = [];
-
-    if (isFree) {
-      // Free products: return publicFiles from the product doc
-      files = productDoc.data.publicFiles || [];
-      if (!files.length) {
-        // Fallback to source collection
-        const sourceDoc = await getDoc(env, SOURCES_COLLECTION, productId);
-        files = sourceDoc?.data?.files || [];
-      }
-      if (!files.length) {
-        // Final fallback: the live preview document, then products.sourceCode
-        // (the Admin "Import from Preview tab" target). See buildSourceFallback.
-        files = await buildSourceFallback(env, productId, productDoc.data);
-      }
+    // 100% free pivot: every product serves its files, regardless of the
+    // legacy pricingType stored in Firestore/D1.
+    let files: any[] = productDoc.data.publicFiles || [];
+    if (!files.length) {
+      // Fallback to source collection
+      const sourceDoc = await getDoc(env, SOURCES_COLLECTION, productId);
+      files = sourceDoc?.data?.files || [];
+    }
+    if (!files.length) {
+      files = productDoc.data.protectedFiles || [];
+    }
+    if (!files.length) {
+      // Final fallback: the live preview document, then products.sourceCode
+      // (the Admin "Import from Preview tab" target). See buildSourceFallback.
+      files = await buildSourceFallback(env, productId, productDoc.data);
     }
 
     return new Response(
@@ -228,23 +227,8 @@ export async function handleContent(req: Request, env: Env, productId: string): 
       });
     }
 
-    const isFree = productDoc.data.pricingType === "free";
-
-    let entitlementRow: any = null;
-    if (!isFree) {
-      // Check entitlement: per-product OR pro-lifetime (D1, keyed by userId)
-      entitlementRow = await env.DB.prepare(
-        "SELECT orderId FROM purchases WHERE lower(email) = ? AND (productId = ? OR productId = 'pro-lifetime') AND lower(status) = 'paid' LIMIT 1"
-      )
-        .bind(user.email, productDoc.id)
-        .first();
-      if (!entitlementRow) {
-        return new Response(JSON.stringify({ error: "Premium access required", code: "ACCESS_DENIED" }), {
-          status: 403,
-          headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) },
-        });
-      }
-    }
+    // 100% free pivot: the email sign-in gate is kept, but the payment gate is
+    // gone — any authenticated user may load any product's source.
 
     // Get source files
     const sourceDoc = await getDoc(env, SOURCES_COLLECTION, productId);
@@ -265,13 +249,7 @@ export async function handleContent(req: Request, env: Env, productId: string): 
           titleEn: productDoc.data.titleEn,
           files,
         },
-        entitlement: isFree
-          ? { orderId: "free", licenseType: "free", status: "active" }
-          : {
-              orderId: entitlementRow?.orderId || null,
-              licenseType: entitlementRow?.licenseType || null,
-              status: "active",
-            },
+        entitlement: { orderId: "free", licenseType: "free", status: "active" },
       }),
       {
         status: 200,
@@ -366,33 +344,13 @@ export async function handleBookContent(req: Request, env: Env, productId: strin
       });
     }
 
-    // Fail closed: anything that is not explicitly free needs auth+entitlement.
-    // A premium flag with no price is treated as free too — that is the same
-    // rule the reader applies, so a 0-price book never hits a paywall.
-    const isFree =
-      doc.data.pricingType === "free" || !(Number(doc.data.price) > 0);
-    if (!isFree) {
-      const user = await resolveRequestUser(req, env);
-      if (!user?.email) {
-        return new Response(JSON.stringify({ error: "Authentication required", code: "AUTH_REQUIRED" }), {
-          status: 401,
-          headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) },
-        });
-      }
-
-      // Entitlement: per-product OR pro-lifetime (same check as /content).
-      const entitlementRow = await env.DB.prepare(
-        "SELECT orderId FROM purchases WHERE lower(email) = ? AND (productId = ? OR productId = 'pro-lifetime') AND lower(status) = 'paid' LIMIT 1"
-      )
-        .bind(user.email, doc.id)
-        .first();
-
-      if (!entitlementRow) {
-        return new Response(
-          JSON.stringify({ error: "Premium access required", code: "ACCESS_DENIED" }),
-          { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) } }
-        );
-      }
+    // 100% free pivot: keep the email sign-in gate, remove the payment gate.
+    const user = await resolveRequestUser(req, env);
+    if (!user?.email) {
+      return new Response(JSON.stringify({ error: "Authentication required", code: "AUTH_REQUIRED" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) },
+      });
     }
 
     return new Response(
@@ -487,28 +445,8 @@ export async function handleProductPreviewCard(req: Request, env: Env, productId
       }
     }
 
-    // 2. Determine access level
-    const isFree = product.data.pricingType === "free";
-    let hasFullAccess = isFree;
-
-    if (!isFree) {
-      // Access is optional for this endpoint — unauthenticated callers get the preview.
-      const user = await resolveRequestUser(req, env);
-      if (user?.email) {
-        try {
-          const result = await env.DB.prepare(
-            "SELECT productId FROM purchases WHERE lower(email) = ? AND (productId = ? OR productId = 'pro-lifetime') AND lower(status) = 'paid' LIMIT 1"
-          )
-            .bind(user.email, product.id)
-            .all();
-
-          const rows = result.results || [];
-          hasFullAccess = rows.length > 0;
-        } catch {
-          hasFullAccess = false;
-        }
-      }
-    }
+    // 2. Access level — 100% free pivot: card previews always include JS/JSX/TSX.
+    const hasFullAccess = true;
 
     // 3. Build the response
     const runtime = String(previewData.runtime || "full-html");

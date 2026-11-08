@@ -118,22 +118,21 @@ async function resolveHasSource(env: Env, productId: string, raw: any): Promise<
  * button, and a product is only copyable if the copy endpoints return files.
  */
 const HAS_SOURCE_SQL = `CASE
-  WHEN sourceCode     IS NOT NULL AND TRIM(sourceCode)     NOT IN ('', 'null', '[]', '{}', '""') THEN 1
-  WHEN publicFiles    IS NOT NULL AND TRIM(publicFiles)    NOT IN ('', 'null', '[]', '{}', '""') THEN 1
-  WHEN protectedFiles IS NOT NULL AND TRIM(protectedFiles) NOT IN ('', 'null', '[]', '{}', '""') THEN 1
-  WHEN sourceFiles    IS NOT NULL AND TRIM(sourceFiles)    NOT IN ('', 'null', '[]', '{}', '""') THEN 1
+  WHEN length(CAST(sourceCode     AS BLOB)) > 4 THEN 1
+  WHEN length(CAST(publicFiles    AS BLOB)) > 4 THEN 1
+  WHEN length(CAST(protectedFiles AS BLOB)) > 4 THEN 1
+  WHEN length(CAST(sourceFiles    AS BLOB)) > 4 THEN 1
   WHEN EXISTS (
     SELECT 1 FROM sources s
      WHERE s.productId = products.id
-       AND s.files IS NOT NULL
-       AND TRIM(s.files) NOT IN ('', 'null', '[]', '{}', '""')
+       AND length(CAST(s.files AS BLOB)) > 4
   ) THEN 1
   WHEN pricingType = 'free' AND EXISTS (
     SELECT 1 FROM previews pv
      WHERE pv.productId = products.id
        AND (
-         (pv.fullDocument IS NOT NULL AND TRIM(pv.fullDocument) <> '')
-         OR (pv.html IS NOT NULL AND TRIM(pv.html) <> '')
+         length(CAST(pv.fullDocument AS BLOB)) > 4
+         OR length(CAST(pv.html AS BLOB)) > 4
        )
   ) THEN 1
   ELSE 0
@@ -271,7 +270,7 @@ interface HomepageFilters {
  * stream instead.
  */
 function buildHomepageWhere(filters: HomepageFilters): { where: string; params: any[] } {
-  const conditions = ["status = 'published'", "homepageVisible = 1"];
+  const conditions = ["status = 'published'", "homepageVisible = 1", "deleted_at IS NULL"];
   const params: any[] = [];
 
   // Free-text search: when the user has typed something, the tab / category /
@@ -355,7 +354,7 @@ async function listHomepageCards(
   // `total` stays the filtered count (it drives pagination); `globalTotal` is
   // the storefront-wide number shown in the UI.
   const globalCountRow: any = await env.DB.prepare(
-    `SELECT COUNT(*) AS total FROM products WHERE status = 'published' AND homepageVisible = 1`
+    `SELECT COUNT(*) AS total FROM products WHERE status = 'published' AND homepageVisible = 1 AND deleted_at IS NULL`
   ).first();
   const globalTotal = Number(globalCountRow?.total) || 0;
 
@@ -418,7 +417,7 @@ async function listHomepageCards(
  */
 async function loadHasSourceMap(env: Env): Promise<Map<string, boolean>> {
   const result = await env.DB.prepare(
-    `SELECT id, ${HAS_SOURCE_SQL} AS hasSource FROM products WHERE status = 'published'`
+    `SELECT id, ${HAS_SOURCE_SQL} AS hasSource FROM products WHERE status = 'published' AND deleted_at IS NULL`
   ).all();
 
   const map = new Map<string, boolean>();
@@ -442,6 +441,19 @@ export async function handleCatalog(req: Request, env: Env, ctx?: ExecutionConte
       Math.max(0, Number(url.searchParams.get("limit")) || 0)
     );
     const offset = Math.max(0, Number(url.searchParams.get("offset")) || 0);
+    // Catalog version: bumped by every admin product write (delete/update).
+    // Embedding it in the cache key instantly invalidates every cached
+    // homepage page at the edge, so deleted products never linger as ghost
+    // cards. Falls back to "1" before migration 014 has run.
+    let catalogVersion = "1";
+    try {
+      const metaRow: any = await env.DB.prepare(
+        `SELECT value FROM meta WHERE key = 'catalog_version'`
+      ).first();
+      if (metaRow?.value) catalogVersion = String(metaRow.value);
+    } catch {
+      // meta table missing (pre-migration) — keep default version
+    }
     // Homepage responses are cacheable for EVERY filter combination — the key
     // below includes tab/category/subcategory, so a cached page for one filter
     // can never be served for another (that cross-contamination is exactly what
@@ -455,8 +467,10 @@ export async function handleCatalog(req: Request, env: Env, ctx?: ExecutionConte
     // v6: filter-aware cache keys (tab/category/subcategory in the key) — old
     //     v5 unfiltered entries must never be served for filtered requests.
     // v7: added free-text `search` to the key so "book" and "form" never collide.
+    // v8: embeds the DB catalog_version so admin deletes/edits invalidate the
+    //     edge cache immediately.
     const homepageCacheKey = new Request(
-      `https://stea-code.internal/catalog/homepage-v7-${limit}-${offset}-` +
+      `https://stea-code.internal/catalog/homepage-v8-${catalogVersion}-${limit}-${offset}-` +
         `${encodeURIComponent(tab)}-${encodeURIComponent(category)}-${encodeURIComponent(subcategory)}-` +
         `${encodeURIComponent(search)}`,
       { method: "GET" }
@@ -501,7 +515,7 @@ export async function handleCatalog(req: Request, env: Env, ctx?: ExecutionConte
           ...safeProduct(d.data),
           hasSource: hasSourceById.get(d.id) === true,
         }))
-        .filter((p) => p.status === "published");
+        .filter((p) => p.status === "published" && !p.deleted_at);
       homepageTotal = products.length;
 
       // Category / subcategory filter for the UNPAGINATED all-products scope
@@ -568,12 +582,12 @@ export async function handleCatalog(req: Request, env: Env, ctx?: ExecutionConte
 export async function handleProduct(req: Request, env: Env, productId: string): Promise<Response> {
   try {
     let doc = await getDoc(env, PRODUCTS_COLLECTION, productId, {});
-    // Fallback: try slug lookup
+    // Fallback: try slug lookup (excluding soft-deleted rows)
     if (!doc) {
       const all = await listDocs(env, PRODUCTS_COLLECTION, {});
-      doc = all.find((d) => d.data.slug === productId) || null;
+      doc = all.find((d) => d.data.slug === productId && !d.data.deleted_at) || null;
     }
-    if (!doc) {
+    if (!doc || doc.data?.deleted_at) {
       return new Response(JSON.stringify({ error: "Product not found" }), {
         status: 404,
         headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) },

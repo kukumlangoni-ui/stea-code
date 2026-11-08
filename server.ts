@@ -183,7 +183,7 @@ async function startServer() {
       }
       headers["host"] = target.host;
 
-      const proxyReq = https.request(target, { method: req.method, headers }, (proxyRes) => {
+      const proxyReq = https.request(target, { method: req.method, headers, timeout: 30000 }, (proxyRes) => {
         res.statusCode = proxyRes.statusCode || 502;
         const hopByHop = new Set([
           "connection", "keep-alive", "transfer-encoding", "upgrade",
@@ -193,7 +193,13 @@ async function startServer() {
           if (hopByHop.has(k.toLowerCase()) || v === undefined) continue;
           res.setHeader(k, Array.isArray(v) ? v.join(", ") : String(v));
         }
+        proxyRes.on("error", () => res.destroy());
+        proxyRes.on("aborted", () => res.destroy());
         proxyRes.pipe(res);
+      });
+
+      proxyReq.on("timeout", () => {
+        proxyReq.destroy(Object.assign(new Error("Worker request timeout"), { code: "ETIMEDOUT" }));
       });
 
       proxyReq.on("error", (err) => {
@@ -228,6 +234,10 @@ async function startServer() {
   if (STEA_CODE_API_ORIGIN) {
     app.use("/api/stea-code", proxySteaCodeApi);
     app.use("/api/admin/stea-code", proxySteaCodeApi);
+    // The public blog feed is also served by the Worker.
+    app.use("/api/blog", proxySteaCodeApi);
+    // Newsletter signup is Worker-backed too (store_leads table).
+    app.use("/api/newsletter", proxySteaCodeApi);
   }
 
   // AI: Gemini Proxy

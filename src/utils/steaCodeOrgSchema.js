@@ -19,7 +19,7 @@ export const STEA_CODE_ORGANIZATION = {
   },
   image: "https://steacode.com/stea-code-logo.png",
   description:
-    "A premium developer marketplace for buying and selling code components, UI kits, and interactive ebooks.",
+    "A free developer library of code components, UI kits, and interactive ebooks.",
   founder: {
     "@type": "Person",
     name: "Isaya Masika",
@@ -36,7 +36,7 @@ export const STEA_CODE_ORGANIZATION = {
     "UI components",
     "developer marketplace",
     "code marketplace",
-    "premium React components",
+    "free React components",
     "interactive ebooks",
     "developer tools",
   ],

@@ -20,7 +20,7 @@ export default function SteaCodeFooter() {
             steacode
           </Link>
           <p className="sc-footer-tagline">
-            Premium code components, UI kits, and interactive ebooks for developers who ship.
+            Free code components, UI kits, and interactive ebooks for developers who ship.
           </p>
           <div className="sc-footer-social" aria-label="Social links">
             <a href="https://x.com/steacode" target="_blank" rel="noopener noreferrer" aria-label="SteaCode on X / Twitter">
@@ -43,7 +43,7 @@ export default function SteaCodeFooter() {
           <h4>Product</h4>
           <Link to="/">All Components</Link>
           <Link to="/store">E‑books &amp; Notes</Link>
-          <a href="/">Premium UI Kits</a>
+          <a href="/">UI Kits</a>
           <a href="/">Developer Tools</a>
         </div>
 
@@ -60,6 +60,7 @@ export default function SteaCodeFooter() {
           <h4>Legal</h4>
           <Link to="/terms">Terms</Link>
           <Link to="/privacy">Privacy</Link>
+          <Link to="/cookies">Cookies</Link>
           <Link to="/licensing">Licensing</Link>
         </div>
       </div>

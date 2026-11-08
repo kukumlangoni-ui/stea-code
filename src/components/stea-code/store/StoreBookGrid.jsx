@@ -60,9 +60,8 @@ export function getStoreTypeLabel(product) {
   return TYPE_LABELS[type] || "Book";
 }
 
-export function getStorePriceLabel(product) {
-  const price = Number(product?.price);
-  return price > 0 ? `$${price}` : "Free";
+export function getStorePriceLabel() {
+  return "Free";
 }
 
 /**
@@ -194,7 +193,7 @@ export default function StoreBookGrid() {
       {products.map((product) => {
         const slug = product.slug || product.id;
         const title = product.titleEn || product.title || "Untitled";
-        const isFree = !(Number(product.price) > 0);
+        const isFree = true;
         return (
           <li key={product.id || slug} className="store-card">
             <button

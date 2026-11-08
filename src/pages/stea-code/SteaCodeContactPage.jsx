@@ -1,7 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import SEO from "../../components/SEO.jsx";
-import SteaCodeFooter from "../../components/stea-code/SteaCodeFooter.jsx";
 import "./stea-code-about.css";
 
 export default function SteaCodeContactPage() {
@@ -14,18 +13,6 @@ export default function SteaCodeContactPage() {
         type="contactpage"
       />
       <div className="sc-about sc-contact">
-        <header className="sc-about-nav">
-          <Link to="/" className="sc-about-brand">
-            <img src="/stea-code-logo.png" alt="" width={24} height={24} />
-            steacode
-          </Link>
-          <nav className="sc-about-nav-links">
-            <Link to="/">Browse</Link>
-            <Link to="/about">About</Link>
-            <Link to="/privacy">Privacy</Link>
-          </nav>
-        </header>
-
         <section className="sc-about-hero sc-contact-hero">
           <span className="sc-about-kicker">Contact</span>
           <h1 className="sc-about-headline">
@@ -50,8 +37,6 @@ export default function SteaCodeContactPage() {
             <span className="sc-contact-email">hello@steacode.com</span>
           </a>
         </section>
-
-        <SteaCodeFooter />
       </div>
     </>
   );
