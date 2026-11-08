@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { fetchBlogJson } from "../../../services/blogApi.js";
+import AdsterraBanner from "../../../components/stea-code/AdsterraBanner.jsx";
 import "./stea-code-blog.css";
 
 function postReadTime(content) {
@@ -59,9 +60,12 @@ export default function SteaCodeBlogPostPage() {
           </div>
         </article>
 
-        {/* PubFuture Sidebar Ad — sticky, desktop only */}
+        {/* PubFuture/Adsterra Sidebar Ad — sticky, desktop only */}
         <aside className="sc-post-sidebar">
-          <div id="pubfuture-sidebar" style={{ position: "sticky", top: "100px", minHeight: "600px" }} />
+          <div id="pubfuture-sidebar" style={{ position: "sticky", top: "100px", minHeight: "600px" }}>
+            <p className="sc-ad-label">Advertisement</p>
+            <AdsterraBanner />
+          </div>
         </aside>
       </div>
     </main>
