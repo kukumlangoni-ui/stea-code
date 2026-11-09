@@ -33,6 +33,7 @@ import {
   invalidateSteaCodeCatalogCache,
   invalidateSteaCodeProductPreviewCache,
 } from "../services/steaCodeCommerce.js";
+import { downloadImageFile } from "../utils/downloadImage.js";
 import { auth } from "../firebase.js";
 import { submitRevision } from "../services/staffAuth.js";
 import { TABS as TAXONOMY_TABS, SUBCATEGORIES } from "../data/stea-code/tabs.js";
@@ -812,7 +813,7 @@ export function ProductStudioV3({
   const [posterUploadProgress, setPosterUploadProgress] = useState(0);
   const [galleryUploadingIndex, setGalleryUploadingIndex] = useState(null);
   const [galleryUploadProgress, setGalleryUploadProgress] = useState(0);
-  const [copyImageNotice, setCopyImageNotice] = useState("");
+  const [imageNotice, setImageNotice] = useState("");
   const galleryInputRef = useRef(null);
   const galleryPendingIndexRef = useRef(0);
   const [videoUploading, setVideoUploading] = useState(false);
@@ -973,10 +974,9 @@ export function ProductStudioV3({
     });
   };
 
-  // Admin verification of the buyer "Copy Image" flow — copies the cover /
-  // poster image to the clipboard using the same ClipboardItem approach the
-  // product modal uses.
-  const handleCopyImageForReview = async () => {
+  // Admin preview of the buyer "Download Image" flow — downloads the cover /
+  // poster image as a file using the same anchor/blob path the frontend uses.
+  const handleDownloadImageForReview = async () => {
     const url =
       (Array.isArray(form.gallery) && form.gallery.length && form.gallery[0]) ||
       (form.posterImageUrl && form.posterImageUrl.trim()) ||
@@ -984,26 +984,19 @@ export function ProductStudioV3({
         ? `/api/stea-code/media/${String(form.preview.posterKey).trim()}`
         : null);
     if (!url) {
-      setCopyImageNotice("No image available for this product yet.");
-      setTimeout(() => setCopyImageNotice(""), 2600);
+      setImageNotice("No image available for this product yet.");
+      setTimeout(() => setImageNotice(""), 2600);
       return;
     }
+    const baseName = form.titleEn || form.slug || "steacode-image";
     try {
-      const res = await fetch(url);
-      if (!res.ok) throw new Error(`FETCH_FAILED ${res.status}`);
-      const blob = await res.blob();
-      if (navigator.clipboard && window.isSecureContext && typeof ClipboardItem !== "undefined") {
-        await navigator.clipboard.write([new ClipboardItem({ [blob.type || "image/png"]: blob })]);
-        setCopyImageNotice("Image copied ✓");
-        setTimeout(() => setCopyImageNotice(""), 2200);
-      } else {
-        setCopyImageNotice("Clipboard image not supported — right-click → Save Image instead.");
-        setTimeout(() => setCopyImageNotice(""), 3200);
-      }
+      await downloadImageFile(url, baseName);
+      setImageNotice("Image downloaded ✓");
+      setTimeout(() => setImageNotice(""), 2200);
     } catch (err) {
-      console.warn("[PSV3] Copy image failed:", err);
-      setCopyImageNotice("Couldn't copy the image. Right-click → Save Image instead.");
-      setTimeout(() => setCopyImageNotice(""), 3200);
+      console.warn("[PSV3] Download image failed:", err);
+      setImageNotice("Couldn't download the image. Right-click → Save Image instead.");
+      setTimeout(() => setImageNotice(""), 3200);
     }
   };
 
@@ -2381,14 +2374,14 @@ export function ProductStudioV3({
                 <button
                   type="button"
                   className="psv3-btn"
-                  onClick={handleCopyImageForReview}
-                  title="Copy the cover/poster image to clipboard — preview the buyer copy-image flow"
+                  onClick={handleDownloadImageForReview}
+                  title="Download the cover/poster image — preview the buyer download-image flow"
                 >
-                  <Copy size={16} />
-                  Copy Image
+                  <Download size={16} />
+                  Download Image
                 </button>
-                {(importStatus || copyImageNotice) && (
-                  <span className="psv3-import-status">{copyImageNotice || importStatus}</span>
+                {(importStatus || imageNotice) && (
+                  <span className="psv3-import-status">{imageNotice || importStatus}</span>
                 )}
               </div>
 

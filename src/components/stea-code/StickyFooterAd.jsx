@@ -11,6 +11,9 @@ import { useLocation } from "react-router-dom";
 export default function StickyFooterAd() {
   const location = useLocation();
   const [dismissed, setDismissed] = useState(false);
+  // The wrap must stay hidden until PubFuture injects a creative — otherwise
+  // an unfilled slot renders as an empty white bar with a lone × button.
+  const [filled, setFilled] = useState(false);
 
   const suppressed =
     location.pathname.startsWith("/admin") ||
@@ -22,6 +25,18 @@ export default function StickyFooterAd() {
   useEffect(() => {
     setDismissed(false);
   }, [location.pathname]);
+
+  // Watch the PubFuture slot and only reveal the bar once it has content.
+  useEffect(() => {
+    if (suppressed || dismissed) return undefined;
+    const slot = document.getElementById("pubfuture-sticky-footer");
+    if (!slot) return undefined;
+    const check = () => setFilled(slot.childElementCount > 0);
+    check();
+    const observer = new MutationObserver(check);
+    observer.observe(slot, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, [suppressed, dismissed, location.pathname]);
 
   // Auto-hide: after 30 seconds OR after the user has scrolled three full
   // viewport heights — whichever comes first. Keeps the unit policy-safe
@@ -44,7 +59,7 @@ export default function StickyFooterAd() {
     };
   }, [suppressed, dismissed, location.pathname]);
 
-  if (suppressed || dismissed) return null;
+  if (suppressed || dismissed || !filled) return null;
 
   return (
     <div

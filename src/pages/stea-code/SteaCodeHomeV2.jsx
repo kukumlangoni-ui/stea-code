@@ -20,7 +20,6 @@ import {
   ExternalLink,
   Globe2,
   Heart,
-  Image,
   Layers,
   Lock,
   Download,
@@ -64,6 +63,7 @@ import {
   toggleSteaCodeFavorite,
   getSteaCodeFavorites,
 } from "../../services/steaCodeCommerce.js";
+import { downloadImageFile } from "../../utils/downloadImage.js";
 import { trackUserEvent } from "../../services/analytics.js";
 import SteaCodeFooter from "../../components/stea-code/SteaCodeFooter.jsx";
 import SponsoredCard from "../../components/stea-code/SponsoredCard.jsx";
@@ -2894,11 +2894,11 @@ function getPreviewPosterUrl(product) {
 }
 
 /**
- * Resolve the image URL used by the "Copy Image" action. Priority:
+ * Resolve the image URL used by the "Download Image" action. Priority:
  * gallery[0] (cover) → posterImageUrl → preview.posterKey media path.
- * Returns null when no image is available to copy.
+ * Returns null when no image is available to download.
  */
-function getCopyImageUrl(product) {
+function getProductImageUrl(product) {
   const gallery = product?.gallery;
   if (Array.isArray(gallery) && gallery.length && typeof gallery[0] === "string" && gallery[0].trim()) {
     return gallery[0].trim();
@@ -3611,7 +3611,8 @@ function ProductDetail({
   const [copied, setCopied] = useState(false);
   const [copiedPrompt, setCopiedPrompt] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
-  const [copiedImage, setCopiedImage] = useState(false);
+  const [imageDownloaded, setImageDownloaded] = useState(false);
+  const [imageDownloading, setImageDownloading] = useState(false);
   const [copiedRepo, setCopiedRepo] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -4346,61 +4347,58 @@ function ProductDetail({
     executeCopySource();
   }, [hasAccess, onOpenUnlockModal, executeCopySource]);
 
-  // ── Copy Image (Layouts / poster-based + free products) ──────────
-  const handleCopyImageSuccess = useCallback(() => {
+  // ── Download Image (Layouts / poster-based + free products) ────────
+  const handleDownloadImageSuccess = useCallback(() => {
     const user = currentUser;
     if (!user) {
       handleGateAction("copy-image");
       return;
     }
-    setCopiedImage(true);
-    recordSteaCodeCopy(getProductIdentity(product));
-    void trackUserEvent("copy", {
+    setImageDownloaded(true);
+    void trackUserEvent("download", {
       productId: getProductIdentity(product),
       productSlug: product?.slug || "",
       email: user?.email || "",
+      kind: "image",
     });
-    setToast({ type: "success", message: "Image copied to clipboard" });
-    setTimeout(() => setCopiedImage(false), 2200);
+    setToast({ type: "success", message: "Image downloaded!" });
+    setTimeout(() => setImageDownloaded(false), 2200);
     setTimeout(() => setToast(null), 2600);
     // Affiliate funnel: prompt the user to build with Runable AI
     setCopiedType("image");
     setShowAffiliateModal(true);
   }, [product, currentUser, handleGateAction]);
 
-  const executeCopyImage = useCallback(async () => {
+  const executeDownloadImage = useCallback(async () => {
     const user = currentUser;
     if (!user) {
       handleGateAction("copy-image");
       return;
     }
-    const imageUrl = getCopyImageUrl(product);
+    const imageUrl = getProductImageUrl(product);
     if (!imageUrl) {
       setToast({ type: "error", message: "No image available for this product." });
       setTimeout(() => setToast(null), 3200);
       return;
     }
+    const baseName = product?.titleEn || product?.title || product?.slug || "steacode-image";
+    setImageDownloading(true);
     try {
-      const res = await fetch(imageUrl);
-      if (!res.ok) throw new Error(`FETCH_FAILED ${res.status}`);
-      const blob = await res.blob();
-      if (navigator.clipboard && window.isSecureContext && typeof ClipboardItem !== "undefined") {
-        await navigator.clipboard.write([new ClipboardItem({ [blob.type || "image/png"]: blob })]);
-      } else {
-        throw new Error("NO_IMAGE_CLIPBOARD");
-      }
-      handleCopyImageSuccess();
+      await downloadImageFile(imageUrl, baseName);
+      handleDownloadImageSuccess();
     } catch (err) {
-      console.error("[copy-image] failed:", err);
+      console.error("[download-image] failed:", err);
       setToast({
         type: "error",
-        message: "Couldn't copy the image. Right-click → Save Image instead.",
+        message: "Couldn't download the image. Right-click → Save Image instead.",
       });
       setTimeout(() => setToast(null), 3200);
+    } finally {
+      setImageDownloading(false);
     }
-  }, [currentUser, handleGateAction, product, handleCopyImageSuccess]);
+  }, [currentUser, handleGateAction, product, handleDownloadImageSuccess]);
 
-  const handleCopyImageClick = useCallback((e) => {
+  const handleDownloadImageClick = useCallback((e) => {
     e.stopPropagation();
     const user = currentUser;
     if (!user) {
@@ -4411,8 +4409,8 @@ function ProductDetail({
       onOpenUnlockModal?.();
       return;
     }
-    executeCopyImage();
-  }, [currentUser, isFree, hasAccess, handleGateAction, onOpenUnlockModal, executeCopyImage]);
+    executeDownloadImage();
+  }, [currentUser, isFree, hasAccess, handleGateAction, onOpenUnlockModal, executeDownloadImage]);
 
   const handleDownloadClick = useCallback((e) => {
     e.stopPropagation();
@@ -4496,7 +4494,7 @@ function ProductDetail({
         } else if (pending.type === "copy-prompt") {
           executeCopyPrompt();
         } else if (pending.type === "copy-image") {
-          executeCopyImage();
+          executeDownloadImage();
         } else if (pending.type === "download") {
           executeDownload(currentPid);
         } else if (pending.type === "unlock") {
@@ -4509,7 +4507,7 @@ function ProductDetail({
     } catch (err) {
       console.warn("Failed resuming pending action in ProductDetail:", err);
     }
-  }, [currentUser, product, executeCopySource, executeCopyPrompt, executeCopyImage, executeDownload, onOpenUnlockModal]);
+  }, [currentUser, product, executeCopySource, executeCopyPrompt, executeDownloadImage, executeDownload, onOpenUnlockModal]);
 
   const reduceMotion = useReducedMotion();
 
@@ -4934,7 +4932,7 @@ function ProductDetail({
             )
           )}
 
-          {/* ===== ACTION BUTTONS — Read / Copy Image / Copy Prompt / Copy Code / Download ===== */}
+          {/* ===== ACTION BUTTONS — Read / Download Image / Copy Prompt / Copy Code / Download ===== */}
           <div className="sc-detail-actions">
 
             {/* Read — eBooks (Library products) */}
@@ -5016,30 +5014,33 @@ function ProductDetail({
               </a>
             )}
 
-            {/* Copy Image — Layouts (poster-based) products and any product with a gallery cover */}
-            {(product?.tab === "layouts" || galleryImages.length > 0) && getCopyImageUrl(product) && (
+            {/* Download Image — Layouts (poster-based) products and any product with a gallery cover */}
+            {(product?.tab === "layouts" || galleryImages.length > 0) && getProductImageUrl(product) && (
               <button
                 type="button"
-                className={`sc-detail-action sc-detail-action--image ${copiedImage ? 'is-copied' : ''}`}
-                onClick={handleCopyImageClick}
+                className={`sc-detail-action sc-detail-action--image ${imageDownloaded ? 'is-copied' : ''}`}
+                onClick={handleDownloadImageClick}
+                disabled={imageDownloading}
               >
                 <span className="sc-detail-action-icon" aria-hidden="true">
                   {(!isFree && (!isSignedIn || !hasAccess)) ? (
                     <Lock size={18} />
-                  ) : copiedImage ? (
+                  ) : imageDownloaded ? (
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                       <polyline points="20 6 9 17 4 12"/>
                     </svg>
                   ) : (
-                    <Image size={18} />
+                    <Download size={18} />
                   )}
                 </span>
                 <span className="sc-detail-action-label">
                   {(!isFree && !isSignedIn)
-                    ? 'Sign in to copy image'
+                    ? 'Sign in to download image'
                     : !isFree && !hasAccess
                     ? `Unlock for $${productPrice.toFixed(2)}`
-                    : copiedImage ? 'Image Copied' : 'Copy Image'}
+                    : imageDownloading
+                    ? 'Downloading…'
+                    : imageDownloaded ? 'Image downloaded!' : 'Download Image'}
                 </span>
               </button>
             )}
