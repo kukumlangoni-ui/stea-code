@@ -3,6 +3,7 @@ import { Link, Outlet, useLocation } from "react-router-dom";
 import SteaCodeFooter from "./SteaCodeFooter.jsx";
 import NewsletterModal from "./NewsletterModal.jsx";
 import "../../pages/stea-code/stea-code-v2.css";
+import "../../pages/stea-code/sc-detail-actions-override.css";
 
 /**
  * SteaCodeBlogShell — wraps /blog and /blog/:slug in the same sticky top
@@ -25,7 +26,7 @@ export default function SteaCodeBlogShell() {
   const [newsletterOpen, setNewsletterOpen] = useState(false);
 
   return (
-    <div className="stea-code-app sc-v2">
+    <div className="stea-code-app sc-v2 sc-blog-shell">
       <header className="sc-topbar">
         <Link className="sc-topbar-logo" to="/" aria-label="steacode home">
           <img

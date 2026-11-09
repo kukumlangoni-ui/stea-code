@@ -352,7 +352,7 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   Services page (/book-a-call) — restore dark header + footer chrome.
+   Services page + Blog shell — restore dark header + footer chrome.
 
    stea-code-v2.css contains three old UNSCOPED "light theme" hacks that were
    written for a white-background page and use !important:
@@ -363,41 +363,43 @@
      ~22966  .sc-topbar-nav a, header nav a { color:#111827 !important }
 
    The homepage escapes the header rule because its nav is <button>-based, but
-   this page's header uses <Link> anchors and its footer sits on a dark band —
-   so both rendered dark-on-dark (invisible links). Every rule below is scoped
-   under .sc-services-page so no other route is affected; each beats the hack
-   by specificity (2 classes + element) rather than by file order.
+   the services page and the blog/legal shell (SteaCodeBlogShell wraps /blog,
+   /about, /contact, /privacy, /cookies, /terms, /licensing) use <Link> anchors
+   with the shared dark SteaCodeFooter — so both rendered dark-on-dark
+   (invisible links). Rules below are scoped via
+   :is(.sc-services-page, .sc-blog-shell) so no other route is affected; each
+   beats the hacks by specificity (2 classes + element) rather than file order.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 /* --- Header: light nav links on the dark topbar --- */
-.sc-services-page .sc-topbar-nav a,
-.sc-services-page .sc-topbar-nav-link,
-.sc-services-page .sc-topbar-links a,
-.sc-services-page header nav a {
+:is(.sc-services-page, .sc-blog-shell) .sc-topbar-nav a,
+:is(.sc-services-page, .sc-blog-shell) .sc-topbar-nav-link,
+:is(.sc-services-page, .sc-blog-shell) .sc-topbar-links a,
+:is(.sc-services-page, .sc-blog-shell) header nav a {
   color: #a8a8b3 !important;
   font-weight: 500 !important;
   border-bottom: none !important;
   padding-bottom: 8px !important;
 }
 
-.sc-services-page .sc-topbar-nav a:hover,
-.sc-services-page .sc-topbar-links a:hover,
-.sc-services-page header nav a:hover {
+:is(.sc-services-page, .sc-blog-shell) .sc-topbar-nav a:hover,
+:is(.sc-services-page, .sc-blog-shell) .sc-topbar-links a:hover,
+:is(.sc-services-page, .sc-blog-shell) header nav a:hover {
   color: #ffffff !important;
 }
 
-.sc-services-page .sc-topbar-nav a.is-active,
-.sc-services-page .sc-topbar-links a.is-active,
-.sc-services-page header nav a.is-active {
+:is(.sc-services-page, .sc-blog-shell) .sc-topbar-nav a.is-active,
+:is(.sc-services-page, .sc-blog-shell) .sc-topbar-links a.is-active,
+:is(.sc-services-page, .sc-blog-shell) header nav a.is-active {
   color: #ffffff !important;
   font-weight: 600 !important;
   border-bottom: none !important;
   padding-bottom: 8px !important;
 }
 
-/* --- Footer: transparent over the dark band, light text --- */
-.sc-services-page .sc-footer,
-.sc-services-page footer {
+/* --- Footer: transparent over the dark page base, light text --- */
+:is(.sc-services-page, .sc-blog-shell) .sc-footer,
+:is(.sc-services-page, .sc-blog-shell) footer {
   background: transparent !important;
   color: #a1a1aa !important;
   border-top: 1px solid rgba(255, 255, 255, 0.05) !important;
@@ -405,42 +407,42 @@
 
 /* Catch-all resets the `footer * { color:#888 }` hack; the more specific
    rules below (same specificity, later in file) refine each element. */
-.sc-services-page .sc-footer *,
-.sc-services-page footer * {
+:is(.sc-services-page, .sc-blog-shell) .sc-footer *,
+:is(.sc-services-page, .sc-blog-shell) footer * {
   color: #a1a1aa !important;
 }
 
-.sc-services-page .sc-footer a,
-.sc-services-page footer a {
+:is(.sc-services-page, .sc-blog-shell) .sc-footer a,
+:is(.sc-services-page, .sc-blog-shell) footer a {
   color: #c4c4cc !important;
   text-decoration: none !important;
 }
 
-.sc-services-page .sc-footer a:hover,
-.sc-services-page footer a:hover {
+:is(.sc-services-page, .sc-blog-shell) .sc-footer a:hover,
+:is(.sc-services-page, .sc-blog-shell) footer a:hover {
   color: #ffffff !important;
   text-decoration: none !important;
 }
 
-.sc-services-page .sc-footer-column h4 {
+:is(.sc-services-page, .sc-blog-shell) .sc-footer-column h4 {
   color: #ffffff !important;
 }
 
-.sc-services-page .sc-footer-brand-logo,
-.sc-services-page .sc-footer-brand-logo:hover {
+:is(.sc-services-page, .sc-blog-shell) .sc-footer-brand-logo,
+:is(.sc-services-page, .sc-blog-shell) .sc-footer-brand-logo:hover {
   color: #ffffff !important;
 }
 
-.sc-services-page .sc-footer-tagline,
-.sc-services-page .sc-footer-bottom,
-.sc-services-page .sc-footer-bottom-right {
+:is(.sc-services-page, .sc-blog-shell) .sc-footer-tagline,
+:is(.sc-services-page, .sc-blog-shell) .sc-footer-bottom,
+:is(.sc-services-page, .sc-blog-shell) .sc-footer-bottom-right {
   color: #8b8b95 !important;
 }
 
 /* Keep the giant STEACODE wordmark subtle — the catch-all above would
    otherwise turn it solid gray. */
-.sc-services-page .sc-footer-wordmark,
-.sc-services-page .sc-footer-wordmark-svg text {
+:is(.sc-services-page, .sc-blog-shell) .sc-footer-wordmark,
+:is(.sc-services-page, .sc-blog-shell) .sc-footer-wordmark-svg text {
   color: rgba(255, 255, 255, 0.08) !important;
   fill: currentColor !important;
 }

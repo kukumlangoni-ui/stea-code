@@ -3609,7 +3609,6 @@ function ProductDetail({
   }, [allProducts, product]);
   const previewRef = useRef(null);
   const [copied, setCopied] = useState(false);
-  const [copiedPrompt, setCopiedPrompt] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
   const [imageDownloaded, setImageDownloaded] = useState(false);
   const [imageDownloading, setImageDownloading] = useState(false);
@@ -3629,7 +3628,6 @@ function ProductDetail({
   const [freeRemoteFiles, setFreeRemoteFiles] = useState([]);
   const [freeRemoteLoading, setFreeRemoteLoading] = useState(false);
   const [freeRemoteError, setFreeRemoteError] = useState("");
-  const [aiPromptCopied, setAiPromptCopied] = useState(false);
   const [toast, setToast] = useState(null);
   // eBook buyers: the optional pre-built PDF/ZIP URL. It is PAID data, so it is
   // not part of the public product payload — it is fetched from the
@@ -3649,7 +3647,7 @@ function ProductDetail({
   const [previewRefreshKey, setPreviewRefreshKey] = useState(0);
   const [detailSaved, setDetailSaved] = useState(false);
   // Affiliate funnel: after a successful copy, slide up the Runable AI
-  // bottom-sheet. copiedType drives the dynamic subtext ("code" | "prompt").
+  // bottom-sheet. copiedType drives the dynamic subtext ("code" | "image").
   const [showAffiliateModal, setShowAffiliateModal] = useState(false);
   const [copiedType, setCopiedType] = useState("code");
 
@@ -3985,59 +3983,6 @@ function ProductDetail({
     product.craftNote ||
     "";
 
-  const included =
-    Array.isArray(product.included) && product.included.length
-      ? product.included
-      : isPremium
-      ? [
-          product.hasSource !== false ? "Complete source files" : null,
-          "Ready-to-use component",
-          "Responsive design",
-          "Installation instructions",
-          "Commercial use according to license",
-        ].filter(Boolean)
-      : [
-          product.hasSource !== false ? "Complete source files" : null,
-          "Ready-to-use component",
-          "Responsive design",
-          "Installation instructions",
-          "Free for personal and commercial projects",
-        ].filter(Boolean);
-
-  const safeIncluded =
-    isFree && product.hasSource === false
-      ? included.filter(
-          (item) =>
-            !/source\s*files?/i.test(String(item)) &&
-            !/源代码/i.test(String(item))
-        )
-      : included;
-
-  // eBooks describe what the buyer gets with the book's own wording ("7 days",
-  // "106-tag cheat sheet") instead of the component feature list. Authored per
-  // book in Admin → eBook Settings and stored in the products.extraData JSON
-  // column; extraData is flattened onto the product on read, so the value
-  // normally arrives as product.ebookFeatures — accept the nested shape too, and
-  // a newline-delimited string, so a row saved either way still renders.
-  //
-  // Falls back to an explicitly authored `included` list, because that is where
-  // these lines live today (e.g. the 7-day book's "106-tag cheat sheet"), but
-  // never to the hardcoded component list — "Ready-to-use component" and
-  // "Responsive design" are meaningless for a book.
-  const ebookFeatures = useMemo(() => {
-    const raw = product?.extraData?.ebookFeatures ?? product?.ebookFeatures;
-    const list = Array.isArray(raw)
-      ? raw
-      : typeof raw === "string"
-      ? raw.split("\n")
-      : [];
-    const features = list.map((item) => String(item).trim()).filter(Boolean);
-    if (features.length) return features;
-    return Array.isArray(product?.included)
-      ? product.included.map((item) => String(item).trim()).filter(Boolean)
-      : [];
-  }, [product?.extraData, product?.ebookFeatures, product?.included]);
-
   const hasLiveDemo = Boolean(
     product.preview?.enabled ||
     NATIVE_PRODUCT_PREVIEWS[getProductIdentity(product)]
@@ -4095,20 +4040,6 @@ function ProductDetail({
   const hasProLifetime = entitlements?.hasProLifetime === true;
   const ownsThisProduct = entitlements?.productIds?.has?.(product?.id) === true;
   const hasAccess = !isPremium || hasProLifetime || ownsThisProduct;
-
-  // AI prompt can arrive under a few different keys depending on the payload
-  // path (catalog card, hydrated detail, or an admin preview object where it
-  // lives inside extraData). Normalise once so the copy handler never reads
-  // `undefined` and the button renders whenever the text actually exists.
-  const promptText = useMemo(() => {
-    const raw =
-      product?.aiPrompt ??
-      product?.ai_prompt ??
-      (product?.extraData && typeof product.extraData === "object"
-        ? product.extraData.aiPrompt
-        : "");
-    return String(raw || "").trim();
-  }, [product]);
 
   // Shared copy-to-clipboard helper.
   // 1. Try the async Clipboard API (secure origins only, needs a user gesture).
@@ -4174,23 +4105,6 @@ function ProductDetail({
   // Shared success handlers — fire ONLY when copy/download succeeds.
   // 100% free pivot: copying is NOT gated by sign-in. `user` is optional and
   // only used to attach an email to the analytics event when available.
-  const handleCopyPromptSuccess = useCallback(() => {
-    const user = currentUser;
-    setCopiedPrompt(true);
-    recordSteaCodeCopy(getProductIdentity(product));
-    void trackUserEvent("copy", {
-      productId: getProductIdentity(product),
-      productSlug: product?.slug || "",
-      email: user?.email || "",
-    });
-    setToast({ type: "success", message: "AI Prompt copied" });
-    setTimeout(() => setCopiedPrompt(false), 2200);
-    setTimeout(() => setToast(null), 2600);
-    // Affiliate funnel: prompt the user to build with Runable AI.
-    setCopiedType("prompt");
-    setShowAffiliateModal(true);
-  }, [product, currentUser]);
-
   const handleCopySourceSuccess = useCallback(() => {
     const user = currentUser;
     setCopiedCode(true);
@@ -4218,25 +4132,6 @@ function ProductDetail({
   }, [product, currentUser]);
 
   // Action executors — no sign-in gate (100% free pivot).
-  const executeCopyPrompt = useCallback(async () => {
-    try {
-      console.log("[copy-prompt] text length:", promptText.length);
-      // Data validation: never hand undefined/empty text to the clipboard.
-      if (!promptText) {
-        console.error("Code is undefined");
-        setToast({ type: "error", message: "No AI prompt available" });
-        setTimeout(() => setToast(null), 2600);
-        return;
-      }
-      const method = await safeCopyToClipboard(promptText);
-      console.log("[copy-prompt] copied via:", method);
-      handleCopyPromptSuccess();
-    } catch (err) {
-      console.error("[copy-prompt] failed:", err);
-      setToast({ type: "error", message: "Copy failed" });
-      setTimeout(() => setToast(null), 2600);
-    }
-  }, [promptText, safeCopyToClipboard, handleCopyPromptSuccess]);
 
   // Source blobs are stripped from the catalog payload (see
   // workers/stea-api/src/routes/catalog.ts) and fetched per product on demand,
@@ -4325,17 +4220,6 @@ function ProductDetail({
   // Button click handlers — 100% free pivot: no sign-in gate. Any visitor
   // reaches the clipboard logic; `hasAccess` only ever blocks premium
   // products the user has not bought (currently none).
-  const handleCopyPromptClick = useCallback((e) => {
-    console.log("Copy button clicked");
-    e?.preventDefault?.();
-    e?.stopPropagation?.();
-    if (!hasAccess) {
-      onOpenUnlockModal?.();
-      return;
-    }
-    executeCopyPrompt();
-  }, [hasAccess, onOpenUnlockModal, executeCopyPrompt]);
-
   const handleCopySourceClick = useCallback((e) => {
     console.log("Copy button clicked");
     e?.preventDefault?.();
@@ -4491,8 +4375,6 @@ function ProductDetail({
         sessionStorage.removeItem("stea_pending_action");
         if (pending.type === "copy-source") {
           executeCopySource();
-        } else if (pending.type === "copy-prompt") {
-          executeCopyPrompt();
         } else if (pending.type === "copy-image") {
           executeDownloadImage();
         } else if (pending.type === "download") {
@@ -4507,7 +4389,7 @@ function ProductDetail({
     } catch (err) {
       console.warn("Failed resuming pending action in ProductDetail:", err);
     }
-  }, [currentUser, product, executeCopySource, executeCopyPrompt, executeDownloadImage, executeDownload, onOpenUnlockModal]);
+  }, [currentUser, product, executeCopySource, executeDownloadImage, executeDownload, onOpenUnlockModal]);
 
   const reduceMotion = useReducedMotion();
 
@@ -4848,91 +4730,9 @@ function ProductDetail({
                 </p>
               ) : null}
             </div>
-          ) : (
-            <div className="sc-product-action-box is-free">
-              <div className="sc-product-action-copy">
-                <span className="sc-product-action-icon">
-                  <Check size={18} />
-                </span>
+          ) : null}
 
-                <div>
-                  <strong>
-                    {tLocal({
-                      en: "Free to use",
-                      zhCN: "免费使用" })}
-                  </strong>
-
-                  <small>
-                    {tLocal({
-                      en: "Open the code and start building.",
-                      zhCN: "打开代码并开始构建。" })}
-                  </small>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* What you get — eBooks list their own copy (Admin → eBook Settings),
-              components keep the derived feature list. The generic entries
-              ("Ready-to-use component", "Responsive design") never apply to a
-              book, so for eBooks the block is replaced or hidden outright. */}
-          {isLibraryProduct ? (
-            ebookFeatures.length > 0 && (
-              <div className="sc-product-detail-section">
-                <div className="sc-product-detail-heading">
-                  <span>
-                    {tLocal({
-                      en: "What you get",
-                      zhCN: "包含内容" })}
-                  </span>
-
-                  <small>
-                    {tLocal({
-                      en: "Everything needed to start quickly.",
-                      zhCN: "快速开始所需的核心内容。" })}
-                  </small>
-                </div>
-
-                <div className="sc-product-included-grid sc-ebook-features">
-                  {ebookFeatures.map((item, idx) => (
-                    <div key={`${idx}-${item}`}>
-                      <Check size={14} />
-                      <span>{item}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )
-          ) : (
-            safeIncluded.length > 0 && (
-              <div className="sc-product-detail-section">
-                <div className="sc-product-detail-heading">
-                  <span>
-                    {tLocal({
-                      en: "What you get",
-                      zhCN: "包含内容" })}
-                  </span>
-
-                  <small>
-                    {tLocal({
-                      en: "Everything needed to start quickly.",
-                      zhCN: "快速开始所需的核心内容。" })}
-                  </small>
-                </div>
-
-                <div className="sc-product-included-grid">
-                  {safeIncluded.map((item, idx) => (
-                    <div key={`${idx}-${item}`}>
-                      <Check size={14} />
-                      <span>{item}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )
-          )}
-
-          {/* ===== ACTION BUTTONS — Read / Download Image / Copy Prompt / Copy Code / Download ===== */}
+          {/* ===== ACTION BUTTONS — Read / Download Image / Copy Code / Download ===== */}
           <div className="sc-detail-actions">
 
             {/* Read — eBooks (Library products) */}
@@ -5045,70 +4845,41 @@ function ProductDetail({
               </button>
             )}
 
-            {/* PubFuture banner — below "What you get", above the copy buttons (safe margin from CTAs) */}
+            {/* PubFuture banner — above the copy buttons (safe margin from CTAs) */}
             <SmartAdSlot id="pubfuture-component-top" minHeight={90} style={{ margin: "24px 0" }} />
-
-            <div className="sc-copy-actions-row sc-detail-actions-row">
-            {/* Copy AI Prompt — hidden for premium products until user has access */}
-            {promptText && (!isPremium || hasAccess) && (
-              <button
-                type="button"
-                className={`sc-detail-action sc-detail-action--prompt sc-btn-copy-secondary ${copiedPrompt ? 'is-copied' : ''}`}
-                onClick={handleCopyPromptClick}
-                style={{ position: "relative", zIndex: 60, pointerEvents: "auto" }}
-              >
-                <span className="sc-detail-action-icon" aria-hidden="true">
-                  {(!isFree && (!isSignedIn || !hasAccess)) ? (
-                    <Lock size={18} />
-                  ) : copiedPrompt ? (
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="20 6 9 17 4 12"/>
-                    </svg>
-                  ) : (
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/>
-                      <circle cx="12" cy="12" r="3.5"/>
-                    </svg>
-                  )}
-                </span>
-                <span className="sc-detail-action-label">
-                  {(!isFree && !isSignedIn) ? 'Sign in to copy AI prompt' : !hasAccess ? `Unlock for $${productPrice.toFixed(2)}` : copiedPrompt ? 'Prompt Copied' : 'Copy AI Prompt'}
-                </span>
-              </button>
-            )}
 
             {/* Copy Source Code — only when the product actually has code.
                 See `canCopySource` above: layouts/kits without downloadable
-                code no longer render this button at all. */}
+                code no longer render this button (or its wrapper) at all. */}
             {canCopySource && (
-              <button
-                type="button"
-                className={`sc-detail-action sc-detail-action--code sc-btn-copy-primary ${copiedCode ? 'is-copied' : ''}`}
-                onClick={handleCopySourceClick}
-                style={{ position: "relative", zIndex: 60, pointerEvents: "auto" }}
-              >
-                <span className="sc-detail-action-icon" aria-hidden="true">
-                  {(!isFree && (!isSignedIn || !hasAccess)) ? (
-                    <Lock size={18} />
-                  ) : copiedCode ? (
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="20 6 9 17 4 12"/>
-                    </svg>
-                  ) : (
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-                    </svg>
-                  )}
-                </span>
-                <span className="sc-detail-action-label">
-                  {(!isFree && !isSignedIn) ? 'Sign in to copy source code' : !hasAccess ? `Unlock for $${productPrice.toFixed(2)}` : copiedCode ? 'Code Copied' : 'Copy Source Code'}
-                </span>
-              </button>
+              <div className="sc-copy-actions-row sc-detail-actions-row">
+                <button
+                  type="button"
+                  className={`sc-detail-action sc-detail-action--code sc-btn-copy-primary ${copiedCode ? 'is-copied' : ''}`}
+                  onClick={handleCopySourceClick}
+                  style={{ position: "relative", zIndex: 60, pointerEvents: "auto" }}
+                >
+                  <span className="sc-detail-action-icon" aria-hidden="true">
+                    {(!isFree && (!isSignedIn || !hasAccess)) ? (
+                      <Lock size={18} />
+                    ) : copiedCode ? (
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="20 6 9 17 4 12"/>
+                      </svg>
+                    ) : (
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                      </svg>
+                    )}
+                  </span>
+                  <span className="sc-detail-action-label">
+                    {(!isFree && !isSignedIn) ? 'Sign in to copy source code' : !hasAccess ? `Unlock for $${productPrice.toFixed(2)}` : copiedCode ? 'Code Copied' : 'Copy Source Code'}
+                  </span>
+                </button>
+              </div>
             )}
-            </div>
 
-            
             {/* Custom Service Callout — UI components only. "Book a Call" /
                 "Request Customization" make no sense next to a book, whose
                 primary action is the reader. */}
@@ -5309,9 +5080,7 @@ function ProductDetail({
                   </svg>
                 </span>
                 <span className="sc-affiliate-success-text">
-                  {copiedType === "prompt"
-                    ? "Prompt Copied Successfully!"
-                    : copiedType === "image"
+                  {copiedType === "image"
                     ? "Image Link Copied Successfully!"
                     : "Source Code Copied Successfully!"}
                 </span>
@@ -5332,9 +5101,7 @@ function ProductDetail({
 
               <h3 className="sc-affiliate-headline">Want to build this in seconds?</h3>
               <p className="sc-affiliate-subtext">
-                {copiedType === "prompt"
-                  ? "Paste this prompt into Runable AI to generate it instantly."
-                  : copiedType === "image"
+                {copiedType === "image"
                   ? "Turn this design into a live app instantly with Runable AI."
                   : "Runable AI lets you build full apps from this code instantly."}
               </p>
