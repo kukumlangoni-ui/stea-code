@@ -750,8 +750,8 @@ function AssetsUploader({ productId }) {
   const onPickPkg = (e) => {
     const f = e.target.files?.[0];
     if (!f) return;
-    if (f.size > 100 * 1024 * 1024) {
-      setPkgState({ uploading: false, key: "", error: "File too large (max 100MB)." });
+    if (f.size > 50 * 1024 * 1024) {
+      setPkgState({ uploading: false, key: "", error: "File is too large. Max size is 50MB." });
       return;
     }
     setPkgState({ uploading: true, key: "", error: "" });

@@ -510,6 +510,8 @@ function getUploadErrorMessage(err, context = "upload") {
 /**
  * Validate that HTML/CSS is self-contained — no external URLs or relative paths.
  * Returns an array of warning strings (empty = all good). Warnings only — never blocks save.
+ * File size is intentionally not checked here: large self-contained HTML previews are
+ * allowed (the media upload endpoint accepts up to 100MB).
  */
 function validateSelfContained(html, css = "") {
   const issues = [];
@@ -520,9 +522,6 @@ function validateSelfContained(html, css = "") {
     issues.push("External <img src>");
   if (/<source[^>]+src=["'](?!data:)/i.test(html))
     issues.push("External <source src>");
-  const sizeKB = Math.round(new Blob([combined]).size / 1024);
-  if (sizeKB > 400)
-    issues.push(`File size ${sizeKB} KB exceeds 400 KB`);
   return issues;
 }
 
@@ -1060,7 +1059,7 @@ export function ProductStudioV3({
       return;
     }
     if (file.size > 50 * 1024 * 1024) {
-      setPackageError("ZIP file must be under 50MB.");
+      setPackageError("File is too large. Max size is 50MB.");
       return;
     }
     setPackageUploading(true);
@@ -1841,7 +1840,7 @@ export function ProductStudioV3({
                 <Field
                   label="Tab"
                   required
-                  hint="Components = copy-paste pieces · Layouts = full-page sections · Kits = full working products"
+                  hint="Components = copy-paste pieces · Templates = full-page sections · Kits = full working products"
                 >
                   <RadioGroup
                     value={form.tab}

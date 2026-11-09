@@ -200,8 +200,19 @@ export default function SteaCodeServicesPage() {
         type="website"
       />
 
-      <div className="stea-code-app sc-v2 sc-market-home sc-v2-home sc-services-page min-h-screen bg-white text-gray-900">
-        <header className="sc-topbar">
+      <div
+        className="sc-services-page"
+        style={{
+          width: "100%",
+          minHeight: "100vh",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          backgroundColor: "#ffffff",
+          color: "#111827",
+        }}
+      >
+        <header className="sc-topbar bg-[#05060a]!" style={{ width: "100%" }}>
           <Link to="/" className="sc-topbar-logo" aria-label="steacode home">
             <img
               src="/stea-code-logo.png"
@@ -247,30 +258,93 @@ export default function SteaCodeServicesPage() {
           </div>
         </header>
 
-        <main className="mx-auto w-full max-w-[1100px] px-6! pb-24! pt-[104px]!">
+        <main
+          style={{
+            width: "100%",
+            maxWidth: "1000px",
+            padding: "60px 20px",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+          }}
+        >
           {/* Hero */}
-          <section>
-            <span className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-3! py-1! text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-500">
+          <section
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              textAlign: "center",
+              width: "100%",
+              marginBottom: "60px",
+            }}
+          >
+            <span
+              style={{
+                display: "inline-block",
+                padding: "6px 14px",
+                borderRadius: "20px",
+                border: "1px solid #e5e7eb",
+                backgroundColor: "#f9fafb",
+                fontSize: "12px",
+                fontWeight: 600,
+                letterSpacing: "1px",
+                color: "#6b7280",
+                textTransform: "uppercase",
+              }}
+            >
               07 / Let's Talk
             </span>
-            <h1 className="mt-5! text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl">
-              What can I help you<br className="hidden sm:block" /> with?
+            <h1
+              style={{
+                fontSize: "48px",
+                fontWeight: 800,
+                color: "#111827",
+                marginTop: "20px",
+                lineHeight: 1.1,
+                letterSpacing: "-0.02em",
+              }}
+            >
+              What can I help you <br /> with?
             </h1>
-            <p className="mt-4! max-w-2xl text-[15px] leading-relaxed text-gray-600">
+            <p
+              style={{
+                marginTop: "16px",
+                fontSize: "16px",
+                color: "#4b5563",
+                maxWidth: "600px",
+                lineHeight: 1.5,
+              }}
+            >
               {selected ? copy.subline : GENERIC.subline}
             </p>
           </section>
 
           {/* Directions */}
-          <section id="directions" className="mt-14!">
-            <div className="flex items-center gap-3">
-              <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-400">
+          <section id="directions" style={{ width: "100%", marginBottom: "60px" }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                gap: "12px",
+                marginBottom: "24px",
+              }}
+            >
+              <span style={{ fontSize: "12px", fontWeight: 600, color: "#9ca3af", letterSpacing: "1px" }}>
                 01
               </span>
-              <h2 className="text-lg font-semibold text-gray-900">Choose a direction</h2>
+              <h2 style={{ fontSize: "20px", fontWeight: 600, color: "#111827" }}>Choose a direction</h2>
             </div>
 
-            <div className="mt-5! grid grid-cols-1 gap-4! sm:grid-cols-2 lg:grid-cols-3">
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+                gap: "24px",
+                width: "100%",
+              }}
+            >
               {DIRECTIONS.map(({ id, num, title, desc, Icon }) => {
                 const isSelected = selected === id;
                 return (
@@ -280,11 +354,11 @@ export default function SteaCodeServicesPage() {
                     onClick={() => handlePick(DIRECTIONS.find((d) => d.id === id))}
                     aria-pressed={isSelected}
                     className={[
-                      "group relative flex flex-col items-start rounded-2xl border bg-white p-5! text-left shadow-sm",
-                      "transition-all duration-200 hover:-translate-y-1 hover:shadow-md focus:outline-none",
-                      "focus-visible:ring-2 focus-visible:ring-yellow-500",
+                      "group relative flex h-full w-full flex-col items-start rounded-2xl border bg-white p-5! text-left shadow-sm",
+                      "transition-shadow duration-200 hover:shadow-md focus:outline-none",
+                      "focus-visible:ring-2 focus-visible:ring-yellow-500 focus-visible:ring-offset-2",
                       isSelected
-                        ? "border-yellow-500 shadow-md ring-2 ring-yellow-400/40"
+                        ? "border-yellow-500 shadow-md ring-1 ring-yellow-500/30"
                         : "border-gray-200 hover:border-yellow-500",
                     ].join(" ")}
                   >
@@ -292,14 +366,24 @@ export default function SteaCodeServicesPage() {
                       {num}
                     </span>
 
-                    <span className="mt-3! flex h-10 w-10 items-center justify-center rounded-xl bg-gray-50 text-gray-800 transition-colors group-hover:bg-yellow-50">
+                    <span
+                      className="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-50 text-gray-800 transition-colors group-hover:bg-yellow-50"
+                      style={{ marginTop: "12px" }}
+                    >
                       <Icon size={20} strokeWidth={2} aria-hidden="true" />
                     </span>
 
-                    <span className="mt-4! text-base font-semibold text-gray-900">{title}</span>
-                    <span className="mt-1.5! text-sm leading-relaxed text-gray-600">{desc}</span>
+                    <span className="text-base font-semibold text-gray-900" style={{ marginTop: "16px" }}>
+                      {title}
+                    </span>
+                    <span className="text-sm leading-relaxed text-gray-600" style={{ marginTop: "6px" }}>
+                      {desc}
+                    </span>
 
-                    <span className="mt-4! inline-flex items-center gap-1 text-[13px] font-medium text-gray-400 transition-colors group-hover:text-yellow-600">
+                    <span
+                      className="mt-auto! inline-flex w-full items-center gap-1 text-[13px] font-medium text-gray-400 transition-colors group-hover:text-yellow-600"
+                      style={{ paddingTop: "16px" }}
+                    >
                       Select
                       <ArrowUpRight size={14} aria-hidden="true" />
                     </span>
@@ -309,26 +393,38 @@ export default function SteaCodeServicesPage() {
             </div>
 
             {errors.service && (
-              <p className="mt-3! text-xs font-medium text-red-600">
+              <p className="text-xs font-medium text-red-600" style={{ marginTop: "12px" }}>
                 Pick a direction above so we know what to prepare for.
               </p>
             )}
           </section>
 
           {/* Form */}
-          <section id="service-form" className="mt-14! scroll-mt-[88px] rounded-3xl border border-gray-200 bg-white p-6! shadow-sm sm:p-8!">
+          <section
+            id="service-form"
+            style={{
+              width: "100%",
+              maxWidth: "700px",
+              margin: "0 auto",
+              backgroundColor: "#ffffff",
+              borderRadius: "24px",
+              border: "1px solid #f3f4f6",
+              padding: "40px",
+              boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.05)",
+            }}
+          >
             <h2 className="text-2xl font-bold tracking-tight text-gray-900">
               {selected ? copy.heading : GENERIC.heading}
             </h2>
-            <p className="mt-2! text-sm text-gray-600">
+            <p className="text-sm text-gray-600" style={{ marginTop: "8px" }}>
               {selected ? copy.subline : "I'll get back to you on WhatsApp within 24 hours."}
             </p>
 
             {sentUrl ? (
-              <div className="mt-6! rounded-2xl border border-emerald-200 bg-emerald-50 p-6! text-center">
-                <Check className="mx-auto text-emerald-600" size={32} aria-hidden="true" />
-                <h3 className="mt-3! text-lg font-semibold text-gray-900">Request sent ✓</h3>
-                <p className="mt-2! text-sm text-gray-600">
+              <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-6! text-center" style={{ marginTop: "24px" }}>
+                <Check className="mx-auto! text-emerald-600" size={32} aria-hidden="true" />
+                <h3 className="text-lg font-semibold text-gray-900" style={{ marginTop: "12px" }}>Request sent ✓</h3>
+                <p className="text-sm text-gray-600" style={{ marginTop: "8px" }}>
                   WhatsApp should have opened with your message. If it didn't,{" "}
                   <a
                     className="font-semibold text-emerald-700 underline"
@@ -343,13 +439,14 @@ export default function SteaCodeServicesPage() {
                 <button
                   type="button"
                   onClick={resetForm}
-                  className="mt-5! inline-flex h-11 items-center justify-center rounded-xl border border-gray-300 bg-white px-5! text-sm font-semibold text-gray-900 transition hover:bg-gray-50"
+                  className="inline-flex h-11 items-center justify-center rounded-xl border border-gray-300 bg-white px-5! text-sm font-semibold text-gray-900 transition hover:bg-gray-50"
+                  style={{ marginTop: "20px" }}
                 >
                   Send another request
                 </button>
               </div>
             ) : (
-              <form onSubmit={handleSubmit} noValidate className="mt-6! flex flex-col gap-5">
+              <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-5" style={{ marginTop: "24px" }}>
                 <div>
                   <label htmlFor="field-name" className="mb-2! block text-xs font-semibold uppercase tracking-wider text-gray-700">
                     Name <span className="text-red-500">*</span>
@@ -390,12 +487,12 @@ export default function SteaCodeServicesPage() {
                   <label htmlFor="field-whatsapp" className="mb-2! block text-xs font-semibold uppercase tracking-wider text-gray-700">
                     WhatsApp <span className="text-red-500">*</span>
                   </label>
-                  <div className="flex gap-2">
+                  <div className="flex w-full items-stretch">
                     <select
                       value={form.cc}
                       onChange={set("cc")}
                       aria-label="Country code"
-                      className="h-12 w-[124px] shrink-0 rounded-xl border border-gray-300 bg-white px-3! text-sm text-gray-900 outline-none transition focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/30"
+                      className="h-12 w-[124px] shrink-0 rounded-l-xl rounded-r-none border border-r-0 border-gray-300 bg-gray-50 pl-3! pr-2! text-sm text-gray-900 outline-none transition focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/30"
                     >
                       {COUNTRY_CODES.map((c) => (
                         <option key={c.value} value={c.value}>
@@ -410,7 +507,7 @@ export default function SteaCodeServicesPage() {
                       onChange={set("whatsapp")}
                       placeholder="712 345 678"
                       autoComplete="tel"
-                      className={`h-12 w-full rounded-xl border bg-white px-4! text-sm text-gray-900 placeholder:text-gray-400 outline-none transition focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/30 ${
+                      className={`relative z-10 h-12 min-w-0 flex-1 rounded-l-none rounded-r-xl border bg-white px-4! text-sm text-gray-900 placeholder:text-gray-400 outline-none transition focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/30 ${
                         errors.whatsapp ? "border-red-400" : "border-gray-300"
                       }`}
                     />
@@ -451,15 +548,15 @@ export default function SteaCodeServicesPage() {
                   />
                 </div>
 
-                <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-col gap-3" style={{ marginTop: "8px" }}>
                   <button
                     type="submit"
-                    className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-gray-900 px-6! text-sm font-semibold text-white transition hover:bg-black focus:outline-none focus-visible:ring-2 focus-visible:ring-yellow-500"
+                    className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-gray-900 px-6! text-sm font-semibold text-white transition hover:bg-black focus:outline-none focus-visible:ring-2 focus-visible:ring-yellow-500"
                   >
                     Send Request
                     <ArrowUpRight size={16} aria-hidden="true" />
                   </button>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-center text-xs text-gray-500">
                     This goes straight to WhatsApp. No bots, no email tag.
                   </p>
                 </div>
@@ -467,23 +564,38 @@ export default function SteaCodeServicesPage() {
             )}
           </section>
 
-          <p className="mt-8! text-center text-sm text-gray-500">
-            Prefer email?{" "}
-            <Link to="/contact" className="font-semibold text-gray-900 underline">
+          <div
+            style={{
+              marginTop: "40px",
+              display: "flex",
+              flexWrap: "wrap",
+              justifyContent: "center",
+              alignItems: "center",
+              gap: "16px",
+              fontSize: "14px",
+              color: "#6b7280",
+              width: "100%",
+            }}
+          >
+            <span>Prefer email?</span>
+            <Link to="/contact" style={{ fontWeight: 600, color: "#111827", textDecoration: "underline" }}>
               Contact page
-            </Link>{" "}
-            ·{" "}
+            </Link>
             <button
               type="button"
               onClick={() => navigate("/")}
-              className="font-semibold text-gray-900 underline"
+              style={{ fontWeight: 600, color: "#111827", textDecoration: "underline" }}
             >
               Back to components
             </button>
-          </p>
+          </div>
         </main>
 
-        <SteaCodeFooter />
+        {/* The shared footer is dark-themed (light text on transparent), so it
+            needs its own dark band — otherwise it renders white-on-white here. */}
+        <div style={{ width: "100%", backgroundColor: "#05060a", paddingTop: "8px" }}>
+          <SteaCodeFooter />
+        </div>
       </div>
     </>
   );

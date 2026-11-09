@@ -3,23 +3,48 @@ import { useLocation } from "react-router-dom";
 
 /**
  * PubFuture sticky footer ad — fixed banner at the bottom of the screen,
- * blog routes only (/blog and /blog/:slug). The inner div is the
- * placeholder PubFuture's script will fill once the final tags are
- * approved. Dismissible via the × button (per page view).
+ * shown site-wide (homepage, component pages, blog) but suppressed on
+ * admin/staff/auth surfaces. The inner div is the placeholder PubFuture's
+ * script will fill once the final tags are approved. Dismissible via the ×
+ * button (per page view).
  */
 export default function StickyFooterAd() {
   const location = useLocation();
   const [dismissed, setDismissed] = useState(false);
 
-  const isBlogRoute =
-    location.pathname === "/blog" || location.pathname.startsWith("/blog/");
+  const suppressed =
+    location.pathname.startsWith("/admin") ||
+    location.pathname.startsWith("/staff") ||
+    location.pathname.startsWith("/login") ||
+    location.pathname.startsWith("/auth");
 
-  // Re-show the banner when navigating between blog pages.
+  // Re-show the banner when navigating between pages.
   useEffect(() => {
     setDismissed(false);
   }, [location.pathname]);
 
-  if (!isBlogRoute || dismissed) return null;
+  // Auto-hide: after 30 seconds OR after the user has scrolled three full
+  // viewport heights — whichever comes first. Keeps the unit policy-safe
+  // and unobtrusive. The × close button remains as the manual path.
+  useEffect(() => {
+    if (suppressed || dismissed) return undefined;
+
+    const timer = setTimeout(() => setDismissed(true), 30000);
+
+    const onScroll = () => {
+      if (window.scrollY > window.innerHeight * 3) {
+        setDismissed(true);
+      }
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("scroll", onScroll);
+    };
+  }, [suppressed, dismissed, location.pathname]);
+
+  if (suppressed || dismissed) return null;
 
   return (
     <div

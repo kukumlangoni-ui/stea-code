@@ -11,11 +11,11 @@ import "../../pages/stea-code/stea-code-v2.css";
  * tab state (`/?tab=…`), keeping everything in one SPA.
  */
 const BLOG_NAV = [
-  { label: "Components", to: "/?tab=components" },
-  { label: "Layouts", to: "/?tab=layouts" },
-  { label: "Kits", to: "/?tab=kits" },
-  { label: "Library", to: "/?tab=library" },
-  { label: "Icons", to: "/?tab=icons" },
+  { label: "Components", to: "/components" },
+  { label: "Templates", to: "/templates" },
+  { label: "Kits", to: "/kits" },
+  { label: "Library", to: "/library" },
+  { label: "Icons", to: "/icons" },
   { label: "Blog", to: "/blog" },
 ];
 

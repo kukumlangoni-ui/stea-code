@@ -491,6 +491,9 @@ function uploadWithProgress(url, formData, options = {}) {
   });
 }
 
+/** Maximum accepted package size, mirrored by the worker (413 FILE_TOO_LARGE). */
+export const MAX_PACKAGE_BYTES = 50 * 1024 * 1024;
+
 /**
  * Upload a product package (.zip) to Cloudflare R2.
  * @param {string} productId
@@ -500,13 +503,30 @@ function uploadWithProgress(url, formData, options = {}) {
  * @returns {Promise<{success: boolean, key: string, size: number, filename: string}>}
  */
 export async function uploadSteaCodePackage(productId, file, options = {}) {
+  if (!file) {
+    const err = new Error("No package file selected.");
+    err.code = "NO_FILE";
+    throw err;
+  }
+
+  // Fail fast in the browser: a 50MB+ body would otherwise spend minutes
+  // uploading only to be rejected (or time out) at the worker.
+  if (file.size > MAX_PACKAGE_BYTES) {
+    const err = new Error("File is too large. Max size is 50MB.");
+    err.code = "FILE_TOO_LARGE";
+    throw err;
+  }
+
   const formData = new FormData();
   formData.append("package", file);
 
+  // NOTE: do not set Content-Type here. The browser must add
+  // `multipart/form-data; boundary=...` itself; setting the header manually
+  // omits the boundary and the worker's req.formData() then throws.
   return uploadWithProgress(
     `/api/admin/stea-code/products/${encodeURIComponent(productId)}/package/upload`,
     formData,
-    { timeoutMs: 600000, totalBytes: file?.size || 0, ...options }
+    { timeoutMs: 600000, totalBytes: file.size, ...options }
   );
 }
 

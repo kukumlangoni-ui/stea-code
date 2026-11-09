@@ -66,6 +66,8 @@ import {
 } from "../../services/steaCodeCommerce.js";
 import { trackUserEvent } from "../../services/analytics.js";
 import SteaCodeFooter from "../../components/stea-code/SteaCodeFooter.jsx";
+import SponsoredCard from "../../components/stea-code/SponsoredCard.jsx";
+import SmartAdSlot from "../../components/stea-code/SmartAdSlot.jsx";
 import IconGallery from "../../components/stea-code/IconGallery.jsx";
 import SteaCodeBlogPage from "./blog/SteaCodeBlogPage.jsx";
 import LatestFromBlog from "../../components/stea-code/LatestFromBlog.jsx";
@@ -460,12 +462,18 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
   // empty grid, because `TABS[activeTab].categories` would throw on an unknown
   // tab.
   const filterParams = useMemo(() => {
-    // Clean, crawlable routes (/layouts, /kits, /icons) imply their tab even
-    // when there is no ?tab= param. An explicit param always wins.
+    // Clean, crawlable routes (/templates, /kits, /icons) imply their tab even
+    // when there is no ?tab= param. An explicit param always wins. "/layouts" is
+    // kept as an alias → same tab, so an unredirected old link still filters
+    // correctly (App.jsx also 301-redirects /layouts → /templates).
     const pathTab =
-      { "/components": "components", "/layouts": "layouts", "/kits": "kits", "/icons": "icons" }[
-        location.pathname.replace(/\/+$/, "") || "/"
-      ];
+      {
+        "/components": "components",
+        "/templates": "layouts",
+        "/layouts": "layouts",
+        "/kits": "kits",
+        "/icons": "icons",
+      }[location.pathname.replace(/\/+$/, "") || "/"];
     const tabParam = searchParams.get("tab");
     const tab = tabParam && TABS[tabParam]
       ? tabParam
@@ -482,6 +490,17 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
   }, [searchParams, location.pathname]);
 
   const filterSignature = `${filterParams.tab}|${filterParams.cat}|${filterParams.sub}`;
+
+  // Tab id → clean, crawlable route. Clicking a nav tab lands on a real URL
+  // (good for SEO + shareability); any tab without a clean route falls back
+  // to the query-param form below. "layouts" renders as /templates.
+  const TAB_CLEAN_PATH = {
+    components: "/components",
+    layouts: "/templates",
+    kits: "/kits",
+    library: "/library",
+    icons: "/icons",
+  };
 
   // Write the filters into the URL. Goes through the router rather than
   // window.history so `location` — which effectiveView and the product modal
@@ -1547,9 +1566,15 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
     ? "steacode 开发者代码市场与实时交互预览。"
     : "steacode — a marketplace for buying and selling code components.";
 
+  // Per-tab SEO overrides. A clean route (/templates) and its tab should read
+  // as a distinct, descriptive page to search engines rather than the generic
+  // marketplace title.
+  const TAB_SEO_TITLE = {
+    layouts: "Free Page Templates",
+  };
   const seoTitle = selected
     ? `${String(selected.titleEn || selected.title || selected.titleZh || "").trim()} — steacode`
-    : defaultCodeTitle;
+    : TAB_SEO_TITLE[activeTab] || defaultCodeTitle;
   const seoDescription = selected
     ? String(selected.shortDescriptionEn || selected.description || selected.shortDescriptionZh || "").trim()
     : defaultCodeDesc;
@@ -2093,6 +2118,9 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
                 </div>
               </div>
 
+              {/* Adsterra leaderboard placeholder — above the tab bar, clear of all controls */}
+              <SmartAdSlot id="adsterra-home-top" minHeight={90} style={{ marginBottom: "32px" }} />
+
               {/* Three-tab navigation (Components / Layouts / Kits) */}
               <div className="sc-tabs" style={{ marginBottom: "16px" }}>
                 {Object.values(TABS).map((tab) => (
@@ -2106,7 +2134,9 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
                       setActiveSubcategory("All");
                       setPricing("All");
                       setFramework("All Frameworks");
-                      syncFilterUrl({ tab: tab.id, cat: "All", sub: "All" });
+                      const cleanPath = TAB_CLEAN_PATH[tab.id];
+                      if (cleanPath) navigate(cleanPath);
+                      else syncFilterUrl({ tab: tab.id, cat: "All", sub: "All" });
                     }}
                   >
                     {tab.label}
@@ -2243,19 +2273,26 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
                   )}
 
                   {homepageProducts.map((product, index) => (
-                    <Reveal key={getProductIdentity(product)} delay={Math.min(index, 6) * 25}>
-                      <TiltCard>
-                        <PreviewErrorBoundary>
-                          <CodeProductCard
-                            product={product}
-                            tLocal={tLocal}
-                            onOpen={() => openProduct(product)}
-                            isFavorited={favorites.has(getProductIdentity(product))}
-                            onToggleFavorite={handleToggleFavorite}
-                          />
-                        </PreviewErrorBoundary>
-                      </TiltCard>
-                    </Reveal>
+                    <React.Fragment key={getProductIdentity(product)}>
+                      <Reveal delay={Math.min(index, 6) * 25}>
+                        <TiltCard>
+                          <PreviewErrorBoundary>
+                            <CodeProductCard
+                              product={product}
+                              tLocal={tLocal}
+                              onOpen={() => openProduct(product)}
+                              isFavorited={favorites.has(getProductIdentity(product))}
+                              onToggleFavorite={handleToggleFavorite}
+                            />
+                          </PreviewErrorBoundary>
+                        </TiltCard>
+                      </Reveal>
+                      {index === 5 && (
+                        <Reveal delay={100}>
+                          <SponsoredCard />
+                        </Reveal>
+                      )}
+                    </React.Fragment>
                   ))}
                 </div>
               ) : (
@@ -4058,35 +4095,86 @@ function ProductDetail({
   const ownsThisProduct = entitlements?.productIds?.has?.(product?.id) === true;
   const hasAccess = !isPremium || hasProLifetime || ownsThisProduct;
 
-  // Shared copy-to-clipboard helper with fallback
+  // AI prompt can arrive under a few different keys depending on the payload
+  // path (catalog card, hydrated detail, or an admin preview object where it
+  // lives inside extraData). Normalise once so the copy handler never reads
+  // `undefined` and the button renders whenever the text actually exists.
+  const promptText = useMemo(() => {
+    const raw =
+      product?.aiPrompt ??
+      product?.ai_prompt ??
+      (product?.extraData && typeof product.extraData === "object"
+        ? product.extraData.aiPrompt
+        : "");
+    return String(raw || "").trim();
+  }, [product]);
+
+  // Shared copy-to-clipboard helper.
+  // 1. Try the async Clipboard API (secure origins only, needs a user gesture).
+  // 2. On ANY failure (NotAllowedError, insecure http://, missing permission,
+  //    missing API, iOS quirks) fall back to the legacy execCommand path.
+  // Every failure is logged so the cause is visible in the console.
   const safeCopyToClipboard = useCallback(async (text) => {
-    if (!text || !text.trim()) {
+    const value = String(text ?? "");
+    if (!value.trim()) {
       throw new Error("EMPTY_CONTENT");
     }
-    if (navigator.clipboard && window.isSecureContext) {
-      await navigator.clipboard.writeText(text);
+
+    if (navigator.clipboard?.writeText && window.isSecureContext) {
+      try {
+        await navigator.clipboard.writeText(value);
+        return "clipboard";
+      } catch (err) {
+        console.error("[copy] navigator.clipboard.writeText failed — falling back to execCommand:", err);
+      }
     } else {
-      const ta = document.createElement("textarea");
-      ta.value = text;
-      ta.style.position = "fixed";
-      ta.style.opacity = "0";
-      document.body.appendChild(ta);
+      console.warn(
+        "[copy] Clipboard API unavailable (insecure context or unsupported browser) — using execCommand fallback"
+      );
+    }
+
+    // Legacy fallback. Works on http:// and when clipboard permission is denied.
+    const ta = document.createElement("textarea");
+    ta.value = value;
+    ta.setAttribute("readonly", "");
+    ta.style.position = "fixed";
+    ta.style.top = "-9999px";
+    ta.style.left = "-9999px";
+    ta.style.opacity = "0";
+    ta.style.pointerEvents = "none";
+    document.body.appendChild(ta);
+
+    const selection = typeof document.getSelection === "function" ? document.getSelection() : null;
+    const previousRange =
+      selection && selection.rangeCount > 0 ? selection.getRangeAt(0) : null;
+
+    let success = false;
+    try {
+      ta.focus();
       ta.select();
-      const success = document.execCommand("copy");
+      ta.setSelectionRange(0, value.length);
+      success = document.execCommand("copy");
+    } catch (err) {
+      console.error("[copy] execCommand('copy') threw:", err);
+    } finally {
       ta.remove();
-      if (!success) {
-        throw new Error("EXEC_COMMAND_FAILED");
+      if (previousRange && selection) {
+        selection.removeAllRanges();
+        selection.addRange(previousRange);
       }
     }
+
+    if (!success) {
+      throw new Error("EXEC_COMMAND_FAILED");
+    }
+    return "execCommand";
   }, []);
 
-  // Shared success handlers — fire ONLY when copy/download succeeds
+  // Shared success handlers — fire ONLY when copy/download succeeds.
+  // 100% free pivot: copying is NOT gated by sign-in. `user` is optional and
+  // only used to attach an email to the analytics event when available.
   const handleCopyPromptSuccess = useCallback(() => {
     const user = currentUser;
-    if (!user) {
-      handleGateAction("copy-prompt");
-      return;
-    }
     setCopiedPrompt(true);
     recordSteaCodeCopy(getProductIdentity(product));
     void trackUserEvent("copy", {
@@ -4100,14 +4188,10 @@ function ProductDetail({
     // Affiliate funnel: prompt the user to build with Runable AI.
     setCopiedType("prompt");
     setShowAffiliateModal(true);
-  }, [product, currentUser, handleGateAction]);
+  }, [product, currentUser]);
 
   const handleCopySourceSuccess = useCallback(() => {
     const user = currentUser;
-    if (!user) {
-      handleGateAction("copy-source");
-      return;
-    }
     setCopiedCode(true);
     recordSteaCodeCopy(getProductIdentity(product));
     void trackUserEvent("copy", {
@@ -4121,7 +4205,7 @@ function ProductDetail({
     // Affiliate funnel: prompt the user to build with Runable AI.
     setCopiedType("code");
     setShowAffiliateModal(true);
-  }, [product, currentUser, handleGateAction]);
+  }, [product, currentUser]);
 
   const handleDownloadSuccess = useCallback((pid) => {
     const cleanId = pid || getProductIdentity(product);
@@ -4132,23 +4216,26 @@ function ProductDetail({
     });
   }, [product, currentUser]);
 
-  // Action executors
+  // Action executors — no sign-in gate (100% free pivot).
   const executeCopyPrompt = useCallback(async () => {
-    const user = currentUser;
-    if (!user) {
-      handleGateAction("copy-prompt");
-      return;
-    }
     try {
-      const text = String(product?.aiPrompt || "");
-      await safeCopyToClipboard(text);
+      console.log("[copy-prompt] text length:", promptText.length);
+      // Data validation: never hand undefined/empty text to the clipboard.
+      if (!promptText) {
+        console.error("Code is undefined");
+        setToast({ type: "error", message: "No AI prompt available" });
+        setTimeout(() => setToast(null), 2600);
+        return;
+      }
+      const method = await safeCopyToClipboard(promptText);
+      console.log("[copy-prompt] copied via:", method);
       handleCopyPromptSuccess();
     } catch (err) {
       console.error("[copy-prompt] failed:", err);
       setToast({ type: "error", message: "Copy failed" });
       setTimeout(() => setToast(null), 2600);
     }
-  }, [currentUser, handleGateAction, product?.aiPrompt, safeCopyToClipboard, handleCopyPromptSuccess]);
+  }, [promptText, safeCopyToClipboard, handleCopyPromptSuccess]);
 
   // Source blobs are stripped from the catalog payload (see
   // workers/stea-api/src/routes/catalog.ts) and fetched per product on demand,
@@ -4189,31 +4276,30 @@ function ProductDetail({
   }, [product?.id, product?.slug, isFree]);
 
   const executeCopySource = useCallback(async () => {
-    const user = currentUser;
-    if (!user) {
-      handleGateAction("copy-source");
-      return;
-    }
     try {
       let text = sourceCodeHtml;
-      // The catalog payload omits the heavy source blobs, so fetch the
-      // per-product source when the product object has none.
+      // Data validation: the inline source may be absent because the catalog
+      // payload strips it, so fetch per-product content before giving up.
       if (!text || !text.trim()) {
+        console.log("[copy-source] no inline source, fetching per-product content…");
         text = await fetchCopyableSource();
       }
       if (!text || !text.trim()) {
+        console.error("Code is undefined");
         setToast({ type: "error", message: "No source available" });
         setTimeout(() => setToast(null), 2600);
         return;
       }
-      await safeCopyToClipboard(text);
+      console.log("[copy-source] text length:", String(text).trim().length);
+      const method = await safeCopyToClipboard(text);
+      console.log("[copy-source] copied via:", method);
       handleCopySourceSuccess();
     } catch (err) {
       console.error("[copy-source] failed:", err);
       setToast({ type: "error", message: "Copy failed" });
       setTimeout(() => setToast(null), 2600);
     }
-  }, [currentUser, handleGateAction, sourceCodeHtml, fetchCopyableSource, safeCopyToClipboard, handleCopySourceSuccess]);
+  }, [sourceCodeHtml, fetchCopyableSource, safeCopyToClipboard, handleCopySourceSuccess]);
 
   const executeDownload = useCallback(async (pid) => {
     const user = currentUser;
@@ -4235,34 +4321,30 @@ function ProductDetail({
     }
   }, [currentUser, handleGateAction, product, handleDownloadSuccess, setToast]);
 
-  // Button click handlers
+  // Button click handlers — 100% free pivot: no sign-in gate. Any visitor
+  // reaches the clipboard logic; `hasAccess` only ever blocks premium
+  // products the user has not bought (currently none).
   const handleCopyPromptClick = useCallback((e) => {
-    e.stopPropagation();
-    const user = currentUser;
-    if (!user) {
-      handleGateAction("copy-prompt");
-      return;
-    }
+    console.log("Copy button clicked");
+    e?.preventDefault?.();
+    e?.stopPropagation?.();
     if (!hasAccess) {
       onOpenUnlockModal?.();
       return;
     }
     executeCopyPrompt();
-  }, [currentUser, hasAccess, handleGateAction, onOpenUnlockModal, executeCopyPrompt]);
+  }, [hasAccess, onOpenUnlockModal, executeCopyPrompt]);
 
   const handleCopySourceClick = useCallback((e) => {
-    e.stopPropagation();
-    const user = currentUser;
-    if (!user) {
-      handleGateAction("copy-source");
-      return;
-    }
+    console.log("Copy button clicked");
+    e?.preventDefault?.();
+    e?.stopPropagation?.();
     if (!hasAccess) {
       onOpenUnlockModal?.();
       return;
     }
     executeCopySource();
-  }, [currentUser, hasAccess, handleGateAction, onOpenUnlockModal, executeCopySource]);
+  }, [hasAccess, onOpenUnlockModal, executeCopySource]);
 
   // ── Copy Image (Layouts / poster-based + free products) ──────────
   const handleCopyImageSuccess = useCallback(() => {
@@ -4442,6 +4524,9 @@ function ProductDetail({
       exit={{ opacity: 0 }}
       transition={reduceMotion ? { duration: 0.08 } : { duration: 0.12, ease: "easeOut" }}
     >
+      {/* Ezoic corner placeholder — fixed bottom-right, desktop only, clear of the preview area */}
+      <div id="ezoic-preview-corner" className="sc-ad-corner">Ad Space</div>
+
       <motion.button
         className="sc-product-modal-bg"
         onClick={onClose}
@@ -4959,13 +5044,17 @@ function ProductDetail({
               </button>
             )}
 
+            {/* PubFuture banner — below "What you get", above the copy buttons (safe margin from CTAs) */}
+            <SmartAdSlot id="pubfuture-component-top" minHeight={90} style={{ margin: "24px 0" }} />
+
             <div className="sc-copy-actions-row sc-detail-actions-row">
             {/* Copy AI Prompt — hidden for premium products until user has access */}
-            {product?.aiPrompt && (!isPremium || hasAccess) && (
+            {promptText && (!isPremium || hasAccess) && (
               <button
                 type="button"
                 className={`sc-detail-action sc-detail-action--prompt sc-btn-copy-secondary ${copiedPrompt ? 'is-copied' : ''}`}
                 onClick={handleCopyPromptClick}
+                style={{ position: "relative", zIndex: 60, pointerEvents: "auto" }}
               >
                 <span className="sc-detail-action-icon" aria-hidden="true">
                   {(!isFree && (!isSignedIn || !hasAccess)) ? (
@@ -4995,6 +5084,7 @@ function ProductDetail({
                 type="button"
                 className={`sc-detail-action sc-detail-action--code sc-btn-copy-primary ${copiedCode ? 'is-copied' : ''}`}
                 onClick={handleCopySourceClick}
+                style={{ position: "relative", zIndex: 60, pointerEvents: "auto" }}
               >
                 <span className="sc-detail-action-icon" aria-hidden="true">
                   {(!isFree && (!isSignedIn || !hasAccess)) ? (
@@ -5037,6 +5127,9 @@ function ProductDetail({
                 </div>
               </div>
             )}
+
+            {/* Ezoic native/banner placeholder — above "You might also like" */}
+            <SmartAdSlot id="ezoic-component-bottom" minHeight={250} style={{ margin: "32px 0" }} />
 
             {/* You Might Also Like */}
             {relatedProducts.length > 0 && (

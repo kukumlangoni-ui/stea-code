@@ -23006,3 +23006,92 @@ header nav a:hover {
 .sc-tabs__item.sc-nav-item:hover {
   color: #d97706 !important;
 }
+
+/* Sponsored in-feed card */
+.sc-sponsored-card {
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+}
+.sc-sponsored-card__badge-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 8px;
+}
+.sc-sponsored-card__badge {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #6b7280;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: 999px;
+  padding: 3px 10px;
+}
+.sc-sponsored-card__footer {
+  margin-top: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+}
+
+
+/* Ezoic preview-modal corner ad — desktop only, fixed bottom-right */
+.sc-ad-corner {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  width: 300px;
+  height: 250px;
+  z-index: 50;
+  background: #f3f4f6;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(17, 24, 39, 0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: #9ca3af;
+  pointer-events: none;
+}
+@media (max-width: 768px) {
+  .sc-ad-corner {
+    display: none;
+  }
+}
+
+/* ── Smart ad slots: lazy-load + CLS prevention + empty-state hide ── */
+.sc-ad-slot {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+/* Not yet armed by the IntersectionObserver AND still empty → invisible.
+   Uses zero-height instead of display:none on purpose: display:none would
+   stop the observer from ever intersecting, and the slot could never arm.
+   Zero-area targets still report intersection, so lazy-loading survives. */
+.sc-ad-slot:not(.is-active):empty {
+  height: 0;
+  min-height: 0;
+  margin: 0;
+  overflow: hidden;
+  visibility: hidden;
+}
+
+/* Preview-modal corner ad: intentional fade-in + small-viewport guard */
+.sc-ad-corner {
+  animation: sc-ad-corner-in 400ms ease-out 150ms both;
+}
+@keyframes sc-ad-corner-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+/* Landscape phones / short windows: hide so it never covers the preview */
+@media (max-height: 520px) {
+  .sc-ad-corner {
+    display: none;
+  }
+}

@@ -416,10 +416,47 @@ export async function handleAdminPackageUpload(
       });
     }
 
+    // Hard server-side cap. The admin UI checks this too, but a direct API
+    // call must not be able to push an oversized body into R2.
+    const MAX_PACKAGE_BYTES = 50 * 1024 * 1024;
+    if (file.size > MAX_PACKAGE_BYTES) {
+      return new Response(
+        JSON.stringify({
+          error: "File is too large. Max size is 50MB.",
+          code: "FILE_TOO_LARGE",
+          maxBytes: MAX_PACKAGE_BYTES,
+          size: file.size,
+        }),
+        {
+          status: 413,
+          headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) },
+        }
+      );
+    }
+
     const safeName = file.name.replace(/[^a-z0-9._-]+/gi, "-").toLowerCase();
     const key = `products/${productId}/packages/${safeName}`;
-    const buffer = await file.arrayBuffer();
-    await putObject(env.STEA_BUCKET, key, buffer, file.type || "application/zip");
+
+    // Stream straight into R2. Do NOT use file.arrayBuffer(): buffering a
+    // ~50MB ZIP adds a full second copy in the 128MB Worker memory budget,
+    // which is what made large uploads die/hang. file.stream() pipes the
+    // body into the bucket instead.
+    try {
+      await putObject(env.STEA_BUCKET, key, file.stream(), file.type || "application/zip");
+    } catch (r2Err: any) {
+      console.error("[package-upload] R2 put failed:", r2Err);
+      return new Response(
+        JSON.stringify({
+          error: "Failed to upload ZIP to storage",
+          code: "R2_UPLOAD_FAILED",
+          detail: r2Err?.message,
+        }),
+        {
+          status: 502,
+          headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) },
+        }
+      );
+    }
 
     // Store package metadata in Firestore
     await setDoc(
@@ -429,7 +466,7 @@ export async function handleAdminPackageUpload(
       {
         package: {
           storageKey: key,
-          size: buffer.byteLength,
+          size: file.size,
           filename: safeName,
           uploadedAt: new Date().toISOString(),
         },
@@ -438,7 +475,7 @@ export async function handleAdminPackageUpload(
     );
 
     return new Response(
-      JSON.stringify({ success: true, key, size: buffer.byteLength, filename: safeName }),
+      JSON.stringify({ success: true, key, size: file.size, filename: safeName }),
       {
         status: 200,
         headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) },

@@ -7,11 +7,20 @@
 @import "./responsive.css";
 @import "./styles/stea-sites-cards.css";
 
-/* Reset — must stay UNLAYERED: Lightning CSS (Tailwind v4 plugin) mangles
-   `@layer base { * { … } }` into invalid CSS and silently drops it.
-   Utility classes that lose to this reset are pinned with `!` at the call
-   site instead (see IconGallery.jsx). */
-* { box-sizing: border-box; margin: 0; padding: 0; }
+/* Reset — lives in the `base` layer so Tailwind spacing utilities (also
+   layered, but declared later: `@layer theme, base, components, utilities`)
+   can override it without an important flag. Layer order is what does the
+   work here: a normal declaration in a later layer wins over an earlier one,
+   so `.p-4` / `.mx-auto` / `.mt-auto` now apply as written.
+   NOTE: the old unlayered `* { margin: 0; padding: 0 }` outranked every
+   layered utility regardless of specificity, which is why call sites used to
+   need `px-4!`, `mt-8!`, `mx-auto!`. An earlier comment here claimed
+   Lightning CSS mangles `@layer base { * { … } }`; verified against the
+   current toolchain (@tailwindcss/node compile + Lightning optimize) that the
+   rule survives intact, so the reset is layered now. */
+@layer base {
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+}
 body, html, #root {
   background: #05060a;
   color: #ffffff;

@@ -20,3 +20,10 @@ bucket_name = "steacode"
 binding = "DB"
 database_name = "stea-code-db"
 database_id = "6184de42-de1b-4ede-9ca3-19bfb16a121c"
+
+# CPU headroom for multipart parsing + streaming uploads.
+# NOTE: `cpu_ms` above 10 requires a Workers Paid plan; on Free the deploy is
+# rejected. Uploads themselves are I/O-bound (R2 streaming), so this is
+# insurance, not a requirement.
+[limits]
+cpu_ms = 30000

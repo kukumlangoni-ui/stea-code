@@ -18,8 +18,13 @@ export const TABS = {
     ],
   },
   layouts: {
+    // NOTE: the stable id stays "layouts" — it is the value stored on every
+    // existing product (D1 `products.tab`) and used by the server-side catalog
+    // filter (`&tab=layouts`). Only the human-facing label was renamed to
+    // "Templates". Do NOT rename the id, or every stored product disappears
+    // from the grid until a DB migration runs.
     id: "layouts",
-    label: "Layouts",
+    label: "Templates",
     description: "Full-page sections",
     categories: [
       { id: "All", label: "All", tooltip: null },

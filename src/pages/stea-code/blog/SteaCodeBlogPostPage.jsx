@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { fetchBlogJson } from "../../../services/blogApi.js";
 import AdsterraBanner from "../../../components/stea-code/AdsterraBanner.jsx";
+import SmartAdSlot from "../../../components/stea-code/SmartAdSlot.jsx";
 import "./stea-code-blog.css";
 
 function postReadTime(content) {
@@ -31,6 +32,11 @@ export default function SteaCodeBlogPostPage() {
   return (
     <main className="sc-blog">
       <div className="sc-post-layout">
+        {/* Left Sidebar Ad — sticky, hidden below 1024px */}
+        <aside className="sc-ad-left">
+          <SmartAdSlot id="ad-slot-left" minHeight={600} style={{ position: "sticky", top: "100px" }} />
+        </aside>
+
         <article className="sc-post">
           <nav className="sc-post__nav">
             <Link to="/" className="sc-post__back">← Back to SteaCode</Link>
@@ -47,7 +53,7 @@ export default function SteaCodeBlogPostPage() {
           <div className="sc-ad-mid-article">
             <div>
               <p className="sc-ad-label">Advertisement</p>
-              <div id="pubfuture-in-article" style={{ minHeight: "250px", margin: "40px 0" }} />
+              <SmartAdSlot id="pubfuture-in-article" minHeight={250} style={{ margin: "40px 0" }} />
             </div>
           </div>
 
@@ -61,7 +67,7 @@ export default function SteaCodeBlogPostPage() {
         </article>
 
         {/* PubFuture/Adsterra Sidebar Ad — sticky, desktop only */}
-        <aside className="sc-post-sidebar">
+        <aside className="sc-post-sidebar sc-ad-sidebar">
           <div id="pubfuture-sidebar" style={{ position: "sticky", top: "100px", minHeight: "600px" }}>
             <p className="sc-ad-label">Advertisement</p>
             <AdsterraBanner />

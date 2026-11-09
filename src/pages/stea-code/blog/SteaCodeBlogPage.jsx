@@ -44,8 +44,8 @@ export default function SteaCodeBlogPage({ embedded = false }) {
   }, [posts]);
 
   const filtered = useMemo(() => {
-    if (activeCat === "All") return posts;
-    return posts.filter((post) => post.category === activeCat);
+    const list = activeCat === "All" ? posts : posts.filter((post) => post.category === activeCat);
+    return [...list].sort((a, b) => new Date(b.created_at || b.date || 0) - new Date(a.created_at || a.date || 0));
   }, [posts, activeCat]);
 
   const filters = categories.length > 0 && (
@@ -72,19 +72,25 @@ export default function SteaCodeBlogPage({ embedded = false }) {
   ) : filtered.length === 0 ? (
     <p className="sc-blog__status">No articles in this category yet.</p>
   ) : (
-    <div className="sc-blog__grid">
-      {filtered.map((post) => (
-        <Link key={post.slug} to={`/blog/${post.slug}`} className="sc-blog-card">
-          <span className="sc-blog-card__tag">{post.category}</span>
-          <h2 className="sc-blog-card__title">{post.title}</h2>
-          <p className="sc-blog-card__excerpt">{post.excerpt}</p>
-          <div className="sc-blog-card__meta">
-            <span>{postDate(post)}</span>
-            <span>{readTime(post)}</span>
-          </div>
-        </Link>
-      ))}
-    </div>
+    <>
+      <div className="sc-blog__list-head">
+        <h2 className="sc-blog__list-title">All Articles</h2>
+        <p className="sc-blog__list-count">Showing {filtered.length} articles</p>
+      </div>
+      <div className="sc-blog__grid">
+        {filtered.map((post) => (
+          <Link key={post.slug} to={`/blog/${post.slug}`} className="sc-blog-card">
+            <span className="sc-blog-card__tag">{post.category}</span>
+            <h2 className="sc-blog-card__title">{post.title}</h2>
+            <p className="sc-blog-card__excerpt">{post.excerpt}</p>
+            <div className="sc-blog-card__meta">
+              <span>{postDate(post)}</span>
+              <span>{readTime(post)}</span>
+            </div>
+          </Link>
+        ))}
+      </div>
+    </>
   );
 
   if (embedded) {

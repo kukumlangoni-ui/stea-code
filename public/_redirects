@@ -1,2 +1,8 @@
 /ads.txt https://adstxt-ssp.pubfuture.com/site/6af0e940f49801003d2718f5/steacode.com/ads.txt 301
+
+# "Layouts" was renamed to "Templates" — permanently redirect old URLs
+# (the :splat rule covers any sub-category/deep path, e.g. /layouts/hero-sections).
+/layouts /templates 301
+/layouts/* /templates/:splat 301
+
 /* /index.html 200

@@ -175,7 +175,11 @@ export default function App() {
                       Each renders the home page with the matching tab active so
                       Bing/Google can index them as distinct pages. */}
                   <Route path="/components" element={<SteaCodeHomeV2 user={cfUser} authLoading={cfLoading} />} />
-                  <Route path="/layouts" element={<SteaCodeHomeV2 user={cfUser} authLoading={cfLoading} />} />
+                  {/* "Layouts" was renamed to "Templates". /templates is the
+                      canonical route; /layouts 301-redirects so old links and
+                      indexed URLs keep working. */}
+                  <Route path="/templates" element={<SteaCodeHomeV2 user={cfUser} authLoading={cfLoading} />} />
+                  <Route path="/layouts" element={<Navigate to="/templates" replace />} />
                   <Route path="/kits" element={<SteaCodeHomeV2 user={cfUser} authLoading={cfLoading} />} />
                   <Route path="/library" element={<SteaCodeHomeV2 user={cfUser} authLoading={cfLoading} />} />
                   <Route path="/icons" element={<SteaCodeHomeV2 user={cfUser} authLoading={cfLoading} />} />

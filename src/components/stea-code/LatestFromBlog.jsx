@@ -11,12 +11,18 @@ import "../../pages/stea-code/blog/stea-code-blog.css";
  */
 export default function LatestFromBlog() {
   const [posts, setPosts] = useState([]);
+  const [total, setTotal] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
     fetchBlogPosts()
       .then((list) => {
-        if (!cancelled) setPosts(list.slice(0, 3));
+        if (cancelled) return;
+        const sorted = [...list].sort(
+          (a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0)
+        );
+        setTotal(sorted.length);
+        setPosts(sorted.slice(0, 3));
       })
       .catch(() => {});
     return () => {
@@ -29,7 +35,10 @@ export default function LatestFromBlog() {
   return (
     <section className="sc-latest-blog" aria-label="Latest from the Blog">
       <div className="sc-latest-blog__head">
-        <h2 className="sc-latest-blog__title">Latest from the Blog</h2>
+        <h2 className="sc-latest-blog__title">
+          Latest from the Blog
+          <span className="sc-latest-blog__count">{total} Total</span>
+        </h2>
         <Link to="/blog" className="sc-latest-blog__more">View all →</Link>
       </div>
       <div className="sc-blog__grid">
