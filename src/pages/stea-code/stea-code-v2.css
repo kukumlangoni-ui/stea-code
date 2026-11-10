@@ -17486,7 +17486,7 @@ header,
   flex-direction: row !important;
   gap: 10px !important;
   align-items: center !important;
-  margin-top: 26px !important;
+  margin-top: 24px !important;
 }
 .sc-detail-action {
   min-height: 36px !important;
@@ -17677,7 +17677,7 @@ header,
   flex-wrap: wrap !important;
   gap: 10px !important;
   align-items: center !important;
-  margin-top: 26px !important;
+  margin-top: 24px !important;
 }
 .sc-detail-action {
   min-height: 38px !important;
@@ -19035,7 +19035,7 @@ body:has(.sc-market-home) { color-scheme: light; }
   display: flex !important;
   gap: 16px !important;
   width: 100% !important;
-  margin: 32px 0 !important;
+  margin: 24px 0 !important;
 }
 
 .sc-btn-copy-primary, 
@@ -19416,7 +19416,7 @@ button[class*="sc-detail-action--live"] {
   flex-wrap: wrap !important;
   gap: 12px !important;
   align-items: center !important;
-  margin-bottom: 32px !important;
+  margin-bottom: 16px !important;
 }
 
 /* Custom Service Section */
@@ -19425,7 +19425,7 @@ button[class*="sc-detail-action--live"] {
   border: 1px solid #e5e5e5 !important;
   border-radius: 16px !important;
   padding: 24px !important;
-  margin: 32px 0 !important;
+  margin: 24px 0 !important;
   display: flex !important;
   justify-content: space-between !important;
   align-items: center !important;
@@ -19558,7 +19558,7 @@ button[class*="sc-detail-action--live"] {
   flex-wrap: wrap !important;
   gap: 12px !important;
   align-items: center !important;
-  margin-bottom: 32px !important;
+  margin-bottom: 16px !important;
 }
 
 /* Custom Service Section */
@@ -19567,7 +19567,7 @@ button[class*="sc-detail-action--live"] {
   border: 1px solid #e5e5e5 !important;
   border-radius: 16px !important;
   padding: 24px !important;
-  margin: 32px 0 !important;
+  margin: 24px 0 !important;
   display: flex !important;
   justify-content: space-between !important;
   align-items: center !important;
@@ -19970,7 +19970,7 @@ div[class*="poster"] img {
   align-items: center !important;
   justify-content: flex-start !important;
   width: 100% !important;
-  margin: 32px 0 !important;
+  margin: 24px 0 !important;
 }
 
 /* Fix the premium unlock box button */

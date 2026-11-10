@@ -846,7 +846,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
     return () => { cancelled = true; };
   }, [effectiveUser?.uid]);
 
-  const [visibleProductCount, setVisibleProductCount] = useState(24);
+  const [visibleProductCount, setVisibleProductCount] = useState(100);
 
   /* -------- Auth resume flow — Member Gate (premium / free code) -------- */
   const [pendingFreeCodeProductId, setPendingFreeCodeProductId] = useState(null);
@@ -1462,7 +1462,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
     !q.trim();
 
   useEffect(() => {
-    setVisibleProductCount(24);
+    setVisibleProductCount(100);
   }, [activeTab, category, pricing, framework, q]);
 
   // Subcategory pills reset to "All" whenever the top-level category changes
@@ -4866,8 +4866,10 @@ function ProductDetail({
 
             {/* Adsterra 300x250 banner — above the copy buttons (safe margin from CTAs).
                 minHeight 250 matches the ad unit's height so the slot reserves the
-                exact space and there's no layout shift when the ad loads. */}
-            <SmartAdSlot id="pubfuture-component-top" minHeight={250} style={{ margin: "24px 0" }}>
+                exact space and there's no layout shift when the ad loads. If the
+                ad is blocked/unfilled, AdsterraBanner collapses and SmartAdSlot
+                drops its reserved space, so no gap is left between the buttons. */}
+            <SmartAdSlot id="pubfuture-component-top" minHeight={250} style={{ margin: "16px 0" }}>
               <AdsterraBanner />
             </SmartAdSlot>
 

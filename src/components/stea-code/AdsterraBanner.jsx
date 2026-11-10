@@ -1,21 +1,27 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 /**
  * Adsterra 300x250 banner. Adsterra ships a classic <script> tag, which
  * React will not execute if pasted into JSX — so we append it to the DOM
  * ourselves on mount and remove it on unmount (SPA route changes).
+ *
+ * Fill detection: ad blockers or an unfilled network leave the slot blank.
+ * We watch the container for an inserted <iframe>; if none appears within a
+ * few seconds, we render null. The parent SmartAdSlot then reports an empty
+ * DOM and releases its reserved minHeight, so a blocked/unfilled ad never
+ * leaves a big white box or a layout gap.
  */
 export default function AdsterraBanner() {
   const containerRef = useRef(null);
+  const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
-    // Only run on client side
     if (typeof window === "undefined") return;
 
-    // Don't load twice
-    if (containerRef.current && containerRef.current.childElementCount > 0) return;
+    const el = containerRef.current;
+    if (!el) return;
+    if (el.childElementCount > 0) return; // already injected
 
-    // Define the options global
     window.atOptions = {
       key: "41ea89b66c4b08b9021b9e2d3ee31642",
       format: "iframe",
@@ -24,21 +30,43 @@ export default function AdsterraBanner() {
       params: {},
     };
 
-    // Create and inject the script
     const script = document.createElement("script");
     script.src = "https://bellnewyork.org/22/41ea89b66c4b08b9021b9e2d3ee31642";
     script.async = true;
+    script.setAttribute("data-adsterra", "true");
+    el.appendChild(script);
 
-    if (containerRef.current) {
-      containerRef.current.appendChild(script);
-    }
+    let filled = false;
+    const checkFilled = () => {
+      if (el.querySelector("iframe")) {
+        filled = true;
+        return true;
+      }
+      return false;
+    };
+
+    // If no iframe appears in time, the unit is blocked or unfilled → hide it.
+    const collapseTimer = setTimeout(() => {
+      if (!filled && !checkFilled()) setCollapsed(true);
+    }, 4000);
+
+    const mo = new MutationObserver(() => {
+      if (checkFilled()) {
+        mo.disconnect();
+        clearTimeout(collapseTimer);
+      }
+    });
+    mo.observe(el, { childList: true, subtree: true });
 
     return () => {
-      if (containerRef.current) {
-        containerRef.current.innerHTML = "";
-      }
+      mo.disconnect();
+      clearTimeout(collapseTimer);
+      el.innerHTML = "";
     };
   }, []);
+
+  // Blocked / unfilled → render nothing so the parent slot collapses cleanly.
+  if (collapsed) return null;
 
   return (
     <div

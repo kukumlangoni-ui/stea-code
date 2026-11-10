@@ -66,6 +66,8 @@ export async function downloadImageFile(imageUrl, baseName) {
   const base = slugify(baseName);
   let objectUrl = null;
 
+  console.log("Attempting to download:", imageUrl);
+
   try {
     const response = await fetch(imageUrl, {
       credentials: "same-origin",
@@ -82,10 +84,18 @@ export async function downloadImageFile(imageUrl, baseName) {
     triggerAnchorDownload(objectUrl, fileName, false);
     return { fileName, blobType: blob.type || "image/png" };
   } catch (err) {
-    // CORS blocked the blob fetch: open the raw URL in a new tab instead of
-    // navigating away from the SPA. The caller surfaces a Save-Image hint.
+    // The blob fetch failed (CORS, 403, network). Open the raw image in a new
+    // tab so the visitor can right-click → Save Image. window.open is tried
+    // first because it's the most reliable way to surface the image; if the
+    // browser blocks it as a popup (the await above dropped the user-gesture
+    // context), fall back to a target=_blank anchor click. Either way we
+    // rethrow so the caller shows a Save-Image hint instead of a false success.
+    console.error("[download-image] fetch failed, opening fallback tab:", err);
     const fallbackExt = extensionFromUrl(imageUrl) || "png";
-    triggerAnchorDownload(imageUrl, `${base}.${fallbackExt}`, true);
+    const win = window.open(imageUrl, "_blank", "noopener,noreferrer");
+    if (!win) {
+      triggerAnchorDownload(imageUrl, `${base}.${fallbackExt}`, true);
+    }
     throw err;
   } finally {
     if (objectUrl) {

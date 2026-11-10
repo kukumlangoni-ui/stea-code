@@ -16,6 +16,10 @@ import { useEffect, useRef, useState } from "react";
 export default function SmartAdSlot({ id, minHeight = 90, className = "", style, children }) {
   const ref = useRef(null);
   const [active, setActive] = useState(false);
+  // Tracks whether the slot's DOM actually contains a rendered element. A child
+  // component (e.g. AdsterraBanner) can render null when its ad is blocked or
+  // unfilled — in that case the slot must stop reserving space and collapse.
+  const [domEmpty, setDomEmpty] = useState(true);
 
   useEffect(() => {
     const el = ref.current;
@@ -37,11 +41,24 @@ export default function SmartAdSlot({ id, minHeight = 90, className = "", style,
     return () => observer.disconnect();
   }, []);
 
-  // Only reserve space (minHeight + caller layout style) when the slot actually
-  // has ad content. An empty slot renders a bare div so it takes zero height
-  // and contributes no margin — inline styles would otherwise defeat the
-  // `:empty` collapse rule in CSS.
-  const hasContent = Boolean(children);
+  // Watch the real DOM. The `children` prop is always truthy (a JSX element),
+  // so it can't tell us whether the ad actually rendered — childElementCount
+  // can. When the ad collapses to null, childElementCount drops to 0 and we
+  // release the reserved minHeight so no blank gap is left behind.
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const check = () => setDomEmpty(el.childElementCount === 0);
+    check();
+    const mo = new MutationObserver(check);
+    mo.observe(el, { childList: true });
+    return () => mo.disconnect();
+  }, []);
+
+  // Reserve space (minHeight + caller layout style) only while the slot holds
+  // a visible ad. An empty slot renders a bare div (zero height, no margin);
+  // inline styles would otherwise defeat the `:empty` collapse rule in CSS.
+  const hasContent = Boolean(children) && !domEmpty;
   const resolvedStyle = hasContent
     ? active
       ? { minHeight: `${minHeight}px`, ...style }
@@ -56,7 +73,7 @@ export default function SmartAdSlot({ id, minHeight = 90, className = "", style,
       style={resolvedStyle}
       data-ad-active={active ? "true" : undefined}
     >
-      {active && hasContent ? children : null}
+      {active && children ? children : null}
     </div>
   );
 }
