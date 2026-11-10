@@ -4500,9 +4500,9 @@ function ProductDetail({
                     onBuy={() => onOpenUnlockModal?.()}
                   />
                 </div>
-              ) : galleryImages[0] || posterImageUrl || product?.preview?.posterKey ? (
+              ) : galleryImages[0] || product?.posterImageUrl || detailPosterUrl || product?.preview?.posterKey ? (
                 <HeroImage
-                  image={galleryImages[0] || posterImageUrl || product?.preview?.posterKey}
+                  image={galleryImages[0] || product?.posterImageUrl || detailPosterUrl || product?.preview?.posterKey}
                   title={product?.titleEn || product?.titleZh || ""}
                   onOpenLightbox={(i) => {
                     setGalleryIndex(i);
