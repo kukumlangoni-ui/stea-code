@@ -16,7 +16,7 @@ import { useEffect, useRef, useState } from "react";
 export default function SmartAdSlot({ id, minHeight = 90, className = "", style, children }) {
   const ref = useRef(null);
   const [active, setActive] = useState(false);
-  // Tracks whether the slot's DOM actually contains a rendered element. A child
+  // Tracks whether the slot actually holds a rendered ad creative. A child
   // component (e.g. AdsterraBanner) can render null when its ad is blocked or
   // unfilled — in that case the slot must stop reserving space and collapse.
   const [domEmpty, setDomEmpty] = useState(true);
@@ -42,16 +42,20 @@ export default function SmartAdSlot({ id, minHeight = 90, className = "", style,
   }, []);
 
   // Watch the real DOM. The `children` prop is always truthy (a JSX element),
-  // so it can't tell us whether the ad actually rendered — childElementCount
-  // can. When the ad collapses to null, childElementCount drops to 0 and we
-  // release the reserved minHeight so no blank gap is left behind.
+  // so it can't tell us whether the ad actually rendered. An unfilled network
+  // first mounts an empty placeholder wrapper (no iframe/img/video/canvas);
+  // that bare wrapper is NOT a creative, so the slot must not reserve min-height
+  // for it. When the real creative arrives we keep the space; when the child
+  // later collapses to null we release it so no blank gap or layout jump remains.
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const check = () => setDomEmpty(el.childElementCount === 0);
+    const hasCreative = () =>
+      Boolean(el.querySelector("iframe, img, video, canvas, [data-ad-creative]"));
+    const check = () => setDomEmpty(!hasCreative());
     check();
     const mo = new MutationObserver(check);
-    mo.observe(el, { childList: true });
+    mo.observe(el, { childList: true, subtree: true });
     return () => mo.disconnect();
   }, []);
 

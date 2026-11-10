@@ -1,7 +1,7 @@
-import React, { forwardRef, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { forwardRef, memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import './light-mode-fixes.css';
 import { useNavigate, useLocation, Link } from "react-router-dom";
-import { motion, AnimatePresence, useMotionValue, useSpring, useTransform, useReducedMotion } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import SEO from "../../components/SEO.jsx";
 import "./stea-code.css";
 import "./stea-code-v2.css";
@@ -10,15 +10,12 @@ import {
   ArrowLeft,
   ArrowRight,
   Bookmark,
-  BookOpen,
-  Boxes,
   Check,
   ChevronDown,
   Code2,
   Command,
   Copy,
   ExternalLink,
-  Globe2,
   Heart,
   Layers,
   Lock,
@@ -28,10 +25,7 @@ import {
   Play,
   RotateCw,
   Maximize2,
-  Minimize2,
-  Search,
-  Wrench,
-  X } from "lucide-react";
+  Search } from "lucide-react";
 import { useSteaCodeI18n } from "../../components/stea-code/useSteaCodeI18n.js";
 import { createPortal } from "react-dom";
 import { useCloudflareAuth, getCloudflareLogoutUrl } from "../../hooks/useCloudflareAuth.js";
@@ -68,7 +62,6 @@ import { trackUserEvent } from "../../services/analytics.js";
 import SteaCodeFooter from "../../components/stea-code/SteaCodeFooter.jsx";
 import SponsoredCard from "../../components/stea-code/SponsoredCard.jsx";
 import SmartAdSlot from "../../components/stea-code/SmartAdSlot.jsx";
-import AdsterraBanner from "../../components/stea-code/AdsterraBanner.jsx";
 import IconGallery from "../../components/stea-code/IconGallery.jsx";
 import SteaCodeBlogPage from "./blog/SteaCodeBlogPage.jsx";
 import LatestFromBlog from "../../components/stea-code/LatestFromBlog.jsx";
@@ -974,7 +967,6 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
   };
 
   const handleSignOut = async (e) => {
-    console.log('[signout] handler fired', { event: e?.type, target: e?.target?.className });
     if (e) {
       e.preventDefault?.();
       e.stopPropagation?.();
@@ -1716,6 +1708,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
             className="sc-topbar-logo-img"
             width={36}
             height={36}
+            decoding="async"
           />
           <span>steacode</span>
         </a>
@@ -1971,7 +1964,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
                         <CodeProductCard
                           product={product}
                           tLocal={tLocal}
-                          onOpen={() => openProduct(product)}
+                          onOpenProduct={openProduct}
                           isFavorited={favorites.has(getProductIdentity(product))}
                           onToggleFavorite={handleToggleFavorite}
                         />
@@ -2129,9 +2122,9 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
 
                 <div className="sc-hero-visual" aria-hidden="true">
                   <div className="sc-hero-stack">
-  <img src="/images/hero/card-back.png" alt="Portfolio Card" className="sc-stack-card back" />
-  <img src="/images/hero/card-middle.png" alt="Laptop Mockup" className="sc-stack-card middle" />
-  <img src="/images/hero/card-front.png" alt="Discover Card" className="sc-stack-card front" />
+  <img src="/images/hero/card-back.png" alt="Portfolio Card" className="sc-stack-card back" decoding="async" />
+  <img src="/images/hero/card-middle.png" alt="Laptop Mockup" className="sc-stack-card middle" decoding="async" />
+  <img src="/images/hero/card-front.png" alt="Discover Card" className="sc-stack-card front" decoding="async" />
 </div>
                 </div>
               </div>
@@ -2291,7 +2284,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
                           <CodeProductCard
                             product={serviceProduct}
                             tLocal={tLocal}
-                            onOpen={() => openProduct(serviceProduct)}
+                            onOpenProduct={openProduct}
                             isFavorited={favorites.has(getProductIdentity(serviceProduct))}
                             onToggleFavorite={handleToggleFavorite}
                           />
@@ -2308,7 +2301,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
                             <CodeProductCard
                               product={product}
                               tLocal={tLocal}
-                              onOpen={() => openProduct(product)}
+                              onOpenProduct={openProduct}
                               isFavorited={favorites.has(getProductIdentity(product))}
                               onToggleFavorite={handleToggleFavorite}
                             />
@@ -2567,7 +2560,7 @@ function ProductControls({ tLocal, uiLocale = "en", activeTab, setActiveTab, cat
   );
 }
 
-function CodeProductCard({ product, tLocal, onOpen, isFavorited, onToggleFavorite }) {
+function CodeProductCardInner({ product, tLocal, onOpenProduct, isFavorited, onToggleFavorite }) {
   const isFree = product.pricingType === "free";
   const productId = getProductIdentity(product);
   const isKit = product?.tab === "kits";
@@ -2665,8 +2658,8 @@ function CodeProductCard({ product, tLocal, onOpen, isFavorited, onToggleFavorit
       window.location.href = externalUrl;
       return;
     }
-    if (typeof onOpen === "function") onOpen();
-  }, [onOpen, productId, externalUrl]);
+    if (typeof onOpenProduct === "function") onOpenProduct(product);
+  }, [onOpenProduct, productId, externalUrl, product]);
 
   return (
     <motion.button
@@ -2726,6 +2719,8 @@ function CodeProductCard({ product, tLocal, onOpen, isFavorited, onToggleFavorit
                   alt=""
                   aria-hidden="true"
                   draggable={false}
+                  loading="lazy"
+                  decoding="async"
                   style={{ width: "28px", height: "28px", objectFit: "contain", opacity: 0.85 }}
                 />
                 <span
@@ -2819,7 +2814,7 @@ function CodeProductCard({ product, tLocal, onOpen, isFavorited, onToggleFavorit
         <div className="sc-code-card__caption-main">
           {externalUrl ? (
             <span className="sc-code-card__price-badge sc-code-card__cta-badge sc-code-card__logo-badge">
-              <img src="/stea-code-logo.png" alt="steacode" draggable={false} />
+              <img src="/stea-code-logo.png" alt="steacode" draggable={false} loading="lazy" decoding="async" />
             </span>
           ) : (
             <p className="sc-code-card__category">{categoryLabel}</p>
@@ -3454,6 +3449,7 @@ const ProductPreview = forwardRef(function ProductPreview({
             src={resizeImageUrl(String(product.posterImageUrl), 600)}
             alt={product?.titleEn || product?.titleZh || productId || "Preview poster"}
             loading="lazy"
+            decoding="async"
             className="sc-preview-poster-image"
             onError={() => setPosterFailed(true)}
             style={{
@@ -3492,6 +3488,8 @@ const ProductPreview = forwardRef(function ProductPreview({
               alt=""
               aria-hidden="true"
               draggable={false}
+              loading="lazy"
+              decoding="async"
               style={{ width: "28px", height: "28px", objectFit: "contain", opacity: 0.85 }}
             />
             <span
@@ -3551,6 +3549,12 @@ function normalizeGalleryField(value) {
   return [];
 }
 
+// Memoized so unrelated parent state changes (favorites, modal open, filters)
+// don't re-render every card in the grid. Props are stable: openProduct and
+// handleToggleFavorite are useCallback'd, tLocal is useMemo'd, product and the
+// favorited flag are passed straight through.
+const CodeProductCard = memo(CodeProductCardInner);
+
 /**
  * Single hero image for Template / Mobile App / Poster products.
  *
@@ -3558,7 +3562,7 @@ function normalizeGalleryField(value) {
  * dots. Clicking opens the fullscreen lightbox. Gracefully handles a missing
  * image by showing nothing rather than a broken <img>.
  */
-function HeroImage({ image, title, onOpenLightbox }) {
+function HeroImageInner({ image, title, onOpenLightbox }) {
   if (!image) return null;
   // Detail page hero is typically viewed at ~72vh tall. Request a 1200px-wide
   // variant — plenty of resolution without the megabytes.
@@ -3581,6 +3585,8 @@ function HeroImage({ image, title, onOpenLightbox }) {
     </button>
   );
 }
+
+const HeroImage = memo(HeroImageInner);
 
 /**
  * Fullscreen lightbox with zoom for the "View full page" experience.
@@ -3609,6 +3615,7 @@ function Lightbox({ images, index, onClose }) {
         <img
           src={img}
           alt="Full page view"
+          decoding="async"
           style={{ transform: `scale(${zoom})`, transformOrigin: "center" }}
           onClick={() => setZoom((z) => (z >= 1.5 ? 1 : z + 0.5))}
         />
@@ -4220,7 +4227,6 @@ function ProductDetail({
       // Data validation: the inline source may be absent because the catalog
       // payload strips it, so fetch per-product content before giving up.
       if (!text || !text.trim()) {
-        console.log("[copy-source] no inline source, fetching per-product content…");
         text = await fetchCopyableSource();
       }
       if (!text || !text.trim()) {
@@ -4229,9 +4235,7 @@ function ProductDetail({
         setTimeout(() => setToast(null), 2600);
         return;
       }
-      console.log("[copy-source] text length:", String(text).trim().length);
-      const method = await safeCopyToClipboard(text);
-      console.log("[copy-source] copied via:", method);
+      await safeCopyToClipboard(text);
       handleCopySourceSuccess();
     } catch (err) {
       console.error("[copy-source] failed:", err);
@@ -4264,7 +4268,6 @@ function ProductDetail({
   // reaches the clipboard logic; `hasAccess` only ever blocks premium
   // products the user has not bought (currently none).
   const handleCopySourceClick = useCallback((e) => {
-    console.log("Copy button clicked");
     e?.preventDefault?.();
     e?.stopPropagation?.();
     if (!hasAccess) {
@@ -4964,17 +4967,6 @@ function ProductDetail({
               </div>
             )}
 
-            {/* Adsterra 300x250 banner. Deliberately placed AFTER the action
-                buttons and the "Need this customized?" banner so its fill state
-                never changes the 24px buttons→banner gap. It sits above the
-                "You might also like" section instead of splitting the CTAs. */}
-            <SmartAdSlot id="pubfuture-component-top" minHeight={250} style={{ margin: "24px 0" }}>
-              <AdsterraBanner />
-            </SmartAdSlot>
-
-            {/* Ezoic native/banner placeholder — above "You might also like" */}
-            <SmartAdSlot id="ezoic-component-bottom" minHeight={250} style={{ margin: "32px 0" }} />
-
             {/* You Might Also Like */}
             {relatedProducts.length > 0 && (
               <div className="sc-also-like-section">
@@ -4986,7 +4978,7 @@ function ProductDetail({
                         <CodeProductCard
                           product={relatedProduct}
                           tLocal={tLocal}
-                          onOpen={() => onOpenProduct?.(relatedProduct)}
+                          onOpenProduct={onOpenProduct}
                         />
                       </PreviewErrorBoundary>
                     </div>
