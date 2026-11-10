@@ -16,6 +16,8 @@ const STATIC_ALLOWED_ORIGINS = new Set([
 const PATTERN_ALLOWED_ORIGINS = [
   /^https:\/\/stea-code\.pages\.dev$/,
   /^https:\/\/[a-z0-9-]+\.stea-code\.pages\.dev$/,
+  /^https:\/\/steacode\.pages\.dev$/,
+  /^https:\/\/[a-z0-9-]+\.steacode\.pages\.dev$/,
   /^https:\/\/stea-sites\.pages\.dev$/,
   /^https:\/\/[a-z0-9-]+\.stea-sites\.pages\.dev$/,
 ];
