@@ -189,11 +189,17 @@ try {
   console.error('Fatal error during React root creation:', err);
 }
 
-// Unregister any stale service workers and clear caches on every visit.
+// Unregister stale service workers and clear caches on every visit.
+// Push-notification workers are intentionally kept:
+//  - /sw.js                     → Monetag (verification + web push)
+//  - /firebase-messaging-sw.js  → Firebase Cloud Messaging
+const KEEP_SERVICE_WORKERS = ['/sw.js', '/firebase-messaging-sw.js'];
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.getRegistrations().then((regs) => {
       regs.forEach((reg) => {
+        const scriptUrl = reg.active?.scriptURL || reg.waiting?.scriptURL || reg.installing?.scriptURL || '';
+        if (KEEP_SERVICE_WORKERS.some((keep) => scriptUrl.endsWith(keep))) return;
         reg.unregister();
         console.info('[STEA] Unregistered stale service worker:', reg.scope);
       });
