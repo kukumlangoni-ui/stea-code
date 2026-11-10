@@ -10,6 +10,8 @@ import { useEffect, useRef, useState } from "react";
  *   shift — the space is already there.
  * - `data-ad-active="true"` is set when armed; network tag components can
  *   key off that (or be passed as children, which only render when active).
+ * - A slot with NO children collapses to zero height (no reserved space, no
+ *   margins) so awaiting an approved ad network leaves no blank gap.
  */
 export default function SmartAdSlot({ id, minHeight = 90, className = "", style, children }) {
   const ref = useRef(null);
@@ -35,15 +37,26 @@ export default function SmartAdSlot({ id, minHeight = 90, className = "", style,
     return () => observer.disconnect();
   }, []);
 
+  // Only reserve space (minHeight + caller layout style) when the slot actually
+  // has ad content. An empty slot renders a bare div so it takes zero height
+  // and contributes no margin — inline styles would otherwise defeat the
+  // `:empty` collapse rule in CSS.
+  const hasContent = Boolean(children);
+  const resolvedStyle = hasContent
+    ? active
+      ? { minHeight: `${minHeight}px`, ...style }
+      : style
+    : undefined;
+
   return (
     <div
       ref={ref}
       id={id}
       className={`sc-ad-slot${active ? " is-active" : ""}${className ? ` ${className}` : ""}`}
-      style={active ? { minHeight: `${minHeight}px`, ...style } : style}
+      style={resolvedStyle}
       data-ad-active={active ? "true" : undefined}
     >
-      {active ? children : null}
+      {active && hasContent ? children : null}
     </div>
   );
 }

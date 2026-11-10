@@ -32,7 +32,8 @@ export default function SteaCodeBlogPostPage() {
   return (
     <main className="sc-blog">
       <div className="sc-post-layout">
-        {/* Left Sidebar Ad — sticky, hidden below 1024px */}
+        {/* Left Sidebar Ad — sticky, hidden below 1024px. Empty until an ad
+            network is approved; SmartAdSlot collapses to zero height. */}
         <aside className="sc-ad-left">
           <SmartAdSlot id="ad-slot-left" minHeight={600} style={{ position: "sticky", top: "100px" }} />
         </aside>
@@ -53,7 +54,9 @@ export default function SteaCodeBlogPostPage() {
           <div className="sc-ad-mid-article">
             <div>
               <p className="sc-ad-label">Advertisement</p>
-              <SmartAdSlot id="pubfuture-in-article" minHeight={250} style={{ margin: "40px 0" }} />
+              <SmartAdSlot id="pubfuture-in-article" minHeight={250} style={{ margin: "40px 0" }}>
+                <AdsterraBanner />
+              </SmartAdSlot>
             </div>
           </div>
 
@@ -66,12 +69,10 @@ export default function SteaCodeBlogPostPage() {
           </div>
         </article>
 
-        {/* PubFuture/Adsterra Sidebar Ad — sticky, desktop only */}
+        {/* Sidebar Ad — reserved for a future network (PubFuture/Ezoic). Empty
+            for now; no Adsterra here so the in-article unit isn't duplicated. */}
         <aside className="sc-post-sidebar sc-ad-sidebar">
-          <div id="pubfuture-sidebar" style={{ position: "sticky", top: "100px", minHeight: "600px" }}>
-            <p className="sc-ad-label">Advertisement</p>
-            <AdsterraBanner />
-          </div>
+          <div id="pubfuture-sidebar" style={{ position: "sticky", top: "100px" }} />
         </aside>
       </div>
     </main>

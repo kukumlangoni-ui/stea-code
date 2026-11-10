@@ -68,6 +68,7 @@ import { trackUserEvent } from "../../services/analytics.js";
 import SteaCodeFooter from "../../components/stea-code/SteaCodeFooter.jsx";
 import SponsoredCard from "../../components/stea-code/SponsoredCard.jsx";
 import SmartAdSlot from "../../components/stea-code/SmartAdSlot.jsx";
+import AdsterraBanner from "../../components/stea-code/AdsterraBanner.jsx";
 import IconGallery from "../../components/stea-code/IconGallery.jsx";
 import SteaCodeBlogPage from "./blog/SteaCodeBlogPage.jsx";
 import LatestFromBlog from "../../components/stea-code/LatestFromBlog.jsx";
@@ -4863,8 +4864,12 @@ function ProductDetail({
               </button>
             )}
 
-            {/* PubFuture banner — above the copy buttons (safe margin from CTAs) */}
-            <SmartAdSlot id="pubfuture-component-top" minHeight={90} style={{ margin: "24px 0" }} />
+            {/* Adsterra 300x250 banner — above the copy buttons (safe margin from CTAs).
+                minHeight 250 matches the ad unit's height so the slot reserves the
+                exact space and there's no layout shift when the ad loads. */}
+            <SmartAdSlot id="pubfuture-component-top" minHeight={250} style={{ margin: "24px 0" }}>
+              <AdsterraBanner />
+            </SmartAdSlot>
 
             {/* Copy Source Code — only when the product actually has code.
                 See `canCopySource` above: layouts/kits without downloadable

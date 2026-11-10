@@ -23069,11 +23069,11 @@ header nav a:hover {
   align-items: center;
   justify-content: center;
 }
-/* Not yet armed by the IntersectionObserver AND still empty → invisible.
-   Uses zero-height instead of display:none on purpose: display:none would
-   stop the observer from ever intersecting, and the slot could never arm.
-   Zero-area targets still report intersection, so lazy-loading survives. */
-.sc-ad-slot:not(.is-active):empty {
+/* An empty ad slot collapses to zero height whether or not it has been armed
+   by the IntersectionObserver — slots awaiting an approved network leave no
+   blank gap. Zero-area targets still report intersection, so lazy-loading
+   survives for slots that DO have content. */
+.sc-ad-slot:empty {
   height: 0;
   min-height: 0;
   margin: 0;
