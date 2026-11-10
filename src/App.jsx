@@ -168,26 +168,25 @@ export default function App() {
                 <EzoicRouteListener />
                 <StickyFooterAd />
                 <Routes>
-                  {/* Home */}
-                  <Route path="/" element={<SteaCodeHomeV2 user={cfUser} authLoading={cfLoading} />} />
+                  {/* SteaCodeHomeV2 stays mounted across all homepage tabs + product
+                      detail routes. This prevents the catalog from being refetched
+                      and images from being re-downloaded whenever the user navigates
+                      between the grid and a product detail (/products/:slug), or
+                      presses the browser Back button. */}
+                  <Route element={<SteaCodeHomeV2 user={cfUser} authLoading={cfLoading} />}>
+                    <Route path="/" />
+                    <Route path="/components" />
+                    <Route path="/templates" />
+                    <Route path="/kits" />
+                    <Route path="/library" />
+                    <Route path="/icons" />
+                    <Route path="/code/products/:slug" />
+                    <Route path="/products/:slug" />
+                  </Route>
 
-                  {/* Marketplace tabs — clean, crawlable URLs (no ?tab= params).
-                      Each renders the home page with the matching tab active so
-                      Bing/Google can index them as distinct pages. */}
-                  <Route path="/components" element={<SteaCodeHomeV2 user={cfUser} authLoading={cfLoading} />} />
-                  {/* "Layouts" was renamed to "Templates". /templates is the
-                      canonical route; /layouts 301-redirects so old links and
-                      indexed URLs keep working. */}
-                  <Route path="/templates" element={<SteaCodeHomeV2 user={cfUser} authLoading={cfLoading} />} />
-                  <Route path="/layouts" element={<Navigate to="/templates" replace />} />
-                  <Route path="/kits" element={<SteaCodeHomeV2 user={cfUser} authLoading={cfLoading} />} />
-                  <Route path="/library" element={<SteaCodeHomeV2 user={cfUser} authLoading={cfLoading} />} />
-                  <Route path="/icons" element={<SteaCodeHomeV2 user={cfUser} authLoading={cfLoading} />} />
-
-                  {/* Code shell */}
+                  {/* Legacy standalone /code shell redirects before SteaCodeHomeV2 */}
                   <Route path="/code" element={<Navigate to={{ pathname: "/", search: location.search }} replace />} />
-                  <Route path="/code/products/:slug" element={<SteaCodeHomeV2 user={cfUser} authLoading={cfLoading} />} />
-                  <Route path="/products/:slug" element={<SteaCodeHomeV2 user={cfUser} authLoading={cfLoading} />} />
+                  <Route path="/layouts" element={<Navigate to="/templates" replace />} />
                   <Route path="/library/read/:slug" element={<LibraryReader user={cfUser} authLoading={cfLoading} />} />
 
                   {/* Blog — wrapped in the marketplace shell (sticky nav + footer) */}

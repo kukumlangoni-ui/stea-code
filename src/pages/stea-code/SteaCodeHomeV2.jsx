@@ -2725,7 +2725,7 @@ function CodeProductCard({ product, tLocal, onOpen, isFavorited, onToggleFavorit
               </div>
             ) : (
               <img
-                src={activePoster}
+                src={resizeImageUrl(activePoster, 600)}
                 alt={title}
                 loading="lazy"
                 decoding="async"
@@ -2932,6 +2932,38 @@ function getProductImageUrl(product) {
     return `/api/stea-code/media/${posterKey.trim()}`;
   }
   return null;
+}
+
+/**
+ * Append Cloudflare/CDN image-resizing params to an image URL so the browser
+ * never downloads a 2000px-wide JPEG into a 400px card.
+ *
+ * - Internal R2 media paths (/api/stea-code/media/...) get ?width/quality
+ *   which the Worker's handleMedia now forwards to R2's native transform API.
+ * - Absolute URLs (https://…) get the same params if they have no existing
+ *   query string — Cloudflare Images / Cloudflare Image Resizing on the CDN
+ *   will pick these up automatically.
+ * - URLs that already have query params are left untouched so we don't
+ *   accidentally overwrite a server-side parameter.
+ * - Non-image file extensions (mp4, pdf, zip, …) are skipped.
+ */
+function resizeImageUrl(url, width = 600) {
+  if (!url || typeof url !== "string") return url;
+  const trimmed = url.trim();
+  if (!trimmed) return url;
+  // Skip URLs that already have query params — we don't know what they mean.
+  if (trimmed.includes("?")) return trimmed;
+  // Only resize image-like URLs.
+  const lower = trimmed.toLowerCase();
+  const imageExts = [".jpg", ".jpeg", ".png", ".gif", ".webp", ".avif", ".svg"];
+  const looksLikeImage =
+    imageExts.some((ext) => lower.includes(ext)) ||
+    lower.startsWith("/api/stea-code/media/");
+  if (!looksLikeImage) return trimmed;
+  // Skip SVG — scaling vector images doesn't save bytes.
+  if (lower.endsWith(".svg")) return trimmed;
+  // Append params.
+  return `${trimmed}?width=${width}&format=auto&quality=80`;
 }
 
 // Autoplay concurrency limit — max 3 videos autoplaying at once for CPU/battery
@@ -3501,6 +3533,9 @@ function normalizeGalleryField(value) {
  */
 function HeroImage({ image, title, onOpenLightbox }) {
   if (!image) return null;
+  // Detail page hero is typically viewed at ~72vh tall. Request a 1200px-wide
+  // variant — plenty of resolution without the megabytes.
+  const resized = resizeImageUrl(image, 1200);
   return (
     <button
       type="button"
@@ -3509,7 +3544,7 @@ function HeroImage({ image, title, onOpenLightbox }) {
       aria-label="Open image fullscreen"
     >
       <img
-        src={image}
+        src={resized}
         alt={`${title || "Product"} preview`}
         className="sc-hero-image-img"
         loading="eager"

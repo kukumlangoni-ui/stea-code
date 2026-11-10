@@ -59,11 +59,35 @@ export async function handleMedia(req: Request, env: any, key: string): Promise<
   }
 
   try {
-    const object = await env.STEA_BUCKET.get(cleanKey, {
+    // Parse image resize params (?width, ?height, ?quality, ?format) for R2
+    // native image transforms. Only applies to image files; videos skip this.
+    const sp = new URL(req.url).searchParams;
+    const ext = (cleanKey.match(/\.([a-zA-Z0-9]+)$/) || [])[1]?.toLowerCase() || "";
+    const isImage = ["jpg", "jpeg", "png", "gif", "webp", "avif"].includes(ext);
+    const width = sp.get("width") ? Math.min(2000, Math.max(16, parseInt(sp.get("width")!, 10) || 0)) : 0;
+    const height = sp.get("height") ? Math.min(2000, Math.max(16, parseInt(sp.get("height")!, 10) || 0)) : 0;
+    const quality = sp.get("quality") ? Math.min(100, Math.max(10, parseInt(sp.get("quality")!, 10) || 80)) : 0;
+    const format = sp.get("format")?.toLowerCase() || "";
+    const transformsRequested = width > 0 || height > 0;
+    const applyTransforms = isImage && transformsRequested && !req.headers.get("Range");
+
+    const getOptions: any = {
       range: req.headers.get("Range")
         ? parseRangeHeader(req.headers.get("Range"))
         : undefined,
-    });
+    };
+
+    if (applyTransforms) {
+      getOptions.transform = {
+        type: "auto",
+        ...(width > 0 ? { width } : {}),
+        ...(height > 0 ? { height } : {}),
+        ...(quality > 0 ? { quality } : {}),
+        ...(format === "auto" ? {} : (format ? { format } : {})),
+      };
+    }
+
+    const object = await env.STEA_BUCKET.get(cleanKey, getOptions);
 
     if (object === null) {
       return new Response(JSON.stringify({ error: "Media not found", key: cleanKey }), {
