@@ -267,7 +267,7 @@ const PRODUCT_TYPES = [
 const PREVIEW_MODES = [
   { id: "live", label: "Live Code" },
   { id: "video", label: "Video" },
-  { id: "poster", label: "Poster" },
+  { id: "poster", label: "Template" },
 ];
 
 const RUNTIMES = [
@@ -1267,17 +1267,27 @@ export function ProductStudioV3({
         if (Object.keys(sourceCode).length === 0) sourceCode = undefined;
       }
 
+      // Mode-scoped cleanup: fields hidden in the form are persisted as empty
+      // / null so a switched product never keeps stale code or copy in D1.
+      // eBooks are excluded — they own the separate eBook Settings payload.
+      const isBookProduct =
+        form.productType === "ebook" || form.productType === "cheatsheet";
+      const templateMode = previewMode === "poster" && !isBookProduct;
+      const liveMode = previewMode === "live" && !isBookProduct;
+
       const payload = {
         ...form,
         id,
         slug: form.slug || id,
         tags: splitList(form.tags),
-        frameworks: splitList(form.frameworks),
+        frameworks: templateMode ? [] : splitList(form.frameworks),
         languages: [],
-        included: String(form.included || "")
-          .split("\n")
-          .map((s) => s.trim())
-          .filter(Boolean),
+        included: templateMode || liveMode
+          ? []
+          : String(form.included || "")
+              .split("\n")
+              .map((s) => s.trim())
+              .filter(Boolean),
         // eBook "What you get" — stored in the extraData JSON column, same
         // mechanism as `included` above.
         ebookFeatures: String(form.ebookFeatures || "")
@@ -1285,11 +1295,13 @@ export function ProductStudioV3({
           .map((s) => s.trim())
           .filter(Boolean),
         preview: previewSettings,
-        sourceCode,
-        aiPrompt: String(form.aiPrompt || "").trim(),
+        sourceCode: templateMode ? undefined : sourceCode,
+        deliverablesSource: templateMode ? null : form.deliverablesSource,
+        package: templateMode ? null : form.package,
+        aiPrompt: templateMode ? "" : String(form.aiPrompt || "").trim(),
         liveUrl: String(form.liveUrl || "").trim(),
-        repoUrl: String(form.repoUrl || "").trim(),
-        websiteUrl: String(form.websiteUrl || "").trim(),
+        repoUrl: templateMode || liveMode ? "" : String(form.repoUrl || "").trim(),
+        websiteUrl: templateMode ? "" : String(form.websiteUrl || "").trim(),
         previewMode: form.previewMode || "live",
         tab: form.tab || "components",
         gallery: Array.isArray(form.gallery)
@@ -1300,8 +1312,8 @@ export function ProductStudioV3({
         subcategory: form.tab === "kits" ? String(form.subcategory || "") : "",
         designWidth: Number(form.designWidth) || 640,
         designHeight: Number(form.designHeight) || 480,
-        craftNoteEn: String(form.craftNoteEn || "").trim(),
-        usageGuideEn: String(form.usageGuideEn || "").trim(),
+        craftNoteEn: templateMode || liveMode ? "" : String(form.craftNoteEn || "").trim(),
+        usageGuideEn: templateMode || liveMode ? "" : String(form.usageGuideEn || "").trim(),
         status: isUnpublishing
           ? "draft"
           : isPublishing
@@ -1482,6 +1494,11 @@ export function ProductStudioV3({
       };
       if (Object.keys(sourceCode).length === 0) sourceCode = undefined;
     }
+    // Same mode-scoped cleanup as save() so a submitted revision never carries
+    // hidden Template / Live Code fields forward into the approved snapshot.
+    const snapIsBook = form.productType === "ebook" || form.productType === "cheatsheet";
+    const snapTemplate = previewMode === "poster" && !snapIsBook;
+    const snapLive = previewMode === "live" && !snapIsBook;
     // Pricing must be perfectly synchronized: a "Free" product always stores
     // price 0, so a leftover price from an earlier premium edit can never
     // survive in the database.
@@ -1509,10 +1526,10 @@ export function ProductStudioV3({
       featured: form.featured,
       homepageVisible: Boolean(form.homepageVisible),
       tags: splitList(form.tags),
-      frameworks: splitList(form.frameworks),
+      frameworks: snapTemplate ? [] : splitList(form.frameworks),
       languages: [],
-      craftNoteEn: String(form.craftNoteEn || "").trim(),
-      aiPrompt: String(form.aiPrompt || "").trim(),
+      craftNoteEn: snapTemplate || snapLive ? "" : String(form.craftNoteEn || "").trim(),
+      aiPrompt: snapTemplate ? "" : String(form.aiPrompt || "").trim(),
       previewVideoUrl: form.previewVideoUrl,
       posterImageUrl: form.posterImageUrl,
       previewMode: form.previewMode || "live",
@@ -1523,11 +1540,11 @@ export function ProductStudioV3({
       protectedFiles: form.protectedFiles || [],
       sourceFiles: form.sourceFiles || [],
       fileNames: form.fileNames || [],
-      sourceCode,
+      sourceCode: snapTemplate ? undefined : sourceCode,
       liveUrl: String(form.liveUrl || "").trim(),
-      repoUrl: String(form.repoUrl || "").trim(),
-      websiteUrl: String(form.websiteUrl || "").trim(),
-      usageGuideEn: String(form.usageGuideEn || "").trim(),
+      repoUrl: snapTemplate || snapLive ? "" : String(form.repoUrl || "").trim(),
+      websiteUrl: snapTemplate ? "" : String(form.websiteUrl || "").trim(),
+      usageGuideEn: snapTemplate || snapLive ? "" : String(form.usageGuideEn || "").trim(),
       sortOrder: Number(form.sortOrder) || 0,
     };
   };
@@ -1618,9 +1635,21 @@ export function ProductStudioV3({
   const isBook =
     form.productType === "ebook" ||
     form.productType === "cheatsheet";
+
+  // Preview-mode field gating (non-book products only). eBooks keep their own
+  // eBook Settings tab and are not affected by these Template / Live Code rules.
+  const isTemplateMode = previewMode === "poster" && !isBook;
+  const isLiveCodeMode = previewMode === "live" && !isBook;
+
   const visibleTabs = useMemo(
-    () => (isBook ? TABS : TABS.filter((t) => t.id !== "ebook")),
-    [isBook]
+    () =>
+      isBook
+        ? TABS
+        : TABS.filter(
+            (t) =>
+              t.id !== "ebook" && !(isTemplateMode && t.id === "deliverables")
+          ),
+    [isBook, isTemplateMode]
   );
 
   // How many "What you get" lines the book page will render — drives the
@@ -1921,13 +1950,15 @@ export function ProductStudioV3({
                     placeholder="react, animation, ui"
                   />
                 </Field>
-                <Field label="Frameworks" hint="Comma-separated">
-                  <TextInput
-                    value={form.frameworks}
-                    onChange={(v) => updateForm("frameworks", v)}
-                    placeholder="React, Vue, Vanilla JS"
-                  />
-                </Field>
+                {!isTemplateMode && (
+                  <Field label="Frameworks" hint="Comma-separated">
+                    <TextInput
+                      value={form.frameworks}
+                      onChange={(v) => updateForm("frameworks", v)}
+                      placeholder="React, Vue, Vanilla JS"
+                    />
+                  </Field>
+                )}
               </div>
               <div className="psv3-publish-row">
                 <div>
@@ -1956,17 +1987,19 @@ export function ProductStudioV3({
                     placeholder="https://example.com"
                   />
                 </Field>
-                <Field
-                  label="Website URL"
-                  hint="Optional. Add a public website URL for this product. A 'Visit Website' button will appear on the product card and in the product modal."
-                  full
-                >
-                  <TextInput
-                    value={form.websiteUrl || ""}
-                    onChange={(v) => updateForm("websiteUrl", v)}
-                    placeholder="https://example.com"
-                  />
-                </Field>
+                {!isTemplateMode && (
+                  <Field
+                    label="Website URL"
+                    hint="Optional. Add a public website URL for this product. A 'Visit Website' button will appear on the product card and in the product modal."
+                    full
+                  >
+                    <TextInput
+                      value={form.websiteUrl || ""}
+                      onChange={(v) => updateForm("websiteUrl", v)}
+                      placeholder="https://example.com"
+                    />
+                  </Field>
+                )}
                 <Field label="Preview Mode">
                   <RadioGroup
                     value={previewMode}
@@ -1976,7 +2009,7 @@ export function ProductStudioV3({
                   <p className="psv3-field-hint" style={{ marginTop: 8 }}>
                     {previewMode === "live" && "Interactive code preview — buyers can see it run"}
                     {previewMode === "video" && "MP4/WebM video showcase"}
-                    {previewMode === "poster" && "Static image only"}
+                    {previewMode === "poster" && "Static image template — upload a cover image; no source code"}
                   </p>
                 </Field>
                 <Field label="Design Canvas" hint="Logical viewport size for your component">
@@ -2361,6 +2394,7 @@ export function ProductStudioV3({
         {/* TAB 3 — DELIVERABLES */}
         {tab === "deliverables" && (
           <>
+            {!isTemplateMode && (
             <Section title="Source Code" subtitle="What users will be able to copy or download">
               <div className="psv3-import-row">
                 <button
@@ -2447,7 +2481,9 @@ export function ProductStudioV3({
                 )}
               </div>
             </Section>
+            )}
 
+            {!isTemplateMode && (
             <Section title="What users will see" subtitle="Buttons rendered on the product modal">
               <div className="psv3-modal-actions-preview">
                 {Boolean(String(form.aiPrompt || "").trim()) && (
@@ -2491,7 +2527,9 @@ export function ProductStudioV3({
                 )}
               </div>
             </Section>
+            )}
 
+            {!isTemplateMode && !isLiveCodeMode && (
             <Section title="What's Included" subtitle="Bulleted list shown in the product modal">
               <Field label="Included items" full hint="One per line">
                 <TextArea
@@ -2502,46 +2540,57 @@ export function ProductStudioV3({
                 />
               </Field>
             </Section>
+            )}
 
+            {!isTemplateMode && (
             <Section title="Additional Content">
               <div className="psv3-grid">
-                <Field label="Craft Note" full hint="Short note about how this was built (optional)">
-                  <TextArea
-                    value={form.craftNoteEn}
-                    onChange={(v) => updateForm("craftNoteEn", v)}
-                    placeholder="Built with vanilla JavaScript and CSS animations..."
-                    rows={3}
-                  />
-                </Field>
-                <Field label="Usage Guide" full hint="Markdown supported (optional)">
-                  <TextArea
-                    value={form.usageGuideEn}
-                    onChange={(v) => updateForm("usageGuideEn", v)}
-                    placeholder={"## How to use\n1. Copy the HTML..."}
-                    rows={4}
-                  />
-                </Field>
-                <Field label="AI Prompt" full hint="Code block buyers can copy (optional)">
-                  <TextArea
-                    value={form.aiPrompt}
-                    onChange={(v) => updateForm("aiPrompt", v)}
-                    placeholder="Create a button with a glowing effect..."
-                    rows={4}
-                  />
-                </Field>
-                <Field
-                  label="Repo URL"
-                  hint="Optional. If this product is a portfolio with a public GitHub repo, paste the URL. A 'Copy Repo URL' button will appear in the product modal."
-                  full
-                >
-                  <TextInput
-                    value={form.repoUrl || ""}
-                    onChange={(v) => updateForm("repoUrl", v)}
-                    placeholder="https://github.com/username/repo"
-                  />
-                </Field>
+                {!isTemplateMode && !isLiveCodeMode && (
+                  <Field label="Craft Note" full hint="Short note about how this was built (optional)">
+                    <TextArea
+                      value={form.craftNoteEn}
+                      onChange={(v) => updateForm("craftNoteEn", v)}
+                      placeholder="Built with vanilla JavaScript and CSS animations..."
+                      rows={3}
+                    />
+                  </Field>
+                )}
+                {!isTemplateMode && !isLiveCodeMode && (
+                  <Field label="Usage Guide" full hint="Markdown supported (optional)">
+                    <TextArea
+                      value={form.usageGuideEn}
+                      onChange={(v) => updateForm("usageGuideEn", v)}
+                      placeholder={"## How to use\n1. Copy the HTML..."}
+                      rows={4}
+                    />
+                  </Field>
+                )}
+                {!isTemplateMode && (
+                  <Field label="AI Prompt" full hint="Code block buyers can copy (optional)">
+                    <TextArea
+                      value={form.aiPrompt}
+                      onChange={(v) => updateForm("aiPrompt", v)}
+                      placeholder="Create a button with a glowing effect..."
+                      rows={4}
+                    />
+                  </Field>
+                )}
+                {!isTemplateMode && !isLiveCodeMode && (
+                  <Field
+                    label="Repo URL"
+                    hint="Optional. If this product is a portfolio with a public GitHub repo, paste the URL. A 'Copy Repo URL' button will appear in the product modal."
+                    full
+                  >
+                    <TextInput
+                      value={form.repoUrl || ""}
+                      onChange={(v) => updateForm("repoUrl", v)}
+                      placeholder="https://github.com/username/repo"
+                    />
+                  </Field>
+                )}
               </div>
             </Section>
+            )}
           </>
         )}
 

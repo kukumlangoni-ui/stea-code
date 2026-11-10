@@ -4814,8 +4814,14 @@ function ProductDetail({
               </a>
             )}
 
-            {/* Download Image — Layouts (poster-based) products and any product with a gallery cover */}
-            {(product?.tab === "layouts" || galleryImages.length > 0) && getProductImageUrl(product) && (
+            {/* Download Image — Layouts, Template (poster) products, and any
+                product with a gallery cover. Auto-shows whenever an image exists;
+                no admin toggle. */}
+            {(product?.tab === "layouts" ||
+              galleryImages.length > 0 ||
+              product?.posterImageUrl ||
+              product?.preview?.posterKey) &&
+              getProductImageUrl(product) && (
               <button
                 type="button"
                 className={`sc-detail-action sc-detail-action--image ${imageDownloaded ? 'is-copied' : ''}`}

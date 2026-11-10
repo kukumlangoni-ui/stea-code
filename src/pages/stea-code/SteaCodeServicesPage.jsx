@@ -212,7 +212,16 @@ export default function SteaCodeServicesPage() {
           color: "#111827",
         }}
       >
-        <header className="sc-topbar bg-[#05060a]!" style={{ width: "100%" }}>
+        {/* Light-theme header to match the light page content. Background + border
+            set inline so they can't be clobbered by the dark topbar hacks. */}
+        <header
+          className="sc-topbar"
+          style={{
+            width: "100%",
+            backgroundColor: "#ffffff",
+            borderBottom: "1px solid #e5e7eb",
+          }}
+        >
           <Link to="/" className="sc-topbar-logo" aria-label="steacode home">
             <img
               src="/stea-code-logo.png"
@@ -591,9 +600,17 @@ export default function SteaCodeServicesPage() {
           </div>
         </main>
 
-        {/* The shared footer is dark-themed (light text on transparent), so it
-            needs its own dark band — otherwise it renders white-on-white here. */}
-        <div style={{ width: "100%", backgroundColor: "#05060a", paddingTop: "8px" }}>
+        {/* Light-theme footer band: white background, subtle top border. The
+            shared footer's text colors are flipped to dark via the scoped
+            .sc-services-page rules in sc-detail-actions-override.css. */}
+        <div
+          style={{
+            width: "100%",
+            backgroundColor: "#ffffff",
+            borderTop: "1px solid #e5e7eb",
+            paddingTop: "8px",
+          }}
+        >
           <SteaCodeFooter />
         </div>
       </div>
