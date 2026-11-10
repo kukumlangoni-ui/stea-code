@@ -6,7 +6,7 @@
  * Auth: Cloudflare Access for the storefront; Firebase auth still backs the admin app
  */
 import React, { Suspense, lazy, Component } from "react";
-import { Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { Routes, Route, Navigate, Outlet, useLocation } from "react-router-dom";
 import { SitesLanguageProvider } from "./i18n/index.js";
 import { PWAProvider } from "./contexts/PWAContext.jsx";
 import { SettingsProvider } from "./contexts/SettingsContext.jsx";
@@ -172,16 +172,24 @@ export default function App() {
                       detail routes. This prevents the catalog from being refetched
                       and images from being re-downloaded whenever the user navigates
                       between the grid and a product detail (/products/:slug), or
-                      presses the browser Back button. */}
-                  <Route element={<SteaCodeHomeV2 user={cfUser} authLoading={cfLoading} />}>
-                    <Route path="/" />
-                    <Route path="/components" />
-                    <Route path="/templates" />
-                    <Route path="/kits" />
-                    <Route path="/library" />
-                    <Route path="/icons" />
-                    <Route path="/code/products/:slug" />
-                    <Route path="/products/:slug" />
+                      presses the browser Back button.
+
+                      Layout-route pattern (same as the blog/about shells below):
+                      the pathless parent renders an <Outlet/> pass-through, and each
+                      leaf carries its own <SteaCodeHomeV2/> element. An element-less
+                      leaf makes React Router warn "matched leaf route does not have
+                      an element" and render a null Outlet. HomeV2 is the same
+                      component type at every leaf, so the instance and its cached
+                      catalog state are preserved across these navigations. */}
+                  <Route element={<Outlet />}>
+                    <Route path="/" element={<SteaCodeHomeV2 user={cfUser} authLoading={cfLoading} />} />
+                    <Route path="/components" element={<SteaCodeHomeV2 user={cfUser} authLoading={cfLoading} />} />
+                    <Route path="/templates" element={<SteaCodeHomeV2 user={cfUser} authLoading={cfLoading} />} />
+                    <Route path="/kits" element={<SteaCodeHomeV2 user={cfUser} authLoading={cfLoading} />} />
+                    <Route path="/library" element={<SteaCodeHomeV2 user={cfUser} authLoading={cfLoading} />} />
+                    <Route path="/icons" element={<SteaCodeHomeV2 user={cfUser} authLoading={cfLoading} />} />
+                    <Route path="/code/products/:slug" element={<SteaCodeHomeV2 user={cfUser} authLoading={cfLoading} />} />
+                    <Route path="/products/:slug" element={<SteaCodeHomeV2 user={cfUser} authLoading={cfLoading} />} />
                   </Route>
 
                   {/* Legacy standalone /code shell redirects before SteaCodeHomeV2 */}

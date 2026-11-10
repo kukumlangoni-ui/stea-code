@@ -147,8 +147,25 @@ export async function onRequestGet(context) {
   const slug = String(params?.slug || "").trim();
 
   // 1. Load the static SPA shell.
-  const assetUrl = new URL("/index.html", request.url);
-  const assetResponse = await env.ASSETS.fetch(new Request(assetUrl.toString(), request));
+  // Request the root path, NOT /index.html: Cloudflare Pages issues a 308
+  // redirect from /index.html to /, and env.ASSETS.fetch does not follow that
+  // redirect. Fetching /index.html therefore returns the 308 itself; handing
+  // that response back to the browser bounced every /products/:slug deep link
+  // straight to the homepage (soft-404 / unindexable product pages).
+  const shellUrl = new URL("/", request.url);
+  let assetResponse = await env.ASSETS.fetch(new Request(shellUrl.toString(), request));
+
+  // Defensive: if the asset fetch still returns a same-origin redirect, follow
+  // it once to the real HTML body instead of returning the redirect to the browser.
+  if (
+    assetResponse.status >= 300 &&
+    assetResponse.status < 400 &&
+    assetResponse.headers.get("location")
+  ) {
+    const redirectUrl = new URL(assetResponse.headers.get("location"), request.url);
+    assetResponse = await env.ASSETS.fetch(new Request(redirectUrl.toString(), request));
+  }
+
   if (!assetResponse.ok || !slug) return assetResponse;
 
   // 2. Resolve the product. Unknown slug → plain shell (React renders the 404).
