@@ -3485,66 +3485,88 @@ function normalizeGalleryField(value) {
 }
 
 /**
- * Image carousel for the product modal — shown when a product has more than
- * one gallery image. Arrow keys + swipe + dots navigate; clicking opens the
- * fullscreen lightbox.
+ * GalleryShowcase — premium app-store style preview for multi-image products
+ * (Templates / Mobile Apps / Posters).
+ *
+ * Layout: a large hero image plus clickable thumbnails. On desktop the
+ * thumbnails sit in a vertical column beside the hero; on mobile they become a
+ * horizontal, scrollable strip below it. Clicking a thumbnail (or using the
+ * arrow keys / swiping the hero) swaps the main image. The active thumbnail is
+ * highlighted. A single-image product renders just the hero — no thumbnail
+ * strip, no empty gray boxes. Clicking the hero opens the fullscreen lightbox.
  */
-function GalleryCarousel({ images, title, onOpenLightbox }) {
-  const [index, setIndex] = useState(0);
+function GalleryShowcase({ images, title, onOpenLightbox }) {
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
   const touchX = useRef(null);
+  const count = images.length;
 
-  const go = (dir) => setIndex((i) => (i + dir + images.length) % images.length);
-  const goto = (i) => setIndex(i);
+  // Reset to the first image whenever a different product/gallery is opened.
+  useEffect(() => setActiveImageIndex(0), [images]);
 
-  // Reset to first image when the gallery changes (new product opened).
-  useEffect(() => setIndex(0), [images]);
+  const go = (dir) =>
+    setActiveImageIndex((i) => (i + dir + count) % count);
 
   useEffect(() => {
+    if (count <= 1) return;
     function onKey(e) {
       if (e.key === "ArrowLeft") { e.preventDefault(); go(-1); }
       if (e.key === "ArrowRight") { e.preventDefault(); go(1); }
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [images.length]);
+  }, [count]);
+
+  if (!count) return null;
+
+  const current = images[Math.min(activeImageIndex, count - 1)];
+  const alt = (i) => `${title || "Product"} — screenshot ${i + 1}`;
 
   return (
-    <div className="sc-gallery-carousel" role="region" aria-label="Gallery">
+    <div className="sc-gallery-showcase" role="region" aria-label={`${title || "Product"} preview gallery`}>
+      {/* Main hero image */}
       <div
-        className="sc-gallery-stage"
+        className="sc-gallery-showcase-main"
         onTouchStart={(e) => { touchX.current = e.touches[0].clientX; }}
         onTouchEnd={(e) => {
           if (touchX.current == null) return;
           const dx = e.changedTouches[0].clientX - touchX.current;
-          if (Math.abs(dx) > 40) dx < 0 ? go(1) : go(-1);
+          if (Math.abs(dx) > 40) { if (dx < 0) go(1); else go(-1); }
           touchX.current = null;
         }}
       >
-        <img
-          key={index}
-          src={images[index]}
-          alt={`${title || "Product"} — image ${index + 1}`}
-          className="sc-gallery-image"
-          onClick={() => onOpenLightbox(index)}
-          loading="lazy"
-        />
-        {images.length > 1 && (
-          <>
-            <button type="button" className="sc-gallery-nav sc-gallery-nav--prev" onClick={() => go(-1)} aria-label="Previous image">‹</button>
-            <button type="button" className="sc-gallery-nav sc-gallery-nav--next" onClick={() => go(1)} aria-label="Next image">›</button>
-          </>
-        )}
+        <button
+          type="button"
+          className="sc-gallery-showcase-hero"
+          onClick={() => onOpenLightbox?.(Math.min(activeImageIndex, count - 1))}
+          aria-label="Open image fullscreen"
+        >
+          <img
+            key={current}
+            src={current}
+            alt={alt(Math.min(activeImageIndex, count - 1))}
+            className="sc-gallery-showcase-hero-img"
+            loading="eager"
+            decoding="async"
+            draggable={false}
+          />
+        </button>
       </div>
-      {images.length > 1 && (
-        <div className="sc-gallery-dots">
+
+      {/* Thumbnails — only when there's more than one image */}
+      {count > 1 && (
+        <div className="sc-gallery-showcase-thumbs" role="tablist" aria-label="Preview thumbnails">
           {images.map((img, i) => (
             <button
-              key={i}
+              key={`${img}-${i}`}
               type="button"
-              className={`sc-gallery-dot ${i === index ? "is-active" : ""}`}
-              onClick={() => goto(i)}
-              aria-label={`Go to image ${i + 1}`}
-            />
+              role="tab"
+              aria-selected={i === activeImageIndex}
+              aria-label={alt(i)}
+              className={`sc-gallery-showcase-thumb ${i === activeImageIndex ? "is-active" : ""}`}
+              onClick={() => setActiveImageIndex(i)}
+            >
+              <img src={img} alt="" loading="lazy" decoding="async" draggable={false} />
+            </button>
           ))}
         </div>
       )}
@@ -4500,7 +4522,7 @@ function ProductDetail({
           </div>
 
           <div
-            className={`sc-product-detail-preview-shell ${isPosterOnly ? "is-poster-preview" : ""} ${livePreviewActive ? "is-live-preview" : ""} ${isLibraryProduct ? "is-library-preview" : ""}`}
+            className={`sc-product-detail-preview-shell ${isPosterOnly ? "is-poster-preview" : ""} ${livePreviewActive ? "is-live-preview" : ""} ${isLibraryProduct ? "is-library-preview" : ""} ${galleryImages.length > 0 && !isLibraryProduct ? "is-gallery-showcase" : ""}`}
             style={isLibraryProduct ? { "--preview-aspect": "4 / 5" } : livePreviewActive ? { "--preview-aspect": livePreviewAspect } : undefined}
           >
             <PreviewErrorBoundary key={previewRefreshKey}>
@@ -4513,8 +4535,8 @@ function ProductDetail({
                     onBuy={() => onOpenUnlockModal?.()}
                   />
                 </div>
-              ) : galleryImages.length > 1 ? (
-                <GalleryCarousel
+              ) : galleryImages.length > 0 ? (
+                <GalleryShowcase
                   images={galleryImages}
                   title={product?.titleEn || product?.titleZh || ""}
                   onOpenLightbox={(i) => {
