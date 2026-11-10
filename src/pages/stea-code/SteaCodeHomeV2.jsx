@@ -63,7 +63,7 @@ import {
   toggleSteaCodeFavorite,
   getSteaCodeFavorites,
 } from "../../services/steaCodeCommerce.js";
-import { downloadImageFile } from "../../utils/downloadImage.js";
+import { copyImageToClipboard } from "../../utils/downloadImage.js";
 import { trackUserEvent } from "../../services/analytics.js";
 import SteaCodeFooter from "../../components/stea-code/SteaCodeFooter.jsx";
 import SponsoredCard from "../../components/stea-code/SponsoredCard.jsx";
@@ -2609,7 +2609,14 @@ function CodeProductCard({ product, tLocal, onOpen, isFavorited, onToggleFavorit
   // a branded gradient placeholder with the product title + category instead
   // of showing a broken-image icon.
   const [cardPosterFailed, setCardPosterFailed] = useState(false);
+  // Drives the shimmer skeleton: hidden once the current image has painted so
+  // slow R2 loads show a shimmer instead of a big empty gray box.
+  const [cardPosterLoaded, setCardPosterLoaded] = useState(false);
   const activePoster = cardGallery[cardImageIndex] || posterUrl;
+  // A new image (dot click / swipe) needs its own load state again.
+  useEffect(() => {
+    setCardPosterLoaded(false);
+  }, [activePoster]);
   const cycleCardImage = useCallback(
     (dir) => {
       const len = cardGallery.length;
@@ -2667,7 +2674,7 @@ function CodeProductCard({ product, tLocal, onOpen, isFavorited, onToggleFavorit
       >
         {isPosterCard ? (
           <div
-            className="sc-card-poster-preview"
+            className={`sc-card-poster-preview ${cardPosterLoaded ? "is-loaded" : "is-loading"}`}
             style={{ aspectRatio: previewAspect }}
             onTouchStart={(e) => {
               cardTouchX.current = e.touches[0].clientX;
@@ -2723,6 +2730,7 @@ function CodeProductCard({ product, tLocal, onOpen, isFavorited, onToggleFavorit
                 loading="lazy"
                 decoding="async"
                 draggable={false}
+                onLoad={() => setCardPosterLoaded(true)}
                 onError={() => setCardPosterFailed(true)}
               />
             )}
@@ -4266,21 +4274,21 @@ function ProductDetail({
     executeCopySource();
   }, [hasAccess, onOpenUnlockModal, executeCopySource]);
 
-  // ── Download Image (Layouts / poster-based + free products) ────────
-  const handleDownloadImageSuccess = useCallback(() => {
+  // ── Copy Image (Layouts / poster-based + free products) ────────
+  const handleCopyImageSuccess = useCallback(() => {
     const user = currentUser;
     if (!user) {
       handleGateAction("copy-image");
       return;
     }
     setImageDownloaded(true);
-    void trackUserEvent("download", {
+    void trackUserEvent("copy", {
       productId: getProductIdentity(product),
       productSlug: product?.slug || "",
       email: user?.email || "",
       kind: "image",
     });
-    setToast({ type: "success", message: "Image downloaded!" });
+    setToast({ type: "success", message: "Image Copied!" });
     setTimeout(() => setImageDownloaded(false), 2200);
     setTimeout(() => setToast(null), 2600);
     // Affiliate funnel: prompt the user to build with Runable AI
@@ -4288,7 +4296,7 @@ function ProductDetail({
     setShowAffiliateModal(true);
   }, [product, currentUser, handleGateAction]);
 
-  const executeDownloadImage = useCallback(async () => {
+  const executeCopyImage = useCallback(async () => {
     const user = currentUser;
     if (!user) {
       handleGateAction("copy-image");
@@ -4300,24 +4308,23 @@ function ProductDetail({
       setTimeout(() => setToast(null), 3200);
       return;
     }
-    const baseName = product?.titleEn || product?.title || product?.slug || "steacode-image";
     setImageDownloading(true);
     try {
-      await downloadImageFile(imageUrl, baseName);
-      handleDownloadImageSuccess();
+      await copyImageToClipboard(imageUrl);
+      handleCopyImageSuccess();
     } catch (err) {
-      console.error("[download-image] failed:", err);
+      console.error("[copy-image] failed:", err);
       setToast({
         type: "error",
-        message: "Couldn't download the image. Right-click → Save Image instead.",
+        message: "Couldn't copy the image. Right-click → Copy Image instead.",
       });
       setTimeout(() => setToast(null), 3200);
     } finally {
       setImageDownloading(false);
     }
-  }, [currentUser, handleGateAction, product, handleDownloadImageSuccess]);
+  }, [currentUser, handleGateAction, product, handleCopyImageSuccess]);
 
-  const handleDownloadImageClick = useCallback((e) => {
+  const handleCopyImageClick = useCallback((e) => {
     e.stopPropagation();
     const user = currentUser;
     if (!user) {
@@ -4328,8 +4335,8 @@ function ProductDetail({
       onOpenUnlockModal?.();
       return;
     }
-    executeDownloadImage();
-  }, [currentUser, isFree, hasAccess, handleGateAction, onOpenUnlockModal, executeDownloadImage]);
+    executeCopyImage();
+  }, [currentUser, isFree, hasAccess, handleGateAction, onOpenUnlockModal, executeCopyImage]);
 
   const handleDownloadClick = useCallback((e) => {
     e.stopPropagation();
@@ -4411,7 +4418,7 @@ function ProductDetail({
         if (pending.type === "copy-source") {
           executeCopySource();
         } else if (pending.type === "copy-image") {
-          executeDownloadImage();
+          executeCopyImage();
         } else if (pending.type === "download") {
           executeDownload(currentPid);
         } else if (pending.type === "unlock") {
@@ -4424,7 +4431,7 @@ function ProductDetail({
     } catch (err) {
       console.warn("Failed resuming pending action in ProductDetail:", err);
     }
-  }, [currentUser, product, executeCopySource, executeDownloadImage, executeDownload, onOpenUnlockModal]);
+  }, [currentUser, product, executeCopySource, executeCopyImage, executeDownload, onOpenUnlockModal]);
 
   const reduceMotion = useReducedMotion();
 
@@ -4849,7 +4856,7 @@ function ProductDetail({
               </a>
             )}
 
-            {/* Download Image — Layouts, Template (poster) products, and any
+            {/* Copy Image — Layouts, Template (poster) products, and any
                 product with a gallery cover. Auto-shows whenever an image exists;
                 no admin toggle. */}
             {(product?.tab === "layouts" ||
@@ -4860,7 +4867,7 @@ function ProductDetail({
               <button
                 type="button"
                 className={`sc-detail-action sc-detail-action--image ${imageDownloaded ? 'is-copied' : ''}`}
-                onClick={handleDownloadImageClick}
+                onClick={handleCopyImageClick}
                 disabled={imageDownloading}
               >
                 <span className="sc-detail-action-icon" aria-hidden="true">
@@ -4871,29 +4878,20 @@ function ProductDetail({
                       <polyline points="20 6 9 17 4 12"/>
                     </svg>
                   ) : (
-                    <Download size={18} />
+                    <Copy size={18} />
                   )}
                 </span>
                 <span className="sc-detail-action-label">
                   {(!isFree && !isSignedIn)
-                    ? 'Sign in to download image'
+                    ? 'Sign in to copy image'
                     : !isFree && !hasAccess
                     ? `Unlock for $${productPrice.toFixed(2)}`
                     : imageDownloading
-                    ? 'Downloading…'
-                    : imageDownloaded ? 'Image downloaded!' : 'Download Image'}
+                    ? 'Copying…'
+                    : imageDownloaded ? 'Image Copied!' : 'Copy Image'}
                 </span>
               </button>
             )}
-
-            {/* Adsterra 300x250 banner — above the copy buttons (safe margin from CTAs).
-                minHeight 250 matches the ad unit's height so the slot reserves the
-                exact space and there's no layout shift when the ad loads. If the
-                ad is blocked/unfilled, AdsterraBanner collapses and SmartAdSlot
-                drops its reserved space, so no gap is left between the buttons. */}
-            <SmartAdSlot id="pubfuture-component-top" minHeight={250} style={{ margin: "16px 0" }}>
-              <AdsterraBanner />
-            </SmartAdSlot>
 
             {/* Copy Source Code — only when the product actually has code.
                 See `canCopySource` above: layouts/kits without downloadable
@@ -4946,6 +4944,14 @@ function ProductDetail({
                 </div>
               </div>
             )}
+
+            {/* Adsterra 300x250 banner. Deliberately placed AFTER the action
+                buttons and the "Need this customized?" banner so its fill state
+                never changes the 24px buttons→banner gap. It sits above the
+                "You might also like" section instead of splitting the CTAs. */}
+            <SmartAdSlot id="pubfuture-component-top" minHeight={250} style={{ margin: "24px 0" }}>
+              <AdsterraBanner />
+            </SmartAdSlot>
 
             {/* Ezoic native/banner placeholder — above "You might also like" */}
             <SmartAdSlot id="ezoic-component-bottom" minHeight={250} style={{ margin: "32px 0" }} />

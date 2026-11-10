@@ -16897,7 +16897,7 @@ header,
 .sc-gallery-showcase {
   width: 100%;
   display: grid;
-  grid-template-columns: 1fr 104px;
+  grid-template-columns: minmax(0, 1fr) 104px;
   gap: 16px;
   align-items: start;
 }
@@ -16914,7 +16914,7 @@ header,
   padding: 0;
   margin: 0;
   border: 0;
-  background: #f4f4f5;
+  background: #eef0f3;
   border-radius: 16px;
   overflow: hidden;
   cursor: zoom-in;
@@ -16924,21 +16924,31 @@ header,
   display: block;
   width: 100%;
   height: auto;
-  max-height: 70vh;
+  max-height: 72vh;
   object-fit: contain;
   object-position: top center;
-  background: #f4f4f5;
   border-radius: 0 !important;
 }
 
-/* Thumbnails — vertical column on desktop */
+/* Thumbnails — vertical column on desktop. Scrolls when there are more
+   thumbnails than fit, so every gallery image stays reachable. */
 .sc-gallery-showcase-thumbs {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  max-height: 70vh;
+  max-height: 72vh;
   overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 2px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(15, 23, 42, 0.28) transparent;
+}
+.sc-gallery-showcase-thumbs::-webkit-scrollbar {
+  width: 6px;
+}
+.sc-gallery-showcase-thumbs::-webkit-scrollbar-thumb {
+  background: rgba(15, 23, 42, 0.24);
+  border-radius: 999px;
 }
 .sc-gallery-showcase-thumb {
   flex: 0 0 auto;
@@ -16947,7 +16957,7 @@ header,
   padding: 0;
   border: 2px solid rgba(15, 23, 42, 0.12);
   border-radius: 12px;
-  background: #f4f4f5;
+  background: #eef0f3;
   overflow: hidden;
   cursor: pointer;
   transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
@@ -16971,7 +16981,7 @@ header,
 /* Mobile / narrow — stack hero above a horizontal, scrollable thumbnail strip */
 @media (max-width: 860px) {
   .sc-gallery-showcase {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 12px;
   }
   .sc-gallery-showcase-thumbs {
@@ -16979,7 +16989,7 @@ header,
     max-height: none;
     overflow-x: auto;
     overflow-y: hidden;
-    padding-bottom: 4px;
+    padding-bottom: 6px;
   }
   .sc-gallery-showcase-thumb {
     width: 84px;
@@ -16988,6 +16998,39 @@ header,
   .sc-gallery-showcase-hero-img {
     max-height: 60vh;
   }
+}
+
+/* Shimmer skeleton for slow-loading grid poster images */
+.sc-card-poster-preview {
+  position: relative;
+}
+.sc-card-poster-preview.is-loading::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: linear-gradient(
+    100deg,
+    rgba(226, 232, 240, 0.55) 20%,
+    rgba(241, 245, 249, 0.95) 40%,
+    rgba(226, 232, 240, 0.55) 60%
+  );
+  background-size: 220% 100%;
+  animation: sc-card-shimmer 1.25s ease-in-out infinite;
+}
+.sc-card-poster-preview.is-loading img {
+  opacity: 0;
+}
+.sc-card-poster-preview.is-loaded img {
+  opacity: 1;
+  transition: opacity 0.25s ease;
+}
+@keyframes sc-card-shimmer {
+  0% { background-position: 160% 0; }
+  100% { background-position: -60% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sc-card-poster-preview.is-loading::before { animation: none; }
 }
 
 /* ── Lightbox (View full page) ──────────────────────────────────── */
