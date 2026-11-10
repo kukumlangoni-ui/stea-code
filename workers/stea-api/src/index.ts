@@ -192,6 +192,28 @@ export default {
         }
       }
 
+      // ============ Public blog ============
+      // GET /api/blog — summary list (no `content` column)
+      if (apiPath === "/blog" && method === "GET") {
+        return handleBlogList(request, env);
+      }
+      // GET /api/blog/:slug — single post with full HTML content
+      if (apiPath.startsWith("/blog/") && method === "GET") {
+        let slug = "";
+        try {
+          slug = decodeURIComponent(apiPath.slice("/blog/".length));
+        } catch {
+          return new Response(JSON.stringify({ error: "invalid slug" }), {
+            status: 400,
+            headers: {
+              "Content-Type": "application/json",
+              ...corsHeaders(request.headers.get("origin")),
+            },
+          });
+        }
+        return handleBlogPost(request, env, slug);
+      }
+
       if (apiPath === "/stea-code/catalog" && method === "GET") {
         return handleCatalog(request, env, ctx);
       }
@@ -471,9 +493,6 @@ export default {
       }
 
       // ============ 404 ============
-      if (apiPath === "/blog") return handleBlogList(env);
-      if (apiPath.startsWith("/blog/")) return handleBlogPost(env, decodeURIComponent(apiPath.slice("/blog/".length)));
-      
       return new Response(JSON.stringify({ error: "Not found", path: apiPath }), {
         status: 404,
         headers: { "Content-Type": "application/json", ...corsHeaders(request.headers.get("origin")) },

@@ -1021,6 +1021,16 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
     setIsLoading(true);
 
     async function loadHomepageCatalog() {
+      // A hung network request must not leave the grid on an infinite skeleton:
+      // race the catalog fetch against a timeout so a stalled Worker falls into
+      // the catch block below and shows the retryable error banner.
+      let timeoutHandle;
+      const timeoutPromise = new Promise((_, reject) => {
+        timeoutHandle = setTimeout(
+          () => reject(new Error("Catalog request timed out")),
+          12000
+        );
+      });
       try {
         // A "stea-catalog-changed" event (admin delete/update) makes this one
         // load bypass both the localStorage cache and the CDN edge cache.
@@ -1032,34 +1042,37 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
         // client-side `filtered` below narrow the library stream. Every other
         // category is filtered in SQL via `category`, and `activeTab` is sent
         // as `tab` so the Worker paginates the FILTERED set.
-        const homepageResult = await getSteaCodeCatalog({
-          scope: "homepage",
-          limit: 100,
-          offset: 0,
-          category: activeTab === "library" && category === "Cheat Sheets" ? "" : category,
-          activeTab,
-          search: q,
-          forceFresh,
-          onFresh: (fresh) => {
-            if (!active) return;
-            const products = asFreeProducts(fresh?.products);
-            setGlobalCatalogTotal(Number(fresh?.globalTotal) || 0);
-            setLiveCatalog((previous) => {
-              const base = Array.isArray(previous) ? previous : [];
-              const byId = new Map();
-              for (const product of [...products, ...base]) {
-                const id = getProductIdentity(product);
-                if (id) byId.set(id, product);
-              }
-              return Array.from(byId.values());
-            });
-            setCatalogTotal(Number(fresh?.total) || products.length);
-            setCatalogNextOffset((current) =>
-              Math.max(current, Number(fresh?.nextOffset) || products.length)
-            );
-            setIsLoading(false);
-          },
-        });
+        const homepageResult = await Promise.race([
+          getSteaCodeCatalog({
+            scope: "homepage",
+            limit: 100,
+            offset: 0,
+            category: activeTab === "library" && category === "Cheat Sheets" ? "" : category,
+            activeTab,
+            search: q,
+            forceFresh,
+            onFresh: (fresh) => {
+              if (!active) return;
+              const products = asFreeProducts(fresh?.products);
+              setGlobalCatalogTotal(Number(fresh?.globalTotal) || 0);
+              setLiveCatalog((previous) => {
+                const base = Array.isArray(previous) ? previous : [];
+                const byId = new Map();
+                for (const product of [...products, ...base]) {
+                  const id = getProductIdentity(product);
+                  if (id) byId.set(id, product);
+                }
+                return Array.from(byId.values());
+              });
+              setCatalogTotal(Number(fresh?.total) || products.length);
+              setCatalogNextOffset((current) =>
+                Math.max(current, Number(fresh?.nextOffset) || products.length)
+              );
+              setIsLoading(false);
+            },
+          }),
+          timeoutPromise,
+        ]);
 
         if (!active) return;
 
@@ -1086,6 +1099,8 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
           setCatalogNextOffset(0);
           setIsLoading(false);
         }
+      } finally {
+        clearTimeout(timeoutHandle);
       }
     }
 
@@ -2230,11 +2245,11 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
                   <span style={{ fontSize: "16px" }}>⚠️</span>
                   <span style={{ flex: "1 1 auto", minWidth: "220px" }}>
                     <strong>
-                      {uiLocale === "zhCN" ? "产品加载失败：" : "{/* Live catalog failed to load: */}"}
+                      {uiLocale === "zhCN" ? "产品加载失败：" : "Unable to load products:"}
                     </strong>{" "}
                     {uiLocale === "zhCN"
-                      ? "无法连接到实时数据库。请重试。"
-                      : "Could not connect to the live product database. Please try again."}
+                      ? "请刷新重试。"
+                      : "Please refresh."}
                   </span>
                   <button
                     type="button"
@@ -2706,7 +2721,13 @@ function CodeProductCard({ product, tLocal, onOpen, isFavorited, onToggleFavorit
                   textAlign: "center",
                 }}
               >
-                <Code2 size={24} style={{ color: "rgba(245, 166, 35, 0.7)" }} />
+                <img
+                  src="/stea-code-logo.png"
+                  alt=""
+                  aria-hidden="true"
+                  draggable={false}
+                  style={{ width: "28px", height: "28px", objectFit: "contain", opacity: 0.85 }}
+                />
                 <span
                   style={{
                     color: "rgba(226, 232, 240, 0.95)",
@@ -3430,7 +3451,7 @@ const ProductPreview = forwardRef(function ProductPreview({
           />
         ) : product?.posterImageUrl && !posterFailed ? (
           <img
-            src={String(product.posterImageUrl)}
+            src={resizeImageUrl(String(product.posterImageUrl), 600)}
             alt={product?.titleEn || product?.titleZh || productId || "Preview poster"}
             loading="lazy"
             className="sc-preview-poster-image"
@@ -3466,7 +3487,13 @@ const ProductPreview = forwardRef(function ProductPreview({
               textAlign: "center",
             }}
           >
-            <Code2 size={24} style={{ color: "rgba(245, 166, 35, 0.7)" }} />
+            <img
+              src="/stea-code-logo.png"
+              alt=""
+              aria-hidden="true"
+              draggable={false}
+              style={{ width: "28px", height: "28px", objectFit: "contain", opacity: 0.85 }}
+            />
             <span
               style={{
                 color: "rgba(226, 232, 240, 0.95)",
@@ -4439,9 +4466,6 @@ function ProductDetail({
       exit={{ opacity: 0 }}
       transition={reduceMotion ? { duration: 0.08 } : { duration: 0.12, ease: "easeOut" }}
     >
-      {/* Ezoic corner placeholder — fixed bottom-right, desktop only, clear of the preview area */}
-      <div id="ezoic-preview-corner" className="sc-ad-corner">Ad Space</div>
-
       <motion.button
         className="sc-product-modal-bg"
         onClick={onClose}

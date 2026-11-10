@@ -72,10 +72,9 @@
 }
 
 /* Ad-click safety — click interception fix.
-   The fixed corner ad (#ezoic-preview-corner / .sc-ad-corner) sits at z-index
-   50, and SmartAdSlot children can be independently positioned by the ad
-   network. Lift the copy row above every ad layer and make each ad wrapper a
-   low stacking context, so no creative can cover the Copy Source Code /
+   SmartAdSlot children can be independently positioned by the ad network.
+   Lift the copy row above every ad layer and make each ad wrapper a low
+   stacking context, so no creative can cover the Copy Source Code /
    Copy AI Prompt buttons and swallow their clicks. */
 .sc-copy-actions-row {
   position: relative;

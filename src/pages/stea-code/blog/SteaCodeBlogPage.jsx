@@ -14,7 +14,7 @@ function postDate(post) {
 export default function SteaCodeBlogPage({ embedded = false }) {
   const [posts, setPosts] = useState(() => getCachedBlogPosts() || []);
   const [loading, setLoading] = useState(() => !getCachedBlogPosts());
-  const [failed, setFailed] = useState(false);
+  const [error, setError] = useState(null);
   const [activeCat, setActiveCat] = useState("All");
 
   useEffect(() => {
@@ -22,12 +22,17 @@ export default function SteaCodeBlogPage({ embedded = false }) {
     fetchBlogPosts()
       .then((list) => {
         if (cancelled) return;
+        console.log(`[blog] list page received ${list.length} article(s)`);
         setPosts(list);
-        setLoading(false);
+        setError(null);
       })
-      .catch(() => {
+      .catch((err) => {
         if (cancelled) return;
-        setFailed(true);
+        console.error("[blog] list page failed to load articles:", err);
+        setError(err);
+      })
+      .finally(() => {
+        if (cancelled) return;
         setLoading(false);
       });
     return () => {
@@ -67,8 +72,15 @@ export default function SteaCodeBlogPage({ embedded = false }) {
 
   const body = loading ? (
     <p className="sc-blog__status">Loading…</p>
-  ) : failed && posts.length === 0 ? (
-    <p className="sc-blog__status">Could not load the blog feed. Please refresh and try again.</p>
+  ) : error && posts.length === 0 ? (
+    <div className="sc-blog__status" role="alert">
+      <p>Unable to load articles right now. Please refresh.</p>
+      <button type="button" className="sc-blog__pill" onClick={() => window.location.reload()}>
+        Refresh
+      </button>
+    </div>
+  ) : posts.length === 0 ? (
+    <p className="sc-blog__status">No articles published yet.</p>
   ) : filtered.length === 0 ? (
     <p className="sc-blog__status">No articles in this category yet.</p>
   ) : (

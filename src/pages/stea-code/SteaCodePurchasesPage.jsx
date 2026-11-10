@@ -46,6 +46,17 @@ function statusLabel(status, zh) {
   return status;
 }
 
+// Card thumbnail: swaps to the branded Code2 placeholder when the R2 image
+// 404s instead of leaving a broken gray box.
+function PurchaseThumb({ purchase }) {
+  const [failed, setFailed] = useState(false);
+  const thumbnail = purchase?.productSnapshot?.thumbnail;
+  if (!thumbnail || failed) {
+    return <Code2 size={28} />;
+  }
+  return <img src={thumbnail} alt="" onError={() => setFailed(true)} />;
+}
+
 export default function SteaCodePurchasesPage({
   locale = "en",
   onGoHome,
@@ -60,6 +71,9 @@ export default function SteaCodePurchasesPage({
     access: {},
     error: "",
   });
+  // Bumped by the "Retry" button so a failed library load can be re-run without
+  // leaving the page stuck on its error state.
+  const [retryTick, setRetryTick] = useState(0);
 
   useEffect(() => {
     let active = true;
@@ -67,10 +81,10 @@ export default function SteaCodePurchasesPage({
     async function load() {
       try {
         const result = await getSteaCodePurchases();
-        const purchases = result?.purchases || [];
+        const purchases = Array.isArray(result?.purchases) ? result.purchases : [];
 
         if (!active) return;
-        setState((prev) => ({ ...prev, purchases, loading: false }));
+        setState((prev) => ({ ...prev, purchases, loading: false, error: "" }));
 
         const accessMap = {};
         await Promise.all(
@@ -91,7 +105,14 @@ export default function SteaCodePurchasesPage({
         }
       } catch (error) {
         if (!active) return;
-        if (error?.code === "AUTH_REQUIRED") {
+        // 401/403 (expired or missing session) means "sign in to see your
+        // purchases" — route to the gate, not a generic failure message. The
+        // anonymous case is already served as an empty list by the Worker.
+        const authError =
+          error?.code === "AUTH_REQUIRED" ||
+          error?.status === 401 ||
+          error?.status === 403;
+        if (authError) {
           setState((prev) => ({ ...prev, loading: false, error: "" }));
           if (typeof onRequireAuth === "function") {
             onRequireAuth();
@@ -106,7 +127,7 @@ export default function SteaCodePurchasesPage({
         setState((prev) => ({
           ...prev,
           loading: false,
-          error: zh ? "无法加载购买记录。" : "Could not load your purchases.",
+          error: zh ? "无法加载开发库，请刷新重试。" : "Unable to load your library. Please refresh.",
         }));
       }
     }
@@ -116,7 +137,7 @@ export default function SteaCodePurchasesPage({
     return () => {
       active = false;
     };
-  }, [zh, onRequireAuth]);
+  }, [zh, onRequireAuth, retryTick]);
 
   const { loading, purchases, access, error } = state;
 
@@ -156,17 +177,25 @@ export default function SteaCodePurchasesPage({
           <div className="sc-purchases-empty">
             <Package size={36} />
             <p>{error}</p>
-            <button type="button" onClick={onGoHome}>
-              {zh ? "探索代码" : "Explore Code"}
-            </button>
+            <div
+              className="sc-purchases-empty-actions"
+              style={{ display: "flex", gap: "10px", flexWrap: "wrap", justifyContent: "center" }}
+            >
+              <button type="button" onClick={() => setRetryTick((t) => t + 1)}>
+                {zh ? "重试" : "Retry"}
+              </button>
+              <button type="button" onClick={onGoHome}>
+                {zh ? "探索代码" : "Explore Code"}
+              </button>
+            </div>
           </div>
         ) : purchases.length === 0 ? (
           <div className="sc-purchases-empty">
             <ShoppingBag size={42} />
             <h2>
               {zh
-                ? "你的开发库中暂无已解锁产品。"
-                : "No products in your library yet."}
+                ? "你还没有保存任何项目。"
+                : "You haven't saved any items yet."}
             </h2>
             <p>
               {zh
@@ -187,14 +216,7 @@ export default function SteaCodePurchasesPage({
               return (
                 <article key={purchase.id} className="sc-purchase-card">
                   <div className="sc-purchase-preview">
-                    {purchase.productSnapshot?.thumbnail ? (
-                      <img
-                        src={purchase.productSnapshot.thumbnail}
-                        alt=""
-                      />
-                    ) : (
-                      <Code2 size={28} />
-                    )}
+                    <PurchaseThumb purchase={purchase} />
                   </div>
 
                   <div className="sc-purchase-body">

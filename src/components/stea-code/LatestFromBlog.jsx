@@ -7,7 +7,8 @@ import "../../pages/stea-code/blog/stea-code-blog.css";
  * LatestFromBlog — "Latest from the Blog" strip rendered at the bottom of the
  * marketplace home page, just above the footer. Uses the shared 5-minute blog
  * cache, so it costs nothing when the visitor already opened the Blog tab.
- * Renders nothing while loading or on failure to avoid layout shift.
+ * Hides itself while loading or on failure to avoid layout shift, but always
+ * logs the reason instead of failing silently.
  */
 export default function LatestFromBlog() {
   const [posts, setPosts] = useState([]);
@@ -18,13 +19,21 @@ export default function LatestFromBlog() {
     fetchBlogPosts()
       .then((list) => {
         if (cancelled) return;
-        const sorted = [...list].sort(
+        const valid = list.filter((post) => post?.slug && post?.title);
+        if (valid.length !== list.length) {
+          console.warn(`[blog] latest widget skipped ${list.length - valid.length} post(s) without a slug/title`);
+        }
+        const sorted = [...valid].sort(
           (a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0)
         );
         setTotal(sorted.length);
         setPosts(sorted.slice(0, 3));
+        console.log(`[blog] latest widget rendering ${Math.min(3, sorted.length)} of ${sorted.length} article(s)`);
       })
-      .catch(() => {});
+      .catch((err) => {
+        if (cancelled) return;
+        console.error("[blog] latest widget could not load articles:", err);
+      });
     return () => {
       cancelled = true;
     };

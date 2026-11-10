@@ -65,9 +65,13 @@ export async function handlePurchases(req: Request, env: WorkerEnv): Promise<Res
   try {
     const user = await resolveRequestUser(req, env);
     if (!user?.email) {
+      // Anonymous visitors have an empty library. The Cloudflare Access gate was
+      // removed, so returning 401 here rendered a broken "Could not load your
+      // purchases" state for logged-out users instead of the empty-library view.
+      // Per-product download / access is still enforced by /products/:id/access.
       return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
-        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) } }
+        JSON.stringify({ ok: true, purchases: [] }),
+        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) } }
       );
     }
     const email = user.email;
