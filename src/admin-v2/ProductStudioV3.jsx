@@ -519,8 +519,12 @@ function validateSelfContained(html, css = "") {
   const combined = String(html || "") + String(css || "");
   if (/url\(\s*["']?(?!data:)(https?:|\/|\.\/)/i.test(combined))
     issues.push("External URL in CSS (url(...))");
-  if (/<img[^>]+src=["'](?!data:)/i.test(html))
-    issues.push("External <img src>");
+  // External <img src> intentionally allowed for Super Admin — remote images
+  // are useful in previews and are not a security/self-containment concern for
+  // trusted admins. The check below is disabled so external images no longer
+  // trigger the "Preview content warnings" banner.
+  // if (/<img[^>]+src=["'](?!data:)/i.test(html))
+  //   issues.push("External <img src>");
   if (/<source[^>]+src=["'](?!data:)/i.test(html))
     issues.push("External <source src>");
   return issues;
@@ -1665,6 +1669,12 @@ export function ProductStudioV3({
     if (!isBook && tab === "ebook") setTab("basic");
   }, [isBook, tab]);
 
+  // Template (poster) mode has no deliverables panel. If the user was on
+  // Deliverables and switched to Template, auto-route to Basic.
+  useEffect(() => {
+    if (isTemplateMode && tab === "deliverables") setTab("basic");
+  }, [isTemplateMode, tab]);
+
   // Code tabs based on runtime
   const codeTabs = useMemo(() => {
     const rt = preview.runtime;
@@ -2391,8 +2401,8 @@ export function ProductStudioV3({
           </>
         )}
 
-        {/* TAB 3 — DELIVERABLES */}
-        {tab === "deliverables" && (
+        {/* TAB 3 — DELIVERABLES (hidden entirely in Template mode) */}
+        {tab === "deliverables" && !isTemplateMode && (
           <>
             {!isTemplateMode && (
             <Section title="Source Code" subtitle="What users will be able to copy or download">

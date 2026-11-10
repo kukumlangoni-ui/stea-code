@@ -458,6 +458,22 @@
    dark), so we mostly override the few spots that stay light.
    ═══════════════════════════════════════════════════════════════════════════ */
 
+/* Byte-exact white header for the Services page. The global FORCE-WHITE topbar
+   hack (stea-code-v2.css) uses rgba(255,255,255,0.94) + #e6e6e6 border; this
+   scoped override forces pure opaque white (#ffffff) and the design-token
+   border (#e5e7eb). Higher specificity (0,2,0) beats the unscoped (0,1,0)
+   !important rule. backdrop-filter:none disables any blur so the white is
+   fully opaque. */
+.sc-services-page .sc-topbar {
+  background-color: #ffffff !important;
+  background: #ffffff !important;
+  background-image: none !important;
+  border-bottom: 1px solid #e5e7eb !important;
+  border-bottom-color: #e5e7eb !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
 /* Logo wordmark is white in the dark theme — flip to dark on the light header. */
 .sc-services-page .sc-topbar-logo,
 .sc-services-page .sc-topbar-logo:hover {
