@@ -63,7 +63,7 @@ import {
   toggleSteaCodeFavorite,
   getSteaCodeFavorites,
 } from "../../services/steaCodeCommerce.js";
-import { copyImageToClipboard } from "../../utils/downloadImage.js";
+import { copyImageToClipboard, downloadImageFile } from "../../utils/downloadImage.js";
 import { trackUserEvent } from "../../services/analytics.js";
 import SteaCodeFooter from "../../components/stea-code/SteaCodeFooter.jsx";
 import SponsoredCard from "../../components/stea-code/SponsoredCard.jsx";
@@ -3493,92 +3493,30 @@ function normalizeGalleryField(value) {
 }
 
 /**
- * GalleryShowcase — premium app-store style preview for multi-image products
- * (Templates / Mobile Apps / Posters).
+ * Single hero image for Template / Mobile App / Poster products.
  *
- * Layout: a large hero image plus clickable thumbnails. On desktop the
- * thumbnails sit in a vertical column beside the hero; on mobile they become a
- * horizontal, scrollable strip below it. Clicking a thumbnail (or using the
- * arrow keys / swiping the hero) swaps the main image. The active thumbnail is
- * highlighted. A single-image product renders just the hero — no thumbnail
- * strip, no empty gray boxes. Clicking the hero opens the fullscreen lightbox.
+ * Premium, simple: one large rounded hero. No thumbnails, no arrows, no
+ * dots. Clicking opens the fullscreen lightbox. Gracefully handles a missing
+ * image by showing nothing rather than a broken <img>.
  */
-function GalleryShowcase({ images, title, onOpenLightbox }) {
-  const [activeImageIndex, setActiveImageIndex] = useState(0);
-  const touchX = useRef(null);
-  const count = images.length;
-
-  // Reset to the first image whenever a different product/gallery is opened.
-  useEffect(() => setActiveImageIndex(0), [images]);
-
-  const go = (dir) =>
-    setActiveImageIndex((i) => (i + dir + count) % count);
-
-  useEffect(() => {
-    if (count <= 1) return;
-    function onKey(e) {
-      if (e.key === "ArrowLeft") { e.preventDefault(); go(-1); }
-      if (e.key === "ArrowRight") { e.preventDefault(); go(1); }
-    }
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [count]);
-
-  if (!count) return null;
-
-  const current = images[Math.min(activeImageIndex, count - 1)];
-  const alt = (i) => `${title || "Product"} — screenshot ${i + 1}`;
-
+function HeroImage({ image, title, onOpenLightbox }) {
+  if (!image) return null;
   return (
-    <div className="sc-gallery-showcase" role="region" aria-label={`${title || "Product"} preview gallery`}>
-      {/* Main hero image */}
-      <div
-        className="sc-gallery-showcase-main"
-        onTouchStart={(e) => { touchX.current = e.touches[0].clientX; }}
-        onTouchEnd={(e) => {
-          if (touchX.current == null) return;
-          const dx = e.changedTouches[0].clientX - touchX.current;
-          if (Math.abs(dx) > 40) { if (dx < 0) go(1); else go(-1); }
-          touchX.current = null;
-        }}
-      >
-        <button
-          type="button"
-          className="sc-gallery-showcase-hero"
-          onClick={() => onOpenLightbox?.(Math.min(activeImageIndex, count - 1))}
-          aria-label="Open image fullscreen"
-        >
-          <img
-            key={current}
-            src={current}
-            alt={alt(Math.min(activeImageIndex, count - 1))}
-            className="sc-gallery-showcase-hero-img"
-            loading="eager"
-            decoding="async"
-            draggable={false}
-          />
-        </button>
-      </div>
-
-      {/* Thumbnails — only when there's more than one image */}
-      {count > 1 && (
-        <div className="sc-gallery-showcase-thumbs" role="tablist" aria-label="Preview thumbnails">
-          {images.map((img, i) => (
-            <button
-              key={`${img}-${i}`}
-              type="button"
-              role="tab"
-              aria-selected={i === activeImageIndex}
-              aria-label={alt(i)}
-              className={`sc-gallery-showcase-thumb ${i === activeImageIndex ? "is-active" : ""}`}
-              onClick={() => setActiveImageIndex(i)}
-            >
-              <img src={img} alt="" loading="lazy" decoding="async" draggable={false} />
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
+    <button
+      type="button"
+      className="sc-hero-image"
+      onClick={() => onOpenLightbox?.(0)}
+      aria-label="Open image fullscreen"
+    >
+      <img
+        src={image}
+        alt={`${title || "Product"} preview`}
+        className="sc-hero-image-img"
+        loading="eager"
+        decoding="async"
+        draggable={false}
+      />
+    </button>
   );
 }
 
@@ -4275,23 +4213,34 @@ function ProductDetail({
   }, [hasAccess, onOpenUnlockModal, executeCopySource]);
 
   // ── Copy Image (Layouts / poster-based + free products) ────────
-  const handleCopyImageSuccess = useCallback(() => {
+  // Suffix that tracks whether the "Copy Image" action fell back to a real
+  // download because the browser blocked the async clipboard write. Used to
+  // pick the right toast ("Image Copied!" vs "Image saved to downloads!").
+  const [copyImageFellBack, setCopyImageFellBack] = useState(false);
+
+  const handleCopyImageSuccess = useCallback((fellBack = false) => {
     const user = currentUser;
     if (!user) {
       handleGateAction("copy-image");
       return;
     }
     setImageDownloaded(true);
-    void trackUserEvent("copy", {
+    setCopyImageFellBack(fellBack);
+    void trackUserEvent(fellBack ? "download" : "copy", {
       productId: getProductIdentity(product),
       productSlug: product?.slug || "",
       email: user?.email || "",
       kind: "image",
+      fellBack: fellBack ? true : undefined,
     });
-    setToast({ type: "success", message: "Image Copied!" });
+    setToast({
+      type: "success",
+      message: fellBack ? "Image saved to your downloads!" : "Image Copied!",
+    });
     setTimeout(() => setImageDownloaded(false), 2200);
-    setTimeout(() => setToast(null), 2600);
-    // Affiliate funnel: prompt the user to build with Runable AI
+    setTimeout(() => setCopyImageFellBack(false), 2200);
+    setTimeout(() => setToast(null), 3200);
+    // Affiliate funnel
     setCopiedType("image");
     setShowAffiliateModal(true);
   }, [product, currentUser, handleGateAction]);
@@ -4308,17 +4257,26 @@ function ProductDetail({
       setTimeout(() => setToast(null), 3200);
       return;
     }
+    const baseName = product?.titleEn || product?.title || product?.slug || "steacode-image";
     setImageDownloading(true);
     try {
       await copyImageToClipboard(imageUrl);
-      handleCopyImageSuccess();
+      handleCopyImageSuccess(false);
     } catch (err) {
-      console.error("[copy-image] failed:", err);
-      setToast({
-        type: "error",
-        message: "Couldn't copy the image. Right-click → Copy Image instead.",
-      });
-      setTimeout(() => setToast(null), 3200);
+      // Clipboard blocked (cross-origin R2, permissions, or missing API).
+      // Fall back to a real file download so the user still gets the asset.
+      console.warn("[copy-image] clipboard blocked — falling back to download:", err);
+      try {
+        await downloadImageFile(imageUrl, baseName);
+        handleCopyImageSuccess(true);
+      } catch (fallbackErr) {
+        console.error("[copy-image] fallback download also failed:", fallbackErr);
+        setToast({
+          type: "error",
+          message: "Couldn't copy or download the image. Right-click instead.",
+        });
+        setTimeout(() => setToast(null), 3600);
+      }
     } finally {
       setImageDownloading(false);
     }
@@ -4529,7 +4487,7 @@ function ProductDetail({
           </div>
 
           <div
-            className={`sc-product-detail-preview-shell ${isPosterOnly ? "is-poster-preview" : ""} ${livePreviewActive ? "is-live-preview" : ""} ${isLibraryProduct ? "is-library-preview" : ""} ${galleryImages.length > 0 && !isLibraryProduct ? "is-gallery-showcase" : ""}`}
+            className={`sc-product-detail-preview-shell ${isPosterOnly ? "is-poster-preview" : ""} ${livePreviewActive ? "is-live-preview" : ""} ${isLibraryProduct ? "is-library-preview" : ""}`}
             style={isLibraryProduct ? { "--preview-aspect": "4 / 5" } : livePreviewActive ? { "--preview-aspect": livePreviewAspect } : undefined}
           >
             <PreviewErrorBoundary key={previewRefreshKey}>
@@ -4542,9 +4500,9 @@ function ProductDetail({
                     onBuy={() => onOpenUnlockModal?.()}
                   />
                 </div>
-              ) : galleryImages.length > 0 ? (
-                <GalleryShowcase
-                  images={galleryImages}
+              ) : galleryImages[0] || posterImageUrl || product?.preview?.posterKey ? (
+                <HeroImage
+                  image={galleryImages[0] || posterImageUrl || product?.preview?.posterKey}
                   title={product?.titleEn || product?.titleZh || ""}
                   onOpenLightbox={(i) => {
                     setGalleryIndex(i);
@@ -4887,7 +4845,9 @@ function ProductDetail({
                     : !isFree && !hasAccess
                     ? `Unlock for $${productPrice.toFixed(2)}`
                     : imageDownloading
-                    ? 'Copying…'
+                    ? 'Working…'
+                    : imageDownloaded && copyImageFellBack
+                    ? 'Saved to Downloads!'
                     : imageDownloaded ? 'Image Copied!' : 'Copy Image'}
                 </span>
               </button>

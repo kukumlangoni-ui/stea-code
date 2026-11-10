@@ -16874,14 +16874,15 @@ header,
 
 /* ── Product modal: gallery carousel ────────────────────────────── */
 /* ═══════════════════════════════════════════════════════════════
-   GALLERY SHOWCASE — premium app-store style main image + thumbnails
-   for Template / Mobile App / Poster products.
+   HERO IMAGE — single premium preview for Template / Poster / App
+   products. Replaces the broken gallery showcase with a clean, rounded,
+   responsive hero that fills its container without letterboxing.
    ═══════════════════════════════════════════════════════════════ */
 
-/* The preview shell normally forces a dark, fixed-aspect box (for live demos).
-   In gallery mode we relax that so the showcase sizes to its content and no
-   dark letterbox "gray blocks" appear. */
-.sc-product-detail-preview-shell.is-gallery-showcase {
+/* When the shell is rendering a hero image (not an interactive iframe or an
+   e-book preview), relax it so the hero sizes to its content and no dark
+   letterbox "gray block" appears. */
+.sc-product-detail-preview-shell:has(> .sc-hero-image) {
   height: auto !important;
   min-height: 0 !important;
   max-height: none !important;
@@ -16894,110 +16895,27 @@ header,
   padding: 0 !important;
 }
 
-.sc-gallery-showcase {
-  width: 100%;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 104px;
-  gap: 16px;
-  align-items: start;
-}
-
-/* Main hero image */
-.sc-gallery-showcase-main {
-  position: relative;
-  width: 100%;
-  min-width: 0;
-}
-.sc-gallery-showcase-hero {
+.sc-hero-image {
   display: block;
   width: 100%;
   padding: 0;
   margin: 0;
   border: 0;
-  background: #eef0f3;
+  background: #f4f4f5;
   border-radius: 16px;
   overflow: hidden;
   cursor: zoom-in;
   box-shadow: 0 12px 40px rgba(15, 23, 42, 0.12);
 }
-.sc-gallery-showcase-hero-img {
+.sc-hero-image-img {
   display: block;
   width: 100%;
   height: auto;
   max-height: 72vh;
   object-fit: contain;
   object-position: top center;
+  background: #f4f4f5;
   border-radius: 0 !important;
-}
-
-/* Thumbnails — vertical column on desktop. Scrolls when there are more
-   thumbnails than fit, so every gallery image stays reachable. */
-.sc-gallery-showcase-thumbs {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  max-height: 72vh;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  padding: 2px;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(15, 23, 42, 0.28) transparent;
-}
-.sc-gallery-showcase-thumbs::-webkit-scrollbar {
-  width: 6px;
-}
-.sc-gallery-showcase-thumbs::-webkit-scrollbar-thumb {
-  background: rgba(15, 23, 42, 0.24);
-  border-radius: 999px;
-}
-.sc-gallery-showcase-thumb {
-  flex: 0 0 auto;
-  width: 100%;
-  aspect-ratio: 1 / 1;
-  padding: 0;
-  border: 2px solid rgba(15, 23, 42, 0.12);
-  border-radius: 12px;
-  background: #eef0f3;
-  overflow: hidden;
-  cursor: pointer;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
-}
-.sc-gallery-showcase-thumb img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 0 !important;
-}
-.sc-gallery-showcase-thumb:hover {
-  border-color: rgba(15, 23, 42, 0.4);
-  transform: translateY(-1px);
-}
-.sc-gallery-showcase-thumb.is-active {
-  border-color: #f5a623;
-  box-shadow: 0 0 0 3px rgba(245, 166, 35, 0.25);
-}
-
-/* Mobile / narrow — stack hero above a horizontal, scrollable thumbnail strip */
-@media (max-width: 860px) {
-  .sc-gallery-showcase {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 12px;
-  }
-  .sc-gallery-showcase-thumbs {
-    flex-direction: row;
-    max-height: none;
-    overflow-x: auto;
-    overflow-y: hidden;
-    padding-bottom: 6px;
-  }
-  .sc-gallery-showcase-thumb {
-    width: 84px;
-    flex: 0 0 84px;
-  }
-  .sc-gallery-showcase-hero-img {
-    max-height: 60vh;
-  }
 }
 
 /* Shimmer skeleton for slow-loading grid poster images */
@@ -19500,7 +19418,7 @@ button[class*="sc-detail-action--live"] {
   flex-wrap: wrap !important;
   gap: 12px !important;
   align-items: center !important;
-  margin-bottom: 16px !important;
+  margin-bottom: 24px !important;
 }
 
 /* Custom Service Section */
@@ -19642,7 +19560,7 @@ button[class*="sc-detail-action--live"] {
   flex-wrap: wrap !important;
   gap: 12px !important;
   align-items: center !important;
-  margin-bottom: 16px !important;
+  margin-bottom: 24px !important;
 }
 
 /* Custom Service Section */

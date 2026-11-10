@@ -2336,6 +2336,10 @@ export function ProductStudioV3({
               </Section>
             )}
 
+            {/* Gallery — hidden in Template (poster) mode; Templates use a
+                single poster image, so a multi-image gallery would be misleading
+                and the admin would never see its content rendered. */}
+            {!isTemplateMode && (
             <Section
               title="Gallery (up to 10 images)"
               subtitle="Add screenshots to show different parts of this product. First image is the cover."
@@ -2398,6 +2402,7 @@ export function ProductStudioV3({
                 }}
               />
             </Section>
+            )}
           </>
         )}
 
