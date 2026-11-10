@@ -1033,7 +1033,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
         // as `tab` so the Worker paginates the FILTERED set.
         const homepageResult = await getSteaCodeCatalog({
           scope: "homepage",
-          limit: 20,
+          limit: 100,
           offset: 0,
           category: activeTab === "library" && category === "Cheat Sheets" ? "" : category,
           activeTab,
@@ -1438,7 +1438,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
   // separate controls in Admin — new products must be explicitly approved.
   const homepageProducts = filtered
     .filter((p) => p?.slug !== SERVICE_CARD_PRODUCT_SLUG)
-    .slice(0, Math.min(visibleProductCount, 50));
+    .slice(0, Math.min(visibleProductCount, 100));
 
   // The "steacode services" banner is the first tile of the main grid. It is
   // the premium-website-hero product rendered through the normal card, so it
@@ -1492,10 +1492,17 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
     if (q.trim()) onOpenSearch({ query: q.trim() });
   };
 
-  const PRODUCT_INCREMENT = 12;
-  const MAX_HOMEPAGE_PRODUCTS = 50;
+  const PRODUCT_INCREMENT = 24;
+  const MAX_HOMEPAGE_PRODUCTS = 100;
 
   const catalogHasMore = catalogNextOffset < catalogTotal;
+
+  // Number of products available to the main grid (excludes the services card
+  // injected as the first tile). "Load More" only shows while there are still
+  // more products to reveal up to the 100-product homepage cap — even if the
+  // server has additional rows beyond 100, the grid stops there.
+  const gridProductCount = filtered.filter((p) => p?.slug !== SERVICE_CARD_PRODUCT_SLUG).length;
+  const canShowMore = visibleProductCount < Math.min(gridProductCount, MAX_HOMEPAGE_PRODUCTS);
 
   const loadMoreHomepageProducts = useCallback(async () => {
     if (catalogLoadingMore || !catalogHasMore) return false;
@@ -1508,7 +1515,7 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
       // rule as the initial fetch (combined filter stays client-side).
       const result = await getSteaCodeCatalog({
         scope: "homepage",
-        limit: 20,
+        limit: 100,
         offset: catalogNextOffset,
         category: activeTab === "library" && category === "Cheat Sheets" ? "" : category,
         activeTab,
@@ -1544,16 +1551,20 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
   ]);
 
   const handleProductExpansion = async () => {
-    if (catalogHasMore) {
+    const nextVisible = Math.min(
+      visibleProductCount + PRODUCT_INCREMENT,
+      MAX_HOMEPAGE_PRODUCTS
+    );
+    // The initial fetch already loads up to 100 products (featured first, then
+    // newest), so "Load More" normally just reveals more of the preloaded set
+    // without another network round-trip. Only hit the API when we haven't
+    // loaded enough products yet to cover the next visible window — this keeps
+    // the path correct for filtered views that return fewer than 100 rows.
+    if (products.length < nextVisible && catalogHasMore) {
       await loadMoreHomepageProducts();
     }
 
-    setVisibleProductCount((current) =>
-      Math.min(
-        current + PRODUCT_INCREMENT,
-        MAX_HOMEPAGE_PRODUCTS
-      )
-    );
+    setVisibleProductCount(nextVisible);
   };
 
 
@@ -2001,11 +2012,12 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
               </div>
             )}
 
-            {/* Load More Components — bottom of the grid, only when the server
-                still has a filtered page to return (catalogHasMore). Fetching
-                is server-side pagination of the SQL-filtered set, so clicking
-                it always appends the NEXT page of the current category/tab. */}
-            {catalogHasMore ? (
+            {/* Load More Components — bottom of the grid. Shows only while
+                there are still products to reveal up to the 100-product cap.
+                With 100 preloaded on the initial fetch, clicking just reveals
+                the next batch from memory; the API is only hit when a filtered
+                view returns fewer rows than the next visible window. */}
+            {canShowMore ? (
               <div className="sc-market-show-more-wrap">
                 <button
                   type="button"

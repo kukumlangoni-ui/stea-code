@@ -437,7 +437,7 @@ export async function handleCatalog(req: Request, env: Env, ctx?: ExecutionConte
     const tab = url.searchParams.get("tab") || "";
     const search = url.searchParams.get("search") || "";
     const limit = Math.min(
-      50,
+      100,
       Math.max(0, Number(url.searchParams.get("limit")) || 0)
     );
     const offset = Math.max(0, Number(url.searchParams.get("offset")) || 0);
