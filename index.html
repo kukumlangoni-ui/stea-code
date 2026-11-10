@@ -245,6 +245,25 @@
       gtag('config', 'G-9B54M5Q1S6');
     </script>
 
+    <!-- Monetag Push (zone 12229971) — steacode.com / code.stea.africa only.
+         Scoped by hostname because this one index.html serves every tenant;
+         loading Monetag on stea.africa or alpha.stea.africa would fire ads on
+         the education sites. -->
+    <script>
+      (function () {
+        var host = window.location.hostname;
+        var isCode = host === 'steacode.com' || host === 'www.steacode.com' ||
+                     host === 'code.stea.africa' || host.endsWith('.steacode.pages.dev') ||
+                     host === 'localhost';
+        if (!isCode) return;
+        var tag = document.createElement('script');
+        tag.src = 'https://5gvci.com/act/files/tag.min.js?z=12229971';
+        tag.async = true;
+        tag.setAttribute('data-cfasync', 'false');
+        document.head.appendChild(tag);
+      })();
+    </script>
+
   </head>
   <body>
     <div id="stea-boot-loader" aria-hidden="true">
