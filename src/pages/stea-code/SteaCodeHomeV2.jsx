@@ -2932,7 +2932,7 @@ function CodeProductCardInner({ product, tLocal, onOpenProduct, isFavorited, onT
           title={tLocal({ en: "Views", zhCN: "浏览" })}
           style={{ display: "inline-flex", alignItems: "center", gap: "5px" }}
         >
-          <Eye size={13} aria-hidden="true" />
+          <Eye size={16} aria-hidden="true" />
           <span>{formatCount(cardViews)}</span>
         </span>
         <span
@@ -2960,7 +2960,7 @@ function CodeProductCardInner({ product, tLocal, onOpenProduct, isFavorited, onT
               fontWeight: liked ? 600 : 400,
             }}
           >
-            <Heart size={13} fill={liked ? "currentColor" : "none"} aria-hidden="true" />
+            <Heart size={16} fill={liked ? "currentColor" : "none"} aria-hidden="true" />
             <span>{formatCount(cardLikes)}</span>
           </span>
           <span
@@ -2984,7 +2984,7 @@ function CodeProductCardInner({ product, tLocal, onOpenProduct, isFavorited, onT
               color: isFavorited ? "#111827" : "rgba(148, 163, 184, 0.9)",
             }}
           >
-            <Bookmark size={13} fill={isFavorited ? "currentColor" : "none"} aria-hidden="true" />
+            <Bookmark size={16} fill={isFavorited ? "currentColor" : "none"} aria-hidden="true" />
           </span>
         </span>
       </div>

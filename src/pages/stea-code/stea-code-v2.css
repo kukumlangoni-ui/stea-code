@@ -12291,52 +12291,10 @@ body:has(.sc-product-modal) {
   display: none !important;
 }
 
-/* Favorite button on card */
-.sc-card-favorite {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  z-index: 5;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(6px);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  pointer-events: auto !important;
-  opacity: 0;
-  transform: translateY(-4px) scale(0.9);
-  transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.sc-code-card--v2:hover .sc-card-favorite {
-  opacity: 1;
-  transform: translateY(0) scale(1);
-}
-
-.sc-card-favorite:hover {
-  background: rgba(0, 0, 0, 0.7);
-  border-color: rgba(245, 166, 35, 0.4);
-  color: #f5a623;
-  transform: scale(1.1) !important;
-}
-
-.sc-card-favorite.is-active {
-  opacity: 1;
-  transform: translateY(0) scale(1);
-  color: #ef4444;
-  border-color: rgba(239, 68, 68, 0.4);
-  background: rgba(239, 68, 68, 0.15);
-}
-
-.sc-card-favorite.is-active:hover {
-  color: #f87171;
-}
+/* Legacy floating favorite button on card — REMOVED.
+   The card now uses the bottom social row (Eye / Heart / Bookmark) rendered by
+   CodeProductCard in SteaCodeHomeV2.jsx. Do not reintroduce an absolute
+   overlay control on the preview image — it duplicated the like button. */
 
 /* Inner preview container: subtle scale(1.03) on hover, clipped by preview-wrap.
    Radius matches the wrapper — no double-radius dark rim. */
@@ -12854,12 +12812,7 @@ iframe::-webkit-scrollbar-corner {
     padding: 2px 6px !important;
   }
 
-  .sc-card-favorite {
-    width: 26px !important;
-    height: 26px !important;
-    top: 6px !important;
-    right: 6px !important;
-  }
+  /* Legacy floating favorite button removed — see note near the base rule. */
 }
 
 /* 2. Card consistency */

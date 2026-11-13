@@ -104,6 +104,10 @@ export async function handleRecordView(
           .bind(row.id)
           .first();
         views = Number(fresh?.views || 0);
+        // Rotate the homepage catalog cache so the new public view count is
+        // reflected on cards for other visitors on the next request (same
+        // mechanism the like route uses).
+        await bumpCatalogVersion(env);
       }
     } catch (e) {
       // Column may not exist yet — ignore silently
