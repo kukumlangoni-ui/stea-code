@@ -40,31 +40,110 @@ import { useConsentGatedScripts } from "./hooks/useConsentGatedScripts.js";
 import EzoicRouteListener from "./components/stea-code/EzoicRouteListener.jsx";
 import StickyFooterAd from "./components/stea-code/StickyFooterAd.jsx";
 
+const isChunkLoadError = (message) =>
+  /Failed to fetch dynamically imported module|Importing a module script failed|error loading dynamically imported module/i.test(
+    String(message || "")
+  );
+
+// Noisy but harmless errors that must never replace the app with an error
+// screen (ResizeObserver is fired by the live previews, "Script error." comes
+// from cross-origin ad scripts, AbortError from cancelled fetches).
+const BENIGN_ERROR =
+  /ResizeObserver loop|^Script error\.?$|AbortError|The operation was aborted|Non-Error promise rejection|play\(\) failed because the user didn't interact/i;
+
 class LocalErrorBoundary extends Component {
   constructor(props) {
     super(props);
-    this.state = { hasError: false, error: null };
+    this.state = { hasError: false, error: null, errorInfo: null };
+    this.handleWindowError = this.handleWindowError.bind(this);
+    this.handleRejection = this.handleRejection.bind(this);
+    this.captureFatal = this.captureFatal.bind(this);
   }
+
   static getDerivedStateFromError(error) {
     return { hasError: true, error };
   }
+
+  componentDidMount() {
+    if (typeof window === "undefined") return;
+    // Render/lifecycle crashes reach componentDidCatch. Crashes thrown from
+    // effects, WebGL init, Web Audio nodes or event handlers do NOT — they
+    // surface here instead. Without these listeners those failures leave a
+    // mounted-but-empty tree, i.e. the blank page.
+    window.addEventListener("error", this.handleWindowError);
+    window.addEventListener("unhandledrejection", this.handleRejection);
+  }
+
+  componentWillUnmount() {
+    if (typeof window === "undefined") return;
+    window.removeEventListener("error", this.handleWindowError);
+    window.removeEventListener("unhandledrejection", this.handleRejection);
+  }
+
   componentDidCatch(error, info) {
+    const msg = String(error?.message || "");
+
     // LAYER 2 — chunk-load failure recovery
     // Delegates to the shared recovery helper in main.jsx (attempt
     // counter + cache-bust). Only shows the error screen after the
     // helper gives up (3 failed attempts within 2 minutes).
-    const msg = String(error?.message || "");
-    const isChunkError = /Failed to fetch dynamically imported module|Importing a module script failed|error loading dynamically imported module/i.test(msg);
-
-    if (isChunkError && typeof window !== "undefined") {
+    if (isChunkLoadError(msg) && typeof window !== "undefined") {
       const recovered = window.__steaRecoverChunkError?.();
       if (recovered) return; // navigation in progress — error screen may flash briefly
     }
 
+    this.setState({ errorInfo: info });
     console.error("STEA Code Error Boundary:", error, info);
   }
+
+  handleWindowError(event) {
+    // Resource load failures (img/script/preload) fire "error" with no
+    // `error` object — those must not take the app down.
+    if (!event?.error) return;
+    this.captureFatal(event.error);
+  }
+
+  handleRejection(event) {
+    const reason = event?.reason;
+    // Third-party ad/analytics scripts reject with strings or plain objects.
+    // Only a real Error with a stack indicates an application crash.
+    if (!(reason instanceof Error) || !reason.stack) return;
+    this.captureFatal(reason);
+  }
+
+  captureFatal(error) {
+    if (this.state.hasError) return;
+    const message = String(error?.message || "");
+    if (!message) return;
+
+    if (isChunkLoadError(message)) {
+      window.__steaRecoverChunkError?.();
+      return; // a full reload is already being attempted
+    }
+    if (BENIGN_ERROR.test(message)) return;
+
+    // Async errors (event handlers, timers, isolated previews) usually leave a
+    // perfectly usable page behind. Only take over the screen when the app
+    // rendered nothing — that is the blank-page case we need to fix. If the
+    // tree is alive, log it and let the page continue.
+    const rootEl = document.getElementById("root");
+    const appIsBlank = !rootEl || rootEl.childElementCount === 0;
+
+    console.error("STEA Code fatal async error:", error);
+    if (!appIsBlank) return;
+
+    this.setState({ hasError: true, error });
+  }
+
+  handleReset = () => {
+    this.setState({ hasError: false, error: null, errorInfo: null });
+  };
+
   render() {
     if (this.state.hasError) {
+      const detail = import.meta.env.DEV
+        ? String(this.state.error?.stack || this.state.error?.message || "")
+        : "";
       return (
         <div style={{
           minHeight: "100vh",
@@ -83,9 +162,18 @@ class LocalErrorBoundary extends Component {
           <h2 style={{ fontSize: "20px", fontWeight: 700, margin: "0 0 8px 0", color: "#F5A623" }}>
             Something went wrong
           </h2>
-          <p style={{ fontSize: "14px", color: "rgba(255,255,255,0.6)", maxWidth: 500, margin: "0 0 20px 0" }}>
-            {this.state.error?.message || "An unexpected error occurred."}
+          <p style={{ fontSize: "14px", color: "rgba(255,255,255,0.6)", maxWidth: 460, margin: "0 0 20px 0" }}>
+            The page could not finish loading. Refresh to try again.
           </p>
+          {detail && (
+            <pre style={{
+              maxWidth: 720, width: "100%", maxHeight: 220, overflow: "auto",
+              textAlign: "left", whiteSpace: "pre-wrap", wordBreak: "break-word",
+              padding: 14, borderRadius: 10, marginBottom: 20, fontSize: 11,
+              background: "rgba(239, 68, 68, 0.08)", border: "1px solid rgba(239, 68, 68, 0.25)",
+              color: "#fca5a5",
+            }}>{detail}</pre>
+          )}
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "center" }}>
             <button
               onClick={() => window.location.reload()}
@@ -94,20 +182,15 @@ class LocalErrorBoundary extends Component {
                 background: "#F5A623", color: "#000", fontWeight: 700,
                 fontSize: "14px", border: "none", cursor: "pointer"
               }}
-            >Reload</button>
+            >Refresh</button>
             <button
-              onClick={() => {
-                sessionStorage.clear();
-                const url = new URL(window.location.href);
-                url.searchParams.set("_r", String(Date.now()));
-                window.location.replace(url.toString());
-              }}
+              onClick={this.handleReset}
               style={{
                 padding: "10px 20px", borderRadius: "10px",
                 background: "transparent", color: "rgba(255,255,255,0.7)", fontWeight: 600,
                 fontSize: "14px", border: "1px solid rgba(255,255,255,0.15)", cursor: "pointer"
               }}
-            >Hard Reload</button>
+            >Try again</button>
           </div>
         </div>
       );

@@ -164,7 +164,7 @@ export async function registerSteaCodeProductView(productId) {
   return parseResponse(response);
 }
 
-export async function toggleSteaCodeProductLike(productId) {
+export async function toggleSteaCodeProductLike(productId, action = "like") {
   const headers = await authHeaders();
 
   const response = await fetch(
@@ -172,11 +172,18 @@ export async function toggleSteaCodeProductLike(productId) {
     {
       method: "POST",
       headers,
+      body: JSON.stringify({ action }),
     }
   );
 
   return parseResponse(response);
 }
+
+// Short aliases used by the product detail page.
+// viewProduct(key)  → POST /products/:key/view
+// likeProduct(key, "like" | "unlike") → POST /products/:key/like
+export const viewProduct = registerSteaCodeProductView;
+export const likeProduct = toggleSteaCodeProductLike;
 
 // ============================================================
 // Copy counter (fire-and-forget)

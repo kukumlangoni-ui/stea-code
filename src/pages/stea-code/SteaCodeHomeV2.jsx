@@ -16,6 +16,7 @@ import {
   Command,
   Copy,
   ExternalLink,
+  Eye,
   Heart,
   Layers,
   Lock,
@@ -54,6 +55,7 @@ import {
   getSteaCodeEbookContent,
   registerSteaCodeProductView,
   recordSteaCodeCopy,
+  toggleSteaCodeProductLike,
   toggleSteaCodeFavorite,
   getSteaCodeFavorites,
 } from "../../services/steaCodeCommerce.js";
@@ -519,7 +521,9 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
 
   const [selected, setSelected] = useState(null);
   const [unlockModalProduct, setUnlockModalProduct] = useState(null);
-  const viewedProductsRef = useRef(new Set());
+  // View dedupe persists for the whole browser session (sessionStorage) so a
+  // refresh does not re-count the same product view.
+  const viewedProductsRef = useRef(readViewedSet());
 
   // Open unlock modal when the sign-in resume flow detects a premium product
   // the user doesn't have access to (fired from SteaCodeMemberGate resume logic).
@@ -546,12 +550,13 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
     return () => clearTimeout(t);
   }, [activeTab, category, pricing, framework]);
 
-  // Track product views — fire once per product per session
+  // Track product views — fire once per product per session (sessionStorage)
   useEffect(() => {
     if (!selected) return;
     const productId = getProductIdentity(selected);
     if (!productId || viewedProductsRef.current.has(productId)) return;
     viewedProductsRef.current.add(productId);
+    writeViewedSet(viewedProductsRef.current);
     registerSteaCodeProductView(productId).catch(() => {
       /* fire-and-forget */
     });
@@ -1014,13 +1019,13 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
 
     async function loadHomepageCatalog() {
       // A hung network request must not leave the grid on an infinite skeleton:
-      // race the catalog fetch against a timeout so a stalled Worker falls into
-      // the catch block below and shows the retryable error banner.
+      // race the catalog fetch against an 8s timeout so a stalled Worker falls
+      // into the catch block below and shows the retryable error banner.
       let timeoutHandle;
       const timeoutPromise = new Promise((_, reject) => {
         timeoutHandle = setTimeout(
-          () => reject(new Error("Catalog request timed out")),
-          12000
+          () => reject(new Error("Catalog request timed out after 8000ms")),
+          8000
         );
       });
       try {
@@ -1925,11 +1930,11 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
                 <span style={{ fontSize: "16px" }}>⚠️</span>
                 <span style={{ flex: "1 1 auto", minWidth: "220px" }}>
                   <strong>
-                    {uiLocale === "zhCN" ? "产品加载失败：" : "{/* Live catalog failed to load: */}"}
+                    {uiLocale === "zhCN" ? "产品加载失败：" : "Failed to load products."}
                   </strong>{" "}
                   {uiLocale === "zhCN"
-                    ? "无法连接到实时数据库。请重试。"
-                    : "Could not connect to the live product database. Please try again."}
+                    ? "产品目录没有响应。请刷新页面或重试。"
+                    : "The product catalog did not respond. Refresh the page or try again."}
                 </span>
                 <button
                   type="button"
@@ -2620,6 +2625,77 @@ function CodeProductCardInner({ product, tLocal, onOpenProduct, isFavorited, onT
   // Drives the shimmer skeleton: hidden once the current image has painted so
   // slow R2 loads show a shimmer instead of a big empty gray box.
   const [cardPosterLoaded, setCardPosterLoaded] = useState(false);
+
+  // Social-proof counters (Dribbble-style footer). Seeded from the catalog
+  // payload; the like heart is optimistic and persisted in localStorage.
+  const [cardViews, setCardViews] = useState(() => Number(product?.views) || 0);
+  const [cardLikes, setCardLikes] = useState(() => Number(product?.likes) || 0);
+  const [liked, setLiked] = useState(() => readLikedSet().has(productId));
+  const likeBusyRef = useRef(false);
+
+  // Re-sync counters/liked state after mount when the catalog payload refreshes
+  // in the background or a load-more merge replaces the product object. The
+  // card seeds state once in useState above, so without this effect a card first
+  // mounted from a stale/0-count snapshot keeps showing 0 even after the fresh
+  // D1-backed record arrives. Mirrors the detail modal resync effect; an
+  // in-flight optimistic like is left untouched until its request resolves.
+  useEffect(() => {
+    if (!productId || likeBusyRef.current) return;
+    setCardViews(Number(product?.views) || 0);
+    setCardLikes(Number(product?.likes) || 0);
+    setLiked(readLikedSet().has(productId));
+  }, [productId, product?.views, product?.likes]);
+
+  const toggleLike = useCallback(
+    (event) => {
+      if (event) {
+        event.stopPropagation();
+        event.preventDefault();
+      }
+      if (likeBusyRef.current) return;
+      const key = productId;
+      const nextLiked = !liked;
+
+      // Optimistic update + persist liked state locally.
+      setLiked(nextLiked);
+      setCardLikes((n) => Math.max(0, n + (nextLiked ? 1 : -1)));
+      const likedSet = readLikedSet();
+      if (nextLiked) likedSet.add(key); else likedSet.delete(key);
+      writeLikedSet(likedSet);
+
+      likeBusyRef.current = true;
+      toggleSteaCodeProductLike(key, nextLiked ? "like" : "unlike")
+        .then((res) => {
+          if (res && typeof res.likes === "number") setCardLikes(res.likes);
+        })
+        .catch(() => {
+          // Revert the optimistic change if the request failed.
+          setLiked(!nextLiked);
+          setCardLikes((n) => Math.max(0, n + (nextLiked ? -1 : 1)));
+          const revert = readLikedSet();
+          if (nextLiked) revert.delete(key); else revert.add(key);
+          writeLikedSet(revert);
+        })
+        .finally(() => {
+          likeBusyRef.current = false;
+        });
+    },
+    [liked, productId]
+  );
+
+  // Save to Library (login-gated favorite). Parent opens the sign-in gate when
+  // the user is signed out, then toggles the Worker-backed favorite record.
+  const toggleFavorite = useCallback(
+    (event) => {
+      if (event) {
+        event.stopPropagation();
+        event.preventDefault();
+      }
+      if (onToggleFavorite) onToggleFavorite(productId);
+    },
+    [onToggleFavorite, productId]
+  );
+
   const activePoster = cardGallery[cardImageIndex] || posterUrl;
   // A new image (dot click / swipe) needs its own load state again.
   useEffect(() => {
@@ -2783,30 +2859,6 @@ function CodeProductCardInner({ product, tLocal, onOpenProduct, isFavorited, onT
           </div>
         )}
 
-        {/* Favorite button */}
-        <button
-          type="button"
-          className={`sc-card-favorite ${isFavorited ? 'is-active' : ''}`}
-          onClick={(e) => {
-            e.stopPropagation();
-            e.preventDefault();
-            if (onToggleFavorite) onToggleFavorite(productId);
-          }}
-          aria-label={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
-        >
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill={isFavorited ? "currentColor" : "none"}
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-          </svg>
-        </button>
       </div>
 
       {/* Caption — category + title left, price/free right */}
@@ -2859,6 +2911,83 @@ function CodeProductCardInner({ product, tLocal, onOpenProduct, isFavorited, onT
           </span>
         )}
       </div>
+
+      {/* Social-proof footer — views (eye) left, likes (heart) right.
+          The whole card is a <button>, so the like control stops propagation
+          before it can bubble up and open the modal. */}
+      <div
+        className="sc-code-card__social"
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginTop: "8px",
+          padding: "0 2px",
+          fontSize: "12px",
+          color: "rgba(148, 163, 184, 0.9)",
+        }}
+      >
+        <span
+          className="sc-code-card__social-stat"
+          title={tLocal({ en: "Views", zhCN: "浏览" })}
+          style={{ display: "inline-flex", alignItems: "center", gap: "5px" }}
+        >
+          <Eye size={13} aria-hidden="true" />
+          <span>{formatCount(cardViews)}</span>
+        </span>
+        <span
+          style={{ display: "inline-flex", alignItems: "center", gap: "14px" }}
+        >
+          <span
+            className={`sc-code-card__social-like ${liked ? "is-liked" : ""}`}
+            role="button"
+            tabIndex={0}
+            aria-pressed={liked}
+            aria-label={liked ? tLocal({ en: "Unlike", zhCN: "取消点赞" }) : tLocal({ en: "Like", zhCN: "点赞" })}
+            onClick={toggleLike}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.stopPropagation();
+                toggleLike(e);
+              }
+            }}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "5px",
+              cursor: "pointer",
+              color: liked ? "#ef4444" : "rgba(148, 163, 184, 0.9)",
+              fontWeight: liked ? 600 : 400,
+            }}
+          >
+            <Heart size={13} fill={liked ? "currentColor" : "none"} aria-hidden="true" />
+            <span>{formatCount(cardLikes)}</span>
+          </span>
+          <span
+            className={`sc-code-card__social-save ${isFavorited ? "is-saved" : ""}`}
+            role="button"
+            tabIndex={0}
+            aria-pressed={isFavorited}
+            aria-label={isFavorited ? tLocal({ en: "Remove from saved", zhCN: "取消收藏" }) : tLocal({ en: "Save to Library", zhCN: "收藏" })}
+            onClick={toggleFavorite}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.stopPropagation();
+                toggleFavorite(e);
+              }
+            }}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "5px",
+              cursor: "pointer",
+              color: isFavorited ? "#111827" : "rgba(148, 163, 184, 0.9)",
+            }}
+          >
+            <Bookmark size={13} fill={isFavorited ? "currentColor" : "none"} aria-hidden="true" />
+          </span>
+        </span>
+      </div>
     </motion.button>
   );
 }
@@ -2871,6 +3000,62 @@ const NATIVE_PRODUCT_PREVIEWS = Object.freeze({});
 
 function getProductIdentity(product) {
   return String(product?.id || product?.slug || "").trim();
+}
+
+// ============================================================
+// Social-proof counters: liked state (localStorage) + viewed dedupe
+// (sessionStorage) + compact count formatting.
+// ============================================================
+
+const LIKED_STORAGE_KEY = "steacode_liked_products";
+const VIEWED_STORAGE_KEY = "steacode_viewed_products";
+
+function readLikedSet() {
+  try {
+    const raw = localStorage.getItem(LIKED_STORAGE_KEY);
+    const arr = raw ? JSON.parse(raw) : [];
+    return new Set(Array.isArray(arr) ? arr.map(String) : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function writeLikedSet(set) {
+  try {
+    localStorage.setItem(LIKED_STORAGE_KEY, JSON.stringify([...set]));
+  } catch {
+    /* storage full / blocked — ignore */
+  }
+}
+
+function readViewedSet() {
+  try {
+    const raw = sessionStorage.getItem(VIEWED_STORAGE_KEY);
+    const arr = raw ? JSON.parse(raw) : [];
+    return new Set(Array.isArray(arr) ? arr.map(String) : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function writeViewedSet(set) {
+  try {
+    sessionStorage.setItem(VIEWED_STORAGE_KEY, JSON.stringify([...set]));
+  } catch {
+    /* storage blocked — ignore */
+  }
+}
+
+/** Compact number: 999 → "999", 19,600 → "19.6k", 2,400,000 → "2.4m". */
+function formatCount(value) {
+  const n = Number(value) || 0;
+  if (n < 1000) return String(n);
+  if (n < 1_000_000) {
+    const k = n / 1000;
+    return `${k >= 100 ? Math.round(k) : k.toFixed(1).replace(/\.0$/, "")}k`;
+  }
+  const m = n / 1_000_000;
+  return `${m.toFixed(1).replace(/\.0$/, "")}m`;
 }
 
 /**
@@ -3691,11 +3876,66 @@ function ProductDetail({
   // Tracks a poster URL that failed to load, so the modal can fall back to the
   // clean placeholder instead of rendering a broken image icon.
   const [failedPosterUrl, setFailedPosterUrl] = useState("");
-  // Preview overlay actions: Refresh remounts the preview via a key change on
-  // PreviewErrorBoundary; Like uses the shared favorites system (isFavorited /
-  // onToggleFavorite); Save is local to the modal.
+  // Preview overlay action: Refresh remounts the preview via a key change on
+  // PreviewErrorBoundary. Save (favorite) lives in the metrics row below the
+  // title, mirroring the homepage card.
   const [previewRefreshKey, setPreviewRefreshKey] = useState(0);
-  const [detailSaved, setDetailSaved] = useState(false);
+
+  // Public social-proof counters for the detail page. Seeded from the product
+  // payload (homepage catalog or the D1-backed detail endpoint); the like
+  // heart is optimistic and persisted in localStorage, mirroring the cards.
+  const detailProductId = getProductIdentity(product);
+  const [detailViews, setDetailViews] = useState(() => Number(product?.views) || 0);
+  const [detailLikes, setDetailLikes] = useState(() => Number(product?.likes) || 0);
+  const [detailLiked, setDetailLiked] = useState(() => readLikedSet().has(detailProductId));
+  const detailLikeBusyRef = useRef(false);
+
+  // Sync local counters/liked state once the full product detail hydrates
+  // (deep-link placeholder → loaded record) without clobbering an in-flight
+  // optimistic like.
+  useEffect(() => {
+    if (!detailProductId) return;
+    setDetailViews(Number(product?.views) || 0);
+    setDetailLikes(Number(product?.likes) || 0);
+    setDetailLiked(readLikedSet().has(detailProductId));
+  }, [detailProductId, product?.views, product?.likes]);
+
+  const toggleDetailLike = useCallback(
+    (event) => {
+      if (event) {
+        event.stopPropagation();
+        event.preventDefault();
+      }
+      if (detailLikeBusyRef.current) return;
+      const key = detailProductId;
+      const nextLiked = !detailLiked;
+
+      // Optimistic update + persist liked state locally.
+      setDetailLiked(nextLiked);
+      setDetailLikes((n) => Math.max(0, n + (nextLiked ? 1 : -1)));
+      const likedSet = readLikedSet();
+      if (nextLiked) likedSet.add(key); else likedSet.delete(key);
+      writeLikedSet(likedSet);
+
+      detailLikeBusyRef.current = true;
+      toggleSteaCodeProductLike(key, nextLiked ? "like" : "unlike")
+        .then((res) => {
+          if (res && typeof res.likes === "number") setDetailLikes(res.likes);
+        })
+        .catch(() => {
+          // Revert the optimistic change if the request failed.
+          setDetailLiked(!nextLiked);
+          setDetailLikes((n) => Math.max(0, n + (nextLiked ? -1 : 1)));
+          const revert = readLikedSet();
+          if (nextLiked) revert.delete(key); else revert.add(key);
+          writeLikedSet(revert);
+        })
+        .finally(() => {
+          detailLikeBusyRef.current = false;
+        });
+    },
+    [detailLiked, detailProductId]
+  );
   // Affiliate funnel: after a successful copy, slide up the Runable AI
   // bottom-sheet. copiedType drives the dynamic subtext ("code" | "image").
   const [showAffiliateModal, setShowAffiliateModal] = useState(false);
@@ -4520,32 +4760,6 @@ function ProductDetail({
                 <RotateCw size={16} />
               </button>
             )}
-            <button
-              type="button"
-              className={`sc-preview-action-btn${isFavorited ? " is-liked" : ""}`}
-              aria-pressed={isFavorited}
-              aria-label={isFavorited ? "Remove from favorites" : "Add to favorites"}
-              onClick={(e) => {
-                e.stopPropagation();
-                e.preventDefault();
-                onToggleFavorite?.(getProductIdentity(product));
-              }}
-            >
-              <Heart size={16} fill={isFavorited ? "currentColor" : "none"} />
-            </button>
-            <button
-              type="button"
-              className={`sc-preview-action-btn${detailSaved ? " is-saved" : ""}`}
-              aria-pressed={detailSaved}
-              aria-label={detailSaved ? "Remove from saved" : "Save"}
-              onClick={(e) => {
-                e.stopPropagation();
-                e.preventDefault();
-                setDetailSaved((v) => !v);
-              }}
-            >
-              <Bookmark size={16} fill={detailSaved ? "currentColor" : "none"} />
-            </button>
           </div>
 
           <div
@@ -4698,6 +4912,75 @@ function ProductDetail({
           </div>
 
           <h2 id="sc-product-title">{title}</h2>
+
+          {/* Social-proof metrics — views (eye) + public like (heart) + Save
+              (bookmark, login-gated favorite). The heart mirrors the card:
+              optimistic, persisted in localStorage. */}
+          <div
+            className="sc-detail-metrics"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "18px",
+              marginTop: "8px",
+              fontSize: "13px",
+              color: "rgba(148, 163, 184, 0.9)",
+            }}
+          >
+            <span
+              className="sc-detail-metrics-stat"
+              title={tLocal({ en: "Views", zhCN: "浏览" })}
+              style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}
+            >
+              <Eye size={14} aria-hidden="true" />
+              <span>{formatCount(detailViews)}</span>
+            </span>
+            <button
+              type="button"
+              className={`sc-detail-like-btn${detailLiked ? " is-liked" : ""}`}
+              aria-pressed={detailLiked}
+              aria-label={detailLiked ? tLocal({ en: "Unlike", zhCN: "取消点赞" }) : tLocal({ en: "Like", zhCN: "点赞" })}
+              onClick={toggleDetailLike}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                cursor: "pointer",
+                background: "none",
+                border: "none",
+                padding: 0,
+                font: "inherit",
+                color: detailLiked ? "#ef4444" : "rgba(148, 163, 184, 0.9)",
+                fontWeight: detailLiked ? 600 : 400,
+              }}
+            >
+              <Heart size={14} fill={detailLiked ? "currentColor" : "none"} aria-hidden="true" />
+              <span>{formatCount(detailLikes)}</span>
+            </button>
+            <button
+              type="button"
+              className={`sc-detail-save-btn${isFavorited ? " is-saved" : ""}`}
+              aria-pressed={isFavorited}
+              aria-label={isFavorited ? tLocal({ en: "Remove from saved", zhCN: "取消收藏" }) : tLocal({ en: "Save to Library", zhCN: "收藏" })}
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleFavorite?.(detailProductId);
+              }}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                cursor: "pointer",
+                background: "none",
+                border: "none",
+                padding: 0,
+                font: "inherit",
+                color: isFavorited ? "#111827" : "rgba(148, 163, 184, 0.9)",
+              }}
+            >
+              <Bookmark size={14} fill={isFavorited ? "currentColor" : "none"} aria-hidden="true" />
+            </button>
+          </div>
 
           <p className="sc-product-detail-description">
             {description}

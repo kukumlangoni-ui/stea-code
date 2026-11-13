@@ -287,7 +287,7 @@ export default function StoreReaderPage({ user, authLoading }) {
             className="store-reader__frame"
             title={`Read — ${title}`}
             srcDoc={bookHtml}
-            sandbox="allow-scripts allow-same-origin"
+            sandbox="allow-scripts allow-same-origin allow-forms"
           />
           {notice && (
             <div className="store-reader__notice" role="status">{notice}</div>

@@ -270,6 +270,27 @@
       <div class="stea-boot-loader-bar"></div>
     </div>
     <div id="root"></div>
+    <script>
+      // Boot watchdog: if the entry module fails to load/parse (stale chunk,
+      // blocked request, browser API missing) React never mounts and #root
+      // stays empty. Replace the blank page with a recoverable message.
+      // No-op when React has rendered anything.
+      (function () {
+        setTimeout(function () {
+          var root = document.getElementById('root');
+          if (!root || root.childElementCount > 0) return;
+          var loader = document.getElementById('stea-boot-loader');
+          if (loader) loader.remove();
+          root.innerHTML =
+            '<div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#080c14;color:#fff;font-family:system-ui,sans-serif;text-align:center;padding:24px;box-sizing:border-box">' +
+            '<div style="font-size:28px;margin-bottom:14px">⚠️</div>' +
+            '<h1 style="font-size:20px;color:#F5A623;margin:0 0 10px">Something went wrong</h1>' +
+            '<p style="font-size:14px;color:rgba(255,255,255,0.65);max-width:420px;margin:0 0 20px">The app could not start. Refresh the page to try again.</p>' +
+            '<button onclick="window.location.reload()" style="padding:10px 22px;border-radius:10px;background:#F5A623;color:#000;font-weight:700;font-size:14px;border:none;cursor:pointer">Refresh</button>' +
+            '</div>';
+        }, 12000);
+      })();
+    </script>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

@@ -421,7 +421,7 @@ export default function LivePreview({
             key={`${instanceId}-${reloadKey}`}
             title={title || "STEA Code Live Preview"}
             srcDoc={finalSrcDoc}
-            sandbox="allow-scripts"
+            sandbox="allow-scripts allow-same-origin allow-forms"
             loading="lazy"
             className="w-full h-full border-0 rounded bg-transparent"
             style={{

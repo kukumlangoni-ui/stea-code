@@ -348,7 +348,7 @@ export default function LibraryReader({ user, authLoading }) {
           onLoad={sendInit}
           className="sc-reader-frame"
           style={{ width: "100%", height: "100%", border: "none", background: "#ffffff", display: "block" }}
-          sandbox="allow-scripts allow-same-origin"
+          sandbox="allow-scripts allow-same-origin allow-forms"
         />
       </div>
 

@@ -34,6 +34,7 @@ import {
   invalidateSteaCodeProductPreviewCache,
 } from "../services/steaCodeCommerce.js";
 import { downloadImageFile } from "../utils/downloadImage.js";
+import { pingProduct } from "../utils/indexNow.js";
 import { auth } from "../firebase.js";
 import { submitRevision } from "../services/staffAuth.js";
 import { TABS as TAXONOMY_TABS, SUBCATEGORIES } from "../data/stea-code/tabs.js";
@@ -1407,6 +1408,13 @@ export function ProductStudioV3({
       } else {
         setNotice(isPublishing ? "Published ✓" : "Saved ✓");
         setTimeout(() => setNotice(""), 2000);
+      }
+
+      // Client-side fallback: if the product ended up published, notify
+      // IndexNow so Bing re-crawls it. Best-effort; the Worker also pings
+      // server-side, and a failure here must not affect the save flow.
+      if (serverStatus === "published" && result?.product?.slug) {
+        pingProduct(result.product.slug).catch(() => {});
       }
 
       if (isPublishing && typeof onPublished === "function") {

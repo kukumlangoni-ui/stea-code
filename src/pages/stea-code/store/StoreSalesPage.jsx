@@ -241,7 +241,7 @@ export default function StoreSalesPage() {
                   className="store-sample__frame"
                   title={`Sample — ${title}`}
                   srcDoc={sampleHtml}
-                  sandbox="allow-scripts allow-same-origin"
+                  sandbox="allow-scripts allow-same-origin allow-forms"
                 />
               )}
             </div>

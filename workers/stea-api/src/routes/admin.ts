@@ -26,6 +26,33 @@ const PRODUCTS_COLLECTION = "stea_code_products";
 const SOURCES_COLLECTION = "stea_code_product_sources";
 const PREVIEWS_COLLECTION = "stea_code_product_previews";
 
+// ── IndexNow (Bing/Yandex discovery) ────────────────────────────────────────
+// After a product is published we ping IndexNow so the crawler re-checks the
+// page. Fire-and-forget via ctx.waitUntil: it must never delay or break the
+// save response, and a ping failure is non-fatal.
+const INDEXNOW_KEY = "8c027b63cc7247afa01a08d2c86eb0db";
+const INDEXNOW_HOST = "steacode.com";
+const INDEXNOW_KEY_LOCATION = `https://${INDEXNOW_HOST}/${INDEXNOW_KEY}.txt`;
+const INDEXNOW_ENDPOINT = "https://api.indexnow.org/indexnow";
+
+function pingProductIndexNow(ctx: ExecutionContext | undefined, slug: string | undefined): void {
+  if (!ctx || !slug || typeof slug !== "string") return;
+  const productUrl = `https://${INDEXNOW_HOST}/products/${encodeURIComponent(slug)}`;
+  const payload = {
+    host: INDEXNOW_HOST,
+    key: INDEXNOW_KEY,
+    keyLocation: INDEXNOW_KEY_LOCATION,
+    urlList: [productUrl],
+  };
+  ctx.waitUntil(
+    fetch(INDEXNOW_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json; charset=utf-8" },
+      body: JSON.stringify(payload),
+    }).catch(() => {})
+  );
+}
+
 /**
  * Fields that must NEVER be overwritten by a metadata patch.
  *
@@ -691,7 +718,7 @@ function normalizeGallery(value: any): string[] {
   return out;
 }
 
-export async function handleAdminCreateProduct(req: Request, env: Env): Promise<Response> {
+export async function handleAdminCreateProduct(req: Request, env: Env, ctx?: ExecutionContext): Promise<Response> {
   const writer = await resolveWriter(req, env);
   if (!writer) return admin403(req);
 
@@ -746,6 +773,11 @@ export async function handleAdminCreateProduct(req: Request, env: Env): Promise<
       { title: data.titleEn || data.titleZh || "" }
     );
 
+    // Published on creation → notify IndexNow (fire-and-forget).
+    if (data.status === "published") {
+      pingProductIndexNow(ctx, data.slug);
+    }
+
     return new Response(
       JSON.stringify({ success: true, productId, product: { id: productId, ...data } }),
       { status: 201, headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) } }
@@ -755,7 +787,7 @@ export async function handleAdminCreateProduct(req: Request, env: Env): Promise<
   }
 }
 
-export async function handleAdminUpdateProduct(req: Request, env: Env, productId: string): Promise<Response> {
+export async function handleAdminUpdateProduct(req: Request, env: Env, productId: string, ctx?: ExecutionContext): Promise<Response> {
   const writer = await resolveWriter(req, env);
   if (!writer) return admin403(req);
 
@@ -912,6 +944,14 @@ export async function handleAdminUpdateProduct(req: Request, env: Env, productId
 
     // Return the full updated product
     const updated = await getDoc(env, PRODUCTS_COLLECTION, productId);
+
+    // If the save left the product published, notify IndexNow (fire-and-forget).
+    const finalStatus = updated?.data?.status ?? merged.status ?? existing.data?.status;
+    const finalSlug = updated?.data?.slug || merged.slug || existing.data?.slug;
+    if (finalStatus === "published") {
+      pingProductIndexNow(ctx, finalSlug);
+    }
+
     return new Response(
       JSON.stringify({ success: true, productId, product: { id: productId, ...updated?.data } }),
       { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders(req.headers.get("origin")) } }

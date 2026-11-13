@@ -544,3 +544,132 @@
   color: rgba(17, 24, 39, 0.06) !important;
   fill: currentColor !important;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Mobile (≤679px) — compact, premium sizing for the product detail page.
+   The related-products grid was forcing 4 desktop columns onto phones, which
+   squeezed cards to ~80px and wrapped titles into single letters; the CTA
+   row and action pills were also oversized. This block tightens them without
+   touching the desktop layout.
+   ═══════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 679px) {
+  /* "You might also like" — two columns, tighter spacing and type scale. */
+  body .sc-also-like-section {
+    margin-top: 32px !important;
+    padding-top: 24px !important;
+  }
+
+  body .sc-also-like-title {
+    font-size: 18px !important;
+    margin-bottom: 14px !important;
+  }
+
+  body .sc-also-like-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 12px !important;
+  }
+
+  body .sc-also-like-grid .sc-code-card__caption,
+  body .sc-also-like-grid .sc-code-card__meta {
+    padding: 10px 10px 8px !important;
+    gap: 6px !important;
+  }
+
+  body .sc-also-like-grid .sc-code-card__title {
+    font-size: 13px !important;
+    line-height: 1.25 !important;
+  }
+
+  body .sc-also-like-grid .sc-code-card__category {
+    font-size: 11px !important;
+  }
+
+  body .sc-also-like-grid .sc-code-card__price-badge {
+    font-size: 10px !important;
+    padding: 3px 8px !important;
+  }
+
+  body .sc-also-like-grid .sc-code-card__social {
+    margin-top: 6px !important;
+    gap: 6px !important;
+    font-size: 11px !important;
+  }
+
+  /* Custom-service CTA — stack vertically; buttons share one wrapped row. */
+  body .sc-custom-service-section {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 14px !important;
+    padding: 18px !important;
+    margin: 18px 0 !important;
+    border-radius: 14px !important;
+  }
+
+  body .sc-custom-service-text h4 {
+    font-size: 16px !important;
+  }
+
+  body .sc-custom-service-text p {
+    font-size: 13px !important;
+  }
+
+  body .sc-custom-service-buttons {
+    flex-wrap: wrap !important;
+    gap: 10px !important;
+  }
+
+  body .sc-custom-service-buttons .sc-btn-service {
+    flex: 1 1 auto !important;
+    justify-content: center !important;
+    padding: 10px 14px !important;
+    font-size: 13px !important;
+  }
+
+  /* Detail action pills (Copy Source Code, Download, …) — shorter and tighter.
+     Ancestor-scoped so these beat the stronger `.sc-copy-actions-row button`
+     / `.sc-btn-copy-primary` rules in stea-code-v2.css. */
+  body .sc-copy-actions-row .sc-detail-action,
+  body .sc-copy-actions-row .sc-btn-copy-primary,
+  body .sc-copy-actions-row .sc-btn-copy-secondary,
+  body .sc-detail-actions .sc-detail-action {
+    padding: 11px 16px !important;
+    font-size: 13.5px !important;
+    gap: 8px !important;
+    border-radius: 12px !important;
+    min-width: 0 !important;
+  }
+
+  body .sc-detail-action-icon {
+    font-size: 16px !important;
+  }
+
+  /* Floating preview action circles (Refresh / Like / Save) — slightly smaller. */
+  .sc-detail-preview-actions {
+    top: 10px !important;
+    right: 12px !important;
+    gap: 8px !important;
+  }
+
+  .sc-preview-action-btn {
+    width: 32px !important;
+    height: 32px !important;
+  }
+
+  /* Detail metrics row (views / like) — compact. */
+  .sc-detail-metrics {
+    gap: 14px !important;
+    margin-top: 6px !important;
+    font-size: 12px !important;
+  }
+
+  /* Back pill — tighter header padding and smaller button. */
+  body .sc-modal-clean-header {
+    padding: 12px 14px 4px !important;
+  }
+
+  body .sc-modal-clean-header .sc-btn-back-premium {
+    gap: 6px !important;
+    padding: 8px 14px 8px 11px !important;
+    font-size: 13px !important;
+  }
+}

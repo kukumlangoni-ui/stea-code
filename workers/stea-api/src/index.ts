@@ -21,6 +21,7 @@ import { handleNewsletterSubscribe } from "./routes/newsletter";
 import { handleMedia, handleMediaUpload } from "./routes/media";
 import {
   handleRecordView,
+  handleRecordLike,
   handleRecordCopy,
   handleProductStats,
   handleGetFavorites,
@@ -291,6 +292,12 @@ export default {
         return handleRecordView(request, env, viewMatch[1]);
       }
 
+      // Like counter (public, anonymous — state tracked client-side)
+      const likeMatch = apiPath.match(/^\/stea-code\/products\/([^/]+)\/like$/);
+      if (likeMatch && method === "POST") {
+        return handleRecordLike(request, env, likeMatch[1]);
+      }
+
       // Copy counter
       const copyMatch = apiPath.match(/^\/stea-code\/products\/([^/]+)\/copy$/);
       if (copyMatch && method === "POST") {
@@ -355,7 +362,7 @@ export default {
         return handleAdminStats(request, env);
       }
       if (apiPath === "/admin/stea-code/products" && method === "POST") {
-        return handleAdminCreateProduct(request, env);
+        return handleAdminCreateProduct(request, env, ctx);
       }
 
       const adminSourceMatch = apiPath.match(/^\/admin\/stea-code\/products\/([^/]+)\/source$/);
@@ -391,7 +398,7 @@ export default {
 
       const adminProductMatch = apiPath.match(/^\/admin\/stea-code\/products\/([^/]+)$/);
       if (adminProductMatch && (method === "PATCH" || method === "PUT")) {
-        return handleAdminUpdateProduct(request, env, adminProductMatch[1]);
+        return handleAdminUpdateProduct(request, env, adminProductMatch[1], ctx);
       }
       if (adminProductMatch && method === "DELETE") {
         return handleAdminDeleteProduct(request, env, adminProductMatch[1]);

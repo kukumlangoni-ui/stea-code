@@ -53,13 +53,29 @@ try {
   db = getFirestore(app, databaseId);
   console.log(`[Firebase] Using existing Firestore instance for dbId: ${databaseId || "(default)"}`);
 }
-const storage = getStorage(app);
-// Set reasonable retry limits to avoid long-hanging operations that eventually fail
-// storage.maxRetryTime is for individual retries, maxOperationRetryTime is for the whole op.
-storage.maxRetryTime = 30000; // 30 seconds
-storage.maxOperationRetryTime = 30000;
+// Optional services are initialised defensively: this module is imported on
+// the critical path, and a throw here would abort bundle evaluation and leave
+// the app on a blank page (React never mounts, so no ErrorBoundary can help).
+let storage = null;
+try {
+  storage = getStorage(app);
+  // Set reasonable retry limits to avoid long-hanging operations that eventually fail
+  // storage.maxRetryTime is for individual retries, maxOperationRetryTime is for the whole op.
+  storage.maxRetryTime = 30000; // 30 seconds
+  storage.maxOperationRetryTime = 30000;
+} catch (error) {
+  console.warn("[Firebase] Storage unavailable:", error?.message || error);
+}
 
-const analytics = typeof window !== "undefined" ? getAnalytics(app) : null;
+let analytics = null;
+if (typeof window !== "undefined") {
+  try {
+    analytics = getAnalytics(app);
+  } catch (error) {
+    // Analytics is unsupported in some browsers / blocked by privacy settings.
+    console.warn("[Firebase] Analytics unavailable:", error?.message || error);
+  }
+}
 
 function installStorageRequestTracer() {
   if (typeof window === "undefined" || typeof XMLHttpRequest === "undefined") return;

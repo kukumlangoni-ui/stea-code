@@ -869,7 +869,7 @@ centering: ${fillMode === "scale" ? "flex (center center)" : "tx/ty (top left)"}
             key={reloadKey}
             title={cleanTitle}
             src={externalPreviewUrl}
-            sandbox="allow-scripts allow-same-origin"
+            sandbox="allow-scripts allow-same-origin allow-forms"
             allow="webgl; xr-spatial-tracking"
             className="sc-live-preview-iframe"
             style={{ pointerEvents: interactive ? "auto" : "none" }}
@@ -881,7 +881,7 @@ centering: ${fillMode === "scale" ? "flex (center center)" : "tx/ty (top left)"}
               key={`${productId}-${reloadKey}`}
               title={cleanTitle}
               srcDoc={srcDoc}
-              sandbox="allow-scripts allow-same-origin"
+              sandbox="allow-scripts allow-same-origin allow-forms"
               allow="webgl; xr-spatial-tracking"
               className="sc-live-preview-iframe"
               style={{ pointerEvents: interactive ? "auto" : "none" }}
@@ -936,7 +936,7 @@ centering: ${fillMode === "scale" ? "flex (center center)" : "tx/ty (top left)"}
               <iframe
                 title={`${cleanTitle} (fullscreen)`}
                 src={externalPreviewUrl}
-                sandbox="allow-scripts allow-same-origin"
+                sandbox="allow-scripts allow-same-origin allow-forms"
                 allow="webgl; xr-spatial-tracking"
                 className="sc-live-preview-iframe"
               />
@@ -944,7 +944,7 @@ centering: ${fillMode === "scale" ? "flex (center center)" : "tx/ty (top left)"}
               <iframe
                 title={`${cleanTitle} (fullscreen)`}
                 srcDoc={srcDoc}
-                sandbox="allow-scripts allow-same-origin"
+                sandbox="allow-scripts allow-same-origin allow-forms"
                 allow="webgl; xr-spatial-tracking"
                 className="sc-live-preview-iframe"
               />

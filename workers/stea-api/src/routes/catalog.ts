@@ -188,6 +188,8 @@ const HOMEPAGE_CARD_COLUMNS = [
   "extraData",
   "designWidth",
   "designHeight",
+  "views",
+  "likes",
   "createdAt",
   "updatedAt",
 ];
@@ -397,6 +399,8 @@ async function listHomepageCards(
       liveUrl: (extra && typeof extra === "object" ? extra.liveUrl : "") || row.liveUrl || "",
       designWidth: row.designWidth === null ? null : Number(row.designWidth),
       designHeight: row.designHeight === null ? null : Number(row.designHeight),
+      views: Number(row.views) || 0,
+      likes: Number(row.likes) || 0,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
       // Same meaning as the flag handleProduct() sends: false when "Copy Source
@@ -424,6 +428,34 @@ async function loadHasSourceMap(env: Env): Promise<Map<string, boolean>> {
   for (const row of result.results || []) {
     const r = row as Record<string, any>;
     map.set(String(r.id), r.hasSource === 1 || r.hasSource === true);
+  }
+  return map;
+}
+
+/**
+ * Live public counters for every published product, keyed by BOTH D1 id and
+ * slug. The unscoped catalog loads documents through listDocs(), whose stored
+ * blob never gets the views/likes counters updated (the counter routes write
+ * the products table only), so those blobs carry stale 0/0 values. This map
+ * overlays the real D1 counters the same way the homepage SQL path already
+ * reads them, keyed by id first then slug.
+ */
+async function loadCounterMap(env: Env): Promise<Map<string, { views: number; likes: number }>> {
+  const map = new Map<string, { views: number; likes: number }>();
+  try {
+    const result = await env.DB.prepare(
+      `SELECT id, slug, views, likes FROM products WHERE status = 'published' AND deleted_at IS NULL`
+    ).all();
+    for (const row of result.results || []) {
+      const r = row as Record<string, any>;
+      const entry = { views: Number(r.views) || 0, likes: Number(r.likes) || 0 };
+      map.set(String(r.id), entry);
+      if (r.slug) map.set(String(r.slug), entry);
+    }
+  } catch (e) {
+    // Counters columns may not exist yet (pre-migration 015) — leave map empty
+    // and fall back to the document-blob values.
+    console.warn("[catalog] counter map skipped:", e);
   }
   return map;
 }
@@ -469,8 +501,9 @@ export async function handleCatalog(req: Request, env: Env, ctx?: ExecutionConte
     // v7: added free-text `search` to the key so "book" and "form" never collide.
     // v8: embeds the DB catalog_version so admin deletes/edits invalidate the
     //     edge cache immediately.
+    // v9: added public views/likes counters to the card payload.
     const homepageCacheKey = new Request(
-      `https://stea-code.internal/catalog/homepage-v8-${catalogVersion}-${limit}-${offset}-` +
+      `https://stea-code.internal/catalog/homepage-v9-${catalogVersion}-${limit}-${offset}-` +
         `${encodeURIComponent(tab)}-${encodeURIComponent(category)}-${encodeURIComponent(subcategory)}-` +
         `${encodeURIComponent(search)}`,
       { method: "GET" }
@@ -505,16 +538,24 @@ export async function handleCatalog(req: Request, env: Env, ctx?: ExecutionConte
       homepageTotal = page.total;
       globalTotalValue = page.globalTotal;
     } else {
-      const [docs, hasSourceById] = await Promise.all([
+      const [docs, hasSourceById, countersById] = await Promise.all([
         listDocs(env, PRODUCTS_COLLECTION, {}),
         loadHasSourceMap(env),
+        loadCounterMap(env),
       ]);
       products = docs
-        .map((d) => ({
-          id: d.id,
-          ...safeProduct(d.data),
-          hasSource: hasSourceById.get(d.id) === true,
-        }))
+        .map((d) => {
+          // Prefer the live D1 counters; fall back to whatever the stored doc blob
+          // carries (older rows predate the counter columns).
+          const counter = countersById.get(String(d.id)) || countersById.get(String(d.data?.slug));
+          return {
+            id: d.id,
+            ...safeProduct(d.data),
+            views: counter ? counter.views : Number(d.data?.views) || 0,
+            likes: counter ? counter.likes : Number(d.data?.likes) || 0,
+            hasSource: hasSourceById.get(d.id) === true,
+          };
+        })
         .filter((p) => p.status === "published" && !p.deleted_at);
       homepageTotal = products.length;
 
@@ -603,8 +644,30 @@ export async function handleProduct(req: Request, env: Env, productId: string): 
     // there is nothing to copy.
     const hasSource = await resolveHasSource(env, doc.id, doc.data || {});
 
+    // Social-proof counters live in the D1 `products` table (views/likes).
+    // The Firestore-style collection may not carry them, so read the live D1
+    // counts by id or slug and merge them onto the public payload. Missing
+    // columns (pre-migration) degrade to 0 rather than failing the request.
+    let views = Number(doc.data?.views) || 0;
+    let likes = Number(doc.data?.likes) || 0;
+    try {
+      const counterRow: any = await env.DB.prepare(
+        "SELECT views, likes FROM products WHERE id = ? OR slug = ? LIMIT 1"
+      )
+        .bind(doc.id, doc.data?.slug || "")
+        .first();
+      if (counterRow) {
+        views = Number(counterRow.views) || 0;
+        likes = Number(counterRow.likes) || 0;
+      }
+    } catch (e) {
+      console.warn("[catalog] D1 counter lookup skipped:", e);
+    }
+
     return new Response(
-      JSON.stringify({ product: { id: doc.id, ...safeProduct(doc.data), hasSource } }),
+      JSON.stringify({
+        product: { id: doc.id, ...safeProduct(doc.data), hasSource, views, likes },
+      }),
       {
         status: 200,
         headers: {

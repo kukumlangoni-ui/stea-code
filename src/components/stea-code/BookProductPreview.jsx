@@ -223,7 +223,7 @@ export default function BookProductPreview({ product, onBuy, mode = "detail", cl
         pointerEvents: mode === "card" ? "none" : undefined,
         ...style,
       }}
-      sandbox="allow-scripts allow-same-origin"
+      sandbox="allow-scripts allow-same-origin allow-forms"
       loading="lazy"
       {...rest}
     />

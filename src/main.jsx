@@ -90,6 +90,8 @@ window.addEventListener('unhandledrejection', (e) => {
 
 import React from 'react'
 import ReactDOM from 'react-dom/client'
+// Install the autoplay guard before any component mounts (patches media + Web Audio).
+import './utils/audioGuard.js'
 import App from './App.jsx'
 import 'react-easy-crop/react-easy-crop.css'
 import './index.css'
@@ -131,6 +133,25 @@ import { CheckoutProvider } from "./contexts/CheckoutContext.jsx";
 import { PWAProvider } from "./contexts/PWAContext.jsx";
 
 console.log('Rendering App...');
+
+// Last-resort fallback for a boot failure: if React never mounts (module
+// evaluation error, browser API missing, inaccessible storage) the #root node
+// stays empty and the user sees a blank page with no way forward. This writes
+// a friendly message directly into the DOM, outside React.
+const showFatalBootFallback = (detail) => {
+  try {
+    const container = document.getElementById('root');
+    if (!container || container.childElementCount > 0) return;
+    container.innerHTML = `
+      <div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#080c14;color:#fff;font-family:system-ui,sans-serif;text-align:center;padding:24px;box-sizing:border-box">
+        <div style="font-size:28px;margin-bottom:14px">⚠️</div>
+        <h1 style="font-size:20px;color:#F5A623;margin:0 0 10px">Something went wrong</h1>
+        <p style="font-size:14px;color:rgba(255,255,255,0.65);max-width:420px;margin:0 0 20px">The app could not start. Refresh the page to try again.</p>
+        <button onclick="window.location.reload()" style="padding:10px 22px;border-radius:10px;background:#F5A623;color:#000;font-weight:700;font-size:14px;border:none;cursor:pointer">Refresh</button>
+      </div>`;
+    if (detail) originalConsoleError('[stea] boot fallback shown:', detail);
+  } catch { /* nothing else we can do */ }
+};
 
 try {
   const container = document.getElementById('root');
@@ -177,16 +198,20 @@ try {
     });
   });
 
-  // Safety: if the app crashes or fails to mount within 10 seconds, hide loader
+  // Safety: if the app crashes or fails to mount within 10 seconds, hide the
+  // loader — and if #root is still empty, show a recovery message instead of
+  // leaving the user on a blank page.
   setTimeout(() => {
     const loader = document.getElementById('stea-boot-loader');
     if (loader && !loader.classList.contains('is-hidden')) {
       loader.classList.add('is-hidden');
       setTimeout(() => loader.remove(), 300);
     }
+    showFatalBootFallback('React tree did not mount within 10s');
   }, 10000);
 } catch (err) {
   console.error('Fatal error during React root creation:', err);
+  showFatalBootFallback(err);
 }
 
 // Unregister stale service workers and clear caches on every visit.

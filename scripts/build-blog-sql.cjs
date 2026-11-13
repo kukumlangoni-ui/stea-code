@@ -49,4 +49,9 @@ ${rows}
   const outFile = path.join(outDir, "013_blog.sql");
   fs.writeFileSync(outFile, sql);
   console.log(`✅ 013_blog.sql written to ${outFile} — ${seen.size} posts`);
+
+  // IndexNow: after this migration is applied to production and the new posts
+  // resolve at /blog/<slug>, run `npm run indexnow` to re-submit the sitemap
+  // (or call pingBlogPost(slug) per post). Blog posts are seeded via SQL, so
+  // there is no admin save hook to fire the ping automatically.
 })();
