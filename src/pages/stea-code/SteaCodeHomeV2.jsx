@@ -1273,7 +1273,11 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
               setLiveCatalog((previous) => {
                 const base = Array.isArray(previous) ? previous : [];
                 const byId = new Map();
-                for (const product of [...products, ...base]) {
+                // Base (possibly stale cached rows) first, fresh payload last —
+                // Map.set overwrites, so the server's authoritative views/likes
+                // must be applied AFTER the cached rows or a stale 0-counter
+                // snapshot would keep clobbering the fresh numbers.
+                for (const product of [...base, ...products]) {
                   const id = getProductIdentity(product);
                   if (id) byId.set(id, product);
                 }

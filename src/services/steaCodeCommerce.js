@@ -288,7 +288,6 @@ export function downloadSteaCodePdf(productId) {
 // Bumping the version forces every browser to discard a previously cached
 // catalog (e.g. one that still listed a now-free book as premium).
 const CATALOG_CACHE_KEY_PREFIX = "stea_code_catalog_v2_";
-const CATALOG_CACHE_TTL = 30 * 1000;
 
 function getCatalogCacheKey(scope) {
   return CATALOG_CACHE_KEY_PREFIX + (scope || "all");
@@ -424,12 +423,13 @@ export async function getSteaCodeCatalog(options = {}) {
     return data;
   };
 
-  // If we have cached data, return it immediately and refresh in background.
+  // If we have cached data, return it immediately and ALWAYS refresh in the
+  // background. Views/likes change on every visit, so even an entry younger
+  // than CATALOG_CACHE_TTL can carry stale counters — gating the revalidate on
+  // staleness left homepage cards showing outdated (e.g. 0) numbers until the
+  // user opened a product. The edge cache absorbs the extra request.
   if (cachedEntry) {
-    const isStale = Date.now() - Number(cachedEntry.timestamp || 0) > CATALOG_CACHE_TTL;
-    if (isStale) {
-      fetchFresh().catch(() => {});
-    }
+    fetchFresh().catch(() => {});
     return cachedEntry.data;
   }
 
