@@ -557,9 +557,33 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
     if (!productId || viewedProductsRef.current.has(productId)) return;
     viewedProductsRef.current.add(productId);
     writeViewedSet(viewedProductsRef.current);
-    registerSteaCodeProductView(productId).catch(() => {
-      /* fire-and-forget */
-    });
+    registerSteaCodeProductView(productId)
+      .then((res) => {
+        // Feed the authoritative count back into the shared store so the card
+        // behind the modal and the modal itself show the same number.
+        if (res && typeof res.views === "number") {
+          setEngagement((prev) => {
+            const entry = prev[productId];
+            return {
+              ...prev,
+              [productId]: {
+                views: res.views,
+                likes: entry?.likes ?? (Number(selected?.likes) || 0),
+              },
+            };
+          });
+          setLiveCatalog((prev) =>
+            Array.isArray(prev)
+              ? prev.map((item) =>
+                  getProductIdentity(item) === productId ? { ...item, views: res.views } : item
+                )
+              : prev
+          );
+        }
+      })
+      .catch(() => {
+        /* fire-and-forget */
+      });
   }, [selected]);
 
   // Page-level toast (for favorites, etc. — outside ProductDetail)
@@ -601,6 +625,200 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
       setFavorites(new Set());
     }
   }, [user?.email, loadFavorites]);
+
+  // ---------------------------------------------------------------------------
+  // PUBLIC ENGAGEMENT STORE — the single source of truth for views / likes /
+  // liked-state, shared by the homepage cards AND the detail modal.
+  //
+  // Why this exists: the card and the modal used to each seed their own
+  // `useState` from the product payload. Liking in one place updated only that
+  // copy, so the same product showed two different numbers (and two different
+  // heart colours) until a full catalog refetch. Now:
+  //   • `engagement` holds { views, likes } overrides, keyed by product id.
+  //   • `likedIds` holds the liked ids, mirrored to localStorage
+  //     (`steacode_liked_products`) so a reload/tab remembers the red heart.
+  //   • every like control calls `handleToggleLike`, which writes the store
+  //     optimistically, then reconciles with the API (or rolls back + toasts).
+  // Nothing else may keep its own likes/liked copy.
+  // ---------------------------------------------------------------------------
+  const [engagement, setEngagement] = useState({});
+  const [likedIds, setLikedIds] = useState(() => readLikedSet());
+  // Pending like syncs, keyed by product id: { token, timer }.
+  const likeIntentRef = useRef(new Map());
+  // Set as soon as the page starts unloading. A reload/tab-close aborts any
+  // in-flight like request; that must NOT be mistaken for a server rejection
+  // (which would roll the heart back and rewrite localStorage on the way out).
+  const isUnloadingRef = useRef(false);
+
+  // Refs mirror the latest store so `handleToggleLike` can stay referentially
+  // stable (an unstable prop would bust React.memo on every card in the grid).
+  const engagementRef = useRef(engagement);
+  const likedIdsRef = useRef(likedIds);
+  useEffect(() => { engagementRef.current = engagement; }, [engagement]);
+  useEffect(() => { likedIdsRef.current = likedIds; }, [likedIds]);
+
+  // Cross-tab / cross-component localStorage sync: if another tab flips a
+  // like, pick it up so hearts never disagree between windows.
+  useEffect(() => {
+    const onStorage = (event) => {
+      if (event.key === null || event.key === LIKED_STORAGE_KEY) {
+        setLikedIds(readLikedSet());
+      }
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
+
+  // Resolve the live counters + liked flag for any product. Every renderer
+  // (cards, modal, related grid) reads through this, so they can never drift.
+  const getEngagement = useCallback(
+    (product) => {
+      const id = getProductIdentity(product);
+      const stored = engagement[id];
+      return {
+        views: stored?.views ?? (Number(product?.views) || 0),
+        likes: stored?.likes ?? (Number(product?.likes) || 0),
+        liked: likedIds.has(id),
+      };
+    },
+    [engagement, likedIds]
+  );
+
+  // Keep the products array and the open modal's record in lockstep with the
+  // store, so anything that reads `product.likes` directly (SEO payloads,
+  // related lists, future consumers) sees the same number as the heart.
+  const applyLikesEverywhere = useCallback((id, likes) => {
+    setLiveCatalog((prev) =>
+      Array.isArray(prev)
+        ? prev.map((item) => (getProductIdentity(item) === id ? { ...item, likes } : item))
+        : prev
+    );
+    setSelected((prev) =>
+      prev && getProductIdentity(prev) === id ? { ...prev, likes } : prev
+    );
+  }, []);
+
+  const handleToggleLike = useCallback(
+    (product) => {
+      const id = getProductIdentity(product);
+      if (!id) return;
+
+      const currentlyLiked = likedIdsRef.current.has(id);
+      const nextLiked = !currentlyLiked;
+      const current = engagementRef.current[id] || {
+        views: Number(product?.views) || 0,
+        likes: Number(product?.likes) || 0,
+      };
+      const baseLikes = current.likes;
+      const nextLikes = Math.max(0, baseLikes + (nextLiked ? 1 : -1));
+
+      // 1) Optimistic: number + colour flip instantly, everywhere.
+      setEngagement((prev) => ({ ...prev, [id]: { ...current, likes: nextLikes } }));
+      setLikedIds((prev) => {
+        const next = new Set(prev);
+        if (nextLiked) next.add(id); else next.delete(id);
+        return next;
+      });
+      applyLikesEverywhere(id, nextLikes);
+
+      // 2) Persist the liked flag so the heart survives a reload on both surfaces.
+      const likedSet = readLikedSet();
+      if (nextLiked) likedSet.add(id); else likedSet.delete(id);
+      writeLikedSet(likedSet);
+
+      // 3) Sync with the API — "latest intent wins".
+      //
+      // Likes are anonymous and quick to toggle, and the Worker can take a few
+      // seconds under load. An in-flight lock would silently swallow the second
+      // click (bad), so instead we debounce briefly and send only the FINAL
+      // desired action. Every click gets a fresh token; responses/output of an
+      // older attempt are discarded, so a late reply can never overwrite newer
+      // state, and a failed final attempt rolls back + toasts.
+      const intent = likeIntentRef.current.get(id);
+      if (intent?.timer) clearTimeout(intent.timer);
+      const token = (intent?.token || 0) + 1;
+      const snapshot = { likes: baseLikes, liked: currentlyLiked };
+
+      const timer = setTimeout(() => {
+        toggleSteaCodeProductLike(id, nextLiked ? "like" : "unlike")
+          .then((res) => {
+            if (likeIntentRef.current.get(id)?.token !== token) return; // superseded
+            if (res && typeof res.likes === "number") {
+              setEngagement((prev) => ({
+                ...prev,
+                [id]: { ...(prev[id] || current), likes: res.likes },
+              }));
+              applyLikesEverywhere(id, res.likes);
+            }
+          })
+          .catch((error) => {
+            if (likeIntentRef.current.get(id)?.token !== token) return; // superseded
+            // A reload/close can abort the request while the page unloads — that
+            // is NOT a server rejection, so keep the optimistic state instead of
+            // flicking the heart back. (The request is sent keepalive, so it
+            // normally still reaches D1.)
+            if (
+              isUnloadingRef.current ||
+              error?.name === "AbortError" ||
+              (typeof document !== "undefined" && document.visibilityState === "hidden")
+            ) {
+              return;
+            }
+            // Roll back to the state before this intent.
+            setEngagement((prev) => ({
+              ...prev,
+              [id]: { ...(prev[id] || current), likes: snapshot.likes },
+            }));
+            setLikedIds((prev) => {
+              const next = new Set(prev);
+              if (snapshot.liked) next.add(id); else next.delete(id);
+              return next;
+            });
+            applyLikesEverywhere(id, snapshot.likes);
+            const revert = readLikedSet();
+            if (snapshot.liked) revert.add(id); else revert.delete(id);
+            writeLikedSet(revert);
+            showPageToast(
+              "error",
+              tLocal({
+                en: "Couldn't update your like — please try again.",
+                zhCN: "点赞更新失败，请重试。",
+              })
+            );
+          })
+          .finally(() => {
+            if (likeIntentRef.current.get(id)?.token === token) {
+              likeIntentRef.current.delete(id);
+            }
+          });
+      }, 300);
+
+      likeIntentRef.current.set(id, { token, timer });
+    },
+    // Only stable deps here: the store is read through refs so that every
+    // memoized card keeps receiving the same callback identity.
+    [applyLikesEverywhere, showPageToast, tLocal]
+  );
+
+  // Flag page unload so aborted like requests are never rolled back.
+  useEffect(() => {
+    const markUnloading = () => { isUnloadingRef.current = true; };
+    window.addEventListener("beforeunload", markUnloading);
+    window.addEventListener("pagehide", markUnloading);
+    return () => {
+      window.removeEventListener("beforeunload", markUnloading);
+      window.removeEventListener("pagehide", markUnloading);
+    };
+  }, []);
+
+  // Clear any queued like syncs on unmount.
+  useEffect(() => {
+    const pending = likeIntentRef.current;
+    return () => {
+      pending.forEach((entry) => entry?.timer && clearTimeout(entry.timer));
+      pending.clear();
+    };
+  }, []);
 
   const handleToggleFavorite = useCallback(async (productId) => {
     const cleanId = String(productId || "").trim();
@@ -1972,6 +2190,8 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
                           onOpenProduct={openProduct}
                           isFavorited={favorites.has(getProductIdentity(product))}
                           onToggleFavorite={handleToggleFavorite}
+                          {...getEngagement(product)}
+                          onToggleLike={handleToggleLike}
                         />
                       </PreviewErrorBoundary>
                     </TiltCard>
@@ -2292,6 +2512,8 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
                             onOpenProduct={openProduct}
                             isFavorited={favorites.has(getProductIdentity(serviceProduct))}
                             onToggleFavorite={handleToggleFavorite}
+                            {...getEngagement(serviceProduct)}
+                            onToggleLike={handleToggleLike}
                           />
                         </PreviewErrorBoundary>
                       </TiltCard>
@@ -2309,6 +2531,8 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
                               onOpenProduct={openProduct}
                               isFavorited={favorites.has(getProductIdentity(product))}
                               onToggleFavorite={handleToggleFavorite}
+                              {...getEngagement(product)}
+                              onToggleLike={handleToggleLike}
                             />
                           </PreviewErrorBoundary>
                         </TiltCard>
@@ -2390,6 +2614,9 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
             tLocal={tLocal}
             isFavorited={favorites.has(getProductIdentity(selected))}
             onToggleFavorite={handleToggleFavorite}
+            {...getEngagement(selected)}
+            onToggleLike={handleToggleLike}
+            getEngagement={getEngagement}
             entitlements={entitlements}
             onOpenUnlockModal={() => setUnlockModalProduct(selected)}
             onReadEbook={(book) => navigate(`/library/read/${book?.slug || book?.id || getProductIdentity(book)}`)}
@@ -2565,7 +2792,7 @@ function ProductControls({ tLocal, uiLocale = "en", activeTab, setActiveTab, cat
   );
 }
 
-function CodeProductCardInner({ product, tLocal, onOpenProduct, isFavorited, onToggleFavorite }) {
+function CodeProductCardInner({ product, tLocal, onOpenProduct, isFavorited, onToggleFavorite, views, likes, liked: likedProp, onToggleLike }) {
   const isFree = product.pricingType === "free";
   const productId = getProductIdentity(product);
   const isKit = product?.tab === "kits";
@@ -2626,25 +2853,14 @@ function CodeProductCardInner({ product, tLocal, onOpenProduct, isFavorited, onT
   // slow R2 loads show a shimmer instead of a big empty gray box.
   const [cardPosterLoaded, setCardPosterLoaded] = useState(false);
 
-  // Social-proof counters (Dribbble-style footer). Seeded from the catalog
-  // payload; the like heart is optimistic and persisted in localStorage.
-  const [cardViews, setCardViews] = useState(() => Number(product?.views) || 0);
-  const [cardLikes, setCardLikes] = useState(() => Number(product?.likes) || 0);
-  const [liked, setLiked] = useState(() => readLikedSet().has(productId));
-  const likeBusyRef = useRef(false);
-
-  // Re-sync counters/liked state after mount when the catalog payload refreshes
-  // in the background or a load-more merge replaces the product object. The
-  // card seeds state once in useState above, so without this effect a card first
-  // mounted from a stale/0-count snapshot keeps showing 0 even after the fresh
-  // D1-backed record arrives. Mirrors the detail modal resync effect; an
-  // in-flight optimistic like is left untouched until its request resolves.
-  useEffect(() => {
-    if (!productId || likeBusyRef.current) return;
-    setCardViews(Number(product?.views) || 0);
-    setCardLikes(Number(product?.likes) || 0);
-    setLiked(readLikedSet().has(productId));
-  }, [productId, product?.views, product?.likes]);
+  // Social-proof counters come from the shared engagement store in the parent
+  // (`views` / `likes` / `liked` props). The card deliberately keeps NO local
+  // copy: a like in the modal must be visible here immediately, and vice versa.
+  // The `??` fallbacks keep the card usable standalone (e.g. related grid)
+  // where no store props are passed.
+  const cardViews = Number(views ?? product?.views) || 0;
+  const cardLikes = Number(likes ?? product?.likes) || 0;
+  const liked = Boolean(likedProp ?? readLikedSet().has(productId));
 
   const toggleLike = useCallback(
     (event) => {
@@ -2652,35 +2868,9 @@ function CodeProductCardInner({ product, tLocal, onOpenProduct, isFavorited, onT
         event.stopPropagation();
         event.preventDefault();
       }
-      if (likeBusyRef.current) return;
-      const key = productId;
-      const nextLiked = !liked;
-
-      // Optimistic update + persist liked state locally.
-      setLiked(nextLiked);
-      setCardLikes((n) => Math.max(0, n + (nextLiked ? 1 : -1)));
-      const likedSet = readLikedSet();
-      if (nextLiked) likedSet.add(key); else likedSet.delete(key);
-      writeLikedSet(likedSet);
-
-      likeBusyRef.current = true;
-      toggleSteaCodeProductLike(key, nextLiked ? "like" : "unlike")
-        .then((res) => {
-          if (res && typeof res.likes === "number") setCardLikes(res.likes);
-        })
-        .catch(() => {
-          // Revert the optimistic change if the request failed.
-          setLiked(!nextLiked);
-          setCardLikes((n) => Math.max(0, n + (nextLiked ? -1 : 1)));
-          const revert = readLikedSet();
-          if (nextLiked) revert.delete(key); else revert.add(key);
-          writeLikedSet(revert);
-        })
-        .finally(() => {
-          likeBusyRef.current = false;
-        });
+      if (typeof onToggleLike === "function") onToggleLike(product);
     },
-    [liked, productId]
+    [onToggleLike, product]
   );
 
   // Save to Library (login-gated favorite). Parent opens the sign-in gate when
@@ -2701,14 +2891,11 @@ function CodeProductCardInner({ product, tLocal, onOpenProduct, isFavorited, onT
   useEffect(() => {
     setCardPosterLoaded(false);
   }, [activePoster]);
-  const cycleCardImage = useCallback(
-    (dir) => {
-      const len = cardGallery.length;
-      if (len <= 1) return;
-      setCardImageIndex((i) => (i + dir + len) % len);
-    },
-    [cardGallery.length]
-  );
+  const cycleCardImage = (dir) => {
+    const len = cardGallery.length;
+    if (len <= 1) return;
+    setCardImageIndex((i) => (i + dir + len) % len);
+  };
 
   // --- Motion: subtle lift on hover, press scale. Honors prefers-reduced-motion. ---
   const reduceMotion = useReducedMotion();
@@ -3825,6 +4012,11 @@ function ProductDetail({
   entitlements,
   onOpenUnlockModal,
   onReadEbook,
+  views,
+  likes,
+  liked: likedProp,
+  onToggleLike,
+  getEngagement,
 }) {
   const { user: accessUser } = useCloudflareAuth();
 
@@ -3881,24 +4073,14 @@ function ProductDetail({
   // title, mirroring the homepage card.
   const [previewRefreshKey, setPreviewRefreshKey] = useState(0);
 
-  // Public social-proof counters for the detail page. Seeded from the product
-  // payload (homepage catalog or the D1-backed detail endpoint); the like
-  // heart is optimistic and persisted in localStorage, mirroring the cards.
+  // Public social-proof counters for the detail page. These are NOT local
+  // state: the parent's engagement store owns them (`views` / `likes` / `liked`
+  // props), which is exactly what the homepage card reads. The fallbacks keep
+  // the modal correct if it is ever rendered outside that store.
   const detailProductId = getProductIdentity(product);
-  const [detailViews, setDetailViews] = useState(() => Number(product?.views) || 0);
-  const [detailLikes, setDetailLikes] = useState(() => Number(product?.likes) || 0);
-  const [detailLiked, setDetailLiked] = useState(() => readLikedSet().has(detailProductId));
-  const detailLikeBusyRef = useRef(false);
-
-  // Sync local counters/liked state once the full product detail hydrates
-  // (deep-link placeholder → loaded record) without clobbering an in-flight
-  // optimistic like.
-  useEffect(() => {
-    if (!detailProductId) return;
-    setDetailViews(Number(product?.views) || 0);
-    setDetailLikes(Number(product?.likes) || 0);
-    setDetailLiked(readLikedSet().has(detailProductId));
-  }, [detailProductId, product?.views, product?.likes]);
+  const detailViews = Number(views ?? product?.views) || 0;
+  const detailLikes = Number(likes ?? product?.likes) || 0;
+  const detailLiked = Boolean(likedProp ?? readLikedSet().has(detailProductId));
 
   const toggleDetailLike = useCallback(
     (event) => {
@@ -3906,35 +4088,9 @@ function ProductDetail({
         event.stopPropagation();
         event.preventDefault();
       }
-      if (detailLikeBusyRef.current) return;
-      const key = detailProductId;
-      const nextLiked = !detailLiked;
-
-      // Optimistic update + persist liked state locally.
-      setDetailLiked(nextLiked);
-      setDetailLikes((n) => Math.max(0, n + (nextLiked ? 1 : -1)));
-      const likedSet = readLikedSet();
-      if (nextLiked) likedSet.add(key); else likedSet.delete(key);
-      writeLikedSet(likedSet);
-
-      detailLikeBusyRef.current = true;
-      toggleSteaCodeProductLike(key, nextLiked ? "like" : "unlike")
-        .then((res) => {
-          if (res && typeof res.likes === "number") setDetailLikes(res.likes);
-        })
-        .catch(() => {
-          // Revert the optimistic change if the request failed.
-          setDetailLiked(!nextLiked);
-          setDetailLikes((n) => Math.max(0, n + (nextLiked ? -1 : 1)));
-          const revert = readLikedSet();
-          if (nextLiked) revert.delete(key); else revert.add(key);
-          writeLikedSet(revert);
-        })
-        .finally(() => {
-          detailLikeBusyRef.current = false;
-        });
+      if (typeof onToggleLike === "function") onToggleLike(product);
     },
-    [detailLiked, detailProductId]
+    [onToggleLike, product]
   );
   // Affiliate funnel: after a successful copy, slide up the Runable AI
   // bottom-sheet. copiedType drives the dynamic subtext ("code" | "image").
@@ -5262,6 +5418,12 @@ function ProductDetail({
                           product={relatedProduct}
                           tLocal={tLocal}
                           onOpenProduct={onOpenProduct}
+                          isFavorited={false}
+                          onToggleFavorite={onToggleFavorite}
+                          {...(typeof getEngagement === "function"
+                            ? getEngagement(relatedProduct)
+                            : {})}
+                          onToggleLike={onToggleLike}
                         />
                       </PreviewErrorBoundary>
                     </div>

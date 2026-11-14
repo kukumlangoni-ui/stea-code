@@ -173,6 +173,11 @@ export async function toggleSteaCodeProductLike(productId, action = "like") {
       method: "POST",
       headers,
       body: JSON.stringify({ action }),
+      // Let the like finish even if the user closes the modal tab / reloads
+      // immediately after clicking. Without this the request is aborted on
+      // navigation and the optimistic heart would be rolled back locally
+      // while the click never reached D1.
+      keepalive: true,
     }
   );
 
