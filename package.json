@@ -13,7 +13,8 @@
     "indexnow": "node scripts/submit-to-indexnow.mjs",
     "test:engagement": "node scripts/verify-engagement.mjs",
     "test:engagement:ui": "node scripts/verify-engagement.mjs --full",
-    "test:engagement:offline": "node scripts/verify-engagement.mjs --offline"
+    "test:engagement:offline": "node scripts/verify-engagement.mjs --offline",
+    "test:chatbot": "node scripts/verify-chatbot.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1138.0",

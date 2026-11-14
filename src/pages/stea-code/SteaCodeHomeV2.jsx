@@ -1727,6 +1727,24 @@ export default function SteaCodeHomeV2({ user, authLoading, onGoWorld, onOpenSea
     if (q.trim()) onOpenSearch({ query: q.trim() });
   };
 
+  // Chatbot integration — the floating assistant can run a search for the
+  // user by dispatching `stea:chatbot-search` (detail = query string).
+  useEffect(() => {
+    const onChatbotSearch = (e) => {
+      const query = String((e && e.detail) || "").trim();
+      setQ(query);
+      window.setTimeout(() => {
+        const input = document.querySelector(".sc-market-search input");
+        if (input) {
+          input.scrollIntoView({ behavior: "smooth", block: "center" });
+          input.focus({ preventScroll: true });
+        }
+      }, 80);
+    };
+    window.addEventListener("stea:chatbot-search", onChatbotSearch);
+    return () => window.removeEventListener("stea:chatbot-search", onChatbotSearch);
+  }, []);
+
   const PRODUCT_INCREMENT = 24;
   const MAX_HOMEPAGE_PRODUCTS = 100;
 

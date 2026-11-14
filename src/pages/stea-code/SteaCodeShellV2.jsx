@@ -23,6 +23,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 
 import SteaCodeShellHeaderV2 from "../../components/stea-code/SteaCodeShellHeaderV2.jsx";
 import SearchPaletteV2 from "../../components/stea-code/SearchPaletteV2.jsx";
+import SteaCodeChatbot from "../../components/stea-code/SteaCodeChatbot.jsx";
 import SteaCodeHomeV2 from "./SteaCodeHomeV2.jsx";
 import V2Views from "./V2Views.jsx";
 import SteaCodeCheckoutPage from "./SteaCodeCheckoutPage.jsx";
@@ -521,6 +522,23 @@ export default function SteaCodeShellV2() {
         data={v2Data}
         initialQuery={initialQuery}
         initialIntent={initialIntent}
+      />
+
+      {/* Floating assistant — hangs around the app, opens a chat panel */}
+      <SteaCodeChatbot
+        reduceMotion={reduceMotion}
+        onCommand={(action) => {
+          if (!action) return;
+          if (action.type === "world" && action.world) {
+            setWorld(action.world);
+            setTimeout(() => window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" }), 0);
+          } else if (action.type === "search") {
+            onPaletteOpen({});
+          } else if (action.type === "url" && action.url) {
+            navigate(action.url);
+            setTimeout(() => window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" }), 0);
+          }
+        }}
       />
     </div>
   );

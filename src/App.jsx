@@ -6,7 +6,7 @@
  * Auth: Cloudflare Access for the storefront; Firebase auth still backs the admin app
  */
 import React, { Suspense, lazy, Component } from "react";
-import { Routes, Route, Navigate, Outlet, useLocation } from "react-router-dom";
+import { Routes, Route, Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { SitesLanguageProvider } from "./i18n/index.js";
 import { PWAProvider } from "./contexts/PWAContext.jsx";
 import { SettingsProvider } from "./contexts/SettingsContext.jsx";
@@ -39,6 +39,7 @@ const CookiePolicy = lazy(() => import("./pages/CookiePolicy.jsx"));
 import { useConsentGatedScripts } from "./hooks/useConsentGatedScripts.js";
 import EzoicRouteListener from "./components/stea-code/EzoicRouteListener.jsx";
 import StickyFooterAd from "./components/stea-code/StickyFooterAd.jsx";
+import SteaCodeChatbot from "./components/stea-code/SteaCodeChatbot.jsx";
 
 const isChunkLoadError = (message) =>
   /Failed to fetch dynamically imported module|Importing a module script failed|error loading dynamically imported module/i.test(
@@ -237,6 +238,7 @@ export default function App() {
   // Admin still relies on the legacy Firebase staff flow.
   const { user: firebaseUser, loading: firebaseLoading } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
 
   useConsentGatedScripts();
 
@@ -250,6 +252,35 @@ export default function App() {
               <Suspense fallback={<PageLoadingFallback />}>
                 <EzoicRouteListener />
                 <StickyFooterAd />
+                {/* Floating assistant — hangs around the whole storefront.
+                    Hidden on admin/staff surfaces. */}
+                {!/^\/(admin|code-admin|staff)/.test(location.pathname) && (
+                  <SteaCodeChatbot
+                    onCommand={(action) => {
+                      if (!action || typeof action !== "object") return;
+                      if (action.type === "tab" && action.tab) {
+                        const sp = new URLSearchParams();
+                        sp.set("tab", String(action.tab));
+                        if (action.category && action.category !== "All") sp.set("category", String(action.category));
+                        if (action.sub) sp.set("sub", String(action.sub));
+                        navigate(`/?${sp.toString()}`);
+                        window.setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 0);
+                      } else if (action.type === "url" && action.url) {
+                        navigate(action.url);
+                        window.setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 0);
+                      } else if (action.type === "search") {
+                        // Ensure the homepage (with its hero search) is mounted,
+                        // then let HomeV2 focus + prefill the search box.
+                        if (!location.pathname.startsWith("/library") && location.pathname !== "/") {
+                          navigate("/");
+                        }
+                        window.setTimeout(() => {
+                          window.dispatchEvent(new CustomEvent("stea:chatbot-search", { detail: action.query || "" }));
+                        }, location.pathname === "/" ? 120 : 500);
+                      }
+                    }}
+                  />
+                )}
                 <Routes>
                   {/* SteaCodeHomeV2 stays mounted across all homepage tabs + product
                       detail routes. This prevents the catalog from being refetched

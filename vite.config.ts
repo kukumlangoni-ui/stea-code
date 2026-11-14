@@ -40,7 +40,11 @@ export default defineConfig(({ mode }) => {
         ignored: ['**/node_modules/**', '**/dist/**', '**/build/**', '**/.firebase/**'],
       },
       proxy: {
-        '/api': 'http://localhost:3000',
+        // Local preview: point /api at the live Worker so the catalog loads.
+        // Set VITE_API_PROXY=https://steacode.com when running `npm run dev`.
+        '/api': env.VITE_API_PROXY
+          ? { target: env.VITE_API_PROXY, changeOrigin: true, secure: true }
+          : 'http://localhost:3000',
         '/ws': { target: 'http://localhost:3000', ws: true },
       },
     },
