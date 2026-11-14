@@ -18,7 +18,7 @@ import { useSteaCodeI18n } from "./useSteaCodeI18n.js";
 import { answerQuery, getWelcome, getSuggestions } from "../../services/steaChatbotBrain.js";
 import "./stea-chatbot.css";
 
-const CHATBOT_ICON = "/stea-chatbot-icon.png";
+const CHATBOT_ICON = "/stea-chatbot-icon.png?v=2";
 const POS_KEY = "stea-code:chatbot-pos";
 const TEASER_KEY = "stea-code:chatbot-teaser-seen";
 

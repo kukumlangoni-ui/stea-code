@@ -63,7 +63,10 @@
   display: block;
   -webkit-user-drag: none;
   user-select: none;
-  filter: drop-shadow(0 4px 14px rgba(37, 99, 235, 0.35));
+  /* Glow is rendered by CSS now (the PNG itself is hard-cut) */
+  filter:
+    drop-shadow(0 0 12px rgba(59, 130, 246, 0.5))
+    drop-shadow(0 4px 14px rgba(37, 99, 235, 0.35));
   pointer-events: none;
 }
 
