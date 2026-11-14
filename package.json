@@ -10,7 +10,10 @@
     "preview": "vite preview",
     "lint": "eslint src",
     "build:sitemap": "node generate-sitemap.cjs",
-    "indexnow": "node scripts/submit-to-indexnow.mjs"
+    "indexnow": "node scripts/submit-to-indexnow.mjs",
+    "test:engagement": "node scripts/verify-engagement.mjs",
+    "test:engagement:ui": "node scripts/verify-engagement.mjs --full",
+    "test:engagement:offline": "node scripts/verify-engagement.mjs --offline"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1138.0",

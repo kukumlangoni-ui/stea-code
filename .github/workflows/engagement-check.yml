@@ -1,0 +1,60 @@
+# Keeps the views/likes engagement system locked.
+#
+# Job 1 (api-roundtrip): hits production and verifies the real D1-backed API —
+#   numeric counters, no ghost-town zeros, view/like/unlike persistence.
+#   Net data impact per run: +1 view on one product; likes are restored.
+#
+# Job 2 (ui-offline): builds the app and drives the real UI in headless Chrome
+#   against deterministic local fixtures (no network) — card like, modal sync,
+#   unlike, reload persistence, and stale-cache recovery.
+name: Engagement check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "workers/stea-api/**"
+      - "src/pages/stea-code/**"
+      - "src/services/steaCodeCommerce.js"
+      - "scripts/verify-engagement.mjs"
+      - "package.json"
+      - ".github/workflows/engagement-check.yml"
+  pull_request:
+    paths:
+      - "src/pages/stea-code/**"
+      - "src/services/steaCodeCommerce.js"
+  workflow_dispatch:
+
+jobs:
+  api-roundtrip:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Run engagement API round-trip
+        run: node scripts/verify-engagement.mjs
+        env:
+          STEA_API_BASE: https://steacode.com
+
+  ui-offline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+        env:
+          PUPPETEER_SKIP_DOWNLOAD: "1"
+      - name: Build
+        run: npm run build
+      - name: UI flow against deterministic fixtures
+        run: node scripts/verify-engagement.mjs --offline
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
