@@ -226,11 +226,15 @@ async function fullUiTest() {
           res.end(hit.body);
           return;
         }
+        // Hard per-request cap: a hung upstream must not occupy one of
+        // Chrome's 6 sockets per origin (which would stall the catalog fetch
+        // and trip the app's own 8s timeout).
         const upstream = await requestRetry(`${BASE}${req.url}`, {
           method: req.method,
           headers: { accept: "application/json",
             ...(body ? { "content-type": req.headers["content-type"] || "application/json" } : {}) },
           body,
+          signal: AbortSignal.timeout(7000),
         });
         if (req.method === "GET" && upstream.status === 200) {
           getCache.set(req.url, upstream);
