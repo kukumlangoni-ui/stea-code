@@ -516,7 +516,7 @@ export async function handleCatalog(req: Request, env: Env, ctx?: ExecutionConte
           status: cached.status,
           headers: {
             "Content-Type": "application/json",
-            "Cache-Control": "public, max-age=30, s-maxage=300, stale-while-revalidate=600",
+            "Cache-Control": "public, max-age=0, s-maxage=300, must-revalidate",
             "X-STEA-Catalog-Cache": "HIT",
             ...corsHeaders(req.headers.get("origin")),
           },
@@ -590,8 +590,8 @@ export async function handleCatalog(req: Request, env: Env, ctx?: ExecutionConte
       headers: {
         "Content-Type": "application/json",
         "Cache-Control": scope === "homepage"
-          ? "public, max-age=30, s-maxage=300, stale-while-revalidate=600"
-          : "public, max-age=60, s-maxage=120, stale-while-revalidate=600",
+          ? "public, max-age=0, s-maxage=300, must-revalidate"
+          : "public, max-age=0, s-maxage=120, must-revalidate",
         ...corsHeaders(req.headers.get("origin")),
       },
     });
@@ -672,7 +672,7 @@ export async function handleProduct(req: Request, env: Env, productId: string): 
         status: 200,
         headers: {
           "Content-Type": "application/json",
-          "Cache-Control": "public, max-age=120, s-maxage=300, stale-while-revalidate=600",
+          "Cache-Control": "public, max-age=0, s-maxage=300, must-revalidate",
           ...corsHeaders(req.headers.get("origin")),
         },
       }
